@@ -2,7 +2,8 @@
 
 > 用Moonbit重写qbe
 
-**[Qbe.mbt文档](doc/)**
+# 项目文档
+> **[Qbe.mbt文档](doc/)**
 
 # 项目简介
 qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生态
