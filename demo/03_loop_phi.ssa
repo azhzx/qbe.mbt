@@ -1,0 +1,21 @@
+# demo 03 - 循环与 phi 节点
+# 展示: phi 节点连接基本块, jmp 无条件跳转, 循环结构
+# 逻辑: 求 1..n 的和 (sum_to(n) = n*(n+1)/2)
+
+export
+function w $sum_to(w %n) {
+@start
+	%i =w copy 0
+	%s =w copy 0
+@loop
+	%i2 =w phi @start %i, @body %i3
+	%s2 =w phi @start %s, @body %s3
+	%c =w cslew %i2, %n
+	jnz %c, @body, @end
+@body
+	%s3 =w add %s2, %i2
+	%i3 =w add %i2, 1
+	jmp @loop
+@end
+	ret %s2
+}

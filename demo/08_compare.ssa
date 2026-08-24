@@ -1,0 +1,32 @@
+# demo 08 - 比较与条件码
+# 展示: 有符号/无符号比较, 整数与浮点比较
+# 逻辑: 符号函数 sign(x) = (x > 0) - (x < 0)
+
+export
+function w $sign(w %x) {
+@start
+	%z =w copy 0
+	%p =w csgtw %x, 0
+	jnz %p, @pos, @chk_neg
+@pos
+	ret 1
+@chk_neg
+	%n =w csltw %x, 0
+	jnz %n, @neg, @zero
+@neg
+	ret -1
+@zero
+	ret 0
+}
+
+# 浮点比较示例
+export
+function w $is_nonneg(d %x) {
+@start
+	%c =w cged %x, d_0.0
+	jnz %c, @yes, @no
+@yes
+	ret 1
+@no
+	ret 0
+}

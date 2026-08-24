@@ -1,0 +1,14 @@
+# demo 02 - 控制流: if/else via jnz
+# 展示: jnz 条件跳转, 多基本块, 命名基本块
+# 逻辑: max(a, b)
+
+export
+function w $max(w %a, w %b) {
+@start
+	%c =w csgtw %a, %b
+	jnz %c, @ab, @ba
+@ab
+	ret %a
+@ba
+	ret %b
+}

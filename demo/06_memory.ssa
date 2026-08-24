@@ -1,0 +1,24 @@
+# demo 06 - 内存: load / store / alloc
+# 展示: loadsw/loaduw/load, storew/storel, alloc4/alloc8/alloc16
+# 逻辑: 在栈上分配空间, 写入并读取
+
+export
+function l $mem_demo(l %n) {
+@start
+	%a =l alloc8 %n
+	storel 42, %a
+	%v =l load %a
+	ret %v
+}
+
+# 通过全局数据段读写
+data $g = { w 0 }
+export
+function w $global_demo() {
+@start
+	%x =w loadw $g
+	%x2 =w add %x, 1
+	storew %x2, $g
+	%r =w loadw $g
+	ret %r
+}

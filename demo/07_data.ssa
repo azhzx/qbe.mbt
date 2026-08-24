@@ -1,0 +1,15 @@
+# demo 07 - 数据段 data 与类型 type
+# 展示: data 定义, 字符串/字节/字, type 聚合类型定义
+# 逻辑: 定义全局字符串与结构体类型
+
+data $hello = { b "hello, world\n", b 0 }
+data $nums  = { w 1, w 2, w 3, w 4 }
+
+type :point { w 0, w 0 }  # 两个 word 的结构体
+
+export
+function w $test() {
+@start
+	%p =l load $nums
+	ret %p
+}

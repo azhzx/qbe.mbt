@@ -1,0 +1,35 @@
+# demo 09 - 位运算与移位
+# 展示: and/or/xor, sar/shr/shl, 位掩码技巧
+
+export
+function w $is_odd(w %x) {
+@start
+	%m =w and %x, 1
+	ret %m
+}
+
+export
+function w $is_pow2(w %x) {
+@start
+	%z =w ceqw %x, 0
+	jnz %z, @no, @chk
+@chk
+	%y =w sub %x, 1
+	%a =w and %x, %y
+	%z2 =w ceqw %a, 0
+	jnz %z2, @yes, @no
+@yes
+	ret 1
+@no
+	ret 0
+}
+
+# 交换高低字节
+export
+function w $swap_bytes(w %x) {
+@start
+	%hi =w shr %x, 8
+	%lo =w shl %x, 8
+	%r  =w or  %hi, %lo
+	ret %r
+}

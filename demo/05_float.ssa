@@ -1,0 +1,15 @@
+# demo 05 - 浮点数运算
+# 展示: d (double) 类型, s (single float) 类型, 浮点常量
+# 逻辑: 多项式求值 2x^3 + x^2 - x + 1
+
+export
+function d $poly(d %x) {
+@start
+	%x2 =d mul %x, %x
+	%x3 =d mul %x2, %x
+	%r =d mul %x3, d_2.0
+	%r2 =d add %r, %x2
+	%r3 =d sub %r2, %x
+	%r4 =d add %r3, d_1.0
+	ret %r4
+}

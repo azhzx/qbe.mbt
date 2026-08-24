@@ -1,0 +1,17 @@
+# demo 04 - 递归与函数调用
+# 展示: call 指令, 递归函数, 多个 SSA 临时变量
+# 逻辑: 阶乘 fact(n) = n!
+
+export
+function w $fact(w %n) {
+@start
+	%c =w csgtw %n, 1
+	jnz %c, @rec, @base
+@base
+	ret 1
+@rec
+	%m =w sub %n, 1
+	%r =w call $fact(w %m)
+	%res =w mul %n, %r
+	ret %res
+}

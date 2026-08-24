@@ -1,0 +1,24 @@
+# demo 01 - 基础算术与返回
+# 展示: function 定义, ret, add/sub/mul, 整数常量
+# 调用示例: qbe demo/01_arith.ssa
+
+export
+function w $add(w %a, w %b) {
+@start
+	%c =w add %a, %b
+	ret %c
+}
+
+export
+function w $sub(w %a, w %b) {
+@start
+	%c =w sub %a, %b
+	ret %c
+}
+
+export
+function l $mul(l %a, l %b) {
+@start
+	%c =l mul %a, %b
+	ret %c
+}
