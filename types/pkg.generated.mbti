@@ -1,0 +1,619 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/types"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const NCLR : Int = 5
+
+pub const NFPR : Int = 15
+
+pub const NFPS : Int = 15
+
+pub const NGPR : Int = 16
+
+pub const NGPS : Int = 9
+
+pub const NRGLOB : Int = 2
+
+pub const R10 : Int = 8
+
+pub const R11 : Int = 9
+
+pub const R12 : Int = 11
+
+pub const R13 : Int = 12
+
+pub const R14 : Int = 13
+
+pub const R15 : Int = 14
+
+pub const R8 : Int = 6
+
+pub const R9 : Int = 7
+
+pub const RAX : Int = 1
+
+pub const RBP : Int = 15
+
+pub const RBX : Int = 10
+
+pub const RCX : Int = 2
+
+pub const RDI : Int = 5
+
+pub const RDX : Int = 3
+
+pub const RSI : Int = 4
+
+pub const RSP : Int = 16
+
+pub const RXX : Int = 0
+
+pub const Tmp0 : Int = 64
+
+pub const XMM0 : Int = 17
+
+pub const XMM1 : Int = 18
+
+pub const XMM10 : Int = 27
+
+pub const XMM11 : Int = 28
+
+pub const XMM12 : Int = 29
+
+pub const XMM13 : Int = 30
+
+pub const XMM14 : Int = 31
+
+pub const XMM15 : Int = 32
+
+pub const XMM2 : Int = 19
+
+pub const XMM3 : Int = 20
+
+pub const XMM4 : Int = 21
+
+pub const XMM5 : Int = 22
+
+pub const XMM6 : Int = 23
+
+pub const XMM7 : Int = 24
+
+pub const XMM8 : Int = 25
+
+pub const XMM9 : Int = 26
+
+pub fn addcon(Con, Con) -> Con
+
+pub let amd64_rsave : Array[Int]
+
+pub fn astack(AliasType) -> Bool
+
+pub fn class_from_code(Int) -> Class
+
+pub fn con_eq(Con, Con) -> Bool
+
+pub fn con_raw_bits(Con) -> Int64
+
+pub fn ext_width_idx(Op) -> Int
+
+pub fn is_arg(Op) -> Bool
+
+pub fn is_callersave(Int) -> Bool
+
+pub fn is_ext(Op) -> Bool
+
+pub fn is_load(Op) -> Bool
+
+pub fn is_par(Op) -> Bool
+
+pub fn is_ret(JumpKind) -> Bool
+
+pub fn is_store(Op) -> Bool
+
+pub fn kbase(Class) -> Int
+
+pub fn kwide(Class) -> Int
+
+pub fn load_width_idx(Op) -> Int
+
+pub let nregs_per_class : Array[Int]
+
+pub fn op_from_index(Int) -> Op
+
+pub fn op_from_string(String) -> Op
+
+pub fn op_index(Op) -> Int
+
+pub fn op_info(Op) -> OpInfo
+
+pub fn ref_none() -> Ref
+
+pub fn regname(Int) -> String
+
+pub fn req(Ref, Ref) -> Bool
+
+pub fn rglob_mask() -> UInt64
+
+pub fn rtype(Ref) -> Int
+
+pub fn width_code(TmpWidth) -> Int
+
+pub fn width_from_code(Int) -> TmpWidth
+
+// Errors
+
+// Types and methods
+pub(all) struct Addr {
+  offset : Con
+  base : Ref
+  index : Ref
+  scale : Int
+} derive(@debug.Debug)
+pub fn Addr::new() -> Self
+
+pub(all) struct AliasInfo {
+  mut kind : AliasType
+  mut base : Ref
+  mut label : Int
+  mut offset : Int64
+  mut slot : Int
+} derive(@debug.Debug)
+pub fn AliasInfo::default() -> Self
+
+pub(all) enum AliasType {
+  ABot
+  ALoc
+  ACon
+  AEsc
+  ASym
+  AUnk
+} derive(Eq, @debug.Debug)
+
+pub(all) struct BSet {
+  nt : Int
+  bits : Array[UInt64]
+} derive(@debug.Debug)
+pub fn BSet::clr(Self, Int) -> Unit
+pub fn BSet::copy_from(Self, Self) -> Unit
+pub fn BSet::count(Self) -> Int
+pub fn BSet::diff(Self, Self) -> Unit
+pub fn BSet::equal(Self, Self) -> Bool
+pub fn BSet::has(Self, Int) -> Bool
+pub fn BSet::inter(Self, Self) -> Unit
+pub fn BSet::iter(Self, Int) -> Int
+pub fn BSet::new(Int) -> Self
+pub fn BSet::set(Self, Int) -> Unit
+pub fn BSet::union(Self, Self) -> Bool
+pub fn BSet::zero(Self) -> Unit
+
+pub(all) struct Blk {
+  id : Int
+  name : String
+  phi : Array[Phi]
+  ins : Array[Ins]
+  mut jmp : Jump
+  pred : Array[Int]
+  mut npred : Int
+  mut idom : Int
+  mut dom_link : Int
+  mut dom_next : Int
+  fron : Array[Int]
+  mut rpo_id : Int
+  mut loop_depth : Int
+  mut nlive_w : Int
+  mut nlive_d : Int
+  mut in_set : BSet?
+  mut out_set : BSet?
+  mut gen_set : BSet?
+  mut link : Int
+  mut visit : Int
+} derive(@debug.Debug)
+pub fn Blk::new(Int, String) -> Self
+
+pub(all) enum Class {
+  Kx
+  Kw
+  Kl
+  Ks
+  Kd
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Con {
+  kind : ConType
+  label : Int
+  bits : ConBits
+  flt : Int
+  is_local : Bool
+} derive(@debug.Debug)
+pub fn Con::addr(Int) -> Self
+pub fn Con::double(Double) -> Self
+pub fn Con::int(Int64) -> Self
+pub fn Con::is_zero(Self, Bool) -> Bool
+pub fn Con::new() -> Self
+pub fn Con::single(Float) -> Self
+
+pub(all) struct ConBits {
+  i : Int64
+  d : Double
+  s : Float
+} derive(@debug.Debug)
+
+pub(all) enum ConType {
+  CUndef
+  CBits
+  CAddr
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Dat {
+  mut kind : DatKind
+  num : Int64
+  fltd : Double
+  flts : Float
+  str : String
+  ref_name : String
+  ref_offset : Int64
+  is_ref : Bool
+  is_str : Bool
+  mut is_export : Bool
+} derive(@debug.Debug)
+pub fn Dat::align(Int64) -> Self
+pub fn Dat::byte(Int64) -> Self
+pub fn Dat::end() -> Self
+pub fn Dat::name(String, Bool) -> Self
+pub fn Dat::ref_to(String, Int64) -> Self
+pub fn Dat::start() -> Self
+pub fn Dat::string(String) -> Self
+pub fn Dat::zero(Int64) -> Self
+
+pub(all) enum DatKind {
+  DStart
+  DEnd
+  DName
+  DAlign
+  DB
+  DH
+  DW
+  DL
+  DZ
+} derive(Eq, @debug.Debug)
+
+pub(all) struct DatRef {
+  name : String
+  offset : Int64
+} derive(@debug.Debug)
+
+pub(all) struct Field {
+  kind : FieldType
+  len : Int
+} derive(@debug.Debug)
+pub fn Field::end() -> Self
+pub fn Field::new(FieldType, Int) -> Self
+
+pub(all) enum FieldType {
+  FEnd
+  Fb
+  Fh
+  Fw
+  Fl
+  Fs
+  Fd
+  FPad
+  FTyp
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Fn {
+  name : String
+  mut start_id : Int
+  blks : Array[Blk]
+  blk_names : Map[String, Int]
+  tmps : Array[Tmp]
+  cons : Array[Con]
+  mems : Array[Addr]
+  rpo : Array[Int]
+  def_order : Array[Int]
+  mut ret_ty : Int
+  mut retr : Ref
+  mut reg : UInt64
+  mut slot : Int
+  mut is_export : Bool
+  mut is_vararg : Bool
+  mut has_dynalloc : Bool
+} derive(@debug.Debug)
+pub fn Fn::add_blk(Self, String) -> Int
+pub fn Fn::add_con(Self, Con) -> Int
+pub fn Fn::add_tmp(Self, String, Class) -> Int
+pub fn Fn::blk(Self, Int) -> Blk
+pub fn Fn::con(Self, Int) -> Con
+pub fn Fn::find_blk(Self, String) -> Int
+pub fn Fn::get_con(Self, Int64) -> Int
+pub fn Fn::get_con_by(Self, Con) -> Int
+pub fn Fn::init_regs(Self) -> Unit
+pub fn Fn::nblk(Self) -> Int
+pub fn Fn::ncon(Self) -> Int
+pub fn Fn::new(String) -> Self
+pub fn Fn::new_tmp(Self, String, Class) -> Int
+pub fn Fn::ntmp(Self) -> Int
+pub fn Fn::tmp(Self, Int) -> Tmp
+
+pub(all) struct Ins {
+  mut op : Op
+  mut cls : Class
+  mut to : Ref
+  mut arg1 : Ref
+  mut arg2 : Ref
+} derive(@debug.Debug)
+pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
+pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
+
+pub(all) struct Jump {
+  mut kind : JumpKind
+  mut arg : Ref
+  mut s1 : Int
+  mut s2 : Int
+} derive(@debug.Debug)
+pub fn Jump::full(JumpKind, Ref, Int, Int) -> Self
+pub fn Jump::new(JumpKind) -> Self
+
+pub(all) enum JumpKind {
+  Jxxx
+  Jret0
+  Jretw
+  Jretl
+  Jrets
+  Jretd
+  Jretc
+  Jjmp
+  Jjnz
+  Jjfieq
+  Jjfine
+  Jjfisge
+  Jjfisgt
+  Jjfisle
+  Jjfislt
+  Jjfiuge
+  Jjfiugt
+  Jjfiule
+  Jjfiult
+  Jjffeq
+  Jjffge
+  Jjffgt
+  Jjffle
+  Jjfflt
+  Jjffne
+  Jjffo
+  Jjffuo
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Op {
+  Oxxx
+  Add
+  Sub
+  Div
+  Rem
+  Udiv
+  Urem
+  Mul
+  And
+  Or
+  Xor
+  Sar
+  Shr
+  Shl
+  Ceqw
+  Cnew
+  Csgew
+  Csgtw
+  Cslew
+  Csltw
+  Cugew
+  Cugtw
+  Culew
+  Cultw
+  Ceql
+  Cnel
+  Csgel
+  Csgtl
+  Cslel
+  Csltl
+  Cugel
+  Cugtl
+  Culel
+  Cultl
+  Ceqs
+  Cges
+  Cgts
+  Cles
+  Clts
+  Cnes
+  Cos
+  Cuos
+  Ceqd
+  Cged
+  Cgtd
+  Cled
+  Cltd
+  Cned
+  Cod
+  Cuod
+  Storeb
+  Storeh
+  Storew
+  Storel
+  Stores
+  Stored
+  Loadsb
+  Loadub
+  Loadsh
+  Loaduh
+  Loadsw
+  Loaduw
+  Load
+  Extsb
+  Extub
+  Extsh
+  Extuh
+  Extsw
+  Extuw
+  Exts
+  Truncd
+  Stosi
+  Dtosi
+  Swtof
+  Sltof
+  Cast
+  Alloc4
+  Alloc8
+  Alloc16
+  Vaarg
+  Vastart
+  Copy
+  Nop
+  Addr
+  Swap
+  Sign
+  Salloc
+  Xidiv
+  Xdiv
+  Xcmp
+  Xtest
+  Acmp
+  Acmn
+  Afcmp
+  Par
+  Parc
+  Pare
+  Arg
+  Argc
+  Arge
+  Call
+  Vacall
+  Flagieq
+  Flagine
+  Flagisge
+  Flagisgt
+  Flagisle
+  Flagislt
+  Flagiuge
+  Flagiugt
+  Flagiule
+  Flagiult
+  Flagfeq
+  Flagfge
+  Flagfgt
+  Flagfle
+  Flagflt
+  Flagfne
+  Flagfo
+  Flagfuo
+} derive(Eq, @debug.Debug)
+pub fn Op::name(Self) -> String
+
+pub(all) struct OpInfo {
+  name : String
+  a0 : Array[Int]
+  a1 : Array[Int]
+  canfold : Bool
+  nmem : Int
+  zf : Int
+  lf : Int
+} derive(@debug.Debug)
+
+pub(all) struct Phi {
+  mut cls : Class
+  mut to : Ref
+  args : Array[PhiArg]
+} derive(@debug.Debug)
+pub fn Phi::new(Ref, Class) -> Self
+
+pub(all) struct PhiArg {
+  mut value : Ref
+  blk_id : Int
+} derive(@debug.Debug)
+
+pub(all) enum Ref {
+  RNone
+  RTmp(Int)
+  RCon(Int)
+  RType(Int)
+  RSlot(Int)
+  RCall(Int)
+  RMem(Int)
+} derive(Eq, @debug.Debug)
+pub fn Ref::call(Int) -> Self
+pub fn Ref::con(Int) -> Self
+pub fn Ref::con_val(Self) -> Int
+pub fn Ref::is_con(Self) -> Bool
+pub fn Ref::is_none(Self) -> Bool
+pub fn Ref::is_tmp(Self) -> Bool
+pub fn Ref::mem(Int) -> Self
+pub fn Ref::slot(Int) -> Self
+pub fn Ref::tmp(Int) -> Self
+pub fn Ref::tmp_val(Self) -> Int
+pub fn Ref::typ(Int) -> Self
+
+pub(all) struct RegHint {
+  r : Int
+  w : Int
+  m : UInt64
+} derive(@debug.Debug)
+pub fn RegHint::default() -> Self
+
+pub(all) struct Tmp {
+  name : String
+  uses : Array[Use]
+  mut ndef : Int
+  mut nuse : Int
+  mut cost : Int
+  mut slot : Int
+  mut cls : Class
+  mut hint : RegHint
+  mut is_phi : Int
+  mut alias_info : AliasInfo
+  mut width : TmpWidth
+  mut visit : Int
+} derive(@debug.Debug)
+pub fn Tmp::new(String, Class) -> Self
+
+pub(all) enum TmpWidth {
+  WFull
+  Wsb
+  Wub
+  Wsh
+  Wuh
+  Wsw
+  Wuw
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Typ {
+  mut name : String
+  mut dark : Int
+  mut align : Int
+  mut size : Int64
+  mut nunion : Int
+  fields : Array[Field]
+} derive(@debug.Debug)
+pub fn Typ::new(String) -> Self
+
+pub(all) struct Use {
+  kind : UseKind
+  blk_id : Int
+  ins_idx : Int
+  arg_num : Int
+} derive(@debug.Debug)
+
+pub(all) enum UseKind {
+  UXXX
+  UPhi
+  UIns
+  UJmp
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+pub type BlkId = Int
+
+// Traits
+
