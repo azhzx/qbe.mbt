@@ -1,0 +1,9 @@
+# integer/float addition, class d, constant operands (constant folded)
+
+export
+function d $add_d_const() {
+@start
+	%r =d add d_0.5, d_1.5
+	ret %r
+}
+

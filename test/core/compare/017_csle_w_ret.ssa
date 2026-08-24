@@ -1,0 +1,9 @@
+# comparison csle, class w, result returned (setcc path)
+
+export
+function w $csle_w_ret(w %a, w %b) {
+@start
+	%c =w csle %a, %b
+	ret %c
+}
+

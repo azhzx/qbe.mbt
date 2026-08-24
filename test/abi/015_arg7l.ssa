@@ -1,0 +1,20 @@
+# 7 long arguments
+
+export
+function l $callee7(l %a0, l %a1, l %a2, l %a3, l %a4, l %a5, l %a6) {
+@start
+	%r =l add %a0, 0
+	%r =l add %r, %a1
+	%r =l add %r, %a2
+	%r =l add %r, %a3
+	%r =l add %r, %a4
+	%r =l add %r, %a5
+	%r =l add %r, %a6
+	ret %r
+}
+function l $test() {
+@start
+	%r =l call $callee7(l 1, l 2, l 3, l 4, l 5, l 6, l 7)
+	ret %r
+}
+

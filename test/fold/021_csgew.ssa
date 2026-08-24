@@ -1,0 +1,9 @@
+# constant folding of comparison csgew
+
+export
+function w $fold_csgew() {
+@start
+	%r =w csgew 1, 2
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# large immediate operands in sub (class w)
+
+export
+function w $test(w %x) {
+@start
+	%r =w sub 0, %x
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# bitwise xor, class l, register operands (reaches isel/emit)
+
+export
+function l $xor_l_reg(l %a, l %b) {
+@start
+	%r =l xor %a, %b
+	ret %r
+}
+

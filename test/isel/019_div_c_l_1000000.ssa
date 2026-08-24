@@ -1,0 +1,9 @@
+# division by constant 1000000 (class l)
+
+export
+function l $test(l %x) {
+@start
+	%r =l div %x, 1000000
+	ret %r
+}
+

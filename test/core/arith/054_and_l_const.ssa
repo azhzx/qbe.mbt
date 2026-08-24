@@ -1,0 +1,9 @@
+# bitwise and, class l, constant operands (constant folded)
+
+export
+function l $and_l_const() {
+@start
+	%r =l and 5000000000, 4000000000
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# truncd (d -> s)
+
+export
+function s $truncd_ds(d %a) {
+@start
+	%r =s truncd %a
+	ret %r
+}
+

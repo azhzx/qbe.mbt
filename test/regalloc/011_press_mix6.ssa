@@ -1,0 +1,32 @@
+# 6 words and 6 doubles simultaneously live
+
+export
+function w $test(w %xi0, w %xi1, w %xi2, w %xi3, w %xi4, w %xi5, d %xf0, d %xf1, d %xf2, d %xf3, d %xf4, d %xf5) {
+@start
+	%ti0 =w add %xi0, 0
+	%tf0 =d add %xf0, d_0.0
+	%ti1 =w add %xi1, 0
+	%tf1 =d add %xf1, d_0.0
+	%ti2 =w add %xi2, 0
+	%tf2 =d add %xf2, d_0.0
+	%ti3 =w add %xi3, 0
+	%tf3 =d add %xf3, d_0.0
+	%ti4 =w add %xi4, 0
+	%tf4 =d add %xf4, d_0.0
+	%ti5 =w add %xi5, 0
+	%tf5 =d add %xf5, d_0.0
+	%r =w add %ti0, %ti1
+	%r =w add %r, %ti2
+	%r =w add %r, %ti3
+	%r =w add %r, %ti4
+	%r =w add %r, %ti5
+	%rd =d add %tf0, %tf1
+	%rd =d add %rd, %tf2
+	%rd =d add %rd, %tf3
+	%rd =d add %rd, %tf4
+	%rd =d add %rd, %tf5
+	%ri =w dtosi %rd
+	%r =w add %r, %ri
+	ret %r
+}
+

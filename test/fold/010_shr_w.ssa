@@ -1,0 +1,9 @@
+# constant folding of shr (-16 op 2) in class w
+
+export
+function w $fold_shr_w() {
+@start
+	%r =w shr -16, 2
+	ret %r
+}
+

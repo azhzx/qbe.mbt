@@ -1,0 +1,9 @@
+# comparison cugt, class w, result returned (setcc path)
+
+export
+function w $cugt_w_ret(w %a, w %b) {
+@start
+	%c =w cugt %a, %b
+	ret %c
+}
+

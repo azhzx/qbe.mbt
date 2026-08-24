@@ -1,0 +1,11 @@
+# single-precision fp constants
+
+export
+function s $test(w %n) {
+@start
+	%r =s copy s_0.5
+	%r =s add %r, s_1.5
+	%r =s mul %r, s_3.25
+	ret %r
+}
+

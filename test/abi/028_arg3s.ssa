@@ -1,0 +1,16 @@
+# 3 single arguments
+
+export
+function s $callee3(s %f0, s %f1, s %f2) {
+@start
+	%r =s add %f0, s_0.0
+	%r =s add %r, %f1
+	%r =s add %r, %f2
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee3(s s_0.5, s s_1.5, s s_2.5)
+	ret %r
+}
+

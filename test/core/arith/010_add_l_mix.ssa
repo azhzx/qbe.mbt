@@ -1,0 +1,9 @@
+# integer/float addition, class l, one constant one register operand
+
+export
+function l $add_l_mix(l %a) {
+@start
+	%r =l add 9223372036854775807, %a
+	ret %r
+}
+

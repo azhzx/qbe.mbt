@@ -1,0 +1,31 @@
+# 12 simultaneously live double temporaries
+
+export
+function d $test(d %x0, d %x1, d %x2, d %x3, d %x4, d %x5, d %x6, d %x7, d %x8, d %x9, d %x10, d %x11) {
+@start
+	%t0 =d add %x0, d_0.0
+	%t1 =d add %x1, d_0.0
+	%t2 =d add %x2, d_0.0
+	%t3 =d add %x3, d_0.0
+	%t4 =d add %x4, d_0.0
+	%t5 =d add %x5, d_0.0
+	%t6 =d add %x6, d_0.0
+	%t7 =d add %x7, d_0.0
+	%t8 =d add %x8, d_0.0
+	%t9 =d add %x9, d_0.0
+	%t10 =d add %x10, d_0.0
+	%t11 =d add %x11, d_0.0
+	%r =d add %t0, %t1
+	%r =d add %r, %t2
+	%r =d add %r, %t3
+	%r =d add %r, %t4
+	%r =d add %r, %t5
+	%r =d add %r, %t6
+	%r =d add %r, %t7
+	%r =d add %r, %t8
+	%r =d add %r, %t9
+	%r =d add %r, %t10
+	%r =d add %r, %t11
+	ret %r
+}
+

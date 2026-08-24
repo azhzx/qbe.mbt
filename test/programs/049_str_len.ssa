@@ -1,0 +1,20 @@
+# string length
+
+data $s = { b "hello", b 0 }
+export
+function w $len(l %s) {
+@start
+	%n = %nw copy 0
+@loop
+	%n2 =w phi @start %n, @body %n3
+	%p2 =l phi @start %s, @body %p3
+	%ch = %chw loadub %p2
+	%c = %cw ceqw %ch, 0
+	jnz %c, @done, @body
+@body
+	%n3 = %n3w add %n2, 1
+	%p3 = %p3l add %p2, 1
+	jmp @loop
+@done
+	ret %n2
+}

@@ -1,0 +1,27 @@
+# variadic function using vaarg to scan fixed + variadic args
+
+function w $vf(w %n, ...) {
+@start
+	%ap =l alloc8 40
+	vastart %ap
+	%r =w copy 0
+	%i =w copy 0
+@loop
+	%i2 =w phi @start %i, @body %i3
+	%r2 =w phi @start %r, @body %r3
+	%cmp =w csltw %i2, %n
+	jnz %cmp, @body, @end
+@body
+	%v =w vaarg %ap
+	%r3 =w add %r2, %v
+	%i3 =w add %i2, 1
+	jmp @loop
+@end
+	ret %r2
+}
+function w $test() {
+@start
+	%r =w call $vf(w 3, w 1, w 2, w 3)
+	ret %r
+}
+

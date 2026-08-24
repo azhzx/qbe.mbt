@@ -1,0 +1,13 @@
+# dynamic alloc requires a runtime frame adjustment on return
+
+export
+function l $test(l %n) {
+@start
+	%a =l alloc4 %n
+	storel 1, %a
+	%b =l add 8, %a
+	storel 2, %b
+	%r =l load %b
+	ret %r
+}
+

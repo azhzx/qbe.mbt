@@ -1,0 +1,14 @@
+# 1 double arguments (8 XMM, the rest on the stack)
+
+export
+function d $callee1(d %f0) {
+@start
+	%r =d add %f0, d_0.0
+	ret %r
+}
+function d $test() {
+@start
+	%r =d call $callee1(d d_0.5)
+	ret %r
+}
+

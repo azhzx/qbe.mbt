@@ -1,0 +1,32 @@
+# a function with several blocks exercising label/fall-through logic
+
+export
+function w $test(w %n) {
+@start
+	%i =w copy 0
+@b0
+	%i1 =w phi @start %i, @b3 %i2
+	%a1 =w phi @start 0, @b3 %a3
+	%c0 =w ceqw %i1, 0
+	jnz %c0, @b1, @b2
+@b1
+	%a2 =w add %a1, 1
+	jmp @b3
+@b2
+	%c1 =w csgtw %i1, %n
+	jnz %c1, @b4, @b5
+@b4
+	%a4 =w sub %a1, 1
+	jmp @b3
+@b5
+	%a5 =w add %a1, %n
+	jmp @b3
+@b3
+	%a3 =w phi @b1 %a2, @b4 %a4, @b5 %a5
+	%i2 =w add %i1, 1
+	%c2 =w csltw %i2, 10
+	jnz %c2, @b0, @end
+@end
+	ret %a3
+}
+

@@ -1,0 +1,9 @@
+# constant folding of udiv (-100 op 7) in class w
+
+export
+function w $fold_udiv_w() {
+@start
+	%r =w udiv -100, 7
+	ret %r
+}
+

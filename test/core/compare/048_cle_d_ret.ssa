@@ -1,0 +1,9 @@
+# float comparison cle, class d, result returned
+
+export
+function w $cle_d_ret(d %a, d %b) {
+@start
+	%c =w cle %a, %b
+	ret %c
+}
+

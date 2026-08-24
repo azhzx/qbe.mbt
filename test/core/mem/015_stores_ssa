@@ -1,0 +1,11 @@
+# stores then reload from a local alloc
+
+export
+function s $stores(s %v) {
+@start
+	%a =l alloc4 16
+	stores %v, %a
+	%r =s load %a
+	ret %r
+}
+

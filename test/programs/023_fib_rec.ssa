@@ -1,0 +1,17 @@
+# recursive fibonacci: fib(10) = 55
+
+export
+function w $fib(w %n) {
+@start
+	%c = %cw csgtw %n, 1
+	jnz %c, @rec, @base
+@base
+	ret %n
+@rec
+	%a = %aw sub %n, 1
+	%b = %bw sub %n, 2
+	%r1 = %r1w call $fib(w %a)
+	%r2 = %r2w call $fib(w %b)
+	%res = %resw add %r1, %r2
+	ret %res
+}

@@ -1,0 +1,25 @@
+# find first occurrence of a byte in a string
+
+data $s = { b "hello world", b 0 }
+export
+function l $find(l %s, w %target) {
+@start
+	%i = %il copy 0
+@loop
+	%i2 =l phi @start %i, @next %i3
+	%p2 =l phi @start %s, @next %p3
+	%ch = %chw loadub %p2
+	%c = %cw ceqw %ch, 0
+	jnz %c, @notfound, @chk
+@chk
+	%c2 = %c2w ceqw %ch, %target
+	jnz %c2, @found, @next
+@next
+	%i3 = %i3l add %i2, 1
+	%p3 = %p3l add %p2, 1
+	jmp @loop
+@found
+	ret %i2
+@notfound
+	ret -1
+}

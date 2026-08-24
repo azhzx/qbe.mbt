@@ -1,0 +1,24 @@
+# reverse the 32 bits of a word
+
+export
+function w $revb(w %x) {
+@start
+	%r = %rw copy 0
+	%i = %iw copy 0
+	%xv = %xvw copy %x
+@loop
+	%r2 =w phi @start %r, @body %r3.2
+	%i2 =w phi @start %i, @body %i3
+	%x2 =w phi @start %xv, @body %x3
+	%c = %cw csltw %i2, 32
+	jnz %c, @body, @done
+@body
+	%r3 = %r3w shl %r2, 1
+	%bit = %bitw and %x2, 1
+	%r3 = %r3.2w or %r3, %bit
+	%x3 = %x3w shr %x2, 1
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@done
+	ret %r2
+}

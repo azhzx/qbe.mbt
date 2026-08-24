@@ -66,7 +66,7 @@ fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int {
   match fn_.cons[r.con_val()].kind {
     @types.CAddr => 0
     @types.CBits => {
-      let val = fn_.cons[r.con_val()].bits.i
+      let val = @types.con_raw_bits(fn_.cons[r.con_val()])
       if val < -2147483648L || val > 2147483647L {
         1
       } else {

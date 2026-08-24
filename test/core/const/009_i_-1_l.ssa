@@ -1,0 +1,9 @@
+# large immediate -1 in class l (noimm path)
+
+export
+function l $const_-1() {
+@start
+	%r =l copy -1
+	ret %r
+}
+

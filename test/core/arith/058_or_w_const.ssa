@@ -1,0 +1,9 @@
+# bitwise or, class w, constant operands (constant folded)
+
+export
+function w $or_w_const() {
+@start
+	%r =w or 2000000000, 2000000000
+	ret %r
+}
+

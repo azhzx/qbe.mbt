@@ -1,0 +1,14 @@
+# variadic function with no varargs passed
+
+function w $vf(w %n, ...) {
+@start
+	%ap =l alloc8 40
+	vastart %ap
+	ret %n
+}
+function w $test() {
+@start
+	%r =w call $vf(w 7)
+	ret %r
+}
+

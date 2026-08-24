@@ -1,0 +1,13 @@
+# a non-exported function (no .globl)
+
+function w $helper(w %a) {
+@start
+	%r =w mul %a, 3
+	ret %r
+}
+function w $test(w %a) {
+@start
+	%r =w call $helper(w %a)
+	ret %r
+}
+

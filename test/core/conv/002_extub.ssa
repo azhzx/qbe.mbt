@@ -1,0 +1,9 @@
+# extub (w -> w)
+
+export
+function w $extub(w %a) {
+@start
+	%r =w extub %a
+	ret %r
+}
+

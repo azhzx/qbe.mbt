@@ -1,0 +1,9 @@
+# integer/float addition, class s, register operands (reaches isel/emit)
+
+export
+function s $add_s_reg(s %a, s %b) {
+@start
+	%r =s add %a, %b
+	ret %r
+}
+

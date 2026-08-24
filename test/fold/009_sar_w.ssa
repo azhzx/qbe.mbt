@@ -1,0 +1,9 @@
+# constant folding of sar (-16 op 2) in class w
+
+export
+function w $fold_sar_w() {
+@start
+	%r =w sar -16, 2
+	ret %r
+}
+

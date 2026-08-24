@@ -1,0 +1,9 @@
+# integer remainder, class l, register operands (reaches isel/emit)
+
+export
+function l $rem_l_reg(l %a, l %b) {
+@start
+	%r =l rem %a, %b
+	ret %r
+}
+

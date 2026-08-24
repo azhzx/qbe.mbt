@@ -1,0 +1,9 @@
+# extuw (w -> l)
+
+export
+function l $extuw(w %a) {
+@start
+	%r =l extuw %a
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# integer remainder, class w, register operands (reaches isel/emit)
+
+export
+function w $rem_w_reg(w %a, w %b) {
+@start
+	%r =w rem %a, %b
+	ret %r
+}
+

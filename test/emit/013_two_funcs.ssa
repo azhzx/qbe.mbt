@@ -1,0 +1,15 @@
+# two functions in one file (block labels keep a global counter)
+
+function w $f1(w %a) {
+@start
+	%r =w add %a, 1
+	ret %r
+}
+export
+function w $f2(w %a, w %b) {
+@start
+	%x =w add %a, %b
+	%y =w call $f1(w %x)
+	ret %y
+}
+

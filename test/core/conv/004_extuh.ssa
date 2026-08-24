@@ -1,0 +1,9 @@
+# extuh (w -> w)
+
+export
+function w $extuh(w %a) {
+@start
+	%r =w extuh %a
+	ret %r
+}
+

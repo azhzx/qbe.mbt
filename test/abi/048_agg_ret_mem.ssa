@@ -1,0 +1,22 @@
+# large aggregate returned via hidden pointer
+
+type :t32 = { b 32 }
+export
+function :t32 $callee() {
+@start
+	%a =l alloc4 40
+	storeb 1, %a
+	%r =l add 31, %a
+	storeb 2, %r
+	ret %a
+}
+function w $test() {
+@start
+	%p =l call $callee()
+	%a =w loadub %p
+	%r =l add 31, %p
+	%b =w loadub %r
+	%c =w add %a, %b
+	ret %c
+}
+

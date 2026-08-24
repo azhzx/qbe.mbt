@@ -1,0 +1,9 @@
+# comparison cuge, class l, result returned (setcc path)
+
+export
+function w $cuge_l_ret(l %a, l %b) {
+@start
+	%c =w cuge %a, %b
+	ret %c
+}
+

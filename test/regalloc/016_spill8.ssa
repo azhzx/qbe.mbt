@@ -1,0 +1,47 @@
+# 8 values live across many instructions (spill stress)
+
+export
+function w $test(w %x0, w %x1, w %x2, w %x3, w %x4, w %x5, w %x6, w %x7) {
+@start
+	%v0 =w add %x0, 0
+	%v1 =w add %x1, 0
+	%v2 =w add %x2, 0
+	%v3 =w add %x3, 0
+	%v4 =w add %x4, 0
+	%v5 =w add %x5, 0
+	%v6 =w add %x6, 0
+	%v7 =w add %x7, 0
+	%t =w add %v0, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v1, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v2, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v3, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v4, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v5, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v6, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%t =w add %v7, 1
+	%t =w mul %t, 2
+	%t =w sub %t, 1
+	%r =w add %v0, %v1
+	%r =w add %r, %v2
+	%r =w add %r, %v3
+	%r =w add %r, %v4
+	%r =w add %r, %v5
+	%r =w add %r, %v6
+	%r =w add %r, %v7
+	ret %r
+}
+

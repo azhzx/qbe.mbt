@@ -1,0 +1,9 @@
+# constant folding of add (9223372036854775807 op 1) in class l
+
+export
+function l $fold_add_l() {
+@start
+	%r =l add 9223372036854775807, 1
+	ret %r
+}
+

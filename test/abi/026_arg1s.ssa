@@ -1,0 +1,14 @@
+# 1 single arguments
+
+export
+function s $callee1(s %f0) {
+@start
+	%r =s add %f0, s_0.0
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee1(s s_0.5)
+	ret %r
+}
+

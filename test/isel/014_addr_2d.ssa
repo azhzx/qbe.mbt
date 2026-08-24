@@ -1,0 +1,15 @@
+# two-level addressing: base + i*8 + j*4
+
+export
+function w $test(w %v, l %i, l %j) {
+@start
+	%a =l alloc16 128
+	%s =l mul 8, %i
+	%b =l add %a, %s
+	%t =l mul 4, %j
+	%c =l add %b, %t
+	storew %v, %c
+	%r =w load %c
+	ret %r
+}
+

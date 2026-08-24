@@ -1,0 +1,11 @@
+# storeb then reload from a local alloc
+
+export
+function w $storeb(w %v) {
+@start
+	%a =l alloc4 16
+	storeb %v, %a
+	%r =w load %a
+	ret %r
+}
+

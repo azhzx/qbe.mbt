@@ -1,0 +1,9 @@
+# arithmetic shift right, class w, one constant one register operand
+
+export
+function w $sar_w_mix(w %a) {
+@start
+	%r =w sar 2147483647, %a
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# division by constant 3 (class w)
+
+export
+function w $test(w %x) {
+@start
+	%r =w div %x, 3
+	ret %r
+}
+

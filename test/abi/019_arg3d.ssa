@@ -1,0 +1,16 @@
+# 3 double arguments (8 XMM, the rest on the stack)
+
+export
+function d $callee3(d %f0, d %f1, d %f2) {
+@start
+	%r =d add %f0, d_0.0
+	%r =d add %r, %f1
+	%r =d add %r, %f2
+	ret %r
+}
+function d $test() {
+@start
+	%r =d call $callee3(d d_0.5, d d_1.5, d d_2.5)
+	ret %r
+}
+

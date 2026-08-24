@@ -1,0 +1,34 @@
+# longest collatz sequence under n
+
+export
+function w $cmax(w %n) {
+@start
+	%best = %bestw copy 0
+	%bestn = %bestnw copy 0
+	%i = %iw copy 1
+@loop
+	%i2 =w phi @start %i, @join %i3
+	%best2 =w phi @start %best, @join %best3
+	%bestn2 =w phi @start %bestn, @join %bestn3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%len = %lenw call $clen(w %i2)
+	%c2 = %c2w csgtw %len, %best2
+	jnz %c2, @new, @skip
+@new
+	%bn = %bnw copy %len
+	%bnn = %bnnw copy %i2
+	jmp @join
+@skip
+	%bn = %bn.2w copy %best2
+	%bnn = %bnn.2w copy %bestn2
+	jmp @join
+@join
+	%best3 =w phi @new %bn, @skip %bn.2
+	%bestn3 =w phi @new %bnn, @skip %bnn.2
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	ret %bestn2
+}

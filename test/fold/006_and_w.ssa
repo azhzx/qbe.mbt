@@ -1,0 +1,9 @@
+# constant folding of and (4294967295 op 4294901760) in class w
+
+export
+function w $fold_and_w() {
+@start
+	%r =w and 4294967295, 4294901760
+	ret %r
+}
+

@@ -200,7 +200,7 @@ fn emitcon(st : EmitState, con : @types.Con) -> Unit {
         st.sb.write_string(s64_plus(con.bits.i))
       }
     }
-    @types.CBits => st.sb.write_string(con.bits.i.to_string())
+    @types.CBits => st.sb.write_string(@types.con_raw_bits(con).to_string())
     _ => abort("unreachable")
   }
 }
@@ -450,7 +450,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit {
         ins.arg1.is_con() &&
         ins.cls == @types.Kl &&
         st.fn_.cons[ins.arg1.con_val()].kind == @types.CBits {
-        let val = st.fn_.cons[ins.arg1.con_val()].bits.i
+        let val = @types.con_raw_bits(st.fn_.cons[ins.arg1.con_val()])
         if val >= 0L && val <= 4294967295L {
           emitf(st, "movl %W0, %W=", ins)
         } else {

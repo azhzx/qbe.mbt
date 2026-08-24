@@ -1,0 +1,9 @@
+# extsb (w -> w)
+
+export
+function w $extsb(w %a) {
+@start
+	%r =w extsb %a
+	ret %r
+}
+

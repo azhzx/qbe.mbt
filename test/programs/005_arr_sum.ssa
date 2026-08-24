@@ -1,0 +1,24 @@
+# sum of an array: 10+20+30+40 = 100
+
+data $arr = { l 10, l 20, l 30, l 40 }
+export
+function l $sum(w %n) {
+@start
+	%s = %sl copy 0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @body %i3
+	%s2 =l phi @start %s, @body %s3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%idx = %idxl extsw %i2
+	%off = %offl mul 8, %idx
+	%p = %pl add $arr, %off
+	%v = %vl load %p
+	%s3 = %s3l add %s2, %v
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	ret %s2
+}

@@ -1,0 +1,9 @@
+# constant folding of rem (100 op 7) in class w
+
+export
+function w $fold_rem_w() {
+@start
+	%r =w rem 100, 7
+	ret %r
+}
+

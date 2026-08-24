@@ -1,0 +1,10 @@
+# data section with strings and a newline escape
+
+data $s = { b "hello\n", b 0 }
+data $s2 = { b "tab\there", b 0 }
+export
+function w $test() {
+@start
+	ret 0
+}
+

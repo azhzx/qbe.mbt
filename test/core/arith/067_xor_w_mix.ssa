@@ -1,0 +1,9 @@
+# bitwise xor, class w, one constant one register operand
+
+export
+function w $xor_w_mix(w %a) {
+@start
+	%r =w xor 2147483647, %a
+	ret %r
+}
+

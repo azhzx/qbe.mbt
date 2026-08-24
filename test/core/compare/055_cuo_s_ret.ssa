@@ -1,0 +1,9 @@
+# float comparison cuo, class s, result returned
+
+export
+function w $cuo_s_ret(s %a, s %b) {
+@start
+	%c =w cuo %a, %b
+	ret %c
+}
+

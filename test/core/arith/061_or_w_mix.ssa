@@ -1,0 +1,9 @@
+# bitwise or, class w, one constant one register operand
+
+export
+function w $or_w_mix(w %a) {
+@start
+	%r =w or 2147483647, %a
+	ret %r
+}
+

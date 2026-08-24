@@ -1,0 +1,9 @@
+# fp constant s_-1e8 in class s
+
+export
+function s $fconst_24() {
+@start
+	%r =s copy s_-1e8
+	ret %r
+}
+

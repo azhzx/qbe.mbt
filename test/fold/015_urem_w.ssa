@@ -1,0 +1,9 @@
+# constant folding of urem (-100 op 7) in class w
+
+export
+function w $fold_urem_w() {
+@start
+	%r =w urem -100, 7
+	ret %r
+}
+

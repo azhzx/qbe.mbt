@@ -1,0 +1,21 @@
+# leap year test
+
+export
+function w $leap(w %y) {
+@start
+	%m4 = %m4w rem %y, 4
+	%c4 = %c4w ceqw %m4, 0
+	jnz %c4, @by4, @no
+@by4
+	%m100 = %m100w rem %y, 100
+	%c100 = %c100w ceqw %m100, 0
+	jnz %c100, @by100, @yes
+@by100
+	%m400 = %m400w rem %y, 400
+	%c400 = %c400w ceqw %m400, 0
+	jnz %c400, @yes, @no
+@yes
+	ret 1
+@no
+	ret 0
+}

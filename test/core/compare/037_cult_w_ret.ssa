@@ -1,0 +1,9 @@
+# comparison cult, class w, result returned (setcc path)
+
+export
+function w $cult_w_ret(w %a, w %b) {
+@start
+	%c =w cult %a, %b
+	ret %c
+}
+

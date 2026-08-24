@@ -1,0 +1,9 @@
+# constant folding of xor (2863311530 op 1431655765) in class w
+
+export
+function w $fold_xor_w() {
+@start
+	%r =w xor 2863311530, 1431655765
+	ret %r
+}
+

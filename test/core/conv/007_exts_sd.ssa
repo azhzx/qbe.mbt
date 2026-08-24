@@ -1,0 +1,9 @@
+# exts (s -> d)
+
+export
+function d $exts_sd(s %a) {
+@start
+	%r =d exts %a
+	ret %r
+}
+

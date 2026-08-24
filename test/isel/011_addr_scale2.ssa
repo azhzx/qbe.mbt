@@ -1,0 +1,13 @@
+# base + index * 2 addressing
+
+export
+function w $test(w %v, l %i) {
+@start
+	%a =l alloc16 64
+	%s =l mul 2, %i
+	%b =l add %a, %s
+	storew %v, %b
+	%r =w load %b
+	ret %r
+}
+

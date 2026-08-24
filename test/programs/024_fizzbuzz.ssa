@@ -1,0 +1,32 @@
+# sum of multiples of 3 or 5 below n
+
+export
+function w $fizz(w %n) {
+@start
+	%sum = %sumw copy 0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @join %i3
+	%sum2 =w phi @start %sum, @join %sum3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%m3 = %m3w rem %i2, 3
+	%m5 = %m5w rem %i2, 5
+	%c3 = %c3w ceqw %m3, 0
+	%c5 = %c5w ceqw %m5, 0
+	%m = %mw or %c3, %c5
+	jnz %m, @add, @skip
+@add
+	%sa = %saw add %sum2, %i2
+	jmp @join
+@skip
+	%ss = %ssw copy %sum2
+	jmp @join
+@join
+	%sum3 =w phi @add %sa, @skip %ss
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	ret %sum2
+}

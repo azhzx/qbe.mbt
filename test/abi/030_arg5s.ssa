@@ -1,0 +1,18 @@
+# 5 single arguments
+
+export
+function s $callee5(s %f0, s %f1, s %f2, s %f3, s %f4) {
+@start
+	%r =s add %f0, s_0.0
+	%r =s add %r, %f1
+	%r =s add %r, %f2
+	%r =s add %r, %f3
+	%r =s add %r, %f4
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee5(s s_0.5, s s_1.5, s s_2.5, s s_3.5, s s_4.5)
+	ret %r
+}
+

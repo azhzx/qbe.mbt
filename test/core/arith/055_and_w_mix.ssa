@@ -1,0 +1,9 @@
+# bitwise and, class w, one constant one register operand
+
+export
+function w $and_w_mix(w %a) {
+@start
+	%r =w and 2147483647, %a
+	ret %r
+}
+

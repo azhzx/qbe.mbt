@@ -1,0 +1,9 @@
+# integer/float addition, class l, constant operands (constant folded)
+
+export
+function l $add_l_const() {
+@start
+	%r =l add 5000000000, 4000000000
+	ret %r
+}
+

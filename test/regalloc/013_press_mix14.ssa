@@ -1,0 +1,64 @@
+# 14 words and 14 doubles simultaneously live
+
+export
+function w $test(w %xi0, w %xi1, w %xi2, w %xi3, w %xi4, w %xi5, w %xi6, w %xi7, w %xi8, w %xi9, w %xi10, w %xi11, w %xi12, w %xi13, d %xf0, d %xf1, d %xf2, d %xf3, d %xf4, d %xf5, d %xf6, d %xf7, d %xf8, d %xf9, d %xf10, d %xf11, d %xf12, d %xf13) {
+@start
+	%ti0 =w add %xi0, 0
+	%tf0 =d add %xf0, d_0.0
+	%ti1 =w add %xi1, 0
+	%tf1 =d add %xf1, d_0.0
+	%ti2 =w add %xi2, 0
+	%tf2 =d add %xf2, d_0.0
+	%ti3 =w add %xi3, 0
+	%tf3 =d add %xf3, d_0.0
+	%ti4 =w add %xi4, 0
+	%tf4 =d add %xf4, d_0.0
+	%ti5 =w add %xi5, 0
+	%tf5 =d add %xf5, d_0.0
+	%ti6 =w add %xi6, 0
+	%tf6 =d add %xf6, d_0.0
+	%ti7 =w add %xi7, 0
+	%tf7 =d add %xf7, d_0.0
+	%ti8 =w add %xi8, 0
+	%tf8 =d add %xf8, d_0.0
+	%ti9 =w add %xi9, 0
+	%tf9 =d add %xf9, d_0.0
+	%ti10 =w add %xi10, 0
+	%tf10 =d add %xf10, d_0.0
+	%ti11 =w add %xi11, 0
+	%tf11 =d add %xf11, d_0.0
+	%ti12 =w add %xi12, 0
+	%tf12 =d add %xf12, d_0.0
+	%ti13 =w add %xi13, 0
+	%tf13 =d add %xf13, d_0.0
+	%r =w add %ti0, %ti1
+	%r =w add %r, %ti2
+	%r =w add %r, %ti3
+	%r =w add %r, %ti4
+	%r =w add %r, %ti5
+	%r =w add %r, %ti6
+	%r =w add %r, %ti7
+	%r =w add %r, %ti8
+	%r =w add %r, %ti9
+	%r =w add %r, %ti10
+	%r =w add %r, %ti11
+	%r =w add %r, %ti12
+	%r =w add %r, %ti13
+	%rd =d add %tf0, %tf1
+	%rd =d add %rd, %tf2
+	%rd =d add %rd, %tf3
+	%rd =d add %rd, %tf4
+	%rd =d add %rd, %tf5
+	%rd =d add %rd, %tf6
+	%rd =d add %rd, %tf7
+	%rd =d add %rd, %tf8
+	%rd =d add %rd, %tf9
+	%rd =d add %rd, %tf10
+	%rd =d add %rd, %tf11
+	%rd =d add %rd, %tf12
+	%rd =d add %rd, %tf13
+	%ri =w dtosi %rd
+	%r =w add %r, %ri
+	ret %r
+}
+

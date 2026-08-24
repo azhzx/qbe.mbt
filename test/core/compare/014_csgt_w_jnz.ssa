@@ -1,0 +1,13 @@
+# comparison csgt, class w, feeds jnz (seljmp path)
+
+export
+function w $csgt_w_jnz(w %a, w %b) {
+@start
+	%c =w csgt %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

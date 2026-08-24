@@ -1,0 +1,29 @@
+# reverse a string in place
+
+data $s = { b "abcdef", b 0 }
+export
+function w $rev(l %s) {
+@start
+	%n = %nw call $len(l %s)
+	%lo = %low copy 0
+	%hi = %hiw sub %n, 1
+@loop
+	%lo2 =w phi @start %lo, @body %lo3
+	%hi2 =w phi @start %hi, @body %hi3
+	%c = %cw csltw %lo2, %hi2
+	jnz %c, @body, @done
+@body
+	%loi = %loil extsw %lo2
+	%lp = %lpl add %s, %loi
+	%a = %aw loadub %lp
+	%hii = %hiil extsw %hi2
+	%hp = %hpl add %s, %hii
+	%b = %bw loadub %hp
+	storeb %b, %lp
+	storeb %a, %hp
+	%lo3 = %lo3w add %lo2, 1
+	%hi3 = %hi3w sub %hi2, 1
+	jmp @loop
+@done
+	ret 0
+}

@@ -1,0 +1,9 @@
+# logical shift right, class l, register operands (reaches isel/emit)
+
+export
+function l $shr_l_reg(l %a, l %b) {
+@start
+	%r =l shr %a, %b
+	ret %r
+}
+

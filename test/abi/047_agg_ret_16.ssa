@@ -1,0 +1,18 @@
+# 16-byte aggregate returned by value
+
+type :t16 = { l, l }
+export
+function :t16 $callee() {
+@start
+	%a =l alloc16 16
+	storel 10, %a
+	storel 20, 8(%a)
+	ret %a
+}
+function l $test() {
+@start
+	%p =l call $callee()
+	%r =l load 8(%p)
+	ret %r
+}
+

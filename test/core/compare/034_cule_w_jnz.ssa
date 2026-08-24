@@ -1,0 +1,13 @@
+# comparison cule, class w, feeds jnz (seljmp path)
+
+export
+function w $cule_w_jnz(w %a, w %b) {
+@start
+	%c =w cule %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

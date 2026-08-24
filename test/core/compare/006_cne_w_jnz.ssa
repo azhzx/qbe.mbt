@@ -1,0 +1,13 @@
+# comparison cne, class w, feeds jnz (seljmp path)
+
+export
+function w $cne_w_jnz(w %a, w %b) {
+@start
+	%c =w cne %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

@@ -1,0 +1,21 @@
+# two-word aggregate passed by value
+
+type :t16 = { l, l }
+export
+function l $callee(:t16 %p) {
+@start
+	%a =l load %p
+	%b =l load 8(%p)
+	%r =l add %a, %b
+	ret %r
+}
+function l $test() {
+@start
+	%a =l alloc16 16
+	storel 20, %a
+	%b =l add 8, %a
+	storel 22, %b
+	%r =l call $callee(:t16 %a)
+	ret %r
+}
+

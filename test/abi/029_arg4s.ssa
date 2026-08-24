@@ -1,0 +1,17 @@
+# 4 single arguments
+
+export
+function s $callee4(s %f0, s %f1, s %f2, s %f3) {
+@start
+	%r =s add %f0, s_0.0
+	%r =s add %r, %f1
+	%r =s add %r, %f2
+	%r =s add %r, %f3
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee4(s s_0.5, s s_1.5, s s_2.5, s s_3.5)
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# bitwise xor, class l, constant operands (constant folded)
+
+export
+function l $xor_l_const() {
+@start
+	%r =l xor 5000000000, 4000000000
+	ret %r
+}
+

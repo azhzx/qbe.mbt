@@ -1,0 +1,33 @@
+# maximum of an array of words
+
+data $arr = { w 3, w 7, w 1, w 9, w 4 }
+export
+function w $max(w %n) {
+@start
+	%m = %mw copy 0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @join %i3
+	%m2 =w phi @start %m, @join %m3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%idx = %idxl extsw %i2
+	%off = %offl mul 4, %idx
+	%p = %pl add $arr, %off
+	%v = %vw load %p
+	%c2 = %c2w csgtw %v, %m2
+	jnz %c2, @new, @keep
+@new
+	%mv = %mvw copy %v
+	jmp @join
+@keep
+	%mk = %mkw copy %m2
+	jmp @join
+@join
+	%m3 =w phi @new %mv, @keep %mk
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	ret %m2
+}

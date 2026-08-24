@@ -1,0 +1,9 @@
+# constant folding of add (s_1.5 op s_2.5) in class s
+
+export
+function s $fold_add_s() {
+@start
+	%r =s add s_1.5, s_2.5
+	ret %r
+}
+

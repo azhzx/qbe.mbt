@@ -1,0 +1,9 @@
+# gray code: n xor (n >> 1)
+
+export
+function w $gray(w %n) {
+@start
+	%s = %sw shr %n, 1
+	%r = %rw xor %n, %s
+	ret %r
+}

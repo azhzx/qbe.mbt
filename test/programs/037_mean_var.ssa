@@ -1,0 +1,26 @@
+# mean of an array of doubles (truncated to int)
+
+data $arr = { d 1.0, d 2.0, d 3.0, d 4.0 }
+export
+function w $stats(w %n) {
+@start
+	%sum = %sumd copy d_0.0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @body %i3
+	%sum2 =d phi @start %sum, @body %sum3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%idx = %idxl extsw %i2
+	%off = %offl mul 8, %idx
+	%p = %pl add $arr, %off
+	%v = %vd load %p
+	%sum3 = %sum3d add %sum2, %v
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	%mean = %meand div %sum2, d_4.0
+	%mi = %miw dtosi %mean
+	ret %mi
+}

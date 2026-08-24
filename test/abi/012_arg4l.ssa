@@ -1,0 +1,17 @@
+# 4 long arguments
+
+export
+function l $callee4(l %a0, l %a1, l %a2, l %a3) {
+@start
+	%r =l add %a0, 0
+	%r =l add %r, %a1
+	%r =l add %r, %a2
+	%r =l add %r, %a3
+	ret %r
+}
+function l $test() {
+@start
+	%r =l call $callee4(l 1, l 2, l 3, l 4)
+	ret %r
+}
+

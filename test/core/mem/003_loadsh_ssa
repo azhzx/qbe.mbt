@@ -1,0 +1,9 @@
+# loadsh from a parameter address
+
+export
+function w $loadsh(l %a) {
+@start
+	%r =w loadsh %a
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# sar by a variable count (routed through rcx)
+
+export
+function w $test(w %x, w %c) {
+@start
+	%r =w sar %x, %c
+	ret %r
+}
+

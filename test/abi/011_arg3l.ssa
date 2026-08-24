@@ -1,0 +1,16 @@
+# 3 long arguments
+
+export
+function l $callee3(l %a0, l %a1, l %a2) {
+@start
+	%r =l add %a0, 0
+	%r =l add %r, %a1
+	%r =l add %r, %a2
+	ret %r
+}
+function l $test() {
+@start
+	%r =l call $callee3(l 1, l 2, l 3)
+	ret %r
+}
+

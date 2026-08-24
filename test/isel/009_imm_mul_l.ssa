@@ -1,0 +1,9 @@
+# large immediate operands in mul (class l)
+
+export
+function l $test(l %x) {
+@start
+	%r =l mul 2147483647, %x
+	ret %r
+}
+

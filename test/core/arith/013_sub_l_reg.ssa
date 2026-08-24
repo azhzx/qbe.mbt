@@ -1,0 +1,9 @@
+# integer/float subtraction, class l, register operands (reaches isel/emit)
+
+export
+function l $sub_l_reg(l %a, l %b) {
+@start
+	%r =l sub %a, %b
+	ret %r
+}
+

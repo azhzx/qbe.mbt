@@ -1,0 +1,9 @@
+# float comparison cge, class s, result returned
+
+export
+function w $cge_s_ret(s %a, s %b) {
+@start
+	%c =w cge %a, %b
+	ret %c
+}
+

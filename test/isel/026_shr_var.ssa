@@ -1,0 +1,9 @@
+# shr by a variable count (routed through rcx)
+
+export
+function w $test(w %x, w %c) {
+@start
+	%r =w shr %x, %c
+	ret %r
+}
+

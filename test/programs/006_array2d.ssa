@@ -1,0 +1,14 @@
+# index a 4x4 matrix stored as a flat array
+
+data $mat = { w 1, w 2, w 3, w 4, w 5, w 6, w 7, w 8, w 9, w 10, w 11, w 12, w 13, w 14, w 15, w 16 }
+export
+function w $at(w %r, w %c) {
+@start
+	%row = %roww mul %r, 4
+	%idx = %idxw add %row, %c
+	%i = %il extsw %idx
+	%off = %offl mul 4, %i
+	%p = %pl add $mat, %off
+	%v = %vw load %p
+	ret %v
+}

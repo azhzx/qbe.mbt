@@ -1,0 +1,9 @@
+# constant folding of div (100 op 7) in class w
+
+export
+function w $fold_div_w() {
+@start
+	%r =w div 100, 7
+	ret %r
+}
+

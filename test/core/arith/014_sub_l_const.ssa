@@ -1,0 +1,9 @@
+# integer/float subtraction, class l, constant operands (constant folded)
+
+export
+function l $sub_l_const() {
+@start
+	%r =l sub 5000000000, 4000000000
+	ret %r
+}
+

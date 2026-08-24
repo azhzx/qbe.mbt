@@ -1,0 +1,9 @@
+# remainder by constant (class w)
+
+export
+function w $test(w %x) {
+@start
+	%r =w rem %x, 10
+	ret %r
+}
+

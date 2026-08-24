@@ -1,0 +1,11 @@
+# alloc with a runtime size (dynamic stack frame)
+
+export
+function l $test(l %n) {
+@start
+	%a =l alloc4 %n
+	storel 9, %a
+	%r =l load %a
+	ret %r
+}
+

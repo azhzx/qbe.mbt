@@ -1,0 +1,27 @@
+# nested loops with loop-carried accumulators
+
+export
+function w $test(w %n, w %m) {
+@start
+	%acc =w copy 0
+	%i =w copy 0
+@outer
+	%i2 =w phi @start %i, @outer2 %i4
+	%ao =w phi @start %acc, @outer2 %ao4
+	%j =w copy 0
+@inner
+	%j2 =w phi @outer %j, @inner %j3
+	%ai =w phi @outer %ao, @inner %ai3
+	%ai3 =w add %ai, 1
+	%j3 =w add %j2, 1
+	%jc =w csltw %j3, %m
+	jnz %jc, @inner, @outer2
+@outer2
+	%ao4 =w phi @inner %ai3
+	%i4 =w add %i2, 1
+	%ic =w csltw %i4, %n
+	jnz %ic, @outer, @end
+@end
+	ret %ao4
+}
+

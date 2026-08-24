@@ -1,0 +1,9 @@
+# logical shift right, class l, constant operands (constant folded)
+
+export
+function l $shr_l_const() {
+@start
+	%r =l shr 5000000000, 4000000000
+	ret %r
+}
+

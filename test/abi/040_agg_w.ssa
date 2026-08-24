@@ -1,0 +1,17 @@
+# 4-byte aggregate passed by value
+
+type :t4 = { w }
+export
+function w $callee(:t4 %p) {
+@start
+	%r =w load %p
+	ret %r
+}
+function w $test() {
+@start
+	%a =l alloc4 8
+	storew 42, %a
+	%r =w call $callee(:t4 %a)
+	ret %r
+}
+

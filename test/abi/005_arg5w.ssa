@@ -1,0 +1,18 @@
+# 5 word arguments (6 GPR, the rest on the stack)
+
+export
+function w $callee5(w %a0, w %a1, w %a2, w %a3, w %a4) {
+@start
+	%r =w add %a0, 0
+	%r =w add %r, %a1
+	%r =w add %r, %a2
+	%r =w add %r, %a3
+	%r =w add %r, %a4
+	ret %r
+}
+function w $test() {
+@start
+	%r =w call $callee5(w 1, w 2, w 3, w 4, w 5)
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# integer/float subtraction, class d, constant operands (constant folded)
+
+export
+function d $sub_d_const() {
+@start
+	%r =d sub d_0.5, d_1.5
+	ret %r
+}
+

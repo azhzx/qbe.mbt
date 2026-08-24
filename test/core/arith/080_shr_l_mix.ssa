@@ -1,0 +1,9 @@
+# logical shift right, class l, one constant one register operand
+
+export
+function l $shr_l_mix(l %a) {
+@start
+	%r =l shr 9223372036854775807, %a
+	ret %r
+}
+

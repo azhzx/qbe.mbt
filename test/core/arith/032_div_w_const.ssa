@@ -1,0 +1,9 @@
+# integer/float division, class w, constant operands (constant folded)
+
+export
+function w $div_w_const() {
+@start
+	%r =w div 2000000000, (1000, 7)
+	ret %r
+}
+

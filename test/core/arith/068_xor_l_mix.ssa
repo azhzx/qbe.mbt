@@ -1,0 +1,9 @@
+# bitwise xor, class l, one constant one register operand
+
+export
+function l $xor_l_mix(l %a) {
+@start
+	%r =l xor 9223372036854775807, %a
+	ret %r
+}
+

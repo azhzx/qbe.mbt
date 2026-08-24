@@ -1,0 +1,53 @@
+# a chain of copies at a block boundary (parallel move resolution)
+
+export
+function w $test(w %a, w %b, w %c) {
+@start
+	%x =w add %a, 1
+	%y =w add %b, 2
+	%z =w add %c, 3
+	%t =w add %x, %y
+	jnz %t, @l, @r
+@l
+	%l1 =w copy %x
+	%l2 =w copy %y
+	%l3 =w copy %z
+	%l4 =w copy %x
+	%l5 =w copy %y
+	%l6 =w copy %z
+	%l7 =w copy %x
+	%l8 =w copy %y
+	%l9 =w copy %z
+	jmp @join
+@r
+	%r1 =w copy %z
+	%r2 =w copy %y
+	%r3 =w copy %x
+	%r4 =w copy %z
+	%r5 =w copy %y
+	%r6 =w copy %x
+	%r7 =w copy %z
+	%r8 =w copy %y
+	%r9 =w copy %x
+	jmp @join
+@join
+	%p1 =w phi @l %l1, @r %r1
+	%p2 =w phi @l %l2, @r %r2
+	%p3 =w phi @l %l3, @r %r3
+	%p4 =w phi @l %l4, @r %r4
+	%p5 =w phi @l %l5, @r %r5
+	%p6 =w phi @l %l6, @r %r6
+	%p7 =w phi @l %l7, @r %r7
+	%p8 =w phi @l %l8, @r %r8
+	%p9 =w phi @l %l9, @r %r9
+	%sum =w add %p1, %p2
+	%sum =w add %sum, %p3
+	%sum =w add %sum, %p4
+	%sum =w add %sum, %p5
+	%sum =w add %sum, %p6
+	%sum =w add %sum, %p7
+	%sum =w add %sum, %p8
+	%sum =w add %sum, %p9
+	ret %sum
+}
+

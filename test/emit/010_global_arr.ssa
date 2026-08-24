@@ -1,0 +1,12 @@
+# indexing into a global array
+
+data $arr = { l 10, l 20, l 30, l 40 }
+export
+function l $test(l %i) {
+@start
+	%s =l mul 8, %i
+	%p =l add $arr, %s
+	%r =l load %p
+	ret %r
+}
+

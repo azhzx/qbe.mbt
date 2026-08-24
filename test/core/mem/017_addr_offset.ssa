@@ -1,0 +1,12 @@
+# store through base + constant offset address
+
+export
+function w $addr_offset(w %v) {
+@start
+	%a =l alloc4 16
+	%b =l add 4, %a
+	storew %v, %b
+	%r =w load %b
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# fp constant s_2.71828 in class s
+
+export
+function s $fconst_22() {
+@start
+	%r =s copy s_2.71828
+	ret %r
+}
+

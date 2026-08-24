@@ -1,0 +1,9 @@
+# arithmetic shift right, class w, register operands (reaches isel/emit)
+
+export
+function w $sar_w_reg(w %a, w %b) {
+@start
+	%r =w sar %a, %b
+	ret %r
+}
+

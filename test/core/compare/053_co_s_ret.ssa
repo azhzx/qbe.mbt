@@ -1,0 +1,9 @@
+# float comparison co, class s, result returned
+
+export
+function w $co_s_ret(s %a, s %b) {
+@start
+	%c =w co %a, %b
+	ret %c
+}
+

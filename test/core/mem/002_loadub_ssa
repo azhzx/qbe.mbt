@@ -1,0 +1,9 @@
+# loadub from a parameter address
+
+export
+function w $loadub(l %a) {
+@start
+	%r =w loadub %a
+	ret %r
+}
+

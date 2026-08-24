@@ -1,0 +1,11 @@
+# alloc with constant size 100
+
+export
+function w $test() {
+@start
+	%a =l alloc4 100
+	storew 9, %a
+	%r =w load %a
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# constant folding of add (2000000000 op 2000000000) in class w
+
+export
+function w $fold_add_w() {
+@start
+	%r =w add 2000000000, 2000000000
+	ret %r
+}
+

@@ -1,0 +1,11 @@
+# storeh then reload from a local alloc
+
+export
+function w $storeh(w %v) {
+@start
+	%a =l alloc4 16
+	storeh %v, %a
+	%r =w load %a
+	ret %r
+}
+

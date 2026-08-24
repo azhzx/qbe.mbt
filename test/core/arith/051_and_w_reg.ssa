@@ -1,0 +1,9 @@
+# bitwise and, class w, register operands (reaches isel/emit)
+
+export
+function w $and_w_reg(w %a, w %b) {
+@start
+	%r =w and %a, %b
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# stosi (s -> w)
+
+export
+function w $stosi_sw(s %a) {
+@start
+	%r =w stosi %a
+	ret %r
+}
+

@@ -1,0 +1,15 @@
+# 2 single arguments
+
+export
+function s $callee2(s %f0, s %f1) {
+@start
+	%r =s add %f0, s_0.0
+	%r =s add %r, %f1
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee2(s s_0.5, s s_1.5)
+	ret %r
+}
+

@@ -1,0 +1,22 @@
+# return max*100 + min
+
+export
+function w $minmax(w %a, w %b) {
+@start
+	%c = %cw csgtw %a, %b
+	jnz %c, @ab, @ba
+@ab
+	%mx = %mxw copy %a
+	%mn = %mnw copy %b
+	jmp @join
+@ba
+	%mx = %mx.2w copy %b
+	%mn = %mn.2w copy %a
+	jmp @join
+@join
+	%max =w phi @ab %mx, @ba %mx.2
+	%min =w phi @ab %mn, @ba %mn.2
+	%m = %mw mul %max, 100
+	%r = %rw add %m, %min
+	ret %r
+}

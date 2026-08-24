@@ -1,0 +1,9 @@
+# constant folding of sub (-2147483648 op 1) in class w
+
+export
+function w $fold_sub_w() {
+@start
+	%r =w sub -2147483648, 1
+	ret %r
+}
+

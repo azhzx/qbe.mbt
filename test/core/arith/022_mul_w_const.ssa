@@ -1,0 +1,9 @@
+# integer/float multiplication, class w, constant operands (constant folded)
+
+export
+function w $mul_w_const() {
+@start
+	%r =w mul 2000000000, 2000000000
+	ret %r
+}
+

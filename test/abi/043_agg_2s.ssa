@@ -1,0 +1,22 @@
+# two-single aggregate passed by value
+
+type :t8s = { s, s }
+export
+function d $callee(:t8s %p) {
+@start
+	%a =s load %p
+	%b =s load 4(%p)
+	%r =s add %a, %b
+	%rd =d exts %r
+	ret %rd
+}
+function d $test() {
+@start
+	%a =l alloc8 8
+	storew 1065353216, %a
+	%b =l add 4, %a
+	storew 1073741824, %b
+	%r =d call $callee(:t8s %a)
+	ret %r
+}
+

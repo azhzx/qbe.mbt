@@ -1,0 +1,9 @@
+# arithmetic shift right, class l, register operands (reaches isel/emit)
+
+export
+function l $sar_l_reg(l %a, l %b) {
+@start
+	%r =l sar %a, %b
+	ret %r
+}
+

@@ -1,0 +1,17 @@
+# 8-byte aggregate passed by value
+
+type :t8 = { l }
+export
+function l $callee(:t8 %p) {
+@start
+	%r =l load %p
+	ret %r
+}
+function l $test() {
+@start
+	%a =l alloc8 8
+	storel 43, %a
+	%r =l call $callee(:t8 %a)
+	ret %r
+}
+

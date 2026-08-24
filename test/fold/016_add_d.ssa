@@ -1,0 +1,9 @@
+# constant folding of add (d_0.5 op d_1.5) in class d
+
+export
+function d $fold_add_d() {
+@start
+	%r =d add d_0.5, d_1.5
+	ret %r
+}
+

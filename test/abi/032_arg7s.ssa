@@ -1,0 +1,20 @@
+# 7 single arguments
+
+export
+function s $callee7(s %f0, s %f1, s %f2, s %f3, s %f4, s %f5, s %f6) {
+@start
+	%r =s add %f0, s_0.0
+	%r =s add %r, %f1
+	%r =s add %r, %f2
+	%r =s add %r, %f3
+	%r =s add %r, %f4
+	%r =s add %r, %f5
+	%r =s add %r, %f6
+	ret %r
+}
+function s $test() {
+@start
+	%r =s call $callee7(s s_0.5, s s_1.5, s s_2.5, s s_3.5, s s_4.5, s s_5.5, s s_6.5)
+	ret %r
+}
+

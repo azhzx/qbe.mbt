@@ -1,0 +1,35 @@
+# modular exponentiation: (base^exp) mod m
+
+export
+function w $mpow(w %b, w %e, w %m) {
+@start
+	%r = %rw copy 1
+	%be = %bew copy %b
+	%ee = %eew copy %e
+@loop
+	%r2 =w phi @start %r, @join %r4
+	%be2 =w phi @start %be, @join %be3
+	%ee2 =w phi @start %ee, @join %ee3
+	%c = %cw ceqw %ee2, 0
+	jnz %c, @done, @body
+@body
+	%odd = %oddw and %ee2, 1
+	%c2 = %c2w ceqw %odd, 0
+	jnz %c2, @skip, @mul
+@mul
+	%rm = %rmw mul %r2, %be2
+	%rm = %rm.2w rem %rm, %m
+	%rm = %rm.3w copy %rm.2
+	jmp @join
+@skip
+	%rs = %rsw copy %r2
+	jmp @join
+@join
+	%r4 =w phi @mul %rm.3, @skip %rs
+	%bm = %bmw mul %be2, %be2
+	%be3 = %be3w rem %bm, %m
+	%ee3 = %ee3w shr %ee2, 1
+	jmp @loop
+@done
+	ret %r2
+}

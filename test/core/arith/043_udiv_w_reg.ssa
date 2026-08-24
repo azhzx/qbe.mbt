@@ -1,0 +1,9 @@
+# unsigned division, class w, register operands (reaches isel/emit)
+
+export
+function w $udiv_w_reg(w %a, w %b) {
+@start
+	%r =w udiv %a, %b
+	ret %r
+}
+

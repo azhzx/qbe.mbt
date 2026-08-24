@@ -1,0 +1,17 @@
+# clamp a value to [lo, hi]
+
+export
+function w $clamp(w %x, w %lo, w %hi) {
+@start
+	%c1 = %c1w csltw %x, %lo
+	jnz %c1, @lo, @c2
+@c2
+	%c2c = %c2cw csgtw %x, %hi
+	jnz %c2c, @hi, @mid
+@lo
+	ret %lo
+@hi
+	ret %hi
+@mid
+	ret %x
+}

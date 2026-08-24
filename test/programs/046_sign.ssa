@@ -1,0 +1,17 @@
+# sign function: -1, 0, or 1
+
+export
+function w $sign(w %x) {
+@start
+	%c0 = %c0w ceqw %x, 0
+	jnz %c0, @zero, @cpos
+@cpos
+	%c = %cw csgtw %x, 0
+	jnz %c, @pos, @neg
+@zero
+	ret 0
+@pos
+	ret 1
+@neg
+	ret -1
+}

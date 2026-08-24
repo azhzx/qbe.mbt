@@ -1,0 +1,9 @@
+# comparison csge, class l, result returned (setcc path)
+
+export
+function w $csge_l_ret(l %a, l %b) {
+@start
+	%c =w csge %a, %b
+	ret %c
+}
+

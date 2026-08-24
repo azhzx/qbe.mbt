@@ -1,0 +1,30 @@
+# many phi nodes joining two predecessors
+
+export
+function w $test(w %a, w %b, w %c, w %d) {
+@start
+	%t =w add %a, 1
+	jnz %t, @l, @r
+@l
+	%la =w add %a, 1
+	%lb =w add %b, 2
+	%lc =w add %c, 3
+	%ld =w add %d, 4
+	jmp @join
+@r
+	%ra =w sub %a, 1
+	%rb =w sub %b, 2
+	%rc =w sub %c, 3
+	%rd =w sub %d, 4
+	jmp @join
+@join
+	%pa =w phi @l %la, @r %ra
+	%pb =w phi @l %lb, @r %rb
+	%pc =w phi @l %lc, @r %rc
+	%pd =w phi @l %ld, @r %rd
+	%r =w add %pa, %pb
+	%r =w add %r, %pc
+	%r =w add %r, %pd
+	ret %r
+}
+

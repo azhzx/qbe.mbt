@@ -1,0 +1,26 @@
+# a long chain of dependent temporaries
+
+export
+function w $test(w %a, w %b, w %c, w %d) {
+@start
+	%t0 =w add %a, %b
+	%t1 =w mul %c, %d
+	%t2 =w xor %t0, %t1
+	%t3 =w shl %t2, 3
+	%t4 =w shr %t3, 1
+	%t5 =w sar %t4, 2
+	%t6 =w and %t5, 65535
+	%t7 =w or %t6, %t1
+	%t8 =w sub %t7, %t0
+	%t9 =w add %t8, %t2
+	%t10 =w mul %t9, %t4
+	%t11 =w rem %t10, 1000
+	%t12 =w udiv %t11, 7
+	%t13 =w urem %t12, 13
+	%t14 =w xor %t13, %t5
+	%t15 =w add %t14, %t3
+	%t16 =w sub %t15, %t1
+	%t17 =w mul %t16, %t0
+	ret %t17
+}
+

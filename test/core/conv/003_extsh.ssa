@@ -1,0 +1,9 @@
+# extsh (w -> w)
+
+export
+function w $extsh(w %a) {
+@start
+	%r =w extsh %a
+	ret %r
+}
+

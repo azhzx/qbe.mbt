@@ -1,0 +1,9 @@
+# bitwise or, class w, register operands (reaches isel/emit)
+
+export
+function w $or_w_reg(w %a, w %b) {
+@start
+	%r =w or %a, %b
+	ret %r
+}
+

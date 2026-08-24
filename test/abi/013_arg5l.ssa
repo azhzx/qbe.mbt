@@ -1,0 +1,18 @@
+# 5 long arguments
+
+export
+function l $callee5(l %a0, l %a1, l %a2, l %a3, l %a4) {
+@start
+	%r =l add %a0, 0
+	%r =l add %r, %a1
+	%r =l add %r, %a2
+	%r =l add %r, %a3
+	%r =l add %r, %a4
+	ret %r
+}
+function l $test() {
+@start
+	%r =l call $callee5(l 1, l 2, l 3, l 4, l 5)
+	ret %r
+}
+

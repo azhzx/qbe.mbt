@@ -1,0 +1,9 @@
+# integer/float multiplication, class l, constant operands (constant folded)
+
+export
+function l $mul_l_const() {
+@start
+	%r =l mul 5000000000, 4000000000
+	ret %r
+}
+

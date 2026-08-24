@@ -1,0 +1,19 @@
+# sum of decimal digits: digit_sum(12345) = 15
+
+export
+function w $ds(w %n) {
+@start
+	%s = %sw copy 0
+@loop
+	%n2 =w phi @start %n, @body %n3
+	%s2 =w phi @start %s, @body %s3
+	%c = %cw ceqw %n2, 0
+	jnz %c, @done, @body
+@body
+	%d = %dw rem %n2, 10
+	%s3 = %s3w add %s2, %d
+	%n3 = %n3w div %n2, 10
+	jmp @loop
+@done
+	ret %s2
+}

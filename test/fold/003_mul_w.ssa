@@ -1,0 +1,9 @@
+# constant folding of mul (1000000 op 1000000) in class w
+
+export
+function w $fold_mul_w() {
+@start
+	%r =w mul 1000000, 1000000
+	ret %r
+}
+

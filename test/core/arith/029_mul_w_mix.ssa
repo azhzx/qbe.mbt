@@ -1,0 +1,9 @@
+# integer/float multiplication, class w, one constant one register operand
+
+export
+function w $mul_w_mix(w %a) {
+@start
+	%r =w mul 2147483647, %a
+	ret %r
+}
+

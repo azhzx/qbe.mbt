@@ -1,0 +1,36 @@
+# next generation of a 1-d cellular automaton bitmask
+
+export
+function w $next(w %x) {
+@start
+	%r = %rw copy 0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @join %i3
+	%r2 =w phi @start %r, @join %r3
+	%c = %cw csltw %i2, 30
+	jnz %c, @body, @end
+@body
+	%sh = %shw shl 1, %i2
+	%l = %lw sub %i2, 1
+	%rsh = %rshw shl 1, %l
+	%left = %leftw and %x, %rsh
+	%right = %rightw and %x, %rsh
+	%mid = %midw and %x, %sh
+	%lr = %lrw or %left, %mid
+	%lr = %lr.2w or %lr, %right
+	%c2 = %c2w ceqw %lr.2, %sh
+	jnz %c2, @set, @no
+@set
+	%rs = %rsw or %r2, %sh
+	jmp @join
+@no
+	%rn = %rnw copy %r2
+	jmp @join
+@join
+	%r3 =w phi @set %rs, @no %rn
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	ret %r2
+}

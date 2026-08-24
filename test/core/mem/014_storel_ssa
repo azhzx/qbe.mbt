@@ -1,0 +1,11 @@
+# storel then reload from a local alloc
+
+export
+function l $storel(l %v) {
+@start
+	%a =l alloc4 16
+	storel %v, %a
+	%r =l load %a
+	ret %r
+}
+

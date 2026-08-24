@@ -1,0 +1,14 @@
+# fp constants emitted in the table at the end
+
+export
+function d $test(w %n) {
+@start
+	%r =d copy d_0.5
+	%r =d add %r, d_1.5
+	%r =d mul %r, d_-2.25
+	%i =l extsw %n
+	%rd =d sltof %i
+	%r =d add %r, %rd
+	ret %r
+}
+

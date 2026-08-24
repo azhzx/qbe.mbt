@@ -1,0 +1,11 @@
+# stored then reload from a local alloc
+
+export
+function d $stored(d %v) {
+@start
+	%a =l alloc4 16
+	stored %v, %a
+	%r =d load %a
+	ret %r
+}
+

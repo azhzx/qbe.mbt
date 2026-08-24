@@ -1,0 +1,9 @@
+# constant folding of comparison ceqw
+
+export
+function w $fold_ceqw() {
+@start
+	%r =w ceqw 1, 2
+	ret %r
+}
+

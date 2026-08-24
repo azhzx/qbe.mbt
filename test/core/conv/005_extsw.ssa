@@ -1,0 +1,9 @@
+# extsw (w -> l)
+
+export
+function l $extsw(w %a) {
+@start
+	%r =l extsw %a
+	ret %r
+}
+

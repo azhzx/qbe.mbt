@@ -1,0 +1,13 @@
+# store through base + index * 4 address
+
+export
+function w $addr_index(w %v, l %i) {
+@start
+	%a =l alloc4 16
+	%s =l mul 4, %i
+	%b =l add %a, %s
+	storew %v, %b
+	%r =w load %b
+	ret %r
+}
+

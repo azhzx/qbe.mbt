@@ -1,0 +1,9 @@
+# integer/float multiplication, class d, register operands (reaches isel/emit)
+
+export
+function d $mul_d_reg(d %a, d %b) {
+@start
+	%r =d mul %a, %b
+	ret %r
+}
+

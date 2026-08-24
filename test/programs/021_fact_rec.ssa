@@ -1,0 +1,15 @@
+# recursive factorial: fact(5) = 120
+
+export
+function w $fact(w %n) {
+@start
+	%c = %cw csgtw %n, 1
+	jnz %c, @rec, @base
+@base
+	ret 1
+@rec
+	%m = %mw sub %n, 1
+	%r = %rw call $fact(w %m)
+	%res = %resw mul %n, %r
+	ret %res
+}

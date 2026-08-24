@@ -1,0 +1,9 @@
+# shift left, class w, constant operands (constant folded)
+
+export
+function w $shl_w_const() {
+@start
+	%r =w shl 2000000000, 2000000000
+	ret %r
+}
+

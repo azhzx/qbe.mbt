@@ -1,0 +1,13 @@
+# comparison ceq, class w, feeds jnz (seljmp path)
+
+export
+function w $ceq_w_jnz(w %a, w %b) {
+@start
+	%c =w ceq %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

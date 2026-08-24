@@ -1,0 +1,9 @@
+# shift left, class w, register operands (reaches isel/emit)
+
+export
+function w $shl_w_reg(w %a, w %b) {
+@start
+	%r =w shl %a, %b
+	ret %r
+}
+

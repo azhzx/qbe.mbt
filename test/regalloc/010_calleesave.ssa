@@ -1,0 +1,20 @@
+# several calls in sequence, results kept in registers
+
+export
+function w $callee(w %x) {
+@start
+	%r =w add 1, %x
+	ret %r
+}
+function w $test(w %a0, w %a1, w %a2, w %a3) {
+@start
+	%r0 =w call $callee(w %a0)
+	%r1 =w call $callee(w %a1)
+	%r2 =w call $callee(w %a2)
+	%r3 =w call $callee(w %a3)
+	%r =w add %r0, %r1
+	%r =w add %r, %r2
+	%r =w add %r, %r3
+	ret %r
+}
+

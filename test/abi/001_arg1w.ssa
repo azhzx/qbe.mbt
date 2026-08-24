@@ -1,0 +1,14 @@
+# 1 word arguments (6 GPR, the rest on the stack)
+
+export
+function w $callee1(w %a0) {
+@start
+	%r =w add %a0, 0
+	ret %r
+}
+function w $test() {
+@start
+	%r =w call $callee1(w 1)
+	ret %r
+}
+

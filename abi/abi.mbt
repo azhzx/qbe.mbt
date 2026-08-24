@@ -39,8 +39,6 @@ priv struct AbiState {
 }
 
 ///|
-// Emission buffer: instructions are pushed and read back in reverse order,
-// mirroring C's backward-filling `curi`/`insb` buffer.
 fn emit(
   st : AbiState,
   op : @types.Op,
@@ -58,7 +56,6 @@ fn emiti(st : AbiState, i : @types.Ins) -> Unit {
 }
 
 ///|
-// The emitted instructions in block order (reverse of push order).
 fn emit_block(st : AbiState) -> Array[@types.Ins] {
   let r : Array[@types.Ins] = Array::new()
   for k = st.buf.length() - 1; k >= 0; k = k - 1 {
@@ -93,7 +90,6 @@ fn alloc_op(al : Int) -> @types.Op {
 }
 
 ///|
-// Classify the fields of a type into register classes (amd64 sysv classify).
 fn classify(
   a : AClass,
   typs : Array[@types.Typ],

@@ -1,0 +1,9 @@
+# data section with zero fill
+
+data $z = { b 1, z 64, b 2 }
+export
+function w $test() {
+@start
+	ret 0
+}
+

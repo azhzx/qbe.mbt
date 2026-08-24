@@ -1,0 +1,14 @@
+# mixed int/float arguments: d, w, d, w, d, w, d, w, d
+
+export
+function w $callee4(d %f0, w %i0, d %f1, w %i1, d %f2, w %i2, d %f3, w %i3, d %f4) {
+@start
+	%r =w add 0, 0
+	ret %r
+}
+function w $test() {
+@start
+	%r =w call $callee4(d d_2.5, w 1, d d_2.5, w 1, d d_2.5, w 1, d d_2.5, w 1, d d_2.5)
+	ret %r
+}
+

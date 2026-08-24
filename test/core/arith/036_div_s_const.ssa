@@ -1,0 +1,9 @@
+# integer/float division, class s, constant operands (constant folded)
+
+export
+function s $div_s_const() {
+@start
+	%r =s div s_0.5, s_1.5
+	ret %r
+}
+

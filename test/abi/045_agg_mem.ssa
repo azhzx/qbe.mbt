@@ -1,0 +1,17 @@
+# 17-byte aggregate passed on the stack
+
+type :t17 = { b 17 }
+export
+function w $callee(:t17 %p) {
+@start
+	%r =w loadub %p
+	ret %r
+}
+function w $test() {
+@start
+	%a =l alloc4 24
+	storeb 77, %a
+	%r =w call $callee(:t17 %a)
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# unsigned remainder, class w, constant operands (constant folded)
+
+export
+function w $urem_w_const() {
+@start
+	%r =w urem 2000000000, (1000, 7)
+	ret %r
+}
+

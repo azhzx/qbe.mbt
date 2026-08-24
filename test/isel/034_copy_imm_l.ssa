@@ -1,0 +1,13 @@
+# copy of long immediates into registers (movl trick for small values)
+
+export
+function l $test() {
+@start
+	%a =l copy 100
+	%b =l copy 2147483648
+	%c =l copy -1
+	%r =l add %a, %b
+	%r =l add %r, %c
+	ret %r
+}
+

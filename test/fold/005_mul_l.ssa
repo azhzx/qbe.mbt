@@ -1,0 +1,9 @@
+# constant folding of mul (3037000500 op 3037000500) in class l
+
+export
+function l $fold_mul_l() {
+@start
+	%r =l mul 3037000500, 3037000500
+	ret %r
+}
+

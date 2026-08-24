@@ -1,0 +1,38 @@
+# binary search in a sorted array of longs
+
+data $arr = { l 10, l 20, l 30, l 40, l 50, l 60 }
+export
+function w $search(l %key, w %n) {
+@start
+	%lo = %low copy 0
+	%hi = %hiw sub %n, 1
+@loop
+	%lo2 =w phi @start %lo, @go_lo %lo3, @go_hi %lo4
+	%hi2 =w phi @start %hi, @go_lo %hi3, @go_hi %hi4
+	%c = %cw csgtw %lo2, %hi2
+	jnz %c, @notfound, @body
+@body
+	%sum = %sumw add %lo2, %hi2
+	%mid = %midw shr %sum, 1
+	%midi = %midil extsw %mid
+	%moff = %moffl mul 8, %midi
+	%mp = %mpl add $arr, %moff
+	%mv = %mvl load %mp
+	%c2 = %c2l ceql %mv, %key
+	jnz %c2, @found, @less
+@less
+	%c3 = %c3l csgtl %mv, %key
+	jnz %c3, @go_lo, @go_hi
+@go_lo
+	%hi3 = %hi3w sub %mid, 1
+	%lo3 = %lo3w copy %lo2
+	jmp @loop
+@go_hi
+	%lo4 = %lo4w add %mid, 1
+	%hi4 = %hi4w copy %hi2
+	jmp @loop
+@found
+	ret %mid
+@notfound
+	ret -1
+}

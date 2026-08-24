@@ -1,0 +1,9 @@
+# comparison csgt, class w, result returned (setcc path)
+
+export
+function w $csgt_w_ret(w %a, w %b) {
+@start
+	%c =w csgt %a, %b
+	ret %c
+}
+

@@ -1,0 +1,23 @@
+# dispatch on a value (chain of comparisons)
+
+export
+function w $dispatch(w %x) {
+@start
+	%c0 = %c0w ceqw %x, 0
+	jnz %c0, @zero, @c1
+@c1
+	%c1c = %c1cw ceqw %x, 1
+	jnz %c1c, @one, @c2
+@c2
+	%c2c = %c2cw ceqw %x, 2
+	jnz %c2c, @two, @many
+@zero
+	ret 0
+@one
+	ret 1
+@two
+	ret 2
+@many
+	%r = %rw mul %x, %x
+	ret %r
+}

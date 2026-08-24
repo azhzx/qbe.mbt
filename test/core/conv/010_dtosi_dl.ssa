@@ -1,0 +1,9 @@
+# dtosi (d -> l)
+
+export
+function l $dtosi_dl(d %a) {
+@start
+	%r =l dtosi %a
+	ret %r
+}
+

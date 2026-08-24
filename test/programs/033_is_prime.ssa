@@ -1,0 +1,26 @@
+# primality test: is_prime(97) = 1
+
+export
+function w $prime(w %n) {
+@start
+	%c = %cw cslew %n, 1
+	jnz %c, @no, @start2
+@start2
+	%i = %iw copy 2
+@loop
+	%i2 =w phi @start2 %i, @cont %i3
+	%sq = %sqw mul %i2, %i2
+	%c2 = %c2w csgtw %sq, %n
+	jnz %c2, @yes, @body
+@body
+	%d = %dw rem %n, %i2
+	%c3 = %c3w ceqw %d, 0
+	jnz %c3, @no, @cont
+@cont
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@yes
+	ret 1
+@no
+	ret 0
+}

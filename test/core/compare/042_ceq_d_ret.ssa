@@ -1,0 +1,9 @@
+# float comparison ceq, class d, result returned
+
+export
+function w $ceq_d_ret(d %a, d %b) {
+@start
+	%c =w ceq %a, %b
+	ret %c
+}
+

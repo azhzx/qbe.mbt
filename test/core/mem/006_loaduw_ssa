@@ -1,0 +1,9 @@
+# loaduw from a parameter address
+
+export
+function w $loaduw(l %a) {
+@start
+	%r =w loaduw %a
+	ret %r
+}
+

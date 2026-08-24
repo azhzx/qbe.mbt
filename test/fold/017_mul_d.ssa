@@ -1,0 +1,9 @@
+# constant folding of mul (d_2.0 op d_3.0) in class d
+
+export
+function d $fold_mul_d() {
+@start
+	%r =d mul d_2.0, d_3.0
+	ret %r
+}
+

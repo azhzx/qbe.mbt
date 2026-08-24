@@ -1,0 +1,9 @@
+# float comparison cne, class d, result returned
+
+export
+function w $cne_d_ret(d %a, d %b) {
+@start
+	%c =w cne %a, %b
+	ret %c
+}
+

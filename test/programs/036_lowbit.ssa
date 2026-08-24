@@ -1,0 +1,10 @@
+# isolate the lowest set bit: lowbit(12) = 4
+
+export
+function w $lb(w %x) {
+@start
+	%n = %nw xor %x, -1
+	%p = %pw add %n, 1
+	%r = %rw and %x, %p
+	ret %r
+}

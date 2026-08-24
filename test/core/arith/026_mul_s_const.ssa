@@ -1,0 +1,9 @@
+# integer/float multiplication, class s, constant operands (constant folded)
+
+export
+function s $mul_s_const() {
+@start
+	%r =s mul s_0.5, s_1.5
+	ret %r
+}
+

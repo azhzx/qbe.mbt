@@ -1,0 +1,9 @@
+# comparison cule, class l, result returned (setcc path)
+
+export
+function w $cule_l_ret(l %a, l %b) {
+@start
+	%c =w cule %a, %b
+	ret %c
+}
+

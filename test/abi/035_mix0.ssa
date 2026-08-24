@@ -1,0 +1,14 @@
+# mixed int/float arguments: w, s
+
+export
+function w $callee0(w %i0, s %f0) {
+@start
+	%r =w add 0, 0
+	ret %r
+}
+function w $test() {
+@start
+	%r =w call $callee0(w 1, s s_1.5)
+	ret %r
+}
+

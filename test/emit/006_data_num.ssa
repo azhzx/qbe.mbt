@@ -1,0 +1,10 @@
+# data section with numeric constants and zero fill
+
+data $d = { w 1, w 2, l 3, b 4, h 5 }
+data $big = { z 16, l 6, l 7 }
+export
+function w $test() {
+@start
+	ret 0
+}
+

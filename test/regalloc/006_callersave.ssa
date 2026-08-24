@@ -1,0 +1,16 @@
+# values live across a call must survive in callee-save registers
+
+export
+function w $callee(w %x) {
+@start
+	%r =w add 1, %x
+	ret %r
+}
+function w $test(w %a, w %b) {
+@start
+	%x =w add %a, 1
+	%y =w call $callee(w %b)
+	%z =w add %x, %y
+	ret %z
+}
+

@@ -1,0 +1,9 @@
+# integer remainder, class w, constant operands (constant folded)
+
+export
+function w $rem_w_const() {
+@start
+	%r =w rem 2000000000, (1000, 7)
+	ret %r
+}
+

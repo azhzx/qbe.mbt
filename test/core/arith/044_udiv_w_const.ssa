@@ -1,0 +1,9 @@
+# unsigned division, class w, constant operands (constant folded)
+
+export
+function w $udiv_w_const() {
+@start
+	%r =w udiv 2000000000, (1000, 7)
+	ret %r
+}
+

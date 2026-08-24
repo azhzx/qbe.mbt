@@ -1,0 +1,9 @@
+# cast (l -> d)
+
+export
+function d $cast_ld(l %a) {
+@start
+	%r =d cast %a
+	ret %r
+}
+

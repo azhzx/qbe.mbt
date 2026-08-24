@@ -1,0 +1,9 @@
+# float comparison clt, class d, result returned
+
+export
+function w $clt_d_ret(d %a, d %b) {
+@start
+	%c =w clt %a, %b
+	ret %c
+}
+

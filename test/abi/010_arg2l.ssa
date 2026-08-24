@@ -1,0 +1,15 @@
+# 2 long arguments
+
+export
+function l $callee2(l %a0, l %a1) {
+@start
+	%r =l add %a0, 0
+	%r =l add %r, %a1
+	ret %r
+}
+function l $test() {
+@start
+	%r =l call $callee2(l 1, l 2)
+	ret %r
+}
+

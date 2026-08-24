@@ -1,0 +1,41 @@
+# bubble sort an array of words
+
+data $arr = { w 5, w 2, w 8, w 1, w 9, w 3 }
+export
+function w $sort(w %n) {
+@start
+	%i = %iw copy 0
+	%j = %jw copy 0
+@outer
+	%i2 =w phi @start %i, @oend %i3
+	%j2 =w phi @start %j, @oend %j3
+	%c = %cw csltw %i2, %n
+	jnz %c, @inner, @done
+@inner
+	%jm = %jmw sub %n, %i2
+	%jm2 = %jm2w sub %jm, 1
+	%c2 = %c2w csltw %j2, %jm2
+	jnz %c2, @cmp, @oend
+@cmp
+	%ji = %jil extsw %j2
+	%joff = %joffl mul 4, %ji
+	%jp = %jpl add $arr, %joff
+	%a = %aw load %jp
+	%j1 = %j1w add %j2, 1
+	%j1i = %j1il extsw %j1
+	%j1off = %j1offl mul 4, %j1i
+	%j1p = %j1pl add $arr, %j1off
+	%b = %bw load %j1p
+	%c3 = %c3w csgtw %a, %b
+	jnz %c3, @swap, @oend
+@swap
+	storew %b, %jp
+	storew %a, %j1p
+	jmp @oend
+@oend
+	%j3 = %j3w add %j2, 1
+	%i3 = %i3w add %i2, 1
+	jmp @outer
+@done
+	ret 0
+}

@@ -1,0 +1,13 @@
+# comparison cult, class w, feeds jnz (seljmp path)
+
+export
+function w $cult_w_jnz(w %a, w %b) {
+@start
+	%c =w cult %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

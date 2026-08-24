@@ -1,0 +1,9 @@
+# tower of hanoi move count: 2^d - 1
+
+export
+function w $hanoi(w %d) {
+@start
+	%r = %rw shl 1, %d
+	%r = %r.2w sub %r, 1
+	ret %r.2
+}

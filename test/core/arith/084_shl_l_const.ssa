@@ -1,0 +1,9 @@
+# shift left, class l, constant operands (constant folded)
+
+export
+function l $shl_l_const() {
+@start
+	%r =l shl 5000000000, 4000000000
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# large immediate 4294967295 in class l (noimm path)
+
+export
+function l $const_4294967295() {
+@start
+	%r =l copy 4294967295
+	ret %r
+}
+

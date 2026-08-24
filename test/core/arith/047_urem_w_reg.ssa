@@ -1,0 +1,9 @@
+# unsigned remainder, class w, register operands (reaches isel/emit)
+
+export
+function w $urem_w_reg(w %a, w %b) {
+@start
+	%r =w urem %a, %b
+	ret %r
+}
+

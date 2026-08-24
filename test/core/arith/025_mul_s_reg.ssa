@@ -1,0 +1,9 @@
+# integer/float multiplication, class s, register operands (reaches isel/emit)
+
+export
+function s $mul_s_reg(s %a, s %b) {
+@start
+	%r =s mul %a, %b
+	ret %r
+}
+

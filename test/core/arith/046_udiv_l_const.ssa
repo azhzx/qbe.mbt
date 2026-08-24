@@ -1,0 +1,9 @@
+# unsigned division, class l, constant operands (constant folded)
+
+export
+function l $udiv_l_const() {
+@start
+	%r =l udiv 5000000000, 4000000000
+	ret %r
+}
+

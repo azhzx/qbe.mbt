@@ -1,0 +1,9 @@
+# swtof (w -> s)
+
+export
+function s $swtof_ws(w %a) {
+@start
+	%r =s swtof %a
+	ret %r
+}
+

@@ -1,0 +1,9 @@
+# integer remainder, class l, constant operands (constant folded)
+
+export
+function l $rem_l_const() {
+@start
+	%r =l rem 5000000000, 4000000000
+	ret %r
+}
+

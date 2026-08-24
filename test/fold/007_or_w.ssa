@@ -1,0 +1,9 @@
+# constant folding of or (65535 op 4294901760) in class w
+
+export
+function w $fold_or_w() {
+@start
+	%r =w or 65535, 4294901760
+	ret %r
+}
+

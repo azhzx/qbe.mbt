@@ -1,0 +1,9 @@
+# large immediate operands in mul (class w)
+
+export
+function w $test(w %x) {
+@start
+	%r =w mul 100000, %x
+	ret %r
+}
+

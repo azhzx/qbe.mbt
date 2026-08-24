@@ -1,0 +1,9 @@
+# arithmetic shift right, class w, constant operands (constant folded)
+
+export
+function w $sar_w_const() {
+@start
+	%r =w sar 2000000000, 2000000000
+	ret %r
+}
+

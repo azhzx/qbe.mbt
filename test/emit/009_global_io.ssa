@@ -1,0 +1,14 @@
+# read and write globals (rip-relative addressing)
+
+data $g1 = { w 1 }
+data $g2 = { w 0 }
+export
+function w $test() {
+@start
+	%a =w loadw $g1
+	%a =w add %a, 1
+	storew %a, $g2
+	%r =w loadw $g2
+	ret %r
+}
+

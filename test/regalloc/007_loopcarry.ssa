@@ -1,0 +1,28 @@
+# loop-carried values across several live temporaries
+
+export
+function w $test(w %n) {
+@start
+	%a =w copy 0
+	%b =w copy 1
+	%c =w copy 2
+	%d =w copy 3
+	%i =w copy 0
+@loop
+	%i2 =w phi @start %i, @loop %i3
+	%a2 =w phi @start %a, @loop %a3
+	%b2 =w phi @start %b, @loop %b3
+	%c2 =w phi @start %c, @loop %c3
+	%d2 =w phi @start %d, @loop %d3
+	%a3 =w add %a2, %b2
+	%b3 =w add %b2, %c2
+	%c3 =w add %c2, %d2
+	%d3 =w add %d2, 1
+	%i3 =w add %i2, 1
+	%cmp =w csltw %i3, %n
+	jnz %cmp, @loop, @end
+@end
+	%r =w add %a3, %d3
+	ret %r
+}
+

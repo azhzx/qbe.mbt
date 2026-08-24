@@ -1,0 +1,9 @@
+# constant folding of comparison cultl
+
+export
+function w $fold_cultl() {
+@start
+	%r =w cultl 1, 2
+	ret %r
+}
+

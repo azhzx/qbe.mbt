@@ -1,0 +1,9 @@
+# large immediate operands in add (class l)
+
+export
+function l $test(l %x) {
+@start
+	%r =l add 2147483648, %x
+	ret %r
+}
+

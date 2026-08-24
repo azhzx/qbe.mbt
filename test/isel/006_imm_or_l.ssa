@@ -1,0 +1,9 @@
+# large immediate operands in or (class l)
+
+export
+function l $test(l %x) {
+@start
+	%r =l or 9223372036854775807, %x
+	ret %r
+}
+

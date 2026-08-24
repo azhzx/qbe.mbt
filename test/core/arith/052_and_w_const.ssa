@@ -1,0 +1,9 @@
+# bitwise and, class w, constant operands (constant folded)
+
+export
+function w $and_w_const() {
+@start
+	%r =w and 2000000000, 2000000000
+	ret %r
+}
+

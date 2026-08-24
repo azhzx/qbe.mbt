@@ -1,0 +1,9 @@
+# constant folding of shl (1 op 31) in class w
+
+export
+function w $fold_shl_w() {
+@start
+	%r =w shl 1, 31
+	ret %r
+}
+

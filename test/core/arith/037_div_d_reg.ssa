@@ -1,0 +1,9 @@
+# integer/float division, class d, register operands (reaches isel/emit)
+
+export
+function d $div_d_reg(d %a, d %b) {
+@start
+	%r =d div %a, %b
+	ret %r
+}
+

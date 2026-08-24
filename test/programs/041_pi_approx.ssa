@@ -1,0 +1,34 @@
+# approximate pi via a series: 4*(1 - 1/3 + 1/5 - ...)
+
+export
+function d $pi(w %n) {
+@start
+	%s = %sd copy d_0.0
+	%i = %iw copy 0
+@loop
+	%i2 =w phi @start %i, @join %i3
+	%s2 =d phi @start %s, @join %s3
+	%c = %cw csltw %i2, %n
+	jnz %c, @body, @end
+@body
+	%t = %tw shl %i2, 1
+	%t = %t.2w add %t, 1
+	%tf = %tfd sltof %t.2
+	%term = %termd div d_1.0, %tf
+	%even = %evenw and %i2, 1
+	%c2 = %c2w ceqw %even, 0
+	jnz %c2, @add, @sub
+@add
+	%sa = %sad add %s2, %term
+	jmp @join
+@sub
+	%sb = %sbd sub %s2, %term
+	jmp @join
+@join
+	%s3 =d phi @add %sa, @sub %sb
+	%i3 = %i3w add %i2, 1
+	jmp @loop
+@end
+	%r = %rd mul %s2, d_4.0
+	ret %r
+}

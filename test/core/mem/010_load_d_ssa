@@ -1,0 +1,9 @@
+# generic load, class d
+
+export
+function d $load_d(l %a) {
+@start
+	%r =d load %a
+	ret %r
+}
+

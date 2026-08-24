@@ -1,0 +1,9 @@
+# constant folding of comparison cnew
+
+export
+function w $fold_cnew() {
+@start
+	%r =w cnew 1, 2
+	ret %r
+}
+

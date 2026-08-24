@@ -1,0 +1,13 @@
+# comparison cugt, class l, feeds jnz (seljmp path)
+
+export
+function w $cugt_l_jnz(l %a, l %b) {
+@start
+	%c =w cugt %a, %b
+	jnz %c, @t, @f
+@t
+	ret 1
+@f
+	ret 0
+}
+

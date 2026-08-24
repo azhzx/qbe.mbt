@@ -1,0 +1,9 @@
+# sltof (l -> d)
+
+export
+function d $sltof_ld(l %a) {
+@start
+	%r =d sltof %a
+	ret %r
+}
+

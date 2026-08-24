@@ -1,0 +1,9 @@
+# fp constant d_1e9 in class d
+
+export
+function d $fconst_16() {
+@start
+	%r =d copy d_1e9
+	ret %r
+}
+

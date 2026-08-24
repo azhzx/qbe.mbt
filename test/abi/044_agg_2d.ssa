@@ -1,0 +1,20 @@
+# two-double aggregate passed by value
+
+type :t16d = { d, d }
+export
+function d $callee(:t16d %p) {
+@start
+	%a =d load %p
+	%b =d load 8(%p)
+	%r =d add %a, %b
+	ret %r
+}
+function d $test() {
+@start
+	%a =l alloc16 16
+	storel 0, %a
+	storel 1072693248, 8(%a)
+	%r =d call $callee(:t16d %a)
+	ret %r
+}
+

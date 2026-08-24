@@ -1,0 +1,23 @@
+# 8 simultaneously live word temporaries
+
+export
+function w $test(w %x0, w %x1, w %x2, w %x3, w %x4, w %x5, w %x6, w %x7) {
+@start
+	%t0 =w add %x0, 0
+	%t1 =w add %x1, 0
+	%t2 =w add %x2, 0
+	%t3 =w add %x3, 0
+	%t4 =w add %x4, 0
+	%t5 =w add %x5, 0
+	%t6 =w add %x6, 0
+	%t7 =w add %x7, 0
+	%r =w add %t0, %t1
+	%r =w add %r, %t2
+	%r =w add %r, %t3
+	%r =w add %r, %t4
+	%r =w add %r, %t5
+	%r =w add %r, %t6
+	%r =w add %r, %t7
+	ret %r
+}
+

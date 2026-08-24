@@ -1,0 +1,9 @@
+# comparison ceq, class l, result returned (setcc path)
+
+export
+function w $ceq_l_ret(l %a, l %b) {
+@start
+	%c =w ceq %a, %b
+	ret %c
+}
+

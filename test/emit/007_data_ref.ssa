@@ -1,0 +1,10 @@
+# data section referencing another symbol
+
+data $t = { b 5 }
+data $r = { l $t, b 0 }
+export
+function w $test() {
+@start
+	ret 0
+}
+
