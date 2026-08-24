@@ -6,7 +6,9 @@ import {
 }
 
 // Values
-pub fn filllive(@types.Fn) -> Unit
+pub fn filllive(@types.Fn, Bool) -> String
+
+pub fn liveon(@types.BSet, Int, @types.Blk, @types.Fn) -> Unit
 
 // Errors
 

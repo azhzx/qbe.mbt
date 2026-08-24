@@ -7,6 +7,8 @@ import {
   "azhzx/qbe/fold",
   "azhzx/qbe/abi",
   "azhzx/qbe/isel",
+  "azhzx/qbe/spill",
+  "azhzx/qbe/rega",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
   "moonbitlang/x/fs",

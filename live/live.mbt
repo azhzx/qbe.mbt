@@ -4,7 +4,12 @@
 
 ///|
 // Live-in contribution of a successor to a predecessor block (C liveon).
-fn liveon(v : @types.BSet, b : Int, s : @types.Blk, fn_ : @types.Fn) -> Unit {
+pub fn liveon(
+  v : @types.BSet,
+  b : Int,
+  s : @types.Blk,
+  fn_ : @types.Fn,
+) -> Unit {
   v.copy_from(s.in_set.unwrap())
   for p in s.phi {
     if p.to.is_tmp() {
@@ -32,27 +37,18 @@ fn bset(
     return
   }
   let rv = r.tmp_val()
-  let g = b.gen_set.unwrap()
-  g.set(rv)
+  b.gen_set.unwrap().set(rv)
   let in_ = b.in_set.unwrap()
   if !in_.has(rv) {
-    nlv[kbase(tmp[rv].cls)] = nlv[kbase(tmp[rv].cls)] + 1
+    nlv[@types.kbase(tmp[rv].cls)] = nlv[@types.kbase(tmp[rv].cls)] + 1
     in_.set(rv)
   }
 }
 
 ///|
-fn kbase(k : @types.Class) -> Int {
-  match k {
-    @types.Kx => 0
-    @types.Kw | @types.Ks => 0
-    @types.Kl | @types.Kd => 1
-  }
-}
-
-///|
-// Compute live sets for all blocks (C filllive)
-pub fn filllive(fn_ : @types.Fn) -> Unit {
+// Compute live sets for all blocks (C filllive).
+// Returns the -dL debug text (empty when print_dbg is false).
+pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
   let nt = fn_.ntmp()
   for id in fn_.def_order {
     let b = fn_.blks[id]
@@ -63,54 +59,72 @@ pub fn filllive(fn_ : @types.Fn) -> Unit {
   let mut chg = true
   while chg {
     chg = false
-    // Iterate RPO in reverse
     for n = fn_.rpo.length() - 1; n >= 0; n = n - 1 {
       let bid = fn_.rpo[n]
       let b = fn_.blks[bid]
-      let u = b.out_set.unwrap()
+      let out = b.out_set.unwrap()
       let old = @types.BSet::new(nt)
-      old.copy_from(u)
+      old.copy_from(out)
       if b.jmp.s1 >= 0 {
         let v = @types.BSet::new(nt)
         liveon(v, bid, fn_.blks[b.jmp.s1], fn_)
-        if u.union(v) {
-          chg = true
-        }
+        ignore(out.union(v))
       }
       if b.jmp.s2 >= 0 && b.jmp.s2 != b.jmp.s1 {
         let v = @types.BSet::new(nt)
         liveon(v, bid, fn_.blks[b.jmp.s2], fn_)
-        if u.union(v) {
-          chg = true
-        }
+        ignore(out.union(v))
       }
-      if !u.equal(old) {
+      if !out.equal(old) {
         chg = true
       }
-      // Globally live registers (RBP | RSP) are always live (C T.rglob).
-      u.set(@types.RBP)
-      u.set(@types.RSP)
+      // globally live registers (RBP | RSP)
+      out.bits[0] = out.bits[0] | @types.rglob_mask()
       let in_ = b.in_set.unwrap()
-      in_.copy_from(u)
+      in_.copy_from(out)
       let nlv : Array[Int] = Array::make(2, 0)
       let mut t = in_.iter(-1)
       while t >= 0 {
-        nlv[kbase(fn_.tmps[t].cls)] = nlv[kbase(fn_.tmps[t].cls)] + 1
-        t = in_.iter(t)
+        nlv[@types.kbase(fn_.tmps[t].cls)] = nlv[@types.kbase(fn_.tmps[t].cls)] +
+          1
+        t = in_.iter(t + 1)
       }
-      // Jump argument
-      bset(b.jmp.arg, b, nlv, fn_.tmps)
-      for k = 0; k < 2; k = k + 1 {
-        b.nlive_w = nlv[0]
-        b.nlive_d = nlv[1]
+      if b.jmp.arg.call_val() >= 0 {
+        let rr = @types.retregs(b.jmp.arg)
+        in_.bits[0] = in_.bits[0] | rr.0
+        nlv[0] = rr.1
+        nlv[1] = rr.2
+      } else {
+        bset(b.jmp.arg, b, nlv, fn_.tmps)
       }
-      // Instructions in reverse
+      b.nlive_w = nlv[0]
+      b.nlive_d = nlv[1]
+      // instructions in reverse
       for ii = b.ins.length() - 1; ii >= 0; ii = ii - 1 {
         let ins = b.ins[ii]
+        if ins.op == @types.Call && ins.arg2.call_val() >= 0 {
+          let rr = @types.retregs(ins.arg2)
+          in_.bits[0] = in_.bits[0] & rr.0.lnot()
+          nlv[0] = nlv[0] - rr.1 + 9
+          nlv[1] = nlv[1] - rr.2 + 15
+          if nlv[0] > b.nlive_w {
+            b.nlive_w = nlv[0]
+          }
+          if nlv[1] > b.nlive_d {
+            b.nlive_d = nlv[1]
+          }
+          let ar = @types.argregs(ins.arg2)
+          in_.bits[0] = in_.bits[0] | ar.0
+          nlv[0] = nlv[0] - 9 + ar.1
+          nlv[1] = nlv[1] - 15 + ar.2
+        }
         if !ins.to.is_none() {
           let t = ins.to.tmp_val()
           if in_.has(t) {
-            nlv[kbase(fn_.tmps[t].cls)] = nlv[kbase(fn_.tmps[t].cls)] - 1
+            nlv[@types.kbase(fn_.tmps[t].cls)] = nlv[@types.kbase(
+                fn_.tmps[t].cls,
+              )] -
+              1
           }
           b.gen_set.unwrap().set(t)
           in_.clr(t)
@@ -126,8 +140,6 @@ pub fn filllive(fn_ : @types.Fn) -> Unit {
             _ => bset(arg, b, nlv, fn_.tmps)
           }
         }
-      }
-      for k = 0; k < 2; k = k + 1 {
         if nlv[0] > b.nlive_w {
           b.nlive_w = nlv[0]
         }
@@ -136,5 +148,25 @@ pub fn filllive(fn_ : @types.Fn) -> Unit {
         }
       }
     }
+  }
+  if print_dbg {
+    let sb = StringBuilder::new()
+    sb.write_string("\n> Liveness analysis:\n")
+    for id in fn_.def_order {
+      let b = fn_.blks[id]
+      sb.write_string("\t")
+      sb.write_string(@util.lpad(b.name, 10))
+      sb.write_string("in:   ")
+      sb.write_string(@types.dumpts(b.in_set.unwrap(), fn_.tmps))
+      sb.write_string("\t          out:  ")
+      sb.write_string(@types.dumpts(b.out_set.unwrap(), fn_.tmps))
+      sb.write_string("\t          gen:  ")
+      sb.write_string(@types.dumpts(b.gen_set.unwrap(), fn_.tmps))
+      sb.write_string("\t          live: ")
+      sb.write_string("\{b.nlive_w} \{b.nlive_d}\n")
+    }
+    sb.to_string()
+  } else {
+    ""
   }
 }

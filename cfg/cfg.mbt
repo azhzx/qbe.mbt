@@ -38,7 +38,8 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
 }
 
 ///|
-// DFS post-order traversal for RPO computation
+// DFS post-order traversal for RPO computation (C rporec: visits s1 before
+// s2, swapping them when s1 is more deeply nested in loops).
 fn rpo_dfs(f : @types.Fn, blk_id : Int, post_order : Array[Int]) -> Unit {
   if blk_id < 0 || blk_id >= f.blks.length() {
     return
@@ -49,8 +50,15 @@ fn rpo_dfs(f : @types.Fn, blk_id : Int, post_order : Array[Int]) -> Unit {
     return
   }
   f.blks[blk_id].rpo_id = -2 // mark as visiting
-  let s1 = b.jmp.s1
-  let s2 = b.jmp.s2
+  let mut s1 = b.jmp.s1
+  let mut s2 = b.jmp.s2
+  if s1 >= 0 && s2 >= 0 && s1 != s2 {
+    if f.blks[s1].loop_depth > f.blks[s2].loop_depth {
+      let t = s1
+      s1 = s2
+      s2 = t
+    }
+  }
   if s1 >= 0 {
     rpo_dfs(f, s1, post_order)
   }
@@ -287,94 +295,96 @@ pub fn fillfron(f : @types.Fn) -> Unit {
 }
 
 ///|
-// Mark loop blocks - recursive helper for loopiter
-fn loop_mark(f : @types.Fn, hd : Int, b : Int) -> Unit {
+// Recursive loop marking (C loopmark in cfg.c).
+fn loop_mark(f : @types.Fn, hd : Int, b : Int, fv : (Int, Int) -> Unit) -> Unit {
   if b < 0 || b >= f.blks.length() {
     return
   }
-  // hd.rpo_id is used as the visit marker
-  if f.blks[b].rpo_id < f.blks[hd].rpo_id ||
-    f.blks[b].visit == f.blks[hd].rpo_id {
+  let hd_id = f.blks[hd].rpo_id
+  if f.blks[b].rpo_id < hd_id || f.blks[b].visit == hd_id {
     return
   }
-  f.blks[b].visit = f.blks[hd].rpo_id
-  f.blks[b].loop_depth = f.blks[b].loop_depth + 1
+  f.blks[b].visit = hd_id
+  fv(hd, b)
   for p = 0; p < f.blks[b].npred; p = p + 1 {
-    loop_mark(f, hd, f.blks[b].pred[p])
+    loop_mark(f, hd, f.blks[b].pred[p], fv)
   }
 }
 
 ///|
-// Fill loop depth information.
-// Requires: fillrpo, fillpreds already called.
-// Corresponds to fillloop() in cfg.c (uses loop iteration with multiplier)
-pub fn fillloop(f : @types.Fn) -> Unit {
-  // Reset loop depth and visit
+// Iterate over loops, calling f(hd, b) for every block b in a loop headed by
+// hd (C loopiter in cfg.c). Requires: fillrpo and fillpreds.
+pub fn loopiter(f : @types.Fn, fv : (Int, Int) -> Unit) -> Unit {
   for i = 0; i < f.blks.length(); i = i + 1 {
-    f.blks[i].loop_depth = 0
     f.blks[i].visit = -1
   }
-  // For each block in RPO, check if any predecessor is a back edge
   for n = 0; n < f.rpo.length(); n = n + 1 {
-    let b_id = f.rpo[n]
-    for p = 0; p < f.blks[b_id].npred; p = p + 1 {
-      let pred_id = f.blks[b_id].pred[p]
-      // Back edge: predecessor's rpo_id >= current rpo_id
-      if f.blks[pred_id].rpo_id >= f.blks[b_id].rpo_id {
-        loop_mark(f, b_id, pred_id)
+    let b = f.rpo[n]
+    for p = 0; p < f.blks[b].npred; p = p + 1 {
+      if f.blks[f.blks[b].pred[p]].rpo_id >= n {
+        loop_mark(f, b, f.blks[b].pred[p], fv)
       }
     }
   }
 }
 
 ///|
-// Simplify jumps by merging empty blocks that just jump.
-// Requires: fillrpo already called.
-// Corresponds to simpljmp() in cfg.c
+// Fill loop depth information (C fillloop in cfg.c): loop is a multiplicative
+// nesting factor (1, 10, 100, ...). Requires: fillrpo, fillpreds.
+pub fn fillloop(f : @types.Fn) -> Unit {
+  for i = 0; i < f.blks.length(); i = i + 1 {
+    f.blks[i].loop_depth = 1
+  }
+  loopiter(f, fn(hd, b) {
+    ignore(hd)
+    f.blks[b].loop_depth = f.blks[b].loop_depth * 10
+  })
+}
+
+///|
+// Union-find find with path compression (C uffind in cfg.c).
+fn uf_find(f : @types.Fn, pb : Int, uf : Array[Int]) -> Int {
+  let pb1 = uf[f.blks[pb].rpo_id]
+  if pb1 >= 0 {
+    let root = uf_find(f, pb1, uf)
+    uf[f.blks[pb].rpo_id] = root
+    root
+  } else {
+    pb
+  }
+}
+
+///|
+// Simplify jumps by merging empty blocks that just jump (C simpljmp in cfg.c).
+// Requires: rpo and no phis (rega clears them). Breaks the CFG.
 pub fn simpljmp(f : @types.Fn) -> Unit {
-  // Union-find for block merging
-  let uf : Array[Int] = Array::new()
-  for i = 0; i < f.blks.length(); i = i + 1 {
-    uf.push(i)
-  }
-  // Find with path compression
-  fn find(b : Int) -> Int {
-    let mut b = b
-    while uf[b] != b {
-      b = uf[b]
-    }
-    b
-  }
-  // Merge empty blocks that just jump
-  for i = 0; i < f.blks.length(); i = i + 1 {
-    let b = f.blks[i]
-    // Only merge blocks with no phi nodes and no instructions
-    if b.phi.length() == 0 && b.ins.length() == 0 {
+  // union-find indexed by block rpo id
+  let uf : Array[Int] = Array::make(f.blks.length(), -1)
+  for id in f.def_order {
+    let b = f.blks[id]
+    if b.ins.length() == 0 {
       if b.jmp.kind == @types.Jjmp {
-        let s1 = b.jmp.s1
-        if s1 >= 0 && s1 != i {
-          let target = find(s1)
-          if target != i {
-            uf[i] = target
-          }
+        let s1 = uf_find(f, b.jmp.s1, uf)
+        if s1 != id {
+          uf[b.rpo_id] = s1
         }
       }
     }
   }
-  // Update all successors through union-find
-  for i = 0; i < f.blks.length(); i = i + 1 {
-    if f.blks[i].jmp.s1 >= 0 {
-      f.blks[i].jmp.s1 = find(f.blks[i].jmp.s1)
+  for id in f.def_order {
+    let b = f.blks[id]
+    if b.jmp.s1 >= 0 {
+      b.jmp.s1 = uf_find(f, b.jmp.s1, uf)
     }
-    if f.blks[i].jmp.s2 >= 0 {
-      f.blks[i].jmp.s2 = find(f.blks[i].jmp.s2)
+    if b.jmp.s2 >= 0 {
+      b.jmp.s2 = uf_find(f, b.jmp.s2, uf)
     }
-    // If both successors are the same, simplify to unconditional jump
-    let s1 = f.blks[i].jmp.s1
-    let s2 = f.blks[i].jmp.s2
-    if s1 >= 0 && s1 == s2 {
-      f.blks[i].jmp.kind = @types.Jjmp
-      f.blks[i].jmp.s2 = -1
+    let c = @types.jump_index(b.jmp.kind) - @types.jump_index(@types.Jjfieq)
+    if c >= 0 && c <= 18 {
+      if b.jmp.s1 == b.jmp.s2 {
+        b.jmp.kind = @types.Jjmp
+        b.jmp.s2 = -1
+      }
     }
   }
 }

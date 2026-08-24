@@ -127,11 +127,11 @@ pub fn BSet::equal(self : Self, other : BSet) -> Bool {
 }
 
 ///|
-// Iterate over set bits. Returns next element index after start, or -1 if done
+// Iterate over set bits. Returns the next element index >= start, or -1 if
+// done. Matches C bsiter (inclusive of start).
 pub fn BSet::iter(self : Self, start : Int) -> Int {
-  let start_i = start + 1
+  let mut i = if start < 0 { 0 } else { start }
   let nbits_total = self.bits.length() * nbit
-  let mut i = start_i
   while i < nbits_total {
     if self.has(i) {
       return i

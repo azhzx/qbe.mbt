@@ -126,17 +126,19 @@ pub const NFPS : Int = NFPR
 pub const NCLR : Int = R15 - RBX + 1
 
 ///|
-// Caller-save registers for amd64
-pub let amd64_rsave : Array[Int] = [
-  RAX,
-  RCX,
-  RDX,
-  RSI,
+// Caller-save registers for amd64 sysv (C amd64_sysv_rsave in sysv.c).
+// These are the argument/return registers used by retregs/argregs and by
+// the spill/rega passes (T.rsave).
+pub let rsave : Array[Int] = [
   RDI,
+  RSI,
+  RDX,
+  RCX,
   R8,
   R9,
   R10,
   R11,
+  RAX,
   XMM0,
   XMM1,
   XMM2,
@@ -152,8 +154,55 @@ pub let amd64_rsave : Array[Int] = [
   XMM12,
   XMM13,
   XMM14,
-  XMM15,
 ]
+
+///|
+// Callee-save registers (C amd64_sysv_rclob in sysv.c).
+pub let rclob : Array[Int] = [RBX, R12, R13, R14, R15]
+
+///|
+// The registers returned by a call, given its RCall ref (C retregs).
+// Returns (bits, ngp, nfpr).
+pub fn retregs(r : Ref) -> (UInt64, Int, Int) {
+  let mut b : UInt64 = 0
+  let v = r.call_val()
+  let ni = v & 3
+  let nf = (v >> 2) & 3
+  if ni >= 1 {
+    b = b | (1UL << RAX)
+  }
+  if ni >= 2 {
+    b = b | (1UL << RDX)
+  }
+  if nf >= 1 {
+    b = b | (1UL << XMM0)
+  }
+  if nf >= 2 {
+    b = b | (1UL << XMM1)
+  }
+  (b, ni, nf)
+}
+
+///|
+// The registers used to pass arguments, given an RCall ref (C argregs).
+// Returns (bits, ngp, nfpr).
+pub fn argregs(r : Ref) -> (UInt64, Int, Int) {
+  let mut b : UInt64 = 0
+  let v = r.call_val()
+  let ni = (v >> 4) & 15
+  let nf = (v >> 8) & 15
+  let ra = (v >> 12) & 1
+  for j = 0; j < ni; j = j + 1 {
+    b = b | (1UL << rsave[j])
+  }
+  for j = 0; j < nf; j = j + 1 {
+    b = b | (1UL << (XMM0 + j))
+  }
+  if ra != 0 {
+    b = b | (1UL << RAX)
+  }
+  (b, ni + ra, nf)
+}
 
 ///|
 // Globally live registers bitmask (RBP | RSP)

@@ -156,7 +156,9 @@ async fn process_file(file : String, dbg : DbFlags) -> Unit {
       dbg_dominators(fn_)
     }
     @cfg.fillfron(fn_)
-    @live.filllive(fn_)
+    // C ssa() sets debug['L'] = 0 during ssa, so the pre-abi liveness
+    // analysis is never dumped.
+    @util.eprint(@live.filllive(fn_, false))
     @ssa.phiins(fn_)
     @ssa.renblk(fn_)
     @ssa.filluse(fn_)
@@ -183,6 +185,16 @@ async fn process_file(file : String, dbg : DbFlags) -> Unit {
     @ssa.filluse(fn_)
     // T.isel (amd64/isel.c): -dI.
     @util.eprint(@isel.isel(fn_, interner, dbg.i, typs))
+    // Post-isel pipeline (main.c): fillrpo, filllive, fillcost, spill, rega.
+    @cfg.fillrpo(fn_)
+    @util.eprint(@live.filllive(fn_, dbg.l))
+    @util.eprint(@spill.fillcost(fn_, dbg.s))
+    @util.eprint(@spill.spill(fn_, dbg.s, interner, typs))
+    @util.eprint(@rega.rega(fn_, dbg.r, interner, typs))
+    @cfg.fillrpo(fn_)
+    @cfg.simpljmp(fn_)
+    @cfg.fillpreds(fn_)
+    @cfg.fillrpo(fn_)
     // C main.c: fprintf(stderr, "\n"); at end of debug mode.
     if is_dbg {
       @util.eprint("\n")

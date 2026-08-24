@@ -88,7 +88,7 @@ pub const XMM9 : Int = 26
 
 pub fn addcon(Con, Con) -> Con
 
-pub let amd64_rsave : Array[Int]
+pub fn argregs(Ref) -> (UInt64, Int, Int)
 
 pub fn astack(AliasType) -> Bool
 
@@ -97,6 +97,8 @@ pub fn class_from_code(Int) -> Class
 pub fn con_eq(Con, Con) -> Bool
 
 pub fn con_raw_bits(Con) -> Int64
+
+pub fn dumpts(BSet, Array[Tmp]) -> String
 
 pub fn ext_width_idx(Op) -> Int
 
@@ -136,13 +138,21 @@ pub fn op_index(Op) -> Int
 
 pub fn op_info(Op) -> OpInfo
 
+pub fn phicls(Int, Array[Tmp]) -> Int
+
+pub let rclob : Array[Int]
+
 pub fn ref_none() -> Ref
 
 pub fn regname(Int) -> String
 
 pub fn req(Ref, Ref) -> Bool
 
+pub fn retregs(Ref) -> (UInt64, Int, Int)
+
 pub fn rglob_mask() -> UInt64
+
+pub let rsave : Array[Int]
 
 pub fn rtype(Ref) -> Int
 
@@ -567,9 +577,9 @@ pub fn Ref::typ(Int) -> Self
 pub fn Ref::typ_val(Self) -> Int
 
 pub(all) struct RegHint {
-  r : Int
-  w : Int
-  m : UInt64
+  mut r : Int
+  mut w : Int
+  mut m : UInt64
 } derive(@debug.Debug)
 pub fn RegHint::default() -> Self
 

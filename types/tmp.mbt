@@ -59,9 +59,9 @@ pub(all) struct Use {
 ///|
 // Register allocation hint
 pub(all) struct RegHint {
-  r : Int // Preferred register, -1 if unset
-  w : Int // Weight
-  m : UInt64 // Bitmask of registers to avoid
+  mut r : Int // Preferred register, -1 if unset
+  mut w : Int // Weight
+  mut m : UInt64 // Bitmask of registers to avoid
 } derive(Debug)
 
 ///|

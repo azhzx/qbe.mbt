@@ -28,6 +28,8 @@ pub fn fillrpo(@types.Fn) -> Unit
 
 pub fn getalias(@types.Ref, @types.Fn) -> @types.AliasInfo
 
+pub fn loopiter(@types.Fn, (Int, Int) -> Unit) -> Unit
+
 pub fn sdom(@types.Fn, Int, Int) -> Bool
 
 pub fn simpljmp(@types.Fn) -> Unit

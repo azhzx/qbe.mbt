@@ -14,6 +14,12 @@ pub fn intern(String) -> Int
 
 pub async fn iprint(String) -> Unit
 
+pub fn lpad(String, Int) -> String
+
+pub fn qsort_int(Array[Int], Int, Int, (Int, Int) -> Int) -> Unit
+
+pub fn rpad(Int, Int) -> String
+
 // Errors
 pub(all) suberror QbeError {
   ParseError(String, Int, String)
