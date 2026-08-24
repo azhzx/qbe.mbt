@@ -1,0 +1,1049 @@
+﻿moon : 2026-08-24T04:30:03.739443Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_intern
+al_rr: moon::rr_build:558: Checking local modules and backend
+At line:15 char:5630
++ ... ources\app\node_modules\@vscode\ripgrep\bin'; moon check 2>&1 | Out-F ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T04:3...les and backend:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T04:30:03.739497Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:568: Preferred backend: None
+2026-08-24T04:30:03.739510Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:586: is_core: false
+2026-08-24T04:30:03.739520Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:610: User intent calculated: [Check(PackageId(1v1)), Check(PackageId(2v1)), Check(PackageId(3v1)), Check
+(PackageId(4v1)), Check(PackageId(5v1)), Check(PackageId(6v1)), Check(PackageId(7v1)), Check(PackageId(8v1)), Check(Pac
+kageId(9v1))]
+2026-08-24T04:30:03.739542Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:613: Skipping prebuild configuration for check run mode
+2026-08-24T04:30:03.739548Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:622: Expanding user intents to build plan nodes
+2026-08-24T04:30:03.739571Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:302: Determining compilation configuration
+2026-08-24T04:30:03.739576Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:305: std: self.use_std = true, is_core = false => std = true
+2026-08-24T04:30:03.739580Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:311: Target backend: explicit = Some(Wasm) => selected = Wasm
+2026-08-24T04:30:03.739589Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:334: Final backend configuration: Wasm { use_wat: false, wasi_link: true }
+2026-08-24T04:30:03.739614Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:640: Begin lowering to build graph
+2026-08-24T04:30:03.741015Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr: 
+moon::rr_build:681: Build planning completed successfully
+2026-08-24T04:30:03.745092Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:db.open:db.open_existing: n2::db:381: opening existing database path=E:\qbe.mbt\_build\wasm\debug\check\ch
+eck.moon_db path=E:\qbe.mbt\_build\wasm\debug\check\check.moon_db
+2026-08-24T04:30:03.746931Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:db.open:db.open_existing: n2::db:389: database loaded successfully path=E:\qbe.mbt\_build\wasm\debug\check
+\check.moon_db path=E:\qbe.mbt\_build\wasm\debug\check\check.moon_db
+2026-08-24T04:30:03.746994Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:746: starting build execution parallelism=12 total_pending=21 para
+llelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) 
+adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.747485Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(1) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.747586Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(0) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.748621Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(20) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749008Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(2) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749205Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(19) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749212Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(15) location=azhzx/qbe/types@
+Source@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fail
+ures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749387Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(15) parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749399Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(17) location=azhzx/qbe/util@S
+ource@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failu
+res_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.749524Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(17) parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.814707Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(17) location=azhzx/qbe/util@S
+ource@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failu
+res_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.815045Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(18) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.845584Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(15) location=azhzx/qbe/types@
+Source@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fail
+ures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.845991Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(16) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.846160Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(3) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.846467Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(4) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.846794Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(9) location=azhzx/qbe/live@So
+urce@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.846917Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(9) parallelism=12 failure
+s_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explai
+n=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.846926Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(7) location=azhzx/qbe/lexer@S
+ource@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failu
+res_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.847026Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(7) parallelism=12 failure
+s_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explai
+n=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.847034Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(13) location=azhzx/qbe/ssa@So
+urce@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.847191Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(13) parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.935735Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(9) location=azhzx/qbe/live@So
+urce@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.936100Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(10) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.947931Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(7) location=azhzx/qbe/lexer@S
+ource@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failu
+res_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.948725Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(8) parallelism=12 
+failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false
+ explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.948744Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(11) location=azhzx/qbe/parser
+@Source@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.948952Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(11) parallelism=12 failur
+es_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:03.970774Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:841: build failed buildid=BuildId(13) location=azhzx/qbe/ssa@Sourc
+e@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_
+left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:04.025230Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(11) location=azhzx/qbe/parser
+@Source@Check:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:04.025586Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(12) parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=fals
+e explain=false dirty_on_output=true logger_present=false
+2026-08-24T04:30:04.025601Z  INFO run_check:run_check_internal:run_check_normal_internal:run_check_normal_internal_rr:e
+xecute_build:work.run:work.run_with_logger: n2::work:871: build execution completed tasks_done=5 tasks_failed=1 success
+=false parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_lef
+t=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+Warning: [0001]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:25:4 ]
+    │
+ 25 │ fn is_ident_start(c : Char) -> Bool {
+    │    ───────┬──────  
+    │           ╰──────── Warning (unused_value): Unused function 'is_ident_start'
+────╯
+Warning: [0027]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:42:3 ]
+    │
+ 42 │   loop s {
+    │   ────┬───  
+    │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rewr
+ite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite st
+ate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+────╯
+Warning: [0027]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:75:3 ]
+    │
+ 75 │   loop s {
+    │   ────┬───  
+    │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rewr
+ite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite st
+ate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:82:22 ]
+    │
+ 82 │       if c == '.' && not(is_float) {
+    │                      ─┬─  
+    │                       ╰─── Warning (deprecated): Use !expr instead
+────╯
+Warning: [0027]
+     ╭─[ E:\qbe.mbt\lexer\lexer.mbt:101:3 ]
+     │
+ 101 │   loop s {
+     │   ────┬───  
+     │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rew
+rite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite s
+tate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+─────╯
+Warning: [0027]
+     ╭─[ E:\qbe.mbt\lexer\lexer.mbt:188:3 ]
+     │
+ 188 │   loop code {
+     │   ─────┬─────  
+     │        ╰─────── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use 
+rewrite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composit
+e state explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+─────╯
+Warning: [0027]
+     ╭─[ E:\qbe.mbt\lexer\lexer.mbt:212:18 ]
+     │
+ 212 │       let rest = loop rest {
+     │                  ─────┬─────  
+     │                       ╰─────── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is d
+eprecated. Use rewrite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destr
+ucture composite state explicitly inside the loop body, and use an explicit `break` to return the final result. instead
+.
+─────╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\lexer\moon.pkg:2:3 ]
+   │
+ 2 │   "azhzx/qbe/types",
+   │   ────────┬────────  
+   │           ╰────────── Warning (unused_package): Unused package 'azhzx/qbe/types'
+───╯
+Warning: [0002]
+    ╭─[ E:\qbe.mbt\live\live.mbt:52:7 ]
+    │
+ 52 │   let nb = fn_.nblk()
+    │       ─┬  
+    │        ╰── Warning (unused_value): Unused variable 'nb'
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:55:15 ]
+    │
+ 55 │         while not(done) {
+    │               ─┬─  
+    │                ╰─── Warning (deprecated): Use !expr instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:60:33 ]
+    │
+ 60 │               let num_str = raw.substring(start=2)
+    │                                 ────┬────  
+    │                                     ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:61:41 ]
+    │
+ 61 │               let (fval, err_msg) = try @strconv.parse_double(num_str) catch {
+    │                                         ──────────┬──────────  
+    │                                                   ╰──────────── Warning (deprecated): use `@string.parse_double` 
+instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:74:30 ]
+    │
+ 74 │                   flts: fval.to_float(),
+    │                              ────┬───  
+    │                                  ╰───── Warning (deprecated): Use `Float::from_double` instead
+────╯
+Warning: [0001]
+     ╭─[ E:\qbe.mbt\parser\func.mbt:177:12 ]
+     │
+ 177 │ fn Parser::closeblk(self : Self) -> Unit {
+     │            ────┬───  
+     │                ╰───── Warning (unused_value): Unused function 'closeblk'
+─────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:71:25 ]
+    │
+ 71 │       let num_str = raw.substring(start=2)
+    │                         ────┬────  
+    │                             ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:72:33 ]
+    │
+ 72 │       let (fval, err_msg) = try @strconv.parse_double(num_str) catch {
+    │                                 ──────────┬──────────  
+    │                                           ╰──────────── Warning (deprecated): use `@string.parse_double` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:81:43 ]
+    │
+ 81 │         let con = @types.Con::single(fval.to_float())
+    │                                           ────┬───  
+    │                                               ╰───── Warning (deprecated): Use `Float::from_double` instead
+────╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:3:3 ]
+   │
+ 3 │   "azhzx/qbe/cfg",
+   │   ───────┬───────  
+   │          ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/cfg'
+───╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:4:3 ]
+   │
+ 4 │   "azhzx/qbe/util",
+   │   ────────┬───────  
+   │           ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/util'
+───╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:17:8 ]
+    │
+ 17 │ struct Name {
+    │        ──┬─  
+    │          ╰─── Warning (missing_priv): The type 'Name' does not occur in public signature of current package, cons
+ider marking it as `priv`.
+────╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:25:8 ]
+    │
+ 25 │ struct NamePool {
+    │        ────┬───  
+    │            ╰───── Warning (missing_priv): The type 'NamePool' does not occur in public signature of current packa
+ge, consider marking it as `priv`.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:5 ]
+    │
+ 67 │     var k = -1
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:5 ]
+    │
+ 67 │     var k = -1
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:9 ]
+    │
+ 67 │     var k = -1
+    │         ┬  
+    │         ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new
+ line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:5 ]
+    │
+ 68 │     var bp = 0
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:5 ]
+    │
+ 68 │     var bp = 0
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:9 ]
+    │
+ 68 │     var bp = 0
+    │         ─┬  
+    │          ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a ne
+w line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:5 ]
+    │
+ 69 │     var be = 0
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:5 ]
+    │
+ 69 │     var be = 0
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:9 ]
+    │
+ 69 │     var be = 0
+    │         ─┬  
+    │          ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a ne
+w line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:7 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │       ─┬─  
+    │        ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:7 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │       ─┬─  
+    │        ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using
+ another name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:11 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │           ┬  
+    │           ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a n
+ew line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:77:13 ]
+    │
+ 77 │         if !r.is_none() {
+    │             ┬  
+    │             ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:79:22 ]
+    │
+ 79 │             i.arg1 = r
+    │                      ┬  
+    │                      ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:82:22 ]
+    │
+ 82 │             i.arg2 = r
+    │                      ┬  
+    │                      ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:88:15 ]
+    │
+ 88 │               r = @types.Ref::tmp(t)
+    │               ───────────┬──────────  
+    │                          ╰──────────── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:90:15 ]
+    │
+ 90 │               r = refindex(t, fn_)
+    │               ──────────┬─────────  
+    │                         ╰─────────── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:92:20 ]
+    │
+ 92 │             i.to = r
+    │                    ┬  
+    │                    ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:96:20 ]
+    │
+ 96 │               work[bp] = id
+    │                    ─┬  
+    │                     ╰── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:97:15 ]
+    │
+ 97 │               bp = bp + 1
+    │               ─────┬─────  
+    │                    ╰─────── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:97:20 ]
+    │
+ 97 │               bp = bp + 1
+    │                    ─┬  
+    │                     ╰── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:25 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                         ─┬─  
+    │                          ╰─── The value identifier ref is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:25 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                         ─┬─  
+    │                          ╰─── Warning (reserved_keyword): The word `ref` is reserved for possible future use. Ple
+ase consider using another name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:29 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                             ┬  
+    │                             ╰── Parse error, unexpected token id (lowercase start), you may expect `,` or `)`.
+────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:105:11 ]
+     │
+ 105 │       if !r.is_none() && @types.req(b.jmp.arg, @types.Ref::tmp(t)) {
+     │           ┬  
+     │           ╰── The value identifier r is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:106:21 ]
+     │
+ 106 │         b.jmp.arg = r
+     │                     ┬  
+     │                     ╰── The value identifier r is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:112:11 ]
+     │
+ 112 │     while bp != be {
+     │           ─┬  
+     │            ╰── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:112:17 ]
+     │
+ 112 │     while bp != be {
+     │                 ─┬  
+     │                  ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:114:23 ]
+     │
+ 114 │       let b_id = work[be]
+     │                       ─┬  
+     │                        ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:115:7 ]
+     │
+ 115 │       be = be + 1
+     │       ─────┬─────  
+     │            ╰─────── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:115:12 ]
+     │
+ 115 │       be = be + 1
+     │            ─┬  
+     │             ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:126:20 ]
+     │
+ 126 │               work[bp] = f
+     │                    ─┬  
+     │                     ╰── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:127:15 ]
+     │
+ 127 │               bp = bp + 1
+     │               ─────┬─────  
+     │                    ╰─────── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:127:20 ]
+     │
+ 127 │               bp = bp + 1
+     │                    ─┬  
+     │                     ╰── The value identifier bp is unbound.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:137:4 ]
+     │
+ 137 │ fn kcode(k : @types.Class) -> Int {
+     │    ──┬──  
+     │      ╰──── The toplevel identifier kcode is declared twice: it was previously defined at E:\qbe.mbt\ssa\use.mbt:
+12:8.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:161:8 ]
+     │
+ 161 │     if p.to.kind == @types.RTmp {
+     │        ────┬────  
+     │            ╰────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:161:18 ]
+     │
+ 161 │     if p.to.kind == @types.RTmp {
+     │                  ─┬  
+     │                   ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:161:21 ]
+     │
+ 161 │     if p.to.kind == @types.RTmp {
+     │                     ─────┬─────  
+     │                          ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:162:15 ]
+     │
+ 162 │       let t = p.to.val
+     │               ────┬───  
+     │                   ╰───── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct
+.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:165:18 ]
+     │
+ 165 │         fn_.tmps[r.val].visit = t
+     │                  ──┬──  
+     │                    ╰──── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct
+.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:175:8 ]
+     │
+ 175 │     if ins.arg1.kind == @types.RTmp {
+     │        ──────┬──────  
+     │              ╰──────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:175:22 ]
+     │
+ 175 │     if ins.arg1.kind == @types.RTmp {
+     │                      ─┬  
+     │                       ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:175:25 ]
+     │
+ 175 │     if ins.arg1.kind == @types.RTmp {
+     │                         ─────┬─────  
+     │                              ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:176:15 ]
+     │
+ 176 │       let t = ins.arg1.val
+     │               ──────┬─────  
+     │                     ╰─────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a st
+ruct.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:181:8 ]
+     │
+ 181 │     if ins.arg2.kind == @types.RTmp {
+     │        ──────┬──────  
+     │              ╰──────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:181:22 ]
+     │
+ 181 │     if ins.arg2.kind == @types.RTmp {
+     │                      ─┬  
+     │                       ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:181:25 ]
+     │
+ 181 │     if ins.arg2.kind == @types.RTmp {
+     │                         ─────┬─────  
+     │                              ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:182:15 ]
+     │
+ 182 │       let t = ins.arg2.val
+     │               ──────┬─────  
+     │                     ╰─────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a st
+ruct.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:188:29 ]
+     │
+ 188 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                             ─────┬─────  
+     │                                  ╰─────── This expression has type @azhzx/qbe/types.Ref, which is a variant type
+ and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:188:41 ]
+     │
+ 188 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                                         ─┬  
+     │                                          ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no 
+`impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:188:44 ]
+     │
+ 188 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                                            ─────┬─────  
+     │                                                 ╰─────── Using constructors as higher order function directly is
+ forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:189:15 ]
+     │
+ 189 │       let t = ins.to.val
+     │               ─────┬────  
+     │                    ╰────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a stru
+ct.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:192:18 ]
+     │
+ 192 │         fn_.tmps[r.val].visit = t
+     │                  ──┬──  
+     │                    ╰──── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct
+.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:199:6 ]
+     │
+ 199 │   if b.jmp.arg.kind == @types.RTmp {
+     │      ───────┬──────  
+     │             ╰──────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:199:21 ]
+     │
+ 199 │   if b.jmp.arg.kind == @types.RTmp {
+     │                     ─┬  
+     │                      ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:199:24 ]
+     │
+ 199 │   if b.jmp.arg.kind == @types.RTmp {
+     │                        ─────┬─────  
+     │                             ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:200:13 ]
+     │
+ 200 │     let t = b.jmp.arg.val
+     │             ──────┬──────  
+     │                   ╰──────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a str
+uct.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:216:15 ]
+     │
+ 216 │       let t = p.to.val
+     │               ────┬───  
+     │                   ╰───── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct
+.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:217:10 ]
+     │
+ 217 │       if p.to.kind == @types.RTmp && fn_.tmps[t].visit != 0 {
+     │          ────┬────  
+     │              ╰────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:217:20 ]
+     │
+ 217 │       if p.to.kind == @types.RTmp && fn_.tmps[t].visit != 0 {
+     │                    ─┬  
+     │                     ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:217:23 ]
+     │
+ 217 │       if p.to.kind == @types.RTmp && fn_.tmps[t].visit != 0 {
+     │                       ─────┬─────  
+     │                            ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Warning: [0002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:224:7 ]
+     │
+ 224 │   let child = b.dom_link
+     │       ──┬──  
+     │         ╰──── Warning (unused_value): Unused variable 'child'
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:3 ]
+     │
+ 225 │   var c = child
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:3 ]
+     │
+ 225 │   var c = child
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:7 ]
+     │
+ 225 │   var c = child
+     │       ┬  
+     │       ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:226:9 ]
+     │
+ 226 │   while c >= 0 {
+     │         ┬  
+     │         ╰── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:227:18 ]
+     │
+ 227 │     ren_dfs(fn_, c, stk, pool)
+     │                  ┬  
+     │                  ╰── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:228:5 ]
+     │
+ 228 │     c = fn_.blks[c].dom_next
+     │     ────────────┬───────────  
+     │                 ╰───────────── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:228:18 ]
+     │
+ 228 │     c = fn_.blks[c].dom_next
+     │                  ┬  
+     │                  ╰── The value identifier c is unbound.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:232:8 ]
+     │
+ 232 │     if p.to.kind == @types.RTmp {
+     │        ────┬────  
+     │            ╰────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:232:18 ]
+     │
+ 232 │     if p.to.kind == @types.RTmp {
+     │                  ─┬  
+     │                   ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no `impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:232:21 ]
+     │
+ 232 │     if p.to.kind == @types.RTmp {
+     │                     ─────┬─────  
+     │                          ╰─────── Using constructors as higher order function directly is forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:233:15 ]
+     │
+ 233 │       let t = p.to.val
+     │               ────┬───  
+     │                   ╰───── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a struct
+.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:243:29 ]
+     │
+ 243 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                             ─────┬─────  
+     │                                  ╰─────── This expression has type @azhzx/qbe/types.Ref, which is a variant type
+ and not a struct.
+─────╯
+Error: [4018]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:243:41 ]
+     │
+ 243 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                                         ─┬  
+     │                                          ╰── Type (Int) -> @azhzx/qbe/types.Ref does not implement trait Eq: no 
+`impl` is defined
+─────╯
+Error: [4203]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:243:44 ]
+     │
+ 243 │     if !ins.to.is_none() && ins.to.kind == @types.RTmp {
+     │                                            ─────┬─────  
+     │                                                 ╰─────── Using constructors as higher order function directly is
+ forbidden.
+─────╯
+Error: [4028]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:244:15 ]
+     │
+ 244 │       let t = ins.to.val
+     │               ─────┬────  
+     │                    ╰────── This expression has type @azhzx/qbe/types.Ref, which is a variant type and not a stru
+ct.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:3 ]
+     │
+ 263 │   var n = stk[t]
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:3 ]
+     │
+ 263 │   var n = stk[t]
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:7 ]
+     │
+ 263 │   var n = stk[t]
+     │       ┬  
+     │       ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:264:9 ]
+     │
+ 264 │   while n >= 0 && !dom(fn_, pool.entries[n].blk_id, b) {
+     │         ┬  
+     │         ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:264:42 ]
+     │
+ 264 │   while n >= 0 && !dom(fn_, pool.entries[n].blk_id, b) {
+     │                                          ┬  
+     │                                          ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:265:14 ]
+     │
+ 265 │     let n1 = n
+     │              ┬  
+     │              ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:266:5 ]
+     │
+ 266 │     n = pool.entries[n].up
+     │     ───────────┬──────────  
+     │                ╰──────────── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:266:22 ]
+     │
+ 266 │     n = pool.entries[n].up
+     │                      ┬  
+     │                      ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:269:12 ]
+     │
+ 269 │   stk[t] = n
+     │            ┬  
+     │            ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:270:6 ]
+     │
+ 270 │   if n < 0 {
+     │      ┬  
+     │      ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:274:18 ]
+     │
+ 274 │     pool.entries[n].r
+     │                  ┬  
+     │                  ╰── The value identifier n is unbound.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:286:4 ]
+     │
+ 286 │ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+     │    ──┬─  
+     │      ╰─── The toplevel identifier sdom is declared twice: it was previously defined at E:\qbe.mbt\ssa\ssacheck.m
+bt:6:4.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:3 ]
+     │
+ 290 │   var b2 = b2
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:3 ]
+     │
+ 290 │   var b2 = b2
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:7 ]
+     │
+ 290 │   var b2 = b2
+     │       ─┬  
+     │        ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new
+ line, or `}` to close the block.
+─────╯
+Error: [4087]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:292:5 ]
+     │
+ 292 │     b2 = fn_.blks[b2].idom
+     │     ─┬  
+     │      ╰── The variable b2 is not mutable.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:299:4 ]
+     │
+ 299 │ fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
+     │    ────┬───  
+     │        ╰───── The toplevel identifier clsmerge is declared twice: it was previously defined at E:\qbe.mbt\ssa\us
+e.mbt:24:8.
+─────╯
+Warning: [0001]
+   ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:6:4 ]
+   │
+ 6 │ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+   │    ──┬─  
+   │      ╰─── Warning (unused_value): Unused function 'sdom'
+───╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\types\fn.mbt:42:16 ]
+    │
+ 42 │     blk_names: Map::new(),
+    │                ────┬───  
+    │                    ╰───── Warning (deprecated): Use `Map([], capacity=...)` instead
+────╯
+Warning: [0002]
+     ╭─[ E:\qbe.mbt\types\fn.mbt:103:33 ]
+     │
+ 103 │ pub fn Fn::new_tmp(self : Self, prfx : String) -> Int {
+     │                                 ──┬─  
+     │                                   ╰─── Warning (unused_value): Unused variable 'prfx'
+─────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\util\interner.mbt:11:22 ]
+    │
+ 11 │   Interner::{ table: Map::new(), values: Array::new() }
+    │                      ────┬───  
+    │                          ╰───── Warning (deprecated): Use `Map([], capacity=...)` instead
+────╯
+Failed with 34 warnings, 85 errors.
+Error: failed when checking project

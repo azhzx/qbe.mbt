@@ -1,0 +1,127 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Kaida-Amethyst/mbtcc/lexer"
+
+// Values
+pub fn dummy_eof() -> Token
+
+pub fn dummy_long(Int64, raw? : String) -> Token
+
+pub fn restore_code_from_tokens(Array[Token]) -> String
+
+pub fn string_token_like(Token, String) -> Token
+
+pub fn token_like(Token, TokenKind, raw? : String, err_msg? : String) -> Token
+
+// Errors
+
+// Types and methods
+pub(all) struct Context {
+  code : String
+  source_file : String
+  tokens : Array[Token]
+  err_toks : Array[Token]
+}
+pub fn Context::new(code~ : String, source_file~ : String) -> Self
+pub fn Context::tokenize(Self) -> Array[Token]
+
+pub enum Keyword {
+  Void
+  Char
+  Short
+  Int
+  Long
+  Float
+  Double
+  Signed
+  Unsigned
+  Bool
+  Complex
+  Imaginary
+  Auto
+  Register
+  Static
+  Extern
+  Typedef
+  Thread
+  ThreadLocal
+  If
+  Else
+  Switch
+  Case
+  Default
+  For
+  While
+  Do
+  Goto
+  Break
+  Continue
+  Return
+  Const
+  Volatile
+  Restrict
+  Atomic
+  Inline
+  Noreturn
+  Struct
+  Union
+  Enum
+  Sizeof
+  Typeof
+  Alignas
+  Alignof
+  StaticAssert
+  Generic
+  Attribute
+  BuiltinOffsetof
+}
+pub impl Eq for Keyword
+pub impl Show for Keyword
+
+pub struct Token {
+  kind : TokenKind
+  source_file : String
+  line : Int
+  col : Int
+  idx : Int
+  raw : String
+  err_msg : String
+}
+pub fn Token::detail(Self) -> String
+pub impl Show for Token
+
+pub enum TokenKind {
+  Keyword(Keyword)
+  Bracket(Char)
+  Operator(String)
+  AssignOp(String)
+  Comma
+  Dot
+  Arrow
+  Colon
+  Semi
+  Ellipsis
+  Question
+  Identifier(String)
+  Int(Int)
+  Long(Int64)
+  LongLong(Int64)
+  UInt(UInt)
+  ULong(UInt64)
+  ULongLong(UInt64)
+  Float(Float)
+  Double(Double)
+  Char(Char)
+  String(String)
+  ErrorChar(Char)
+  Hash
+  Hash2
+  EOF
+}
+pub fn TokenKind::detail(Self) -> String
+pub impl Eq for TokenKind
+pub impl Show for TokenKind
+
+// Type aliases
+
+// Traits
+

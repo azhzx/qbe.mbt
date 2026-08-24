@@ -1,0 +1,683 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Kaida-Amethyst/mbtcc/parser"
+
+import {
+  "Kaida-Amethyst/either",
+  "Kaida-Amethyst/mbtcc/env",
+  "Kaida-Amethyst/mbtcc/lexer",
+}
+
+// Values
+pub fn format_lines(Iter[StringView], head_with? : String, continue_with? : String) -> String
+
+pub fn next_check_point(ArrayView[@lexer.Token]) -> ArrayView[@lexer.Token]
+
+// Errors
+pub suberror ParseError {
+  ParseError(@lexer.Token, String)
+}
+pub impl Show for ParseError
+
+// Types and methods
+pub struct AddiExpr {
+  kind : AddiExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn AddiExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn AddiExpr::is_constant(Self) -> Bool
+pub fn AddiExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for AddiExpr
+pub impl Show for AddiExpr
+
+pub enum AddiExprKind {
+  MultiExpr(MultiExpr)
+  AddExpr(AddiExpr, MultiExpr)
+  SubExpr(AddiExpr, MultiExpr)
+}
+pub impl Eq for AddiExprKind
+
+pub struct AndExpr {
+  kind : AndExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn AndExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn AndExpr::is_constant(Self) -> Bool
+pub fn AndExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for AndExpr
+pub impl Show for AndExpr
+
+pub enum AndExprKind {
+  EqualityExpr(EqualityExpr)
+  AndExpr(AndExpr, EqualityExpr)
+}
+pub impl Eq for AndExprKind
+
+pub struct AssignExpr {
+  kind : AssignExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn AssignExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn AssignExpr::is_constant(Self) -> Bool
+pub fn AssignExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for AssignExpr
+pub impl Show for AssignExpr
+
+pub enum AssignExprKind {
+  Conditional(ConditionalExpr)
+  Assign(UnaryExpr, AssignOp, AssignExpr)
+}
+pub impl Eq for AssignExprKind
+
+pub(all) enum AssignOp {
+  Assign
+  MulAssign
+  DivAssign
+  ModAssign
+  AddAssign
+  SubAssign
+  ShlAssign
+  ShrAssign
+  AndAssign
+  XorAssign
+  OrAssign
+}
+pub impl Eq for AssignOp
+
+#alias(TypeName)
+pub(all) struct CType {
+  dataKind : CTypeDataKind
+  is_const : Bool
+  is_volatile : Bool
+  is_restrict : Bool
+  is_atomic : Bool
+  mut tokens : ArrayView[@lexer.Token]
+}
+pub fn CType::additive_result_type(Self, Self, String) -> Self?
+pub fn CType::bool() -> Self
+pub fn CType::char() -> Self
+pub fn CType::common_type(Self, Self) -> Self?
+pub fn CType::const_with(CTypeDataKind) -> Self
+pub fn CType::default_with(CTypeDataKind) -> Self
+pub fn CType::double() -> Self
+pub fn CType::float() -> Self
+pub fn CType::get_field_ctype_by_dot_acc(Self, String) -> Self?
+pub fn CType::get_field_ctype_by_ptr_acc(Self, String) -> Self?
+pub fn CType::int() -> Self
+pub fn CType::int16() -> Self
+#alias(is_dec_ok)
+pub fn CType::is_inc_ok(Self) -> Bool
+pub fn CType::is_integral(Self) -> Bool
+pub fn CType::is_numeric(Self) -> Bool
+pub fn CType::is_scalar(Self) -> Bool
+pub fn CType::long() -> Self
+pub fn CType::longlong() -> Self
+pub fn CType::ptr_to(Self) -> Self
+pub fn CType::string() -> Self
+pub fn CType::struct_type(String, Array[StructField]) -> Self
+pub fn CType::uchar() -> Self
+pub fn CType::uint() -> Self
+pub fn CType::uint16() -> Self
+pub fn CType::ulong() -> Self
+pub fn CType::ulonglong() -> Self
+pub fn CType::void_() -> Self
+pub impl Eq for CType
+pub impl Show for CType
+
+pub(all) enum CTypeDataKind {
+  Void
+  Bool
+  Char
+  UChar
+  Int16
+  UInt16
+  Int
+  UInt
+  Long
+  ULong
+  LongLong
+  ULongLong
+  Float
+  Double
+  LongDouble
+  Struct(String, Array[StructField])
+  Union(String, Array[StructField])
+  Enum(String, Array[(String, Int)])
+  Ptr(CType)
+  Array(CType, Int)
+  Function(Array[(CType, String)], CType, is_variadic~ : Bool)
+}
+pub impl Eq for CTypeDataKind
+pub impl Show for CTypeDataKind
+
+pub struct CastExpr {
+  kind : CastExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn CastExpr::eval_as_double(Self) -> Double raise ParseError
+pub fn CastExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn CastExpr::is_constant(Self) -> Bool
+pub fn CastExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for CastExpr
+pub impl Show for CastExpr
+
+pub enum CastExprKind {
+  UnaryExpr(UnaryExpr)
+  CastTo(CType, CastExpr)
+}
+pub impl Eq for CastExprKind
+
+pub struct CompoundStmt {
+  items : Array[@either.Either[Statement, Declaration]]
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn CompoundStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for CompoundStmt
+pub impl Show for CompoundStmt
+
+#alias(ConstantExpr)
+pub struct ConditionalExpr {
+  kind : ConditionalExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn ConditionalExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn ConditionalExpr::is_constant(Self) -> Bool
+pub fn ConditionalExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for ConditionalExpr
+pub impl Show for ConditionalExpr
+
+#alias(ConstantExprKind)
+pub enum ConditionalExprKind {
+  LogicalOrExpr(LogicalOrExpr)
+  ConditionalExpr(LogicalOrExpr, Expr, ConditionalExpr)
+  GnuCondOmitThen(LogicalOrExpr, ConditionalExpr)
+}
+pub impl Eq for ConditionalExprKind
+
+pub struct Context {
+  code : String
+  source_file : String
+  tokens : Array[@lexer.Token]
+  mut defined : @env.Env[String, SymbolKind]
+  mut tags : @env.Env[String, CTypeDataKind]
+  errs : Array[ParseError]
+  prog : Program
+}
+pub fn Context::add_enum_member(Self, String, CTypeDataKind, Int) -> Unit
+pub fn Context::add_label(Self, String) -> Unit
+pub fn Context::add_tag(Self, String, CTypeDataKind) -> Unit
+pub fn Context::add_typedef(Self, String, CType) -> Unit
+pub fn Context::add_var(Self, String, CType) -> Unit
+pub fn Context::catch_err(Self, ParseError) -> Unit
+pub fn Context::from_lexer(@lexer.Context) -> Self
+pub fn Context::get_tag_ctype(Self, String) -> CTypeDataKind?
+pub fn Context::get_typename_ctype(Self, String) -> CType?
+pub fn Context::get_var_ctype(Self, String) -> CType?
+pub fn Context::is_enum_member(Self, String) -> Bool
+pub fn Context::is_keyword_or_type_name(Self, @lexer.Token) -> Bool
+pub fn Context::is_label(Self, String) -> Bool
+pub fn Context::is_name_a_tag(Self, String) -> Bool
+pub fn Context::is_name_has_been_defined(Self, String) -> Bool
+pub fn Context::is_type_name(Self, String) -> Bool
+pub fn Context::is_type_tok(Self, @lexer.Token) -> Bool
+pub fn Context::is_var_name(Self, String) -> Bool
+pub fn Context::new(code~ : String, source_file? : String, preprocess? : Bool) -> Self raise
+pub fn Context::parse(Self) -> Program raise ParseError
+pub fn Context::parse_addi_expr(Self, ArrayView[@lexer.Token]) -> (AddiExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_and_expr(Self, ArrayView[@lexer.Token]) -> (AndExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_assign_expr(Self, ArrayView[@lexer.Token]) -> (AssignExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_cast_expr(Self, ArrayView[@lexer.Token]) -> (CastExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_compound_statement(Self, ArrayView[@lexer.Token]) -> (CompoundStmt, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_conditional_expr(Self, ArrayView[@lexer.Token]) -> (ConditionalExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_constant_expr(Self, ArrayView[@lexer.Token]) -> (ConditionalExpr, ArrayView[@lexer.Token]) raise ParseError
+#alias(parse_type_name)
+pub fn Context::parse_ctype(Self, ArrayView[@lexer.Token]) -> (CType, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_declaration(Self, ArrayView[@lexer.Token], skip_semi? : Bool) -> (Array[Declaration], ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_declarator(Self, CType, StorageClass, ArrayView[@lexer.Token], ArrayView[@lexer.Token], decay_array_to_ptr? : Bool) -> (CType, String, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_designator(Self, ArrayView[@lexer.Token]) -> (Designator, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_do_while_statement(Self, ArrayView[@lexer.Token]) -> (DoWhileStmt, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_enum_specifier(Self, ArrayView[@lexer.Token]) -> (CTypeDataKind, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_equality_expr(Self, ArrayView[@lexer.Token]) -> (EqualityExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_exclusive_or_expr(Self, ArrayView[@lexer.Token]) -> (ExclusiveOrExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_expr(Self, ArrayView[@lexer.Token]) -> (Expr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_external_declaration(Self, ArrayView[@lexer.Token]) -> (Array[ExternalDeclaration], ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_for_statement(Self, ArrayView[@lexer.Token]) -> (ForStmt, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_if_statement(Self, ArrayView[@lexer.Token]) -> (IfStmt, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_inclusive_or_expr(Self, ArrayView[@lexer.Token]) -> (InclusiveOrExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_init_declarator_list(Self, CType, StorageClass, ArrayView[@lexer.Token], ArrayView[@lexer.Token]) -> (Array[Declaration], ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_initializer(Self, ArrayView[@lexer.Token]) -> (Initializer, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_logical_and_expr(Self, ArrayView[@lexer.Token]) -> (LogicalAndExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_logical_or_expr(Self, ArrayView[@lexer.Token]) -> (LogicalOrExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_multi_expr(Self, ArrayView[@lexer.Token]) -> (MultiExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_postfix_expr(Self, ArrayView[@lexer.Token]) -> (PostfixExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_prim_expr(Self, ArrayView[@lexer.Token]) -> (PrimExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_relational_expr(Self, ArrayView[@lexer.Token]) -> (RelationalExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_shift_expr(Self, ArrayView[@lexer.Token]) -> (ShiftExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_statement(Self, ArrayView[@lexer.Token]) -> (Statement, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_switch_statement(Self, ArrayView[@lexer.Token]) -> (SwitchStmt, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_unary_expr(Self, ArrayView[@lexer.Token]) -> (UnaryExpr, ArrayView[@lexer.Token]) raise ParseError
+pub fn Context::parse_while_statement(Self, ArrayView[@lexer.Token]) -> (WhileStmt, ArrayView[@lexer.Token]) raise ParseError
+#callsite(autofill(loc))
+pub fn Context::pop_scope(Self, loc~ : SourceLoc) -> Unit
+pub fn Context::push_scope(Self) -> Unit
+
+pub struct Declaration {
+  kind : DeclarationKind
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn Declaration::to_string(Self, color? : Bool) -> String
+pub impl Eq for Declaration
+pub impl Show for Declaration
+
+pub enum DeclarationKind {
+  TypeDeclaration(CType)
+  TypeDef(CType, String)
+  VariableDeclaration(CType, is_static~ : Bool, is_extern~ : Bool, is_register~ : Bool, is_thread_local~ : Bool, String, Initializer?)
+}
+pub impl Eq for DeclarationKind
+
+pub(all) enum Designator {
+  Field(String)
+  Index(ConditionalExpr)
+  DesignatorList(Array[Designator])
+}
+pub impl Eq for Designator
+pub impl Show for Designator
+
+pub struct DoWhileStmt {
+  body : Statement
+  cond : Expr
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn DoWhileStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for DoWhileStmt
+pub impl Show for DoWhileStmt
+
+pub struct EqualityExpr {
+  kind : EqualityExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn EqualityExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn EqualityExpr::is_constant(Self) -> Bool
+pub fn EqualityExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for EqualityExpr
+pub impl Show for EqualityExpr
+
+pub enum EqualityExprKind {
+  RelationalExpr(RelationalExpr)
+  EQExpr(EqualityExpr, RelationalExpr)
+  NEExpr(EqualityExpr, RelationalExpr)
+}
+pub impl Eq for EqualityExprKind
+
+pub struct ExclusiveOrExpr {
+  kind : ExclusiveOrExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn ExclusiveOrExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn ExclusiveOrExpr::is_constant(Self) -> Bool
+pub fn ExclusiveOrExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for ExclusiveOrExpr
+pub impl Show for ExclusiveOrExpr
+
+pub enum ExclusiveOrExprKind {
+  AndExpr(AndExpr)
+  ExclusiveOrExpr(ExclusiveOrExpr, AndExpr)
+}
+pub impl Eq for ExclusiveOrExprKind
+
+pub struct Expr {
+  assign_exprs : Array[AssignExpr]
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn Expr::eval_as_int(Self) -> Int raise ParseError
+pub fn Expr::is_constant(Self) -> Bool
+pub fn Expr::to_string(Self, color? : Bool) -> String
+pub impl Eq for Expr
+pub impl Show for Expr
+
+pub struct ExternalDeclaration {
+  kind : ExternalDeclarationKind
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn ExternalDeclaration::to_string(Self, color? : Bool) -> String
+pub impl Eq for ExternalDeclaration
+pub impl Show for ExternalDeclaration
+
+pub enum ExternalDeclarationKind {
+  FunctionDefinition(FunctionDefinition)
+  Declaration(Declaration)
+}
+pub impl Eq for ExternalDeclarationKind
+
+pub enum ForInit {
+  Expr(Expr)
+  Declaration(Array[Declaration])
+}
+pub impl Eq for ForInit
+
+pub struct ForStmt {
+  init : ForInit?
+  cond : Expr?
+  update : Expr?
+  body : Statement
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn ForStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for ForStmt
+pub impl Show for ForStmt
+
+pub struct FunctionDefinition {
+  name : String
+  params : Array[(CType, String)]
+  ret_ty : CType
+  is_static : Bool
+  is_variadic : Bool
+  body : CompoundStmt
+}
+pub fn FunctionDefinition::to_string(Self, color? : Bool) -> String
+pub impl Eq for FunctionDefinition
+pub impl Show for FunctionDefinition
+
+pub struct IfStmt {
+  cond : Expr
+  then_stmt : Statement
+  else_stmt : Statement?
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn IfStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for IfStmt
+pub impl Show for IfStmt
+
+pub struct InclusiveOrExpr {
+  kind : InclusiveOrExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn InclusiveOrExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn InclusiveOrExpr::is_constant(Self) -> Bool
+pub fn InclusiveOrExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for InclusiveOrExpr
+pub impl Show for InclusiveOrExpr
+
+pub enum InclusiveOrExprKind {
+  ExclusiveOrExpr(ExclusiveOrExpr)
+  InclusiveOrExpr(InclusiveOrExpr, ExclusiveOrExpr)
+}
+pub impl Eq for InclusiveOrExprKind
+
+pub(all) struct Initializer {
+  kind : InitializerKind
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn Initializer::to_string(Self, color? : Bool) -> String
+pub impl Eq for Initializer
+pub impl Show for Initializer
+
+pub(all) enum InitializerKind {
+  AssignExpr(AssignExpr)
+  Designation(Designator, Initializer)
+  InitializerList(Array[Initializer])
+}
+pub fn InitializerKind::to_string(Self, color? : Bool) -> String
+pub impl Eq for InitializerKind
+pub impl Show for InitializerKind
+
+pub struct LogicalAndExpr {
+  kind : LogicalAndExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn LogicalAndExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn LogicalAndExpr::is_constant(Self) -> Bool
+pub fn LogicalAndExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for LogicalAndExpr
+pub impl Show for LogicalAndExpr
+
+pub enum LogicalAndExprKind {
+  InclusiveOrExpr(InclusiveOrExpr)
+  LogicalAndExpr(LogicalAndExpr, InclusiveOrExpr)
+}
+pub impl Eq for LogicalAndExprKind
+
+pub struct LogicalOrExpr {
+  kind : LogicalOrExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn LogicalOrExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn LogicalOrExpr::is_constant(Self) -> Bool
+pub fn LogicalOrExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for LogicalOrExpr
+pub impl Show for LogicalOrExpr
+
+pub enum LogicalOrExprKind {
+  LogicalAndExpr(LogicalAndExpr)
+  LogicalOrExpr(LogicalOrExpr, LogicalAndExpr)
+}
+pub impl Eq for LogicalOrExprKind
+
+pub struct MultiExpr {
+  kind : MultiExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn MultiExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn MultiExpr::is_constant(Self) -> Bool
+pub fn MultiExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for MultiExpr
+pub impl Show for MultiExpr
+
+pub enum MultiExprKind {
+  CastExpr(CastExpr)
+  MulExpr(MultiExpr, CastExpr)
+  DivExpr(MultiExpr, CastExpr)
+  ModExpr(MultiExpr, CastExpr)
+}
+pub impl Eq for MultiExprKind
+
+pub struct PostfixExpr {
+  kind : PostfixExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn PostfixExpr::eval_as_double(Self) -> Double raise ParseError
+pub fn PostfixExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn PostfixExpr::is_assignable(Self) -> Bool
+pub fn PostfixExpr::is_constant(Self) -> Bool
+pub fn PostfixExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for PostfixExpr
+pub impl Show for PostfixExpr
+
+pub enum PostfixExprKind {
+  PrimExpr(PrimExpr)
+  ArrayAccess(PostfixExpr, Expr)
+  FuncCall(PostfixExpr, Array[AssignExpr])
+  MemberAccess(PostfixExpr, String)
+  PtrMemberAccess(PostfixExpr, String)
+  PostInc(PostfixExpr)
+  PostDec(PostfixExpr)
+}
+pub impl Eq for PostfixExprKind
+
+pub struct PrimExpr {
+  kind : PrimExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn PrimExpr::eval_as_double(Self) -> Double raise ParseError
+pub fn PrimExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn PrimExpr::is_assignable(Self) -> Bool
+pub fn PrimExpr::is_constant(Self) -> Bool
+pub fn PrimExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for PrimExpr
+pub impl Show for PrimExpr
+
+pub enum PrimExprKind {
+  Ident(String)
+  Char(Char)
+  Int(Int)
+  Long(Int64)
+  LongLong(Int64)
+  UInt(UInt)
+  ULong(UInt64)
+  ULongLong(UInt64)
+  Float(Float)
+  Double(Double)
+  Strings(Array[String])
+  Paren(Expr)
+  StmtExpr(CompoundStmt)
+}
+pub impl Eq for PrimExprKind
+pub impl Show for PrimExprKind
+
+pub struct Program {
+  externals : Array[ExternalDeclaration]
+}
+pub fn Program::is_empty(Self) -> Bool
+pub fn Program::new() -> Self
+pub fn Program::to_string(Self, color? : Bool) -> String
+pub impl Eq for Program
+pub impl Show for Program
+
+pub struct RelationalExpr {
+  kind : RelationalExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn RelationalExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn RelationalExpr::is_constant(Self) -> Bool
+pub fn RelationalExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for RelationalExpr
+pub impl Show for RelationalExpr
+
+pub enum RelationalExprKind {
+  ShiftExpr(ShiftExpr)
+  LTExpr(RelationalExpr, ShiftExpr)
+  GTExpr(RelationalExpr, ShiftExpr)
+  LEExpr(RelationalExpr, ShiftExpr)
+  GEExpr(RelationalExpr, ShiftExpr)
+}
+pub impl Eq for RelationalExprKind
+
+pub struct ShiftExpr {
+  kind : ShiftExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn ShiftExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn ShiftExpr::is_constant(Self) -> Bool
+pub fn ShiftExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for ShiftExpr
+pub impl Show for ShiftExpr
+
+pub enum ShiftExprKind {
+  AddiExpr(AddiExpr)
+  ShlExpr(ShiftExpr, AddiExpr)
+  ShrExpr(ShiftExpr, AddiExpr)
+}
+pub impl Eq for ShiftExprKind
+
+pub struct Statement {
+  kind : StmtKind
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn Statement::to_string(Self, color? : Bool) -> String
+pub impl Eq for Statement
+pub impl Show for Statement
+
+pub enum StmtKind {
+  Labeled(String, Statement)
+  Case(ConditionalExpr, Statement)
+  CaseRange(ConditionalExpr, ConditionalExpr, Statement)
+  DefaultCase(Statement)
+  Compound(CompoundStmt)
+  Expr(Expr)
+  If(IfStmt)
+  Switch(SwitchStmt)
+  For(ForStmt)
+  While(WhileStmt)
+  DoWhile(DoWhileStmt)
+  Goto(String)
+  Continue
+  Break
+  Return(Expr)
+  ReturnVoid
+  Noop
+}
+pub impl Eq for StmtKind
+
+pub struct StorageClass {
+  is_static : Bool
+  is_extern : Bool
+  is_thread_local : Bool
+  is_register : Bool
+}
+
+pub struct StructField {
+  name : String
+  ctype : CType
+  bit_width : Int?
+}
+pub impl Eq for StructField
+
+pub struct SwitchStmt {
+  expr : Expr
+  body : Statement
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn SwitchStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for SwitchStmt
+pub impl Show for SwitchStmt
+
+type SymbolKind
+
+pub struct UnaryExpr {
+  kind : UnaryExprKind
+  ctype : CType
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn UnaryExpr::eval_as_double(Self) -> Double raise ParseError
+pub fn UnaryExpr::eval_as_int(Self) -> Int raise ParseError
+pub fn UnaryExpr::is_assignable(Self) -> Bool
+pub fn UnaryExpr::is_constant(Self) -> Bool
+pub fn UnaryExpr::to_string(Self, color? : Bool) -> String
+pub impl Eq for UnaryExpr
+pub impl Show for UnaryExpr
+
+pub enum UnaryExprKind {
+  PostfixExpr(PostfixExpr)
+  PreInc(UnaryExpr)
+  PreDec(UnaryExpr)
+  AddrOf(CastExpr)
+  Deref(CastExpr)
+  Posate(CastExpr)
+  Negate(CastExpr)
+  BitNot(CastExpr)
+  LogicalNot(CastExpr)
+  SizeofExpr(UnaryExpr)
+  SizeofType(CType)
+  Alignof(CType)
+}
+pub impl Eq for UnaryExprKind
+
+pub struct WhileStmt {
+  cond : Expr
+  body : Statement
+  tokens : ArrayView[@lexer.Token]
+}
+pub fn WhileStmt::to_string(Self, color? : Bool) -> String
+pub impl Eq for WhileStmt
+pub impl Show for WhileStmt
+
+// Type aliases
+
+// Traits
+

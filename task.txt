@@ -1,0 +1,190 @@
+# qbe.mbt 1:1 复刻 QBE 任务计划
+
+目标：接管项目，把前端魔法代码全量现代化 + 补全 loadopt，然后 1:1 复刻 qbe 后端
+直至产出与参考 `obj_qbe.exe` 逐字节一致的 .s 汇编。每阶段用 compare.py 验证，
+完成后 git commit 便于回滚。
+
+## 完成状态
+
+- [x] 阶段 0：compare.py 通用对比脚本（native 构建 + stderr 通道 + CRLF 归一），
+      并修复了构建阻塞：`%print` 内建在当前 moonc 已移除 -> 改用 `@async.stdio`
+- [x] 阶段 1：前端全量现代化 + 修复 8 个真实 bug（见下）
+- [x] 阶段 2：load.c 载荷消除（loadopt）
+      - cfg/alias.mbt：完整移植 alias.c（fillalias/getalias/check_alias/escapes），AliasInfo 加 slot 字段
+      - ssa/load.mbt：移植 load.c（Loc/Slice/Insert 插入日志 + def 递归 + iins/cast/mask/load/killsl）
+      - 修复：ilog 中止时必须物理 truncate（否则放弃的 phi 残留）、getalias 返回显式副本（避免共享引用）
+      - 排序用不稳定 quicksort（median-of-three + Hoare，pivot 置尾）模拟 C qsort 的 phi 顺序
+      - 附带修复 copy.mbt iscopy 的 w = 1 + ext_width_idx 多加 1 的 bug（影响 -dC）
+- [x] 阶段 3：fold.c 常量折叠（SCCP）
+      - 新包 fold/：val[] 格、Edge 死边 worklist（栈）、visitphi/visitins/visitjmp/update、
+        renref、opfold/foldint/foldflt
+      - cfg 补 edgedel（C cfg.c）
+      - 关键：C 的 Con 是 union（i/d/s 共享位），MoonBit 分离字段 -> 用 con_double/con_single
+        按原始位解释（fold 结果用 get_con_by 按位去重）
+      - 验证：所有 -dX 标志 31/32 或 32/32，唯一失败 vararg2 为后端 newtmp 计数器
+        （参考二进制跑完整后端 abi/isel，阶段 4+ 后自然解决）
+
+- 当前基线：14 组 debug 标志（-dP..-dR 等）× 32 = 448/448；`--asm` 的 .s 输出（-G e 与 -G m）各 32/32
+- [x] 阶段 8：main 集成 + 验收
+      - main.mbt：-o/-t/-G/{e,m}/stdin("-")/非 debug 全量发射；去掉 "Parsed..." 占位输出
+      - 数据段按输入顺序发射（parser 增加 order 记录 function/data 交错顺序）
+      - lexer read_string 改为不解析转义（与 C lex 一致，数据串保留原始 \n 等）
+      - compare.py 增加 --asm 模式（比较 stdout .s，支持 -G e/m）
+      - 验收：448/448（debug）+ 32/32（-G e asm）+ 32/32（-G m asm）+ moon test 6/6
+- [x] 阶段 4：Target ABI（sysv.c + amd64/sysv.c）
+      - 新包 abi/：AClass/RAlloc/AbiState + emit 反向缓冲（对应 C 的 curi/insb）、
+        classify/typclass/retr/selret/argsclass/selcall/selpar/split/chpred/selvaarg/selvastart
+      - types 增加 kcode、Ref::typ_val/call_val/slot_val；parser/printref 打印寄存器 R{val}、RCall %04x、RSlot S{val}
+      - 修 bug：blit 用 "blt" 前缀、argc 用 arg2（聚合指针）、retr int 返回寄存器 RAX/RDX、
+        Array::make(AClass) 共享引用、i0 递减循环
+      - 验证：-dA 31/32（vararg2 为后端计数器问题）
+- [x] 阶段 5：isel 指令选择（amd64/isel.c）
+      - 新包 isel/：IselState + 反向缓冲；noimm/rslot/fixarg/seladdr/selcmp/sel/seljmp/flagi/anumber/amatch
+      - 移植 amd64 版：div/rem 展开（RAX/RDX + sign/xdiv）、移位经 RCX、store 常量降级 stored/stores，
+        快 alloc 分配 slot、fp 常量 gasstash 存 fpN 标签、地址折叠（3=s*i 4=b+s*i 5=o+s*i ...）
+      - util 增加全局 intern（C util.c 的 intern）；types 增加 jump_index/jump_from_index、Ref::mem_val/is_mem、
+        Addr 字段改 mut（装箱引用语义）、Ref::slot 掩码 0x1fffffff（C SLOT 宏）、addcon 重写为 C 语义
+      - 修的关键 bug：
+        * iscmp 的 float 分支是 `NCmpI + (op-Ocmps)`（util.c），不是 fcmptoi（那是通用 isel.c 的）
+        * fpN 标签必须用传入的 parser interner（否则 printfn 查不到 panic）
+        * RSlot 需按 29 位掩码编码
+      - 注意：isel 内 `case Onop: break` 丢弃 nop（fast alloc 和 seljmp 的 *fi=Nop 在 isel 中被移除）
+      - 验证：-dI 32/32
+- [x] 阶段 6：fillcost + spill + rega（spill.c + rega.c）
+      - 新包 spill/（fillcost + spill）与 rega/（rega）
+      - types 增加 phicls/dumpts；util 增加 lpad/rpad/qsort_int（不稳定 quicksort 复刻 C qsort）
+      - cfg 重写：fillloop/loopiter 改 C 语义（loop*=10）、simpljmp 改 C 版本（union-find）、
+        rporec 补 s1/s2 按 loop 深度交换
+      - live 重写 filllive：RCall jmp 的 retregs 覆盖 nlv、Ocall 的 retregs/argregs 处理、-dL 输出
+        （C ssa() 中 debug['L']=0，故 -dL 只出现在 isel 后的 filllive）
+      - 关键 bug：BSet::iter 需包含 start（C bsiter 是 >=elt 且分 word 清低位的语义）——此前
+        排除性 iter 导致 temp Tmp0 被跳过、且续接循环必须用 iter(t+1)
+      - rega：RMap 拷贝共享 BSet bits（C rcopy memcpy 的指针共享）、doblk 的 stmov 计数
+        （= buf 长度增量，非 1-X）、步骤 4 新块用 def_order 迭代（b.link 从未维护）
+      - 验证：-dS/-dR 32/32；全量 448/448
+- [x] 阶段 7：emit/gas 输出（amd64/emit.c + gas.c）
+      - 新包 emit/：omap 指令格式表、rname 寄存器表、emitf（%k/%L/%W/%H/%B/%M/%0.. 展开）、
+        emitins（mul 3 地址/sub 浮点 negmask/div xmm15/copy movl/lea/call/salloc/swap）、
+        emitfn（帧布局/vararg 序言/callee-save 压栈/块标签/条件跳转）、gasemitdat/gasemitfin
+      - types 增加 cmpneg（CmpF 码 Cfeq=0..Cfuo=7）、fpstash（16 字节 gasstash，size<= 前缀匹配）
+      - 修 bug：rname 表索引错位（漏 R8..R11 移位）；ctoa/omap 浮点 setcc 码误算（NCmpI+Cfge=11）；
+        cmpneg 浮点映射；emitfn 块标签需在第二次 fillrpo 后算 pred（合并掉的空块不计入）
+        -> fillpreds 改迭代 def_order（link 链）
+      - gasstash 移到 types 共享（isel 存 4/8 字节、emit 存 16 字节 negmask）
+- [x] 阶段 8：main 集成 + 验收
+      - main.mbt：-o/-t/-G {e,m}/stdin("-")/非 debug 全量发射；去掉 "Parsed..." 占位输出
+      - 数据段按输入顺序发射（parser 记录 function/data 交错顺序 order）
+      - lexer read_string 不解析转义（与 C lex 一致，数据串保留原始 \n 等）
+      - compare.py 增加 --asm 模式（比较 stdout .s，支持 -G e/m）
+      - 验收：448/448（debug）+ 32/32（-G e asm）+ 32/32（-G m asm）+ moon test 6/6
+- [x] 阶段 9：工程化测试扩展（335 生成 + 55 手写程序）
+      - compare.py 增强：递归 `glob('test/**/*.ssa')`、`--cat <dir>` 过滤、`--jobs N` 并行
+      - tools/gen_tests.py：生成 335 个同构测试（core/arith 86、compare 56、mem 18、conv 14、
+        const 24、fold 23、abi 48、isel 34、regalloc 17、emit 15；目录先删后建）
+      - tools/gen_programs.py：55 个手写综合程序（数论/排序/字符串/浮点/递归/嵌套循环），
+        生成器内置 SSA 修复（重复定义重命名 + phi 前驱标签修正 + fall-through 边），输出即合法 SSA
+      - 修出的真实 bug：emit 浮点取负 `xorpd` 缺操作数空格（emit.mbt）；生成侧避开参考限制：
+        `sltof` 操作数须为 l（w 用 `swtof`）、无符号比较为 `cu*`（如 `cugew`）、
+        参考词法器不支持数据段的十进制浮点字面量（d 后须写原始位整数）
+      - 验收：**5684/5684**（全部 debug 标志 × 全部测试）+ **406/406**（--asm -G e）+
+        **406/406**（--asm -G m）+ moon test 6/6
+
+### 阶段 0/1 期间额外修复的真实 bug（前人代码缺陷）
+- memopt.mbt: Use 用 b.ins[u.ins_idx] 跨块索引越界 -> 按 u.blk_id 定位指令；
+  store->copy 的 cls 硬编码 Kw -> 用合并类 k；loadsw/loaduw 在 k!=Kl 时漏落入 Oload 分支
+- ssa.mbt phiins: FIFO worklist -> LIFO；phi 追加 -> 前插；phi 类硬编码 Kw -> k
+- ssa.mbt renblk: 后继 phi 填充用 p.to.tmp_val()（新 tmp id 越界）-> 用 visit 取原始 id
+- cfg.mbt filldom: dom 孩子按块 id/RPO 构建 -> 按定义序（C link order）
+- cfg.mbt fillrpo: 未删除不可达块 -> 增加 DFS 后清理 + phi 参数清理（C edgedel）
+- ssa/use.mbt loadsz: Oload 写死 8 -> 按类宽 KWIDE(cls)?8:4
+- types/fn.mbt newtmp 编号: 按 Fn 存储 -> 模块级共享计数器（C static int n 跨函数累计）
+
+## 现状总结
+
+- 前端已完成且基本 1:1：lexer -> parser -> cfg(fillrpo/preds/dom/fron/loop/alias/simpljmp)
+  -> ssa(filluse/memopt/phiins/renblk/ssacheck/copy) -> live(filllive)
+- 后端全部移植：loadopt -> fold -> abi -> isel -> fillcost/spill -> rega -> emit(gas)
+- 验证基线：compare.py 14 组 debug 标志 × 全部测试 = **5684/5684** 逐字节一致；
+  --asm 的 .s（-G e / -G m）各 **406/406**
+- 测试规模：test/ 下 32 个上游样例 + 335 个生成测试 + 55 个手写程序，共 422 个 .ssa 输入
+- `moon build --target native` 0 警告 0 错误；`moon test` 6/6
+
+## 阶段 0：建立验证基线
+
+1. 将 compare_dp.py 推广为通用对比脚本 compare.py：
+   - 对 test/*.ssa（跳过 _ 前缀）分别跑 `-dP/-dM/-dC/-dN` 等各 debug 标志
+   - 参考 qbe 取 stderr，本实现取 stdout，过滤 moon 的 box-drawing 诊断行
+   - 逐字节 diff，输出通过/失败汇总
+2. 增加 `.s` 输出对比模式（供阶段 7 使用）
+3. 记录当前基线：哪些文件通过、哪几处失败（已知：loadopt 导致 -dM 后段不一致）
+
+## 阶段 1：前端全量现代化（不改可观察输出）
+
+### 1.1 替换 print/换行魔法 — cmd/main/main.mbt
+- 删掉 first 标志 hack，改用 `@stdio.stdout.write_string(...)`；debug 走 `@stdio.stderr` 与参考通道一致
+- 删掉 util/print.mbt 的 `%print` 原始绑定，统一用 `@stdio`
+- 按 C 的 fprintf 流式语义拆分输出时机
+
+### 1.2 重写废弃语法（清掉 build.log 里 20 个 warning）
+- lexer/lexer.mbt：`loop s {...}` -> for 显式循环；`not(is_float)` -> `!is_float`
+- parser/data.mbt、parser/ref.mbt：`substring(start=2)` -> `s[2:]`；`@strconv.parse_double` -> `@string.parse_double`；`to_float()` -> `Float::from_double`
+- types/fn.mbt、util/interner.mbt：`Map::new()` -> `Map([], capacity=...)`
+- cmd/main/main.mbt:75 的 is_dbg 折叠写法
+
+### 1.3 删死代码
+- lexer.is_ident_start、Parser::closeblk、ssa/copy.mbt 的 printref_str 冗余包装、
+  ssa/load.mbt 假 debug
+
+### 1.4 修 bug
+- live/live.mbt 的 filllive 不动点循环逻辑与 C 不一致（chg 作用域错），现代化时以参考输出核对修正
+
+### 1.5 清未用依赖
+- cmd/main/moon.pkg 未用依赖、lexer/moon.pkg 未用 types 依赖
+
+### 验证
+- moon test 全绿；compare.py 各 -dX 与基线一致；moon info && moon fmt 干净、.mbti diff 为预期
+
+## 阶段 2：补全 load.c（载荷消除）
+- 按 C load.c（457 行）实现冗余载荷消除，复用现有 types.BSet/Blk
+- cmd/main 接真 loadopt(fn_)，删掉 dbg 参数 hack
+- 验证：-dM 对全部 test 文件与参考逐字节一致
+
+## 阶段 3：fold.c（常量折叠 SCCP）
+- 新包 fold/；cfg 补 edgedel（C 里在 cfg.c）
+- 移植 SCCP：val[] 格、Edge 死边 worklist、visitphi/visitins/visitjmp/update、opfold/foldint/foldflt
+- 复刻 -dF 三段输出：SCCP findings + dead code 列表 + After constant folding
+- 验证：-dF 逐字节对比全绿
+
+## 阶段 4：Target 抽象 + sysv ABI
+- types 增加 Target 结构（gpr0/ngpr/fpr0/nfpr/rglob/nrglob/rsave/nrsave/retregs/argregs/memargs/abi/isel/emitfn）
+- 关键设计：输出驱动 Context 对象贯穿流水线（out: Buffer、id0、fp stash、gasloc/gassym、Target）——MoonBit 无 C 全局可变静态
+- 新包 abi/：移植 sysv.c + amd64/sysv.c，含 -dA debug
+- 验证：-dA 对比
+
+## 阶段 5：isel 指令选择
+- 新包 isel/：移植 isel.c + amd64/isel.c，含 Amd64Op 表、amdkind/amdmatch/amdfold、地址折叠、-dI debug
+- 可能需扩展 types（isel 改写 Ins.cls、插入地址计算、Oaddr 折叠）
+- 验证：-dI 对比
+
+## 阶段 6：fillcost + spill + rega
+- 新包 rega/：移植 rega.c（687 行）+ spill.c（485 行）
+- fillcost、区间分裂/溢栈、图着色分配、-dS/-dR debug
+- 验证：-dS/-dR 对比
+
+## 阶段 7：emit 汇编发射
+- 新包 emit/：移植 emit.c（omap 表、emitins/emitf/emitcon/emitfn）+ amd64/emit.c + gas.c
+- 精确复刻：slot() 位字段符号扩展、framesz() 的 NRClob 奇偶 XOR、vararg 栈布局、emitfn 的 id0 静态、fp 常量去重 stash
+- cmd/main 完整接线 main.c：非 debug 走 T.emitfn + `/* end function %s */`；-o 写文件（@fs）、-G e/m 设 gasloc/gassym、-t 选 Target、stdin 输入、data 段发射 + 末尾 gasemitfin
+- 删掉 "Parsed N function(s)..." 占位打印（参考没有这行）
+
+## 阶段 8：端到端验证
+1. 全部 test/*.ssa：本实现 .s 与参考逐字节 diff 为零
+2. 生成代码用 gcc 汇编链接运行，程序输出与参考一致
+3. moon test 补充单测：fold 数值折叠、slot/framesz 计算、gas 输出快照
+4. 收尾：moon info && moon fmt，检查 .mbti diff，删除无用 .log/临时产物，首次 git commit
+
+## 关键风险
+- 逐字节一致陷阱：id0 跨函数递增、FP stash 全局态、slot() 位字段符号扩展（MoonBit 需手写 sign-extend）、framesz 的 rclob 奇偶、omap 线性搜索匹配优先级（Ki/Ka/具体 cls）
+- 全局状态：C 用 static 的 id0/stash/gasloc/gassym 在 MoonBit 无对应物 -> 统一收进 Context 驱动对象，阶段 4 起贯穿
+- 已有实现可能隐含 bug：filllive、renblk 的栈管理在阶段 1 现代化时必须以参考输出为基准核对，避免"优化"引入偏差
+- 建议每完成一个阶段即 git commit

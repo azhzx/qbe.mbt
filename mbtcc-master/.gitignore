@@ -1,0 +1,16 @@
+target/
+.mooncakes/
+.DS_Store
+.moonagent
+*.ll
+IR.mbti
+llvm_*
+tmp/
+smith_test/
+Agents2.md
+_build/
+_build
+target
+
+.gemini/
+gha-creds-*.json

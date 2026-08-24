@@ -1,0 +1,2 @@
+[2026-08-24 00:05:40.963] [info] [thread 21724] [stateless_worker.cpp:400] Starting stateless worker
+[2026-08-24 00:05:40.977] [info] [thread 21724] [stateless_worker.cpp:459] Stateless worker ready, waiting for requests

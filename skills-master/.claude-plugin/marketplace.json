@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "moonbit-code-plugins",
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Bundled plugins for Claude Code, Codex, OpenCode for MoonBit projects development"
+  },
+  "owner": {
+    "name": "MoonBit"
+  },
+  "plugins": [
+    {
+      "name": "moonbit-skills",
+      "description": "Bundled MoonBit development skills for Claude Code, Codex, OpenCode, and other agents.",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}

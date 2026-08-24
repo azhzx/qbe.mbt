@@ -1,0 +1,231 @@
+﻿moon : 2026-08-24T05:07:11.107529Z  INFO run_run:build_package_executable: moon::rr_build:558: Checking local modules a
+nd backend
+At line:15 char:5645
++ ... '; cd e:\qbe.mbt; moon run cmd/main -- -dN test/abi1.ssa 2>&1 | Out-F ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T05:0...les and backend:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T05:07:11.107570Z  INFO run_run:build_package_executable: moon::rr_build:568: Preferred backend: None
+2026-08-24T05:07:11.107577Z  INFO run_run:build_package_executable: moon::rr_build:586: is_core: false
+2026-08-24T05:07:11.107583Z  INFO run_run:build_package_executable: moon::rr_build:610: User intent calculated: [Run(Pa
+ckageId(3v1))]
+2026-08-24T05:07:11.107593Z  INFO run_run:build_package_executable: moon::rr_build:616: Running prebuild configuration
+2026-08-24T05:07:11.107723Z  INFO run_run:build_package_executable: moon::rr_build:622: Expanding user intents to build
+ plan nodes
+2026-08-24T05:07:11.107731Z  INFO run_run:build_package_executable: moon::rr_build:302: Determining compilation configu
+ration
+2026-08-24T05:07:11.107736Z  INFO run_run:build_package_executable: moon::rr_build:305: std: self.use_std = true, is_co
+re = false => std = true
+2026-08-24T05:07:11.107739Z  INFO run_run:build_package_executable: moon::rr_build:311: Target backend: explicit = Some
+(Wasm) => selected = Wasm
+2026-08-24T05:07:11.107746Z  INFO run_run:build_package_executable: moon::rr_build:334: Final backend configuration: Wa
+sm { use_wat: false, wasi_link: true }
+2026-08-24T05:07:11.107766Z  INFO run_run:build_package_executable: moon::rr_build:640: Begin lowering to build graph
+2026-08-24T05:07:11.108585Z  INFO run_run:build_package_executable: moon::rr_build:681: Build planning completed succes
+sfully
+2026-08-24T05:07:11.109393Z  INFO run_run:build_package_executable:execute_build:db.open:db.open_existing: n2::db:381: 
+opening existing database path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm\debug\build
+\build.moon_db
+2026-08-24T05:07:11.109577Z  INFO run_run:build_package_executable:execute_build:db.open:db.open_existing: n2::db:389: 
+database loaded successfully path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm\debug\bu
+ild\build.moon_db
+2026-08-24T05:07:11.109608Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:746: starting build execution parallelism=12 total_pending=12 parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logg
+er_present=false
+2026-08-24T05:07:11.110029Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(9) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.110850Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(2) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.111154Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(6) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.111357Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(1) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.111602Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(10) parallelism=12 failures_left=Some(10) adopt=false explain=false d
+irty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present
+=false
+2026-08-24T05:07:11.111798Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(5) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.111992Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(3) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.112237Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(4) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.113021Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(7) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T05:07:11.113029Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:774: executing build buildid=BuildId(8) location=azhzx/qbe/ssa@Source@BuildCore:0 parallelism=12 failures_left=Some(1
+0) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty
+_on_output=true logger_present=false
+2026-08-24T05:07:11.113186Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::tas
+k:339: starting task tid=0 buildid=BuildId(8) parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_
+output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T05:07:11.187220Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:858: build succeeded buildid=BuildId(8) location=azhzx/qbe/ssa@Source@BuildCore:0 parallelism=12 failures_left=Some(1
+0) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty
+_on_output=true logger_present=false
+2026-08-24T05:07:11.187726Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:774: executing build buildid=BuildId(11) location=azhzx/qbe/cmd/main@Source@BuildCore:0 parallelism=12 failures_left=
+Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false
+ dirty_on_output=true logger_present=false
+2026-08-24T05:07:11.187853Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::tas
+k:339: starting task tid=0 buildid=BuildId(11) parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on
+_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T05:07:11.245721Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:858: build succeeded buildid=BuildId(11) location=azhzx/qbe/cmd/main@Source@BuildCore:0 parallelism=12 failures_left=
+Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false
+ dirty_on_output=true logger_present=false
+2026-08-24T05:07:11.246118Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:774: executing build buildid=BuildId(0) location=azhzx/qbe/cmd/main@Source@LinkCore:0 parallelism=12 failures_left=So
+me(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false d
+irty_on_output=true logger_present=false
+2026-08-24T05:07:11.246247Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::tas
+k:339: starting task tid=0 buildid=BuildId(0) parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_
+output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T05:07:11.505556Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:858: build succeeded buildid=BuildId(0) location=azhzx/qbe/cmd/main@Source@LinkCore:0 parallelism=12 failures_left=So
+me(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false d
+irty_on_output=true logger_present=false
+2026-08-24T05:07:11.505756Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:871: build execution completed tasks_done=3 tasks_failed=0 success=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output
+=true logger_present=false
+Warning: [0002]
+     ╭─[ E:\qbe.mbt\cmd\main\main.mbt:149:11 ]
+     │
+ 149 │   let mut out_file : String = ""
+     │           ────┬───  
+     │               ╰───── Warning (unused_value): Unused variable 'out_file'
+─────╯
+Warning: [0020]
+     ╭─[ E:\qbe.mbt\cmd\main\main.mbt:155:36 ]
+     │
+ 155 │       _ if arg.length() > 2 && arg.substring(start=0, end=2) == "-d" => {
+     │                                    ────┬────  
+     │                                        ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instea
+d
+─────╯
+Warning: [0020]
+     ╭─[ E:\qbe.mbt\cmd\main\main.mbt:156:25 ]
+     │
+ 156 │         let flags = arg.substring(start=2)
+     │                         ────┬────  
+     │                             ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instead
+─────╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\cmd\main\moon.pkg:2:3 ]
+   │
+ 2 │   "azhzx/qbe" @lib,
+   │   ─────┬─────  
+   │        ╰─────── Warning (unused_package): Unused package 'azhzx/qbe'
+───╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\cmd\main\moon.pkg:2:15 ]
+   │
+ 2 │   "azhzx/qbe" @lib,
+   │               ──┬─  
+   │                 ╰─── Warning (unused_package): Unused package alias 'lib'
+───╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:3:3 ]
+   │
+ 3 │   "azhzx/qbe/cfg",
+   │   ───────┬───────  
+   │          ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/cfg'
+───╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:4:3 ]
+   │
+ 4 │   "azhzx/qbe/util",
+   │   ────────┬───────  
+   │           ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/util'
+───╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:13:8 ]
+    │
+ 13 │ struct Name {
+    │        ──┬─  
+    │          ╰─── Warning (missing_priv): The type 'Name' does not occur in public signature of current package, cons
+ider marking it as `priv`.
+────╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:21:8 ]
+    │
+ 21 │ struct NamePool {
+    │        ────┬───  
+    │            ╰───── Warning (missing_priv): The type 'NamePool' does not occur in public signature of current packa
+ge, consider marking it as `priv`.
+────╯
+**** Function alpha ****
+
+> Dominators:
+       ini: lop
+       lop: end
+
+> After SSA construction:
+function $alpha() {
+@ini
+	%p =l par
+	%l =w par
+	%n =l par
+	%pe.1 =l add %p, %n
+@lop
+	%p1 =l phi @ini %p, @lop %p2
+	%l1 =w phi @ini %l, @lop %l2
+	storeb %l1, %p1
+	%p2 =l add %p1, 1
+	%l2 =w add %l1, 1
+	%c1 =w ceql %p1, %pe.1
+	jnz %c1, @end, @lop
+@end
+	storeb 0, %pe.1
+	ret0
+}
+**** Function test ****
+
+> Dominators:
+
+> After SSA construction:
+export function $test() {
+@start
+	%p =l alloc4 17
+	%q =l alloc4 17
+	argl %p
+	argw 65
+	argl 16
+	%r0 =w call $alpha
+	argl %q
+	argw 97
+	argl 16
+	%r1 =w call $alpha
+	argc :mem, %p
+	argw 1
+	argw 2
+	argw 3
+	argw 4
+	argw 5
+	argw 6
+	argw 7
+	argw 8
+	argw 9
+	argc :mem, %q
+	%r2 =w call $fcb
+	ret0
+}

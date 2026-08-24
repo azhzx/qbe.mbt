@@ -1,0 +1,736 @@
+﻿moon : 2026-08-24T03:40:00.164963Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:558: Checking local 
+modules and backend
+At line:15 char:5630
++ ... ources\app\node_modules\@vscode\ripgrep\bin'; moon build 2>&1 | Out-F ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T03:4...les and backend:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T03:40:00.165000Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:568: Preferred backend: Non
+e
+2026-08-24T03:40:00.165008Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:586: is_core: false
+2026-08-24T03:40:00.165014Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:610: User intent calculated
+: [Build(PackageId(3v1))]
+2026-08-24T03:40:00.165024Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:616: Running prebuild confi
+guration
+2026-08-24T03:40:00.165150Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:622: Expanding user intents
+ to build plan nodes
+2026-08-24T03:40:00.165156Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:302: Determining compilatio
+n configuration
+2026-08-24T03:40:00.165160Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:305: std: self.use_std = tr
+ue, is_core = false => std = true
+2026-08-24T03:40:00.165164Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:311: Target backend: explic
+it = Some(Wasm) => selected = Wasm
+2026-08-24T03:40:00.165170Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:334: Final backend configur
+ation: Wasm { use_wat: false, wasi_link: true }
+2026-08-24T03:40:00.165185Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:640: Begin lowering to buil
+d graph
+2026-08-24T03:40:00.165991Z  INFO run_build:run_build_internal:run_build_rr: moon::rr_build:681: Build planning complet
+ed successfully
+2026-08-24T03:40:00.166991Z  INFO run_build:run_build_internal:run_build_rr:execute_build:db.open:db.open_existing: n2:
+:db:381: opening existing database path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm\de
+bug\build\build.moon_db
+2026-08-24T03:40:00.167127Z  INFO run_build:run_build_internal:run_build_rr:execute_build:db.open:db.open_existing: n2:
+:db:389: database loaded successfully path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm
+\debug\build\build.moon_db
+2026-08-24T03:40:00.167156Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:746: starting build execution parallelism=12 total_pending=12 parallelism=12 failures_left=Some(10) adopt=fa
+lse explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=
+true logger_present=false
+2026-08-24T03:40:00.167541Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(9) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.168260Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(2) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.168523Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(6) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.168710Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(1) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.168944Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(10) parallelism=12 failures_left=Some(10) adopt=false explai
+n=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logge
+r_present=false
+2026-08-24T03:40:00.169139Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(3) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.169375Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(4) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.169575Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(5) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.170300Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:785: build up to date, skipping buildid=BuildId(7) parallelism=12 failures_left=Some(10) adopt=false explain
+=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger
+_present=false
+2026-08-24T03:40:00.170309Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:774: executing build buildid=BuildId(8) location=azhzx/qbe/ssa@Source@BuildCore:0 parallelism=12 failures_le
+ft=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=fa
+lse dirty_on_output=true logger_present=false
+2026-08-24T03:40:00.170473Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::task:339: starting task tid=0 buildid=BuildId(8) parallelism=12 failures_left=Some(10) adopt=false explain=false 
+dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_presen
+t=false
+2026-08-24T03:40:00.247495Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:841: build failed buildid=BuildId(8) location=azhzx/qbe/ssa@Source@BuildCore:0 parallelism=12 failures_left=
+Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false
+ dirty_on_output=true logger_present=false
+2026-08-24T03:40:00.247522Z  INFO run_build:run_build_internal:run_build_rr:execute_build:work.run:work.run_with_logger
+: n2::work:871: build execution completed tasks_done=0 tasks_failed=1 success=false parallelism=12 failures_left=Some(1
+0) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty
+_on_output=true logger_present=false
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\memopt.mbt:109:4 ]
+     │
+ 109 │ fn kcode(k : @types.Class) -> Int {
+     │    ──┬──  
+     │      ╰──── The toplevel identifier kcode is declared twice: it was previously defined at E:\qbe.mbt\ssa\ssa.mbt:
+137:4.
+─────╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:3:3 ]
+   │
+ 3 │   "azhzx/qbe/cfg",
+   │   ───────┬───────  
+   │          ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/cfg'
+───╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\ssa\moon.pkg:4:3 ]
+   │
+ 4 │   "azhzx/qbe/util",
+   │   ────────┬───────  
+   │           ╰───────── Warning (unused_package): Unused package 'azhzx/qbe/util'
+───╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:17:8 ]
+    │
+ 17 │ struct Name {
+    │        ──┬─  
+    │          ╰─── Warning (missing_priv): The type 'Name' does not occur in public signature of current package, cons
+ider marking it as `priv`.
+────╯
+Warning: [0004]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:25:8 ]
+    │
+ 25 │ struct NamePool {
+    │        ────┬───  
+    │            ╰───── Warning (missing_priv): The type 'NamePool' does not occur in public signature of current packa
+ge, consider marking it as `priv`.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:5 ]
+    │
+ 67 │     var k = -1
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:5 ]
+    │
+ 67 │     var k = -1
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:67:9 ]
+    │
+ 67 │     var k = -1
+    │         ┬  
+    │         ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new
+ line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:5 ]
+    │
+ 68 │     var bp = 0
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:5 ]
+    │
+ 68 │     var bp = 0
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:68:9 ]
+    │
+ 68 │     var bp = 0
+    │         ─┬  
+    │          ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a ne
+w line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:5 ]
+    │
+ 69 │     var be = 0
+    │     ─┬─  
+    │      ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:5 ]
+    │
+ 69 │     var be = 0
+    │     ─┬─  
+    │      ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using a
+nother name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:69:9 ]
+    │
+ 69 │     var be = 0
+    │         ─┬  
+    │          ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a ne
+w line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:7 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │       ─┬─  
+    │        ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:7 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │       ─┬─  
+    │        ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using
+ another name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:74:11 ]
+    │
+ 74 │       var r = @types.ref_none()
+    │           ┬  
+    │           ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a n
+ew line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:77:13 ]
+    │
+ 77 │         if !r.is_none() {
+    │             ┬  
+    │             ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:79:22 ]
+    │
+ 79 │             i.arg1 = r
+    │                      ┬  
+    │                      ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:82:22 ]
+    │
+ 82 │             i.arg2 = r
+    │                      ┬  
+    │                      ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:88:15 ]
+    │
+ 88 │               r = @types.Ref::tmp(t)
+    │               ───────────┬──────────  
+    │                          ╰──────────── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:90:15 ]
+    │
+ 90 │               r = refindex(t, fn_)
+    │               ──────────┬─────────  
+    │                         ╰─────────── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:92:20 ]
+    │
+ 92 │             i.to = r
+    │                    ┬  
+    │                    ╰── The value identifier r is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:96:20 ]
+    │
+ 96 │               work[bp] = id
+    │                    ─┬  
+    │                     ╰── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:97:15 ]
+    │
+ 97 │               bp = bp + 1
+    │               ─────┬─────  
+    │                    ╰─────── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:97:20 ]
+    │
+ 97 │               bp = bp + 1
+    │                    ─┬  
+    │                     ╰── The value identifier bp is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:25 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                         ─┬─  
+    │                          ╰─── The value identifier ref is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:25 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                         ─┬─  
+    │                          ╰─── Warning (reserved_keyword): The word `ref` is reserved for possible future use. Ple
+ase consider using another name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssa.mbt:99:29 ]
+    │
+ 99 │             if clsmerge(ref k, kcode(i.cls)) {
+    │                             ┬  
+    │                             ╰── Parse error, unexpected token id (lowercase start), you may expect `,` or `)`.
+────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:105:11 ]
+     │
+ 105 │       if !r.is_none() && @types.req(b.jmp.arg, @types.Ref::tmp(t)) {
+     │           ┬  
+     │           ╰── The value identifier r is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:106:21 ]
+     │
+ 106 │         b.jmp.arg = r
+     │                     ┬  
+     │                     ╰── The value identifier r is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:112:11 ]
+     │
+ 112 │     while bp != be {
+     │           ─┬  
+     │            ╰── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:112:17 ]
+     │
+ 112 │     while bp != be {
+     │                 ─┬  
+     │                  ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:114:23 ]
+     │
+ 114 │       let b_id = work[be]
+     │                       ─┬  
+     │                        ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:115:7 ]
+     │
+ 115 │       be = be + 1
+     │       ─────┬─────  
+     │            ╰─────── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:115:12 ]
+     │
+ 115 │       be = be + 1
+     │            ─┬  
+     │             ╰── The value identifier be is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:126:20 ]
+     │
+ 126 │               work[bp] = f
+     │                    ─┬  
+     │                     ╰── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:127:15 ]
+     │
+ 127 │               bp = bp + 1
+     │               ─────┬─────  
+     │                    ╰─────── The value identifier bp is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:127:20 ]
+     │
+ 127 │               bp = bp + 1
+     │                    ─┬  
+     │                     ╰── The value identifier bp is unbound.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:137:4 ]
+     │
+ 137 │ fn kcode(k : @types.Class) -> Int {
+     │    ──┬──  
+     │      ╰──── The toplevel identifier kcode is declared twice: it was previously defined at E:\qbe.mbt\ssa\use.mbt:
+12:8.
+─────╯
+Warning: [0001]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:137:4 ]
+     │
+ 137 │ fn kcode(k : @types.Class) -> Int {
+     │    ──┬──  
+     │      ╰──── Warning (unused_value): Unused function 'kcode'
+─────╯
+Warning: [0002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:224:7 ]
+     │
+ 224 │   let child = b.dom_link
+     │       ──┬──  
+     │         ╰──── Warning (unused_value): Unused variable 'child'
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:3 ]
+     │
+ 225 │   var c = child
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:3 ]
+     │
+ 225 │   var c = child
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:225:7 ]
+     │
+ 225 │   var c = child
+     │       ┬  
+     │       ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:226:9 ]
+     │
+ 226 │   while c >= 0 {
+     │         ┬  
+     │         ╰── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:227:18 ]
+     │
+ 227 │     ren_dfs(fn_, c, stk, pool)
+     │                  ┬  
+     │                  ╰── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:228:5 ]
+     │
+ 228 │     c = fn_.blks[c].dom_next
+     │     ────────────┬───────────  
+     │                 ╰───────────── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:228:18 ]
+     │
+ 228 │     c = fn_.blks[c].dom_next
+     │                  ┬  
+     │                  ╰── The value identifier c is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:3 ]
+     │
+ 263 │   var n = stk[t]
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:3 ]
+     │
+ 263 │   var n = stk[t]
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:263:7 ]
+     │
+ 263 │   var n = stk[t]
+     │       ┬  
+     │       ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:264:9 ]
+     │
+ 264 │   while n >= 0 && !dom(fn_, pool.entries[n].blk_id, b) {
+     │         ┬  
+     │         ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:264:42 ]
+     │
+ 264 │   while n >= 0 && !dom(fn_, pool.entries[n].blk_id, b) {
+     │                                          ┬  
+     │                                          ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:265:14 ]
+     │
+ 265 │     let n1 = n
+     │              ┬  
+     │              ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:266:5 ]
+     │
+ 266 │     n = pool.entries[n].up
+     │     ───────────┬──────────  
+     │                ╰──────────── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:266:22 ]
+     │
+ 266 │     n = pool.entries[n].up
+     │                      ┬  
+     │                      ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:269:12 ]
+     │
+ 269 │   stk[t] = n
+     │            ┬  
+     │            ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:270:6 ]
+     │
+ 270 │   if n < 0 {
+     │      ┬  
+     │      ╰── The value identifier n is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:274:18 ]
+     │
+ 274 │     pool.entries[n].r
+     │                  ┬  
+     │                  ╰── The value identifier n is unbound.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:286:4 ]
+     │
+ 286 │ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+     │    ──┬─  
+     │      ╰─── The toplevel identifier sdom is declared twice: it was previously defined at E:\qbe.mbt\ssa\ssacheck.m
+bt:6:4.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:3 ]
+     │
+ 290 │   var b2 = b2
+     │   ─┬─  
+     │    ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:3 ]
+     │
+ 290 │   var b2 = b2
+     │   ─┬─  
+     │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using an
+other name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:290:7 ]
+     │
+ 290 │   var b2 = b2
+     │       ─┬  
+     │        ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new
+ line, or `}` to close the block.
+─────╯
+Error: [4087]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:292:5 ]
+     │
+ 292 │     b2 = fn_.blks[b2].idom
+     │     ─┬  
+     │      ╰── The variable b2 is not mutable.
+─────╯
+Error: [4051]
+     ╭─[ E:\qbe.mbt\ssa\ssa.mbt:299:4 ]
+     │
+ 299 │ fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
+     │    ────┬───  
+     │        ╰───── The toplevel identifier clsmerge is declared twice: it was previously defined at E:\qbe.mbt\ssa\us
+e.mbt:24:8.
+─────╯
+Warning: [0001]
+   ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:6:4 ]
+   │
+ 6 │ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+   │    ──┬─  
+   │      ╰─── Warning (unused_value): Unused function 'sdom'
+───╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:10:3 ]
+    │
+ 10 │   var b2 = b2
+    │   ─┬─  
+    │    ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:10:3 ]
+    │
+ 10 │   var b2 = b2
+    │   ─┬─  
+    │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using ano
+ther name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:10:7 ]
+    │
+ 10 │   var b2 = b2
+    │       ─┬  
+    │        ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+────╯
+Error: [4087]
+    ╭─[ E:\qbe.mbt\ssa\ssacheck.mbt:12:5 ]
+    │
+ 12 │     b2 = fn_.blks[b2].idom
+    │     ─┬  
+    │      ╰── The variable b2 is not mutable.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:40:3 ]
+    │
+ 40 │   var t1 = tmps[t].is_phi
+    │   ─┬─  
+    │    ╰─── The value identifier var is unbound.
+────╯
+Warning: [0035]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:40:3 ]
+    │
+ 40 │   var t1 = tmps[t].is_phi
+    │   ─┬─  
+    │    ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider using ano
+ther name.
+────╯
+Error: [3002]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:40:7 ]
+    │
+ 40 │   var t1 = tmps[t].is_phi
+    │       ─┬  
+    │        ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on a new 
+line, or `}` to close the block.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:41:6 ]
+    │
+ 41 │   if t1 == 0 {
+    │      ─┬  
+    │       ╰── The value identifier t1 is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:44:3 ]
+    │
+ 44 │   t1 = phicls(t1, tmps)
+    │   ──────────┬──────────  
+    │             ╰──────────── The value identifier t1 is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:44:15 ]
+    │
+ 44 │   t1 = phicls(t1, tmps)
+    │               ─┬  
+    │                ╰── The value identifier t1 is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:45:20 ]
+    │
+ 45 │   tmps[t].is_phi = t1
+    │                    ─┬  
+    │                     ╰── The value identifier t1 is unbound.
+────╯
+Error: [4021]
+    ╭─[ E:\qbe.mbt\ssa\use.mbt:46:3 ]
+    │
+ 46 │   t1
+    │   ─┬  
+    │    ╰── The value identifier t1 is unbound.
+────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:113:9 ]
+     │
+ 113 │         var w = @types.WFull
+     │         ─┬─  
+     │          ╰─── The value identifier var is unbound.
+─────╯
+Warning: [0035]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:113:9 ]
+     │
+ 113 │         var w = @types.WFull
+     │         ─┬─  
+     │          ╰─── Warning (reserved_keyword): The word `var` is reserved for possible future use. Please consider us
+ing another name.
+─────╯
+Error: [3002]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:113:13 ]
+     │
+ 113 │         var w = @types.WFull
+     │             ┬  
+     │             ╰── Parse error, unexpected token id (lowercase start), you may expect a statement or expression on 
+a new line, or `}` to close the block.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:115:11 ]
+     │
+ 115 │           w = @types.width_from_code(@types.load_width_idx(ins.op))
+     │           ────────────────────────────┬────────────────────────────  
+     │                                       ╰────────────────────────────── The value identifier w is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:118:11 ]
+     │
+ 118 │           w = @types.width_from_code(@types.ext_width_idx(ins.op))
+     │           ────────────────────────────┬───────────────────────────  
+     │                                       ╰───────────────────────────── The value identifier w is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:120:13 ]
+     │
+ 120 │         if (w == @types.Wsw || w == @types.Wuw) && ins.cls == @types.Kw {
+     │             ┬  
+     │             ╰── The value identifier w is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:120:32 ]
+     │
+ 120 │         if (w == @types.Wsw || w == @types.Wuw) && ins.cls == @types.Kw {
+     │                                ┬  
+     │                                ╰── The value identifier w is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:121:11 ]
+     │
+ 121 │           w = @types.WFull
+     │           ────────┬───────  
+     │                   ╰───────── The value identifier w is unbound.
+─────╯
+Error: [4021]
+     ╭─[ E:\qbe.mbt\ssa\use.mbt:124:29 ]
+     │
+ 124 │         fn_.tmps[t].width = w
+     │                             ┬  
+     │                             ╰── The value identifier w is unbound.
+─────╯
+Failed with 18 warnings, 70 errors.
+Error: failed when building project

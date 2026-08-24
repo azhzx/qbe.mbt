@@ -1,0 +1,12 @@
+﻿moon : Error: Failed to calculate build plan
+At line:15 char:5630
++ ... ources\app\node_modules\@vscode\ripgrep\bin'; moon check 2>&1 | Out-F ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: Failed to calculate build plan:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Caused by:
+    0: Failed to resolve the module dependency graph
+    1: failed to load `E:\qbe.mbt\moon.mod`
+    2: Lexing error at 489..490

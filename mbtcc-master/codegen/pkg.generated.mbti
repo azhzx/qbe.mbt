@@ -1,0 +1,66 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Kaida-Amethyst/mbtcc/codegen"
+
+import {
+  "Kaida-Amethyst/MoonLLVM/IR",
+  "Kaida-Amethyst/mbtcc/env",
+  "Kaida-Amethyst/mbtcc/parser",
+}
+
+// Values
+pub fn codegen(String, source_file? : String) -> @IR.Module raise
+
+pub fn codegen_from_parser(@parser.Context) -> Context
+
+// Errors
+pub suberror CodeGenError {
+  Unimplemented(String)
+  IllegalLLVMUsage(String)
+  SemanticError(String)
+}
+pub impl Show for CodeGenError
+
+// Types and methods
+pub struct Context {
+  llvm_ctx : @IR.Context
+  llvm_mod : @IR.Module
+  builder : @IR.IRBuilder
+  func_decls : Map[String, @parser.CType]
+  func_defs : Map[String, @IR.Function]
+  prog : @parser.Program
+  mut var_env : @env.Env[String, &@IR.Value]
+  mut var_types : @env.Env[String, @parser.CType]
+  mut current_func : @IR.Function?
+  mut current_ret_ty : @parser.CType?
+  break_stack : Array[@IR.BasicBlock]
+  continue_stack : Array[@IR.BasicBlock]
+  switch_ctx_stack : Array[SwitchCodegenCtx]
+  mut labels : Map[String, @IR.BasicBlock]
+}
+pub fn Context::ctype_kind_to_llvm_type(Self, @parser.CTypeDataKind) -> &@IR.Type raise
+pub fn Context::ctype_to_llvm_type(Self, @parser.CType) -> &@IR.Type raise
+pub fn Context::emit(Self) -> @IR.Module raise
+pub fn Context::emit_additive_expr(Self, @parser.AddiExpr) -> &@IR.Value raise
+pub fn Context::emit_compound_stmt(Self, @parser.CompoundStmt) -> Unit raise
+pub fn Context::emit_external_decl(Self, @parser.ExternalDeclaration) -> Unit raise
+pub fn Context::emit_function_def(Self, @parser.FunctionDefinition) -> Unit raise
+pub fn Context::emit_global_decl(Self, @parser.Declaration) -> Unit raise CodeGenError
+pub fn Context::emit_global_variable_decl(Self, @parser.CType, String, @parser.Initializer?, is_static~ : Bool, is_extern~ : Bool, is_register~ : Bool, is_thread_local~ : Bool) -> Unit raise CodeGenError
+pub fn Context::emit_local_decl(Self, @parser.Declaration) -> Unit raise
+pub fn Context::emit_statement(Self, @parser.Statement) -> Unit raise
+pub fn Context::emit_type_decl(Self, @parser.CType) -> Unit raise CodeGenError
+pub fn Context::emit_typedef(Self, @parser.CType, String) -> Unit raise CodeGenError
+
+pub struct SwitchCodegenCtx {
+  switch_inst : @IR.SwitchInst
+  case_map : Map[Int, @IR.BasicBlock]
+  default_bb : @IR.BasicBlock
+  exit_bb : @IR.BasicBlock
+  mut active : Bool
+  mut has_default : Bool
+}
+
+// Type aliases
+
+// Traits
+

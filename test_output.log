@@ -1,0 +1,728 @@
+﻿moon : 2026-08-24T02:11:44.012301Z  INFO run_test:run_test_impl: moon::cli::test:344: starting moon test command update
+=false build_only=false doc_test=false package_filters=0 path_filters=0
+At line:15 char:5630
++ ... sources\app\node_modules\@vscode\ripgrep\bin'; moon test 2>&1 | Out-F ...
++                                                    ~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T02:1... path_filters=0:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T02:11:44.013141Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::cli::test:960: starting rupes-recta test run run_mode=Test update=false build_only=false
+2026-08-24T02:11:44.067026Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:558: Checking local modules and backend
+2026-08-24T02:11:44.067054Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:568: Preferred backend: None
+2026-08-24T02:11:44.067063Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:586: is_core: false
+2026-08-24T02:11:44.067077Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:610: User intent calculated: [Test(PackageId(1v1)), Test(PackageId(2v1)), Test(PackageId(3v1)), Test(Package
+Id(4v1)), Test(PackageId(5v1)), Test(PackageId(6v1))]
+2026-08-24T02:11:44.067091Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:616: Running prebuild configuration
+2026-08-24T02:11:44.067219Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:622: Expanding user intents to build plan nodes
+2026-08-24T02:11:44.067234Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:302: Determining compilation configuration
+2026-08-24T02:11:44.067239Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:305: std: self.use_std = true, is_core = false => std = true
+2026-08-24T02:11:44.067243Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:311: Target backend: explicit = Some(Wasm) => selected = Wasm
+2026-08-24T02:11:44.067249Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:334: Final backend configuration: Wasm { use_wat: false, wasi_link: true }
+2026-08-24T02:11:44.067267Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:640: Begin lowering to build graph
+2026-08-24T02:11:44.069164Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:681: Build planning completed successfully
+2026-08-24T02:11:44.070621Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:db.open:db.create: n2::db:394: creating new database path=E:\qbe.mbt\_build\wasm\debug\test\test.moon_
+db path=E:\qbe.mbt\_build\wasm\debug\test\test.moon_db
+2026-08-24T02:11:44.070833Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:746: starting build execution parallelism=12 total_pending=45 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(
+10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.073870Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(0) location=azhzx/qbe@Whi
+teboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074084Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(0) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074102Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(1) location=azhzx/qbe@Bla
+ckboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074265Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(1) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074273Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(2) location=azhzx/qbe@Inl
+ineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074422Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(2) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.074430Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(3) location=azhzx/qbe/cmd
+/main@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=t
+rue parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.075155Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=3 buildid=BuildId(3) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.075183Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(4) location=azhzx/qbe/cmd
+/main@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=tru
+e parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.075621Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=4 buildid=BuildId(4) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.075652Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(5) location=azhzx/qbe/lex
+er@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.076688Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=5 buildid=BuildId(5) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.076731Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(6) location=azhzx/qbe/lex
+er@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.077225Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=6 buildid=BuildId(6) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.077249Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(7) location=azhzx/qbe/par
+ser@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=tru
+e parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.077912Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=7 buildid=BuildId(7) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.077938Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(8) location=azhzx/qbe/par
+ser@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.078590Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=8 buildid=BuildId(8) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.078640Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(9) location=azhzx/qbe/typ
+es@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.079197Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=9 buildid=BuildId(9) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.079232Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(10) location=azhzx/qbe/ty
+pes@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.079918Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=10 buildid=BuildId(10) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.082088Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(11) location=azhzx/qbe/ut
+il@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.085565Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=11 buildid=BuildId(11) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.236654Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(0) location=azhzx/qbe@Whi
+teboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.237205Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(12) location=azhzx/qbe/ut
+il@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.237562Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(12) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.244674Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(1) location=azhzx/qbe@Bla
+ckboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.245301Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(16) location=azhzx/qbe/ut
+il@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.245619Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(16) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.246784Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(4) location=azhzx/qbe/cmd
+/main@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=tru
+e parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.247326Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(21) location=azhzx/qbe/ty
+pes@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.247667Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=4 buildid=BuildId(21) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.258478Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(2) location=azhzx/qbe@Inl
+ineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.259444Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(36) location=azhzx/qbe/cm
+d/main@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.259777Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(36) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.263009Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(10) location=azhzx/qbe/ty
+pes@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.263485Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(41) location=azhzx/qbe@So
+urce@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.263783Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=10 buildid=BuildId(41) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.305217Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(3) location=azhzx/qbe/cmd
+/main@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=t
+rue parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.306091Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(44) location=azhzx/qbe@Wh
+iteboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.306539Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=3 buildid=BuildId(44) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.320750Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(6) location=azhzx/qbe/lex
+er@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.321370Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(34) location=azhzx/qbe/cm
+d/main@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true para
+llelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.321696Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=6 buildid=BuildId(34) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.321725Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(8) location=azhzx/qbe/par
+ser@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.322065Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(39) location=azhzx/qbe@In
+lineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=1
+2 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.322329Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=8 buildid=BuildId(39) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.335865Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(11) location=azhzx/qbe/ut
+il@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.336719Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(19) location=azhzx/qbe/ty
+pes@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.337195Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=11 buildid=BuildId(19) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.346176Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(9) location=azhzx/qbe/typ
+es@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.366718Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(7) location=azhzx/qbe/par
+ser@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=tru
+e parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.370225Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(5) location=azhzx/qbe/lex
+er@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true
+ parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.406742Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(16) location=azhzx/qbe/ut
+il@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.407331Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(17) location=azhzx/qbe/ut
+il@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.407581Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(17) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.421085Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(12) location=azhzx/qbe/ut
+il@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.421692Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(14) location=azhzx/qbe/ut
+il@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.422024Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(14) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.453588Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(41) location=azhzx/qbe@So
+urce@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.454129Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(42) location=azhzx/qbe@Bl
+ackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.454410Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=5 buildid=BuildId(42) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.458883Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(36) location=azhzx/qbe/cm
+d/main@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.459749Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(37) location=azhzx/qbe/cm
+d/main@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true pa
+rallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.459992Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(37) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.485600Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(34) location=azhzx/qbe/cm
+d/main@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true para
+llelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.486338Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(33) location=azhzx/qbe/cm
+d/main@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.486621Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=6 buildid=BuildId(33) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.489775Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(44) location=azhzx/qbe@Wh
+iteboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.490314Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(43) location=azhzx/qbe@Wh
+iteboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.490641Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=3 buildid=BuildId(43) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.503620Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(21) location=azhzx/qbe/ty
+pes@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.504621Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(24) location=azhzx/qbe/le
+xer@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.504903Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=4 buildid=BuildId(24) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.504935Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(22) location=azhzx/qbe/ty
+pes@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.505161Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=7 buildid=BuildId(22) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.505185Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(30) location=azhzx/qbe/le
+xer@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.505413Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=9 buildid=BuildId(30) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.600844Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(39) location=azhzx/qbe@In
+lineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=1
+2 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.601280Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(38) location=azhzx/qbe@In
+lineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.601530Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=8 buildid=BuildId(38) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.613583Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(17) location=azhzx/qbe/ut
+il@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.614301Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(15) location=azhzx/qbe/ut
+il@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.614607Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(15) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.616375Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(19) location=azhzx/qbe/ty
+pes@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.616803Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(18) location=azhzx/qbe/ty
+pes@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.617197Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=10 buildid=BuildId(18) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.653886Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(42) location=azhzx/qbe@Bl
+ackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.654616Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(40) location=azhzx/qbe@Bl
+ackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.654961Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=5 buildid=BuildId(40) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.669065Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(37) location=azhzx/qbe/cm
+d/main@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true pa
+rallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.669722Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(35) location=azhzx/qbe/cm
+d/main@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true par
+allelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.669988Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(35) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.672319Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(14) location=azhzx/qbe/ut
+il@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.673109Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(13) location=azhzx/qbe/ut
+il@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralleli
+sm=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.673430Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(13) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.774493Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(22) location=azhzx/qbe/ty
+pes@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.775621Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(20) location=azhzx/qbe/ty
+pes@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.776024Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=7 buildid=BuildId(20) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.837082Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(24) location=azhzx/qbe/le
+xer@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.839619Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(25) location=azhzx/qbe/pa
+rser@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.840123Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=4 buildid=BuildId(25) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.840170Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(27) location=azhzx/qbe/pa
+rser@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.840460Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=11 buildid=BuildId(27) parallelism=12 f
+ailures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false 
+explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.853815Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(33) location=azhzx/qbe/cm
+d/main@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.854574Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(32) location=azhzx/qbe/le
+xer@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.855021Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=6 buildid=BuildId(32) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.920127Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(30) location=azhzx/qbe/le
+xer@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.920676Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(29) location=azhzx/qbe/le
+xer@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.920974Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=9 buildid=BuildId(29) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.925177Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(43) location=azhzx/qbe@Wh
+iteboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.975988Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(15) location=azhzx/qbe/ut
+il@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.977611Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(18) location=azhzx/qbe/ty
+pes@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.979773Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(13) location=azhzx/qbe/ut
+il@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralleli
+sm=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.985419Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(40) location=azhzx/qbe@Bl
+ackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=
+12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.990780Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(35) location=azhzx/qbe/cm
+d/main@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true par
+allelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:44.991828Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(38) location=azhzx/qbe@In
+lineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12
+ failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.021210Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(32) location=azhzx/qbe/le
+xer@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.021949Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(31) location=azhzx/qbe/le
+xer@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.022275Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(31) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.067348Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(27) location=azhzx/qbe/pa
+rser@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.068352Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(28) location=azhzx/qbe/pa
+rser@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true para
+llelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.068734Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(28) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.084951Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(29) location=azhzx/qbe/le
+xer@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.112487Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(20) location=azhzx/qbe/ty
+pes@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.152316Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(25) location=azhzx/qbe/pa
+rser@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.152811Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(23) location=azhzx/qbe/pa
+rser@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.152998Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(23) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.172336Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(31) location=azhzx/qbe/le
+xer@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parall
+elism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.186300Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(28) location=azhzx/qbe/pa
+rser@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true para
+llelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.186891Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(26) location=azhzx/qbe/pa
+rser@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.187079Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(26) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.252197Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(23) location=azhzx/qbe/pa
+rser@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.281791Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(26) location=azhzx/qbe/pa
+rser@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paral
+lelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:11:45.282062Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:871: build execution completed tasks_done=45 tasks_failed=0 su
+ccess=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures
+_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+Warning: [0001]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:25:4 ]
+    │
+ 25 │ fn is_ident_start(c : Char) -> Bool {
+    │    ───────┬──────  
+    │           ╰──────── Warning (unused_value): Unused function 'is_ident_start'
+────╯
+Warning: [0027]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:39:3 ]
+    │
+ 39 │   loop s {
+    │   ────┬───  
+    │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rewr
+ite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite st
+ate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+────╯
+Warning: [0027]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:59:3 ]
+    │
+ 59 │   loop s {
+    │   ────┬───  
+    │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rewr
+ite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite st
+ate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:66:22 ]
+    │
+ 66 │       if c == '.' && not(is_float) {
+    │                      ─┬─  
+    │                       ╰─── Warning (deprecated): Use !expr instead
+────╯
+Warning: [0027]
+    ╭─[ E:\qbe.mbt\lexer\lexer.mbt:85:3 ]
+    │
+ 85 │   loop s {
+    │   ────┬───  
+    │       ╰───── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use rewr
+ite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composite st
+ate explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+────╯
+Warning: [0027]
+     ╭─[ E:\qbe.mbt\lexer\lexer.mbt:172:3 ]
+     │
+ 172 │   loop code {
+     │   ─────┬─────  
+     │        ╰─────── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is deprecated. Use 
+rewrite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destructure composit
+e state explicitly inside the loop body, and use an explicit `break` to return the final result. instead.
+─────╯
+Warning: [0027]
+     ╭─[ E:\qbe.mbt\lexer\lexer.mbt:196:18 ]
+     │
+ 196 │       let rest = loop rest {
+     │                  ─────┬─────  
+     │                       ╰─────── Warning (deprecated_syntax): The syntax loop ... { ... } for functional loop is d
+eprecated. Use rewrite this as a `for` loop with explicit loop binders (for example, `for state = init { ... }`), destr
+ucture composite state explicitly inside the loop body, and use an explicit `break` to return the final result. instead
+.
+─────╯
+Warning: [0029]
+   ╭─[ E:\qbe.mbt\lexer\moon.pkg:2:3 ]
+   │
+ 2 │   "azhzx/qbe/types",
+   │   ────────┬────────  
+   │           ╰────────── Warning (unused_package): Unused package 'azhzx/qbe/types'
+───╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:55:15 ]
+    │
+ 55 │         while not(done) {
+    │               ─┬─  
+    │                ╰─── Warning (deprecated): Use !expr instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:60:33 ]
+    │
+Total tests: 0, passed: 0, failed: 0.
+ 60 │               let num_str = raw.substring(start=2)
+    │                                 ────┬────  
+    │                                     ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:61:41 ]
+    │
+ 61 │               let (fval, err_msg) = try @strconv.parse_double(num_str) catch {
+    │                                         ──────────┬──────────  
+    │                                                   ╰──────────── Warning (deprecated): use `@string.parse_double` 
+instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\data.mbt:74:30 ]
+    │
+ 74 │                   flts: fval.to_float(),
+    │                              ────┬───  
+    │                                  ╰───── Warning (deprecated): Use `Float::from_double` instead
+────╯
+Warning: [0001]
+     ╭─[ E:\qbe.mbt\parser\func.mbt:163:12 ]
+     │
+ 163 │ fn Parser::closeblk(self : Self) -> Unit {
+     │            ────┬───  
+     │                ╰───── Warning (unused_value): Unused function 'closeblk'
+─────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:71:25 ]
+    │
+ 71 │       let num_str = raw.substring(start=2)
+    │                         ────┬────  
+    │                             ╰────── Warning (deprecated): Use `str[:]` or `str[:].to_string()` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:72:33 ]
+    │
+ 72 │       let (fval, err_msg) = try @strconv.parse_double(num_str) catch {
+    │                                 ──────────┬──────────  
+    │                                           ╰──────────── Warning (deprecated): use `@string.parse_double` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\parser\ref.mbt:81:43 ]
+    │
+ 81 │         let con = @types.Con::single(fval.to_float())
+    │                                           ────┬───  
+    │                                               ╰───── Warning (deprecated): Use `Float::from_double` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\types\fn.mbt:41:16 ]
+    │
+ 41 │     blk_names: Map::new(),
+    │                ────┬───  
+    │                    ╰───── Warning (deprecated): Use `Map([], capacity=...)` instead
+────╯
+Warning: [0020]
+    ╭─[ E:\qbe.mbt\util\interner.mbt:11:22 ]
+    │
+ 11 │   Interner::{ table: Map::new(), values: Array::new() }
+    │                      ────┬───  
+    │                          ╰───── Warning (deprecated): Use `Map([], capacity=...)` instead
+────╯
+2026-08-24T02:11:45.293543Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::run::runtest:241: test run completed total=0 passed=0
+Warning: no test entry found.

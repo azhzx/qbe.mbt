@@ -1,0 +1,317 @@
+﻿moon : 2026-08-24T02:15:58.045473Z  INFO run_test:run_test_impl: moon::cli::test:344: starting moon test command update
+=false build_only=false doc_test=false package_filters=0 path_filters=0
+At line:15 char:5661
++ ... e\ripgrep\bin'; moon info 2>&1; moon fmt 2>&1; moon test 2>&1 | Out-F ...
++                                                    ~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T02:1... path_filters=0:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T02:15:58.046284Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::cli::test:960: starting rupes-recta test run run_mode=Test update=false build_only=false
+2026-08-24T02:15:58.102062Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:558: Checking local modules and backend
+2026-08-24T02:15:58.102090Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:568: Preferred backend: None
+2026-08-24T02:15:58.102100Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:586: is_core: false
+2026-08-24T02:15:58.102109Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:610: User intent calculated: [Test(PackageId(1v1)), Test(PackageId(2v1)), Test(PackageId(3v1)), Test(Package
+Id(4v1)), Test(PackageId(5v1)), Test(PackageId(6v1)), Test(PackageId(7v1))]
+2026-08-24T02:15:58.102124Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:616: Running prebuild configuration
+2026-08-24T02:15:58.102279Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:622: Expanding user intents to build plan nodes
+2026-08-24T02:15:58.102302Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:302: Determining compilation configuration
+2026-08-24T02:15:58.102310Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:305: std: self.use_std = true, is_core = false => std = true
+2026-08-24T02:15:58.102315Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:311: Target backend: explicit = Some(Wasm) => selected = Wasm
+2026-08-24T02:15:58.102321Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:334: Final backend configuration: Wasm { use_wat: false, wasi_link: true }
+2026-08-24T02:15:58.102346Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:640: Begin lowering to build graph
+2026-08-24T02:15:58.104469Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::rr_build:681: Build planning completed successfully
+2026-08-24T02:15:58.106081Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:db.open:db.open_existing: n2::db:381: opening existing database path=E:\qbe.mbt\_build\wasm\debug\test
+\test.moon_db path=E:\qbe.mbt\_build\wasm\debug\test\test.moon_db
+2026-08-24T02:15:58.106272Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:db.open:db.open_existing: n2::db:389: database loaded successfully path=E:\qbe.mbt\_build\wasm\debug\t
+est\test.moon_db path=E:\qbe.mbt\_build\wasm\debug\test\test.moon_db
+2026-08-24T02:15:58.106323Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:746: starting build execution parallelism=12 total_pending=52 
+parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(
+10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.106633Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(0) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.106922Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(1) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.107045Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(2) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.107426Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(5) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.107552Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(6) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.107798Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(7) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.107915Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(8) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.108334Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(9) parallelism
+=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.108466Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(10) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.109612Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(11) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.109807Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(12) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.110210Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(13) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.110356Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(14) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.110633Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(18) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.110833Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(23) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111030Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(38) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111281Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(48) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111402Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(51) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111496Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(46) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111597Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(36) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111741Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(21) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111846Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(16) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.111926Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(19) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112067Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(32) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112394Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(26) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112499Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(24) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112623Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(39) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112731Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(49) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.112920Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(50) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113004Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(45) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113083Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(35) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113163Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(20) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113271Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(15) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113374Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(17) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113477Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(31) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113573Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(34) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113807Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(29) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113894Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(27) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.113970Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(22) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114043Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(37) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114124Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(47) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114226Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(33) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114407Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(30) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114554Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(25) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114669Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:785: build up to date, skipping buildid=BuildId(28) parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=
+false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.114681Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(3) location=azhzx/qbe/cfg
+@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.115402Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(3) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.115440Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(4) location=azhzx/qbe/cfg
+@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true par
+allelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.116251Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(4) parallelism=12 fai
+lures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false ex
+plain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.118465Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(43) location=azhzx/qbe/cf
+g@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=1
+2 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.118876Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=2 buildid=BuildId(43) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.210597Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(4) location=azhzx/qbe/cfg
+@InlineTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true par
+allelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.211696Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(41) location=azhzx/qbe/cf
+g@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralleli
+sm=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.212044Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(41) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.215813Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(3) location=azhzx/qbe/cfg
+@BlackboxTest@GenerateTestInfo:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true p
+arallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.235086Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(43) location=azhzx/qbe/cf
+g@Source@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=1
+2 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.235746Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(44) location=azhzx/qbe/cf
+g@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.235950Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(44) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.302369Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(41) location=azhzx/qbe/cf
+g@InlineTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralleli
+sm=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.302947Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(40) location=azhzx/qbe/cf
+g@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.303202Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=1 buildid=BuildId(40) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.317904Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(44) location=azhzx/qbe/cf
+g@BlackboxTest@BuildCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true paralle
+lism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.318556Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:774: executing build buildid=BuildId(42) location=azhzx/qbe/cf
+g@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.318918Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::task:339: starting task tid=0 buildid=BuildId(42) parallelism=12 fa
+ilures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false e
+xplain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.418023Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(40) location=azhzx/qbe/cf
+g@InlineTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelis
+m=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.424818Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:858: build succeeded buildid=BuildId(42) location=azhzx/qbe/cf
+g@BlackboxTest@LinkCore:0 parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallel
+ism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.425097Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr:execu
+te_build_partial:work.run:work.run_with_logger: n2::work:871: build execution completed tasks_done=7 tasks_failed=0 suc
+cess=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true parallelism=12 failures_
+left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=false
+2026-08-24T02:15:58.427307Z  INFO run_test:run_test_impl:run_test_internal:run_test_or_bench_internal:run_test_rr: moon
+::run::runtest:241: test run completed total=0 passed=0
+Warning: no test entry found.
+Total tests: 0, passed: 0, failed: 0.

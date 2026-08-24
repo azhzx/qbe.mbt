@@ -1,0 +1,138 @@
+﻿moon : 2026-08-24T04:38:15.412292Z  INFO run_run:build_package_executable: moon::rr_build:558: Checking local modules a
+nd backend
+At line:15 char:5630
++ ... ode\ripgrep\bin'; moon run cmd/main -- -dP test/abi1.ssa 2>&1 | Out-F ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-08-24T04:3...les and backend:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-08-24T04:38:15.412327Z  INFO run_run:build_package_executable: moon::rr_build:568: Preferred backend: None
+2026-08-24T04:38:15.412335Z  INFO run_run:build_package_executable: moon::rr_build:586: is_core: false
+2026-08-24T04:38:15.412341Z  INFO run_run:build_package_executable: moon::rr_build:610: User intent calculated: [Run(Pa
+ckageId(3v1))]
+2026-08-24T04:38:15.412351Z  INFO run_run:build_package_executable: moon::rr_build:616: Running prebuild configuration
+2026-08-24T04:38:15.412476Z  INFO run_run:build_package_executable: moon::rr_build:622: Expanding user intents to build
+ plan nodes
+2026-08-24T04:38:15.412484Z  INFO run_run:build_package_executable: moon::rr_build:302: Determining compilation configu
+ration
+2026-08-24T04:38:15.412489Z  INFO run_run:build_package_executable: moon::rr_build:305: std: self.use_std = true, is_co
+re = false => std = true
+2026-08-24T04:38:15.412492Z  INFO run_run:build_package_executable: moon::rr_build:311: Target backend: explicit = Some
+(Wasm) => selected = Wasm
+2026-08-24T04:38:15.412498Z  INFO run_run:build_package_executable: moon::rr_build:334: Final backend configuration: Wa
+sm { use_wat: false, wasi_link: true }
+2026-08-24T04:38:15.412515Z  INFO run_run:build_package_executable: moon::rr_build:640: Begin lowering to build graph
+2026-08-24T04:38:15.413291Z  INFO run_run:build_package_executable: moon::rr_build:681: Build planning completed succes
+sfully
+2026-08-24T04:38:15.414081Z  INFO run_run:build_package_executable:execute_build:db.open:db.open_existing: n2::db:381: 
+opening existing database path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm\debug\build
+\build.moon_db
+2026-08-24T04:38:15.414230Z  INFO run_run:build_package_executable:execute_build:db.open:db.open_existing: n2::db:389: 
+database loaded successfully path=E:\qbe.mbt\_build\wasm\debug\build\build.moon_db path=E:\qbe.mbt\_build\wasm\debug\bu
+ild\build.moon_db
+2026-08-24T04:38:15.414259Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:746: starting build execution parallelism=12 total_pending=12 parallelism=12 failures_left=Some(10) adopt=false expla
+in=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logg
+er_present=false
+2026-08-24T04:38:15.414687Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(9) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.415466Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(2) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.415753Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(6) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.415948Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(1) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.416185Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(10) parallelism=12 failures_left=Some(10) adopt=false explain=false d
+irty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present
+=false
+2026-08-24T04:38:15.416373Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(5) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.416560Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(3) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.416790Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(4) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.417190Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(8) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.417703Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(7) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.417944Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(11) parallelism=12 failures_left=Some(10) adopt=false explain=false d
+irty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present
+=false
+2026-08-24T04:38:15.418158Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:785: build up to date, skipping buildid=BuildId(0) parallelism=12 failures_left=Some(10) adopt=false explain=false di
+rty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output=true logger_present=
+false
+2026-08-24T04:38:15.418170Z  INFO run_run:build_package_executable:execute_build:work.run:work.run_with_logger: n2::wor
+k:871: build execution completed tasks_done=0 tasks_failed=0 success=true parallelism=12 failures_left=Some(10) adopt=f
+alse explain=false dirty_on_output=true parallelism=12 failures_left=Some(10) adopt=false explain=false dirty_on_output
+=true logger_present=false
+**** Function alpha ****
+> After parsing:
+function $alpha() {
+@ini
+	%p =l par
+	%l =w par
+	%n =l par
+	%pe =l add %p, %n
+@lop
+	%p1 =l phi @ini %p, @lop %p2
+	%l1 =w phi @ini %l, @lop %l2
+	storeb %l1, %p1
+	%p2 =l add %p1, 1
+	%l2 =w add %l1, 1
+	%c1 =w ceql %p1, %pe
+	jnz %c1, @end, @lop
+@end
+	storeb 0, %pe
+	ret0
+}
+
+**** Function test ****
+> After parsing:
+export function $test() {
+@start
+	%p =l alloc4 17
+	%q =l alloc4 17
+	argl %p
+	argw 65
+	argl 16
+	%r0 =w call $alpha
+	argl %q
+	argw 97
+	argl 16
+	%r1 =w call $alpha
+	argc :mem, %p
+	argw 1
+	argw 2
+	argw 3
+	argw 4
+	argw 5
+	argw 6
+	argw 7
+	argw 8
+	argw 9
+	argc :mem, %q
+	%r2 =w call $fcb
+	ret0
+}
+
