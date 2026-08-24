@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/rega"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn rega(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
