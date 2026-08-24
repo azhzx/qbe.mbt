@@ -1,0 +1,107 @@
+///|
+// Tests for CFG analysis functions
+
+///|
+// Helper to create a simple function with blocks
+fn make_test_fn(name : String, nblk : Int) -> @types.Fn {
+  let f = @types.Fn::new(name)
+  for i = 0; i < nblk; i = i + 1 {
+    let _ = f.add_blk("b\{i}")
+  }
+  f
+}
+
+///|
+test "fillpreds - linear blocks" {
+  // b0 -> b1 -> b2
+  let f = make_test_fn("test", 3)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillpreds(f)
+  assert_true(f.blks[0].npred == 0)
+  assert_true(f.blks[1].npred == 1)
+  assert_true(f.blks[2].npred == 1)
+}
+
+///|
+test "fillpreds - branch block" {
+  // b0 -> b1, b2 (jnz)
+  // b1 -> b3
+  // b2 -> b3
+  let f = make_test_fn("test", 4)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillpreds(f)
+  assert_true(f.blks[0].npred == 0)
+  assert_true(f.blks[1].npred == 1)
+  assert_true(f.blks[2].npred == 1)
+  assert_true(f.blks[3].npred == 2)
+}
+
+///|
+test "fillrpo - linear blocks" {
+  let f = make_test_fn("test", 3)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  // RPO should be [0, 1, 2]
+  assert_true(f.rpo.length() == 3)
+  assert_true(f.rpo[0] == 0)
+  assert_true(f.rpo[1] == 1)
+  assert_true(f.rpo[2] == 2)
+}
+
+///|
+test "fillrpo - branch and merge" {
+  // b0 -> b1, b2 -> b3
+  let f = make_test_fn("test", 4)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  // Start should be first
+  assert_true(f.rpo[0] == 0)
+  assert_true(f.rpo.length() == 4)
+}
+
+///|
+test "filldom - simple diamond" {
+  // b0 -> b1, b2 -> b3
+  let f = make_test_fn("test", 4)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  filldom(f)
+  // b0 dominates all
+  assert_true(f.blks[0].idom == -1) // start has no idom
+  assert_true(f.blks[1].idom == 0)
+  assert_true(f.blks[2].idom == 0)
+  assert_true(f.blks[3].idom == 0)
+}
+
+///|
+test "fillloop - simple loop" {
+  // b0 -> b1 -> b2 -> b1 (loop)
+  //         ^----'
+  let f = make_test_fn("test", 3)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 2, 1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  fillloop(f)
+  // b1 is in a loop (has back edge from itself)
+  assert_true(f.blks[1].loop_depth >= 1)
+}

@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/cfg"
+
+import {
+  "azhzx/qbe/types",
+}
+
+// Values
+pub fn check_alias(@types.Ref, Int, @types.Ref, Int, @types.Fn) -> (AliasResult, Int64)
+
+pub fn dom(@types.Fn, Int, Int) -> Bool
+
+pub fn edgedel(@types.Fn, Int, Int) -> Unit
+
+pub fn escapes(@types.Ref, @types.Fn) -> Bool
+
+pub fn fillalias(@types.Fn) -> Unit
+
+pub fn filldom(@types.Fn) -> Unit
+
+pub fn fillfron(@types.Fn) -> Unit
+
+pub fn fillloop(@types.Fn) -> Unit
+
+pub fn fillpreds(@types.Fn) -> Unit
+
+pub fn fillrpo(@types.Fn) -> Unit
+
+pub fn getalias(@types.Ref, @types.Fn) -> @types.AliasInfo
+
+pub fn sdom(@types.Fn, Int, Int) -> Bool
+
+pub fn simpljmp(@types.Fn) -> Unit
+
+// Errors
+
+// Types and methods
+pub enum AliasResult {
+  MustAlias
+  MayAlias
+  NoAlias
+}
+
+// Type aliases
+
+// Traits
+
