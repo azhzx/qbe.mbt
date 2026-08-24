@@ -31,10 +31,12 @@ fn czero(c : @types.Con, w : Bool) -> Bool {
   if c.kind != @types.CBits {
     return false
   }
+  // The C Con is a union; the divisor's raw bits determine whether it is
+  // zero, regardless of whether it is an integer or float constant.
   if w {
-    c.bits.i == 0
+    @types.con_raw_bits(c) == 0L
   } else {
-    (c.bits.i & 0xFFFFFFFF) == 0
+    (@types.con_raw_bits(c) & 0xFFFFFFFF) == 0L
   }
 }
 
