@@ -175,6 +175,8 @@ async fn process_file(file : String, dbg : DbFlags) -> Unit {
     // copy.c: -dC.
     @util.eprint(@ssa.copy(fn_, dbg.c, interner, typs))
     @ssa.filluse(fn_)
+    // fold.c: -dF.
+    @util.eprint(@fold.fold(fn_, dbg.f, interner, typs))
     // C main.c: fprintf(stderr, "\n"); at end of debug mode.
     if is_dbg {
       @util.eprint("\n")

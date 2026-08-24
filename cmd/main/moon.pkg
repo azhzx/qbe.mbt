@@ -4,6 +4,7 @@ import {
   "azhzx/qbe/cfg",
   "azhzx/qbe/ssa",
   "azhzx/qbe/live",
+  "azhzx/qbe/fold",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
   "moonbitlang/x/fs",
