@@ -1,0 +1,70 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/parser"
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn jtoa(@types.JumpKind) -> String
+
+pub fn printfn(@types.Fn, @util.Interner, Array[@types.Typ]) -> String
+
+pub fn printref(@types.Ref, @types.Fn, @util.Interner, StringBuilder, Array[@types.Typ]) -> Unit
+
+// Errors
+
+// Types and methods
+type PState derive(Eq)
+
+pub struct Parser {
+  tokens : Array[@lexer.Token]
+  source_file : String
+  mut pos : Int
+  mut line : Int
+  funcs : Array[@types.Fn]
+  datas : Array[@types.Dat]
+  typs : Array[@types.Typ]
+  interner : @util.Interner
+  mut curfn : @types.Fn?
+  mut curblk : Int
+  mut rcls : Int
+  par_ins : Array[@types.Ins]
+}
+pub fn Parser::cur_raw(Self) -> String
+pub fn Parser::curfn(Self) -> @types.Fn
+pub fn Parser::curfn_mut(Self) -> @types.Fn
+pub fn Parser::error(Self, String) -> @util.QbeError
+pub fn Parser::expect(Self, @lexer.TokenKind) -> Unit raise
+pub fn Parser::expect_nl(Self, @lexer.TokenKind) -> Unit raise
+pub fn Parser::findblk(Self, String) -> Int
+pub fn Parser::findtyp(Self, String) -> Int raise
+pub fn Parser::from_lexer(@lexer.Lexer) -> Self
+pub fn Parser::get_datas(Self) -> Array[@types.Dat]
+pub fn Parser::get_funcs(Self) -> Array[@types.Fn]
+pub fn Parser::get_typs(Self) -> Array[@types.Typ]
+pub fn Parser::interner_ref(Self) -> @util.Interner
+pub fn Parser::new(Array[@lexer.Token], String) -> Self
+pub fn Parser::next(Self) -> @lexer.Token
+pub fn Parser::next_kind(Self) -> @lexer.TokenKind
+pub fn Parser::next_nl(Self) -> @lexer.TokenKind
+pub fn Parser::next_nl_tok(Self) -> @lexer.Token
+pub fn Parser::parse(Self) -> Unit raise
+pub fn Parser::parsecls(Self) -> (@types.Class, Int) raise
+pub fn Parser::parsedat(Self, Bool) -> Unit raise
+pub fn Parser::parsefields(Self, @types.Typ, @lexer.TokenKind) -> Unit raise
+pub fn Parser::parsefn(Self, Bool) -> Unit raise
+pub fn Parser::parseline(Self, PState) -> PState raise
+pub fn Parser::parseref(Self) -> @types.Ref raise
+pub fn Parser::parserefl(Self, Bool) -> Bool raise
+pub fn Parser::parsetyp(Self) -> Unit raise
+pub fn Parser::peek(Self) -> @lexer.Token
+pub fn Parser::peek_kind(Self) -> @lexer.TokenKind
+pub fn Parser::tmpref(Self, String) -> @types.Ref
+
+// Type aliases
+
+// Traits
+

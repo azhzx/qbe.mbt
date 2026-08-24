@@ -22,11 +22,6 @@ fn is_ident_char(c : Char) -> Bool {
 }
 
 ///|
-fn is_ident_start(c : Char) -> Bool {
-  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-}
-
-///|
 fn is_digit(c : Char) -> Bool {
   c >= '0' && c <= '9'
 }
@@ -79,7 +74,7 @@ fn read_number(s : StringView) -> (String, Bool, StringView) {
         rest = r
         continue r
       }
-      if c == '.' && not(is_float) {
+      if c == '.' && !is_float {
         is_float = true
         builder.write_char(c)
         rest = r
