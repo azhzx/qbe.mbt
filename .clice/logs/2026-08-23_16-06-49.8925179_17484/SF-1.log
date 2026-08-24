@@ -1,2 +1,0 @@
-[2026-08-24 00:06:49.982] [info] [thread 9664] [stateful_worker.cpp:447] Starting stateful worker, memory_limit=4096MB
-[2026-08-24 00:06:49.990] [info] [thread 9664] [stateful_worker.cpp:462] Stateful worker ready, waiting for requests

@@ -108,16 +108,16 @@ async fn dbg_function(
 ///|
 // Whether any debug flag is set.
 fn any_dbg(dbg : DbFlags) -> Bool {
-  dbg.p ||
-  dbg.a ||
-  dbg.i ||
-  dbg.l ||
-  dbg.m ||
-  dbg.n ||
-  dbg.c ||
-  dbg.f ||
-  dbg.s ||
-  dbg.r
+  dbg.p
+  || dbg.a
+  || dbg.i
+  || dbg.l
+  || dbg.m
+  || dbg.n
+  || dbg.c
+  || dbg.f
+  || dbg.s
+  || dbg.r
 }
 
 ///|
