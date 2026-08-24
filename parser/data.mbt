@@ -57,7 +57,7 @@ pub fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
             TFlt => {
               let raw = self.tokens[self.pos - 1].raw
               let is_single = raw.length() > 0 && raw[0] == 's'
-              let num_str = raw[2:].to_string()
+              let num_str = raw[2:].to_owned()
               let (fval, err_msg) = try @string.parse_double(num_str) catch {
                 _ => (0.0, "Invalid floating-point literal")
               } noraise {

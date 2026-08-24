@@ -72,7 +72,13 @@ async fn dbg_dominators(fn_ : @types.Fn) -> Unit {
     }
     let sb = StringBuilder::new()
     let name = b1.name
-    let pad = " ".repeat(if 10 > name.length() { 10 - name.length() } else { 0 })
+    let pad = " ".repeat(
+      if 10 > name.length() {
+        10 - name.length()
+      } else {
+        0
+      },
+    )
     sb.write_string(pad)
     sb.write_string(name)
     sb.write_string(":")
@@ -99,7 +105,7 @@ async fn dbg_function(
 }
 
 ///|
-async fn process_file(file : String, dbg : DbFlags) -> Unit raise {
+async fn process_file(file : String, dbg : DbFlags) -> Unit {
   let source = @fs.read_file_to_string(file)
   let lexer = @lexer.Lexer::new(source, file)
   let tokens = lexer.tokenize()
@@ -193,8 +199,8 @@ async fn main {
     let arg = args[i]
     match arg {
       "-h" => print_usage()
-      _ if arg.length() > 2 && arg[:2].to_string() == "-d" => {
-        let flags = arg[2:].to_string()
+      _ if arg.length() > 2 && arg[:2].to_owned() == "-d" => {
+        let flags = arg[2:].to_owned()
         for j = 0; j < flags.length(); j = j + 1 {
           set_dbg(dbg, flags[j])
         }

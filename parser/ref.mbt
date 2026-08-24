@@ -68,7 +68,7 @@ pub fn Parser::parseref(self : Self) -> @types.Ref raise {
       // Float literal (s_ or d_ prefix)
       let raw = t.raw
       let is_single = raw.length() > 0 && raw[0] == 's'
-      let num_str = raw[2:].to_string()
+      let num_str = raw[2:].to_owned()
       let (fval, err_msg) = try @string.parse_double(num_str) catch {
         _ => (0.0, "Invalid floating-point literal")
       } noraise {
