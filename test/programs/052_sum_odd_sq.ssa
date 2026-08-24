@@ -3,17 +3,17 @@
 export
 function l $sos(l %n) {
 @start
-	%sum = %suml copy 0
-	%i = %il copy 1
+	%sum =l copy 0
+	%i =l copy 1
 @loop
 	%i2 =l phi @start %i, @body %i3
 	%sum2 =l phi @start %sum, @body %sum3
-	%c = %cl csgtl %i2, %n
+	%c =l csgtl %i2, %n
 	jnz %c, @done, @body
 @body
-	%sq = %sql mul %i2, %i2
-	%sum3 = %sum3l add %sum2, %sq
-	%i3 = %i3l add %i2, 2
+	%sq =l mul %i2, %i2
+	%sum3 =l add %sum2, %sq
+	%i3 =l add %i2, 2
 	jmp @loop
 @done
 	ret %sum2

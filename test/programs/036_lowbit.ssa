@@ -3,8 +3,8 @@
 export
 function w $lb(w %x) {
 @start
-	%n = %nw xor %x, -1
-	%p = %pw add %n, 1
-	%r = %rw and %x, %p
+	%n =w xor %x, -1
+	%p =w add %n, 1
+	%r =w and %x, %p
 	ret %r
 }

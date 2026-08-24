@@ -4,26 +4,26 @@ data $arr = { w 1, w 2, w 3, w 4, w 5 }
 export
 function w $rev(w %n) {
 @start
-	%lo = %low copy 0
-	%hi = %hiw sub %n, 1
+	%lo =w copy 0
+	%hi =w sub %n, 1
 @loop
 	%lo2 =w phi @start %lo, @body %lo3
 	%hi2 =w phi @start %hi, @body %hi3
-	%c = %cw csltw %lo2, %hi2
+	%c =w csltw %lo2, %hi2
 	jnz %c, @body, @end
 @body
-	%li = %lil extsw %lo2
-	%loff = %loffl mul 4, %li
-	%lp = %lpl add $arr, %loff
-	%lv = %lvw load %lp
-	%hii = %hiil extsw %hi2
-	%hoff = %hoffl mul 4, %hii
-	%hp = %hpl add $arr, %hoff
-	%hv = %hvw load %hp
+	%li =l extsw %lo2
+	%loff =l mul 4, %li
+	%lp =l add $arr, %loff
+	%lv =w load %lp
+	%hii =l extsw %hi2
+	%hoff =l mul 4, %hii
+	%hp =l add $arr, %hoff
+	%hv =w load %hp
 	storew %hv, %lp
 	storew %lv, %hp
-	%lo3 = %lo3w add %lo2, 1
-	%hi3 = %hi3w sub %hi2, 1
+	%lo3 =w add %lo2, 1
+	%hi3 =w sub %hi2, 1
 	jmp @loop
 @end
 	ret 0

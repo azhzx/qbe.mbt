@@ -4,21 +4,21 @@ data $arr = { w 1, w 2, w 3, w 4, w 5, w 6, w 7 }
 export
 function w $total(w %n) {
 @start
-	%total = %totalw copy 0
-	%i = %iw copy 0
+	%total =w copy 0
+	%i =w copy 0
 @loop
 	%i2 =w phi @start %i, @body %i3
 	%total2 =w phi @start %total, @body %total3
-	%c = %cw csltw %i2, %n
+	%c =w csltw %i2, %n
 	jnz %c, @body, @end
 @body
-	%idx = %idxl extsw %i2
-	%off = %offl mul 4, %idx
-	%p = %pl add $arr, %off
-	%v = %vw load %p
-	%b = %bw call $pop(w %v)
-	%total3 = %total3w add %total2, %b
-	%i3 = %i3w add %i2, 1
+	%idx =l extsw %i2
+	%off =l mul 4, %idx
+	%p =l add $arr, %off
+	%v =w load %p
+	%b =w call $pop(w %v)
+	%total3 =w add %total2, %b
+	%i3 =w add %i2, 1
 	jmp @loop
 @end
 	ret %total2

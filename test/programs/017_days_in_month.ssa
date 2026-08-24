@@ -3,24 +3,24 @@
 export
 function w $days(w %m, w %y) {
 @start
-	%c = %cw ceqw %m, 2
+	%c =w ceqw %m, 2
 	jnz %c, @feb, @big
 @feb
-	%le = %lew call $leap(w %y)
-	%c2 = %c2w ceqw %le, 1
+	%le =w call $leap(w %y)
+	%c2 =w ceqw %le, 1
 	jnz %c2, @leap29, @feb28
 @leap29
 	ret 29
 @feb28
 	ret 28
 @big
-	%c30 = %c30w ceqw %m, 4
-	%c31 = %c31w ceqw %m, 6
-	%c32 = %c32w ceqw %m, 9
-	%c33 = %c33w ceqw %m, 11
-	%c30 = %c30.2w or %c30, %c31
-	%c30 = %c30.3w or %c30.2, %c32
-	%c30 = %c30.4w or %c30.3, %c33
+	%c30 =w ceqw %m, 4
+	%c31 =w ceqw %m, 6
+	%c32 =w ceqw %m, 9
+	%c33 =w ceqw %m, 11
+	%c30.2 =w or %c30, %c31
+	%c30.3 =w or %c30.2, %c32
+	%c30.4 =w or %c30.3, %c33
 	jnz %c30.4, @ret30, @ret31
 @ret30
 	ret 30

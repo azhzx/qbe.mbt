@@ -3,11 +3,11 @@
 export
 function w $gcd(w %a, w %b) {
 @start
-	%r = %rw rem %a, %b
-	%c = %cw ceqw %r, 0
+	%r =w rem %a, %b
+	%c =w ceqw %r, 0
 	jnz %c, @done, @again
 @again
-	%r1 = %r1w call $gcd(w %b, w %r)
+	%r1 =w call $gcd(w %b, w %r)
 	ret %r1
 @done
 	ret %b

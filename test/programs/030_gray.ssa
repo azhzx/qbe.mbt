@@ -3,7 +3,7 @@
 export
 function w $gray(w %n) {
 @start
-	%s = %sw shr %n, 1
-	%r = %rw xor %n, %s
+	%s =w shr %n, 1
+	%r =w xor %n, %s
 	ret %r
 }

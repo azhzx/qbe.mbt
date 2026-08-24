@@ -3,19 +3,19 @@
 export
 function l $fib(l %n) {
 @start
-	%a = %al copy 0
-	%b = %bl copy 1
-	%i = %il copy 0
+	%a =l copy 0
+	%b =l copy 1
+	%i =l copy 0
 @loop
 	%i2 =l phi @start %i, @body %i3
 	%a2 =l phi @start %a, @body %a3
 	%b2 =l phi @start %b, @body %b3
-	%c = %cl csltl %i2, %n
+	%c =l csltl %i2, %n
 	jnz %c, @body, @end
 @body
-	%a3 = %a3l copy %b2
-	%b3 = %b3l add %a2, %b2
-	%i3 = %i3l add %i2, 1
+	%a3 =l copy %b2
+	%b3 =l add %a2, %b2
+	%i3 =l add %i2, 1
 	jmp @loop
 @end
 	ret %a2

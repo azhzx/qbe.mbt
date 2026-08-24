@@ -3,22 +3,22 @@
 export
 function w $ack(w %m, w %n) {
 @start
-	%c = %cw ceqw %m, 0
+	%c =w ceqw %m, 0
 	jnz %c, @base, @chk
 @base
-	%r = %rw add %n, 1
+	%r =w add %n, 1
 	ret %r
 @chk
-	%c2 = %c2w ceqw %n, 0
+	%c2 =w ceqw %n, 0
 	jnz %c2, @m0, @both
 @m0
-	%m1 = %m1w sub %m, 1
-	%r1 = %r1w call $ack(w %m1, w 1)
+	%m1 =w sub %m, 1
+	%r1 =w call $ack(w %m1, w 1)
 	ret %r1
 @both
-	%n1 = %n1w sub %n, 1
-	%r2 = %r2w call $ack(w %m, w %n1)
-	%m2 = %m2w sub %m, 1
-	%r3 = %r3w call $ack(w %m2, w %r2)
+	%n1 =w sub %n, 1
+	%r2 =w call $ack(w %m, w %n1)
+	%m2 =w sub %m, 1
+	%r3 =w call $ack(w %m2, w %r2)
 	ret %r3
 }

@@ -3,12 +3,12 @@
 export
 function w $pow2(w %x) {
 @start
-	%c = %cw ceqw %x, 0
+	%c =w ceqw %x, 0
 	jnz %c, @no, @chk
 @chk
-	%n = %nw sub %x, 1
-	%a = %aw and %x, %n
-	%c2 = %c2w ceqw %a, 0
+	%n =w sub %x, 1
+	%a =w and %x, %n
+	%c2 =w ceqw %a, 0
 	jnz %c2, @yes, @no
 @yes
 	ret 1

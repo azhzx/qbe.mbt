@@ -3,20 +3,20 @@
 export
 function w $minmax(w %a, w %b) {
 @start
-	%c = %cw csgtw %a, %b
+	%c =w csgtw %a, %b
 	jnz %c, @ab, @ba
 @ab
-	%mx = %mxw copy %a
-	%mn = %mnw copy %b
+	%mx =w copy %a
+	%mn =w copy %b
 	jmp @join
 @ba
-	%mx = %mx.2w copy %b
-	%mn = %mn.2w copy %a
+	%mx.2 =w copy %b
+	%mn.2 =w copy %a
 	jmp @join
 @join
 	%max =w phi @ab %mx, @ba %mx.2
 	%min =w phi @ab %mn, @ba %mn.2
-	%m = %mw mul %max, 100
-	%r = %rw add %m, %min
+	%m =w mul %max, 100
+	%r =w add %m, %min
 	ret %r
 }

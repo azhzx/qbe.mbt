@@ -3,12 +3,12 @@
 export
 function w $adiff(w %a, w %b) {
 @start
-	%c = %cw csgtw %a, %b
+	%c =w csgtw %a, %b
 	jnz %c, @ab, @ba
 @ab
-	%r = %rw sub %a, %b
+	%r =w sub %a, %b
 	ret %r
 @ba
-	%r = %r.2w sub %b, %a
+	%r.2 =w sub %b, %a
 	ret %r.2
 }

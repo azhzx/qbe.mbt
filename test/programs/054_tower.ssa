@@ -3,7 +3,7 @@
 export
 function w $hanoi(w %d) {
 @start
-	%r = %rw shl 1, %d
-	%r = %r.2w sub %r, 1
+	%r =w shl 1, %d
+	%r.2 =w sub %r, 1
 	ret %r.2
 }

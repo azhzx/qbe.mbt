@@ -171,9 +171,24 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref {
     if found < 0 {
       let mut dbg = ""
       for zz = 0; zz < 64; zz = zz + 1 {
-        if m.b.has(zz) { dbg = dbg + zz.to_string() + "," }
+        if m.b.has(zz) {
+          dbg = dbg + zz.to_string() + ","
+        }
       }
-      println("DBG ralloctry t=" + t.to_string() + " cls=" + @types.kcode(st.fn_.tmps[t].cls).to_string() + " r0=" + r0.to_string() + " r1=" + r1.to_string() + " m.n=" + m.n.to_string() + " m.b=" + dbg)
+      println(
+        "DBG ralloctry t=" +
+        t.to_string() +
+        " cls=" +
+        @types.kcode(st.fn_.tmps[t].cls).to_string() +
+        " r0=" +
+        r0.to_string() +
+        " r1=" +
+        r1.to_string() +
+        " m.n=" +
+        m.n.to_string() +
+        " m.b=" +
+        dbg,
+      )
       abort("no more regs")
     }
     r = found

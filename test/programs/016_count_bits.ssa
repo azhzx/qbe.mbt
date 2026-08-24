@@ -3,17 +3,17 @@
 export
 function w $pop(w %x) {
 @start
-	%c = %cw copy 0
-	%v = %vw copy %x
+	%c =w copy 0
+	%v =w copy %x
 @loop
 	%c2 =w phi @start %c, @body %c3
 	%v2 =w phi @start %v, @body %v3
-	%test = %testw ceqw %v2, 0
+	%test =w ceqw %v2, 0
 	jnz %test, @done, @body
 @body
-	%bit = %bitw and %v2, 1
-	%c3 = %c3w add %c2, %bit
-	%v3 = %v3w shr %v2, 1
+	%bit =w and %v2, 1
+	%c3 =w add %c2, %bit
+	%v3 =w shr %v2, 1
 	jmp @loop
 @done
 	ret %c2

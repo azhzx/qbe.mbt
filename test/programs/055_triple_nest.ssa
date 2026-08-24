@@ -3,34 +3,34 @@
 export
 function w $triple(w %n) {
 @start
-	%i = %iw copy 0
-	%total = %totalw copy 0
+	%i =w copy 0
+	%total =w copy 0
 @l1
 	%i2 =w phi @start %i, @l1c %i3
 	%t1 =w phi @start %total, @l1c %t1c
-	%c1 = %c1w csltw %i2, %n
+	%c1 =w csltw %i2, %n
 	jnz %c1, @l2, @done
 @l2
 	%j =w phi @l2c %j3
 	%t2 =w phi @l1 %t1, @l2c %t2c
-	%c2 = %c2w csltw %j, %n
+	%c2 =w csltw %j, %n
 	jnz %c2, @l3, @l1c
 @l3
 	%k =w phi @body %k3
 	%t3 =w phi @l2 %t2, @body %t3c
-	%c3 = %c3w csltw %k, %n
+	%c3 =w csltw %k, %n
 	jnz %c3, @body, @l2c
 @body
-	%t3c = %t3cw add %t3, 1
-	%k3 = %k3w add %k, 1
+	%t3c =w add %t3, 1
+	%k3 =w add %k, 1
 	jmp @l3
 @l2c
-	%j3 = %j3w add %j, 1
-	%t2c = %t2cw copy %t3
+	%j3 =w add %j, 1
+	%t2c =w copy %t3
 	jmp @l2
 @l1c
-	%i3 = %i3w add %i2, 1
-	%t1c = %t1cw copy %t2
+	%i3 =w add %i2, 1
+	%t1c =w copy %t2
 	jmp @l1
 @done
 	ret %t1

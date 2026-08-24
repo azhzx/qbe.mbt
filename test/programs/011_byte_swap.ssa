@@ -3,17 +3,17 @@
 export
 function w $bswap(w %x) {
 @start
-	%b0 = %b0w and %x, 255
-	%sh0 = %sh0w shl %b0, 24
-	%b1 = %b1w shr %x, 8
-	%b1 = %b1.2w and %b1, 255
-	%sh1 = %sh1w shl %b1.2, 16
-	%b2 = %b2w shr %x, 16
-	%b2 = %b2.2w and %b2, 255
-	%sh2 = %sh2w shl %b2.2, 8
-	%b3 = %b3w shr %x, 24
-	%r = %rw or %sh0, %sh1
-	%r = %r.2w or %r, %sh2
-	%r = %r.3w or %r.2, %b3
+	%b0 =w and %x, 255
+	%sh0 =w shl %b0, 24
+	%b1 =w shr %x, 8
+	%b1.2 =w and %b1, 255
+	%sh1 =w shl %b1.2, 16
+	%b2 =w shr %x, 16
+	%b2.2 =w and %b2, 255
+	%sh2 =w shl %b2.2, 8
+	%b3 =w shr %x, 24
+	%r =w or %sh0, %sh1
+	%r.2 =w or %r, %sh2
+	%r.3 =w or %r.2, %b3
 	ret %r.3
 }

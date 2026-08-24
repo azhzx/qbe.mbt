@@ -3,8 +3,8 @@
 export
 function d $avg(d %a, d %b, d %c) {
 @start
-	%s = %sd add %a, %b
-	%s = %s.2d add %s, %c
-	%r = %rd div %s.2, d_3.0
+	%s =d add %a, %b
+	%s.2 =d add %s, %c
+	%r =d div %s.2, d_3.0
 	ret %r
 }

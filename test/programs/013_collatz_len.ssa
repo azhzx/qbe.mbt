@@ -3,27 +3,27 @@
 export
 function w $clen(w %n) {
 @start
-	%len = %lenw copy 1
-	%v = %vw copy %n
+	%len =w copy 1
+	%v =w copy %n
 @loop
 	%v2 =w phi @start %v, @join %v3
 	%len2 =w phi @start %len, @join %len3
-	%c = %cw ceqw %v2, 1
+	%c =w ceqw %v2, 1
 	jnz %c, @done, @body
 @body
-	%odd = %oddw and %v2, 1
-	%c2 = %c2w ceqw %odd, 0
+	%odd =w and %v2, 1
+	%c2 =w ceqw %odd, 0
 	jnz %c2, @even, @odd
 @even
-	%ve = %vew shr %v2, 1
+	%ve =w shr %v2, 1
 	jmp @join
 @odd
-	%vo = %vow mul %v2, 3
-	%vo = %vo.2w add %vo, 1
+	%vo =w mul %v2, 3
+	%vo.2 =w add %vo, 1
 	jmp @join
 @join
 	%v3 =w phi @even %ve, @odd %vo.2
-	%len3 = %len3w add %len2, 1
+	%len3 =w add %len2, 1
 	jmp @loop
 @done
 	ret %len2

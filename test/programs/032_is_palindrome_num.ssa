@@ -3,21 +3,21 @@
 export
 function w $palin(w %n) {
 @start
-	%rev = %revw copy 0
-	%t = %tw copy %n
+	%rev =w copy 0
+	%t =w copy %n
 @loop
 	%rev2 =w phi @start %rev, @body %rev3.2
 	%t2 =w phi @start %t, @body %t3
-	%c = %cw ceqw %t2, 0
+	%c =w ceqw %t2, 0
 	jnz %c, @chk, @body
 @body
-	%d = %dw rem %t2, 10
-	%rev3 = %rev3w mul %rev2, 10
-	%rev3 = %rev3.2w add %rev3, %d
-	%t3 = %t3w div %t2, 10
+	%d =w rem %t2, 10
+	%rev3 =w mul %rev2, 10
+	%rev3.2 =w add %rev3, %d
+	%t3 =w div %t2, 10
 	jmp @loop
 @chk
-	%c2 = %c2w ceqw %rev2, %n
+	%c2 =w ceqw %rev2, %n
 	jnz %c2, @yes, @no
 @yes
 	ret 1

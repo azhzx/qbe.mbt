@@ -4,31 +4,31 @@ data $s = { b "nopqrstuvwxyz", b 0 }
 export
 function w $rot13(l %s) {
 @start
-	%p = %pl copy %s
+	%p =l copy %s
 @loop
 	%p2 =l phi @start %p, @next %p3
-	%ch = %chw loadub %p2
-	%c = %cw ceqw %ch, 0
+	%ch =w loadub %p2
+	%c =w ceqw %ch, 0
 	jnz %c, @done, @chk
 @chk
-	%c2 = %c2w csgew %ch, 97
+	%c2 =w csgew %ch, 97
 	jnz %c2, @islow, @next
 @islow
-	%c3 = %c3w cslew %ch, 122
+	%c3 =w cslew %ch, 122
 	jnz %c3, @rot, @next
 @rot
-	%nc = %ncw add %ch, 13
-	%c4 = %c4w csgtw %nc, 122
+	%nc =w add %ch, 13
+	%c4 =w csgtw %nc, 122
 	jnz %c4, @wrap, @store
 @wrap
-	%nw = %nww sub %nc, 26
+	%nw =w sub %nc, 26
 	jmp @store
 @store
 	%ns =w phi @rot %nc, @wrap %nw
 	storeb %ns, %p2
 	jmp @next
 @next
-	%p3 = %p3l add %p2, 1
+	%p3 =l add %p2, 1
 	jmp @loop
 @done
 	ret 0

@@ -3,19 +3,19 @@
 export
 function w $conv(w %n) {
 @start
-	%sum = %sumw copy 0
-	%i = %iw copy 1
+	%sum =w copy 0
+	%i =w copy 1
 @loop
 	%i2 =w phi @start %i, @body %i3
 	%sum2 =w phi @start %sum, @body %sum3
-	%c = %cw cslew %i2, %n
+	%c =w cslew %i2, %n
 	jnz %c, @body, @end
 @body
-	%f = %fd sltof %i2
-	%half = %halfd div %f, d_2.0
-	%ri = %riw dtosi %half
-	%sum3 = %sum3w add %sum2, %ri
-	%i3 = %i3w add %i2, 1
+	%f =d swtof %i2
+	%half =d div %f, d_2.0
+	%ri =w dtosi %half
+	%sum3 =w add %sum2, %ri
+	%i3 =w add %i2, 1
 	jmp @loop
 @end
 	ret %sum2

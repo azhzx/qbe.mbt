@@ -3,18 +3,18 @@
 export
 function w $isqrt(w %n) {
 @start
-	%x = %xw copy %n
-	%y = %yw copy %n
+	%x =w copy %n
+	%y =w copy %n
 @loop
 	%x2 =w phi @start %x, @body %x3.2
 	%y2 =w phi @start %y, @body %y3
-	%c = %cw csgtw %x2, %y2
+	%c =w csgtw %x2, %y2
 	jnz %c, @done, @body
 @body
-	%y3 = %y3w copy %x2
-	%q = %qw div %n, %x2
-	%x3 = %x3w add %x2, %q
-	%x3 = %x3.2w shr %x3, 1
+	%y3 =w copy %x2
+	%q =w div %n, %x2
+	%x3 =w add %x2, %q
+	%x3.2 =w shr %x3, 1
 	jmp @loop
 @done
 	ret %y2

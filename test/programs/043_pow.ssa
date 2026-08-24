@@ -3,27 +3,27 @@
 export
 function l $pow(l %b, w %e) {
 @start
-	%r = %rl copy 1
+	%r =l copy 1
 @loop
 	%e2 =w phi @start %e, @join %e4
 	%r2 =l phi @start %r, @join %r4
 	%b2 =l phi @start %b, @join %b4
-	%c = %cw ceqw %e2, 0
+	%c =w ceqw %e2, 0
 	jnz %c, @done, @body
 @body
-	%odd = %oddw and %e2, 1
-	%c2 = %c2w ceqw %odd, 0
+	%odd =w and %e2, 1
+	%c2 =w ceqw %odd, 0
 	jnz %c2, @even, @odd
 @odd
-	%r3 = %r3l mul %r2, %b2
+	%r3 =l mul %r2, %b2
 	jmp @join
 @even
-	%r3 = %r3.2l copy %r2
+	%r3.2 =l copy %r2
 	jmp @join
 @join
 	%r4 =l phi @odd %r3, @even %r3.2
-	%b4 = %b4l mul %b2, %b2
-	%e4 = %e4w shr %e2, 1
+	%b4 =l mul %b2, %b2
+	%e4 =w shr %e2, 1
 	jmp @loop
 @done
 	ret %r2

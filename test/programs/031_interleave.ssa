@@ -5,33 +5,33 @@ data $b = { w 2, w 4, w 6 }
 export
 function w $merge(w %n) {
 @start
-	%total = %totalw copy 0
-	%i = %iw copy 0
+	%total =w copy 0
+	%i =w copy 0
 @loop
 	%i2 =w phi @start %i, @join %i3
 	%t2 =w phi @start %total, @join %t3
-	%c = %cw csltw %i2, %n
+	%c =w csltw %i2, %n
 	jnz %c, @body, @end
 @body
-	%ia = %ial extsw %i2
-	%oa = %oal mul 4, %ia
-	%pa = %pal add $a, %oa
-	%va = %vaw load %pa
-	%ib = %ibl extsw %i2
-	%ob = %obl mul 4, %ib
-	%pb = %pbl add $b, %ob
-	%vb = %vbw load %pb
-	%c2 = %c2w csgtw %va, %vb
+	%ia =l extsw %i2
+	%oa =l mul 4, %ia
+	%pa =l add $a, %oa
+	%va =w load %pa
+	%ib =l extsw %i2
+	%ob =l mul 4, %ib
+	%pb =l add $b, %ob
+	%vb =w load %pb
+	%c2 =w csgtw %va, %vb
 	jnz %c2, @b, @a
 @a
-	%ta = %taw add %t2, %va
+	%ta =w add %t2, %va
 	jmp @join
 @b
-	%tb = %tbw add %t2, %vb
+	%tb =w add %t2, %vb
 	jmp @join
 @join
 	%t3 =w phi @a %ta, @b %tb
-	%i3 = %i3w add %i2, 1
+	%i3 =w add %i2, 1
 	jmp @loop
 @end
 	ret %t2

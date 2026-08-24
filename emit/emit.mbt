@@ -426,7 +426,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit {
           let n = @types.gasstash(neg_mask(ins.cls), 0L, 16)
           st.sb.write_string("\txorp")
           st.sb.write_string(if ins.cls == @types.Ks { "s" } else { "d" })
-          st.sb.write_string("\{st.gasloc}fp\{n}(%rip), %")
+          st.sb.write_string(" \{st.gasloc}fp\{n}(%rip), %")
           st.sb.write_string(regtoa(ins.to.tmp_val(), SLONG))
           st.sb.write_string("\n")
         }

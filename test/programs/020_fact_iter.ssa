@@ -3,16 +3,16 @@
 export
 function l $fact(l %n) {
 @start
-	%r = %rl copy 1
-	%i = %il copy 2
+	%r =l copy 1
+	%i =l copy 2
 @loop
 	%i2 =l phi @start %i, @body %i3
 	%r2 =l phi @start %r, @body %r3
-	%c = %cl csgtl %i2, %n
+	%c =l csgtl %i2, %n
 	jnz %c, @end, @body
 @body
-	%r3 = %r3l mul %r2, %i2
-	%i3 = %i3l add %i2, 1
+	%r3 =l mul %r2, %i2
+	%i3 =l add %i2, 1
 	jmp @loop
 @end
 	ret %r2

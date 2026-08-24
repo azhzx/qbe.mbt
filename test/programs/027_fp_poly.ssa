@@ -3,11 +3,11 @@
 export
 function d $poly(d %x) {
 @start
-	%x2 = %x2d mul %x, %x
-	%x3 = %x3d mul %x2, %x
-	%r = %rd mul %x3, d_2.0
-	%r = %r.2d add %r, %x2
-	%r = %r.3d sub %r.2, %x
-	%r = %r.4d add %r.3, d_1.0
+	%x2 =d mul %x, %x
+	%x3 =d mul %x2, %x
+	%r =d mul %x3, d_2.0
+	%r.2 =d add %r, %x2
+	%r.3 =d sub %r.2, %x
+	%r.4 =d add %r.3, d_1.0
 	ret %r.4
 }

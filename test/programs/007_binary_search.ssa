@@ -4,32 +4,32 @@ data $arr = { l 10, l 20, l 30, l 40, l 50, l 60 }
 export
 function w $search(l %key, w %n) {
 @start
-	%lo = %low copy 0
-	%hi = %hiw sub %n, 1
+	%lo =w copy 0
+	%hi =w sub %n, 1
 @loop
 	%lo2 =w phi @start %lo, @go_lo %lo3, @go_hi %lo4
 	%hi2 =w phi @start %hi, @go_lo %hi3, @go_hi %hi4
-	%c = %cw csgtw %lo2, %hi2
+	%c =w csgtw %lo2, %hi2
 	jnz %c, @notfound, @body
 @body
-	%sum = %sumw add %lo2, %hi2
-	%mid = %midw shr %sum, 1
-	%midi = %midil extsw %mid
-	%moff = %moffl mul 8, %midi
-	%mp = %mpl add $arr, %moff
-	%mv = %mvl load %mp
-	%c2 = %c2l ceql %mv, %key
+	%sum =w add %lo2, %hi2
+	%mid =w shr %sum, 1
+	%midi =l extsw %mid
+	%moff =l mul 8, %midi
+	%mp =l add $arr, %moff
+	%mv =l load %mp
+	%c2 =l ceql %mv, %key
 	jnz %c2, @found, @less
 @less
-	%c3 = %c3l csgtl %mv, %key
+	%c3 =l csgtl %mv, %key
 	jnz %c3, @go_lo, @go_hi
 @go_lo
-	%hi3 = %hi3w sub %mid, 1
-	%lo3 = %lo3w copy %lo2
+	%hi3 =w sub %mid, 1
+	%lo3 =w copy %lo2
 	jmp @loop
 @go_hi
-	%lo4 = %lo4w add %mid, 1
-	%hi4 = %hi4w copy %hi2
+	%lo4 =w add %mid, 1
+	%hi4 =w copy %hi2
 	jmp @loop
 @found
 	ret %mid

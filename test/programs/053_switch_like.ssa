@@ -3,13 +3,13 @@
 export
 function w $dispatch(w %x) {
 @start
-	%c0 = %c0w ceqw %x, 0
+	%c0 =w ceqw %x, 0
 	jnz %c0, @zero, @c1
 @c1
-	%c1c = %c1cw ceqw %x, 1
+	%c1c =w ceqw %x, 1
 	jnz %c1c, @one, @c2
 @c2
-	%c2c = %c2cw ceqw %x, 2
+	%c2c =w ceqw %x, 2
 	jnz %c2c, @two, @many
 @zero
 	ret 0
@@ -18,6 +18,6 @@ function w $dispatch(w %x) {
 @two
 	ret 2
 @many
-	%r = %rw mul %x, %x
+	%r =w mul %x, %x
 	ret %r
 }

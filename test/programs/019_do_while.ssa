@@ -3,15 +3,15 @@
 export
 function w $dowhile(w %n) {
 @start
-	%sum = %sumw copy 0
-	%i = %iw copy 0
+	%sum =w copy 0
+	%i =w copy 0
 @body
 	%i2 =w phi @start %i, @loop %i3
 	%sum2 =w phi @start %sum, @loop %sum3
-	%sum3 = %sum3w add %sum2, %i2
-	%i3 = %i3w add %i2, 1
+	%sum3 =w add %sum2, %i2
+	%i3 =w add %i2, 1
 @loop
-	%c = %cw csltw %i3, %n
+	%c =w csltw %i3, %n
 	jnz %c, @body, @done
 @done
 	ret %sum3

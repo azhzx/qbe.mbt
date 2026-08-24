@@ -4,13 +4,13 @@ data $arr = { w 10, w 20, w 30 }
 export
 function w $get(l %arr, w %idx, w %n) {
 @start
-	%c = %cw csgeuw %idx, %n
+	%c =w cugew %idx, %n
 	jnz %c, @out, @ok
 @ok
-	%i = %il extsw %idx
-	%off = %offl mul 4, %i
-	%p = %pl add %arr, %off
-	%v = %vw load %p
+	%i =l extsw %idx
+	%off =l mul 4, %i
+	%p =l add %arr, %off
+	%v =w load %p
 	ret %v
 @out
 	ret -1
