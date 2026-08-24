@@ -1,0 +1,17 @@
+import {
+  "azhzx/qbe" @lib,
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/parser",
+  "azhzx/qbe/cfg",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/live",
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+}
+
+supported_targets = "-all+native"
+
+pkgtype(kind: "executable")

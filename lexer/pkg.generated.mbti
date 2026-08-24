@@ -1,0 +1,68 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/lexer"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Lexer {
+  source : String
+  source_file : String
+  tokens : Array[Token]
+  err_msgs : Array[String]
+}
+pub fn Lexer::new(String, String) -> Self
+pub fn Lexer::tokenize(Self) -> Array[Token]
+
+pub(all) struct Token {
+  kind : TokenKind
+  line : Int
+  col : Int
+  raw : String
+} derive(@debug.Debug)
+pub fn Token::is_id(Self) -> Bool
+pub fn Token::kind_str(Self) -> String
+pub fn Token::new(TokenKind, Int, Int, String) -> Self
+
+pub(all) enum TokenKind {
+  TEof
+  TNl
+  TTemp
+  TGlo
+  TLoc
+  TTyp
+  TFunc
+  TData
+  TType
+  TExport
+  TPhi
+  TJmp
+  TJnz
+  TRet
+  THlt
+  TInt
+  TFlt
+  TStr
+  TEq
+  TCom
+  TLpa
+  TRpa
+  TLbr
+  TRbr
+  TDot3
+  TArrow
+  TId
+  TErr
+} derive(Eq, @debug.Debug)
+pub fn TokenKind::to_string(Self) -> String
+pub impl Show for TokenKind
+
+// Type aliases
+
+// Traits
+

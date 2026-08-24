@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/cmd/main"
+
+// Values
+
+// Errors
+
+// Types and methods
+type DbFlags
+
+// Type aliases
+
+// Traits
+
