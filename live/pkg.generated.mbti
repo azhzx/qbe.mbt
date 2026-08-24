@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/live"
+
+import {
+  "azhzx/qbe/types",
+}
+
+// Values
+pub fn filllive(@types.Fn) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
