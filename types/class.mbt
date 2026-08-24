@@ -43,3 +43,15 @@ pub fn class_from_code(c : Int) -> Class {
     _ => Kx
   }
 }
+
+///|
+/// kcode - class to code: Kx->-1, Kw->0, Kl->1, Ks->2, Kd->3.
+pub fn kcode(k : Class) -> Int {
+  match k {
+    Kx => -1
+    Kw => 0
+    Kl => 1
+    Ks => 2
+    Kd => 3
+  }
+}

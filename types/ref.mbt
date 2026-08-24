@@ -37,9 +37,9 @@ pub fn Ref::typ(i : Int) -> Ref {
 }
 
 ///|
-/// SLOT(x) - stack slot reference
+/// SLOT(x) - stack slot reference (value masked to 29 bits, as C SLOT())
 pub fn Ref::slot(i : Int) -> Ref {
-  RSlot(i)
+  RSlot(i & 0x1fffffff)
 }
 
 ///|
@@ -84,6 +84,24 @@ pub fn Ref::is_none(self : Ref) -> Bool {
 }
 
 ///|
+/// is_mem - check for memory reference
+pub fn Ref::is_mem(self : Ref) -> Bool {
+  match self {
+    RMem(_) => true
+    _ => false
+  }
+}
+
+///|
+/// mem_val - extract memory index, -1 if not a memory ref
+pub fn Ref::mem_val(self : Ref) -> Int {
+  match self {
+    RMem(v) => v
+    _ => -1
+  }
+}
+
+///|
 /// is_tmp - check for temporary reference
 pub fn Ref::is_tmp(self : Ref) -> Bool {
   match self {
@@ -115,6 +133,33 @@ pub fn Ref::is_con(self : Ref) -> Bool {
 pub fn Ref::con_val(self : Ref) -> Int {
   match self {
     RCon(v) => v
+    _ => -1
+  }
+}
+
+///|
+/// call_val - extract call info index, -1 if not a call ref
+pub fn Ref::call_val(self : Ref) -> Int {
+  match self {
+    RCall(v) => v
+    _ => -1
+  }
+}
+
+///|
+/// slot_val - extract slot index, -1 if not a slot ref
+pub fn Ref::slot_val(self : Ref) -> Int {
+  match self {
+    RSlot(v) => v
+    _ => -1
+  }
+}
+
+///|
+/// typ_val - extract type index, -1 if not a type ref
+pub fn Ref::typ_val(self : Ref) -> Int {
+  match self {
+    RType(v) => v
     _ => -1
   }
 }

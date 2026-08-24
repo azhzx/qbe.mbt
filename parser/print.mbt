@@ -86,20 +86,60 @@ pub fn printref(
   match r {
     RNone => ()
     RTmp(v) =>
-      if v < 0 {
-        ()
-      } else {
+      if v < @types.Tmp0 {
+        // register
+        sb.write_string("R\{v}")
+      } else if v >= 0 {
         sb.write_string("%")
         sb.write_string(fn_.tmps[v].name)
       }
     RCon(v) => printcon(fn_.cons[v], interner, sb)
-    RSlot(v) => sb.write_string("S\{v}")
-    RCall(v) => sb.write_string("R\{v}")
+    RSlot(v) => {
+      sb.write_string("S")
+      let s = if (v & (1 << 28)) != 0 { v - (1 << 29) } else { v }
+      sb.write_string(s.to_string())
+    }
+    RCall(v) => {
+      // %04x
+      let h = hex4(v)
+      sb.write_string(h)
+    }
     RType(v) => {
       sb.write_string(":")
       sb.write_string(all_typs[v].name)
     }
     RMem(v) => printmem(fn_.mems[v], fn_, interner, sb, all_typs)
+  }
+}
+
+///|
+// Format an int as at least 4 lowercase hex digits (%04x in C).
+fn hex4(v : Int) -> String {
+  let sb = StringBuilder::new()
+  let chars : Array[Char] = Array::new()
+  let mut x = v
+  if x == 0 {
+    chars.push('0')
+  }
+  while x != 0 {
+    chars.push(hex_digit(x & 0xF))
+    x = x >> 4
+  }
+  while chars.length() < 4 {
+    chars.push('0')
+  }
+  for k = chars.length() - 1; k >= 0; k = k - 1 {
+    sb.write_char(chars[k])
+  }
+  sb.to_string()
+}
+
+///|
+fn hex_digit(v : Int) -> Char {
+  if v < 10 {
+    (48 + v).unsafe_to_char() // '0'
+  } else {
+    (87 + v).unsafe_to_char() // 'a' + v - 10
   }
 }
 

@@ -114,7 +114,13 @@ pub fn is_ret(JumpKind) -> Bool
 
 pub fn is_store(Op) -> Bool
 
+pub fn jump_from_index(Int) -> JumpKind
+
+pub fn jump_index(JumpKind) -> Int
+
 pub fn kbase(Class) -> Int
+
+pub fn kcode(Class) -> Int
 
 pub fn kwide(Class) -> Int
 
@@ -148,10 +154,10 @@ pub fn width_from_code(Int) -> TmpWidth
 
 // Types and methods
 pub(all) struct Addr {
-  offset : Con
-  base : Ref
-  index : Ref
-  scale : Int
+  mut offset : Con
+  mut base : Ref
+  mut index : Ref
+  mut scale : Int
 } derive(@debug.Debug)
 pub fn Addr::new() -> Self
 
@@ -531,7 +537,7 @@ pub fn Phi::new(Ref, Class) -> Self
 
 pub(all) struct PhiArg {
   mut value : Ref
-  blk_id : Int
+  mut blk_id : Int
 } derive(@debug.Debug)
 
 pub(all) enum Ref {
@@ -544,16 +550,21 @@ pub(all) enum Ref {
   RMem(Int)
 } derive(Eq, @debug.Debug)
 pub fn Ref::call(Int) -> Self
+pub fn Ref::call_val(Self) -> Int
 pub fn Ref::con(Int) -> Self
 pub fn Ref::con_val(Self) -> Int
 pub fn Ref::is_con(Self) -> Bool
+pub fn Ref::is_mem(Self) -> Bool
 pub fn Ref::is_none(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
 pub fn Ref::mem(Int) -> Self
+pub fn Ref::mem_val(Self) -> Int
 pub fn Ref::slot(Int) -> Self
+pub fn Ref::slot_val(Self) -> Int
 pub fn Ref::tmp(Int) -> Self
 pub fn Ref::tmp_val(Self) -> Int
 pub fn Ref::typ(Int) -> Self
+pub fn Ref::typ_val(Self) -> Int
 
 pub(all) struct RegHint {
   r : Int

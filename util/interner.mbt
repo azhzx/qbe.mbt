@@ -39,3 +39,13 @@ pub fn Interner::lookup(self : Self, s : String) -> Int {
     None => -1
   }
 }
+
+///|
+// Module-wide string interner, mirroring QBE's global `intern()` in util.c.
+// Used for generated symbol labels (e.g. floating point constants).
+let global_interner : Interner = Interner::new()
+
+///|
+pub fn intern(s : String) -> Int {
+  global_interner.intern(s)
+}

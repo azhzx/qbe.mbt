@@ -93,20 +93,20 @@ pub fn Con::is_zero(self : Con, wide : Bool) -> Bool {
 }
 
 ///|
-// Add two constants (for address arithmetic)
-pub fn addcon(c : Con, other : Con) -> Con {
-  if c.kind == CAddr && other.kind == CBits {
-    Con::{
-      kind: CAddr,
-      label: c.label,
-      bits: ConBits::{ i: c.bits.i + other.bits.i, d: 0.0, s: 0.0 },
-      flt: 0,
-      is_local: c.is_local,
-    }
-  } else if c.kind == CBits && other.kind == CBits {
-    Con::int(c.bits.i + other.bits.i)
+// Add two constants (for address arithmetic), matching C addcon in util.c
+pub fn addcon(c0 : Con, c1 : Con) -> Con {
+  if c0.kind == CUndef {
+    c1
   } else {
-    c
+    let kind = if c1.kind == CAddr { CAddr } else { c0.kind }
+    let label = if c1.kind == CAddr { c1.label } else { c0.label }
+    Con::{
+      kind,
+      label,
+      bits: ConBits::{ i: c0.bits.i + c1.bits.i, d: c0.bits.d, s: c0.bits.s },
+      flt: c0.flt,
+      is_local: c0.is_local,
+    }
   }
 }
 

@@ -177,6 +177,12 @@ async fn process_file(file : String, dbg : DbFlags) -> Unit {
     @ssa.filluse(fn_)
     // fold.c: -dF.
     @util.eprint(@fold.fold(fn_, dbg.f, interner, typs))
+    // T.abi (sysv.c): -dA.
+    @util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+    @cfg.fillpreds(fn_)
+    @ssa.filluse(fn_)
+    // T.isel (amd64/isel.c): -dI.
+    @util.eprint(@isel.isel(fn_, interner, dbg.i, typs))
     // C main.c: fprintf(stderr, "\n"); at end of debug mode.
     if is_dbg {
       @util.eprint("\n")

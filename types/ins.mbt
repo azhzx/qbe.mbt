@@ -24,7 +24,7 @@ pub fn Ins::new_void(op : Op, cls : Class, arg1 : Ref, arg2 : Ref) -> Ins {
 // Phi node argument: value + source block id
 pub(all) struct PhiArg {
   mut value : Ref
-  blk_id : Int
+  mut blk_id : Int
 } derive(Debug)
 
 ///|

@@ -1,10 +1,10 @@
 ///|
 // Memory address (amd64-style addressing)
 pub(all) struct Addr {
-  offset : Con
-  base : Ref
-  index : Ref
-  scale : Int
+  mut offset : Con
+  mut base : Ref
+  mut index : Ref
+  mut scale : Int
 } derive(Debug)
 
 ///|
