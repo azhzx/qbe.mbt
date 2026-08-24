@@ -92,54 +92,22 @@ fn read_number(s : StringView) -> (String, Bool, StringView) {
 }
 
 ///|
-// Read a string literal (between double quotes)
-// Input s starts after the opening quote
+// Read a string literal (between double quotes).
+// Escape sequences are kept raw, as the C lexer does (only an unescaped "
+// terminates the string).
 fn read_string(s : StringView) -> (String, StringView) {
   let builder = StringBuilder::new()
+  let mut esc = false
   let mut rest : StringView = s
   for cur = s {
     match cur {
-      ['"', .. r] => {
-        rest = r
-        break
-      }
-      [.. "\\n", .. r] => {
-        builder.write_char('\n')
-        rest = r
-        continue r
-      }
-      [.. "\\t", .. r] => {
-        builder.write_char('\t')
-        rest = r
-        continue r
-      }
-      [.. "\\r", .. r] => {
-        builder.write_char('\r')
-        rest = r
-        continue r
-      }
-      [.. "\\0", .. r] => {
-        builder.write_char('\u0000')
-        rest = r
-        continue r
-      }
-      [.. "\\\"", .. r] => {
-        builder.write_char('"')
-        rest = r
-        continue r
-      }
-      [.. "\\\\", .. r] => {
-        builder.write_char('\\')
-        rest = r
-        continue r
-      }
-      ['\n', .. r] => {
-        // Unterminated string literal
+      ['"', .. r] if !esc => {
         rest = r
         break
       }
       [c, .. r] => {
         builder.write_char(c)
+        esc = c == '\\' && !esc
         rest = r
         continue r
       }

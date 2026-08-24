@@ -10,17 +10,35 @@ pub fn Parser::parse(self : Self) -> Unit raise {
         // export function or data
         let t2 = self.next_nl()
         match t2 {
-          TFunc => self.parsefn(true)
-          TData => self.parsedat(true)
+          TFunc => {
+            self.order.push("f")
+            self.parsefn(true)
+          }
+          TData => {
+            self.order.push("d")
+            self.parsedat(true)
+          }
           _ => raise self.error("export can only qualify data and function")
         }
       }
-      TFunc => self.parsefn(false)
-      TData => self.parsedat(false)
+      TFunc => {
+        self.order.push("f")
+        self.parsefn(false)
+      }
+      TData => {
+        self.order.push("d")
+        self.parsedat(false)
+      }
       TType => self.parsetyp()
       _ => raise self.error("top-level definition expected")
     }
   }
+}
+
+///|
+// The top-level section order: "f" for a function, "d" for a data section.
+pub fn Parser::get_order(self : Self) -> Array[String] {
+  self.order
 }
 
 ///|

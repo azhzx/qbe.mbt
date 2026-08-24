@@ -27,6 +27,7 @@ pub struct Parser {
   funcs : Array[@types.Fn]
   datas : Array[@types.Dat]
   typs : Array[@types.Typ]
+  order : Array[String]
   interner : @util.Interner
   mut curfn : @types.Fn?
   mut curblk : Int
@@ -44,6 +45,7 @@ pub fn Parser::findtyp(Self, String) -> Int raise
 pub fn Parser::from_lexer(@lexer.Lexer) -> Self
 pub fn Parser::get_datas(Self) -> Array[@types.Dat]
 pub fn Parser::get_funcs(Self) -> Array[@types.Fn]
+pub fn Parser::get_order(Self) -> Array[String]
 pub fn Parser::get_typs(Self) -> Array[@types.Typ]
 pub fn Parser::interner_ref(Self) -> @util.Interner
 pub fn Parser::new(Array[@lexer.Token], String) -> Self

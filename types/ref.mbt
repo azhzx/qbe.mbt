@@ -93,6 +93,15 @@ pub fn Ref::is_mem(self : Ref) -> Bool {
 }
 
 ///|
+/// is_slot - check for slot reference
+pub fn Ref::is_slot(self : Ref) -> Bool {
+  match self {
+    RSlot(_) => true
+    _ => false
+  }
+}
+
+///|
 /// mem_val - extract memory index, -1 if not a memory ref
 pub fn Ref::mem_val(self : Ref) -> Int {
   match self {

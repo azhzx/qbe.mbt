@@ -13,6 +13,9 @@ pub struct Parser {
   funcs : Array[@types.Fn]
   datas : Array[@types.Dat]
   typs : Array[@types.Typ]
+  // Top-level section order: "f" for function, "d" for data (the C emits in
+  // input order)
+  order : Array[String]
   // String interner for symbol labels
   interner : @util.Interner
   // Current function being parsed (None outside function)
@@ -38,6 +41,7 @@ pub fn Parser::new(
     funcs: Array::new(),
     datas: Array::new(),
     typs: Array::new(),
+    order: Array::new(),
     interner: @util.Interner::new(),
     curfn: None,
     curblk: -1,

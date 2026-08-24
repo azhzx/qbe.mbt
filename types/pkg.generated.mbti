@@ -94,6 +94,8 @@ pub fn astack(AliasType) -> Bool
 
 pub fn class_from_code(Int) -> Class
 
+pub fn cmpneg(Int) -> Int
+
 pub fn con_eq(Con, Con) -> Bool
 
 pub fn con_raw_bits(Con) -> Int64
@@ -101,6 +103,12 @@ pub fn con_raw_bits(Con) -> Int64
 pub fn dumpts(BSet, Array[Tmp]) -> String
 
 pub fn ext_width_idx(Op) -> Int
+
+pub fn fp_stash_at(Int) -> FpBits
+
+pub fn fp_stash_len() -> Int
+
+pub fn gasstash(Int64, Int64, Int) -> Int
 
 pub fn is_arg(Op) -> Bool
 
@@ -355,6 +363,12 @@ pub fn Fn::new_tmp(Self, String, Class) -> Int
 pub fn Fn::ntmp(Self) -> Int
 pub fn Fn::tmp(Self, Int) -> Tmp
 
+pub struct FpBits {
+  b0 : Int64
+  b1 : Int64
+  size : Int
+}
+
 pub(all) struct Ins {
   mut op : Op
   mut cls : Class
@@ -566,6 +580,7 @@ pub fn Ref::con_val(Self) -> Int
 pub fn Ref::is_con(Self) -> Bool
 pub fn Ref::is_mem(Self) -> Bool
 pub fn Ref::is_none(Self) -> Bool
+pub fn Ref::is_slot(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
 pub fn Ref::mem(Int) -> Self
 pub fn Ref::mem_val(Self) -> Int

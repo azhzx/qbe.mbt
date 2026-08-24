@@ -3,17 +3,27 @@
 // Provides: fillpreds, fillrpo, filldom, fillfron, fillloop, simpljmp
 
 ///|
-// Fill predecessor information for all blocks in a function.
-// Corresponds to fillpreds() in cfg.c
+// Fill predecessor information for all blocks in a function (C fillpreds).
 pub fn fillpreds(f : @types.Fn) -> Unit {
+  // The iteration order is the link chain (def_order); when it has not been
+  // built yet (unit tests), fall back to all blocks.
+  let chain : Array[Int] = if f.def_order.length() == 0 {
+    let a : Array[Int] = Array::new()
+    for i = 0; i < f.blks.length(); i = i + 1 {
+      a.push(i)
+    }
+    a
+  } else {
+    f.def_order
+  }
   // Reset predecessors for all blocks
   for i = 0; i < f.blks.length(); i = i + 1 {
     f.blks[i].pred.clear()
     f.blks[i].npred = 0
   }
   // Count predecessors for each successor
-  for i = 0; i < f.blks.length(); i = i + 1 {
-    let b = f.blks[i]
+  for i = 0; i < chain.length(); i = i + 1 {
+    let b = f.blks[chain[i]]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
     if s1 >= 0 && s1 < f.blks.length() {
@@ -24,15 +34,15 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
     }
   }
   // Add predecessor entries
-  for i = 0; i < f.blks.length(); i = i + 1 {
-    let b = f.blks[i]
+  for i = 0; i < chain.length(); i = i + 1 {
+    let b = f.blks[chain[i]]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
     if s1 >= 0 && s1 < f.blks.length() {
-      f.blks[s1].pred.push(i)
+      f.blks[s1].pred.push(chain[i])
     }
     if s2 >= 0 && s2 < f.blks.length() && s2 != s1 {
-      f.blks[s2].pred.push(i)
+      f.blks[s2].pred.push(chain[i])
     }
   }
 }

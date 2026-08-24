@@ -9,11 +9,13 @@ import {
   "azhzx/qbe/isel",
   "azhzx/qbe/spill",
   "azhzx/qbe/rega",
+  "azhzx/qbe/emit",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
   "moonbitlang/async",
+  "moonbitlang/async/stdio",
 }
 
 supported_targets = "-all+native"
