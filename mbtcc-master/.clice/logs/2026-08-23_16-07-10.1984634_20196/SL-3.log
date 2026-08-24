@@ -1,3 +1,0 @@
-[2026-08-24 00:07:10.368] [info] [thread 13600] [stateless_worker.cpp:400] Starting stateless worker
-[2026-08-24 00:07:10.432] [info] [thread 13600] [stateless_worker.cpp:459] Stateless worker ready, waiting for requests
-[2026-08-24 00:07:19.233] [info] [thread 13600] [stateless_worker.cpp:462] Stateless worker exiting with code 0

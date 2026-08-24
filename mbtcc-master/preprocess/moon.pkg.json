@@ -1,7 +1,0 @@
-{
-  "import" : [
-    "Kaida-Amethyst/mbtcc/lexer",
-    "moonbitlang/x/path",
-    "moonbitlang/x/fs",
-  ]
-}
