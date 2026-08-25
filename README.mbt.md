@@ -31,6 +31,70 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 
 提供 README 示例，覆盖 IL 解析、SSA 构建、寄存器分配、汇编输出和目标架构选择。
 
+# 技术细节
+
+## 包结构与编译流水线
+
+按编译流水线阶段顺序组织的 MoonBit 包（详见 [doc/](doc/README.md)）：
+
+| 阶段 | 包 | 说明 |
+| --- | --- | --- |
+| 数据结构 | `types` | SSA 中间表示：`Fn`/`Blk`/`Ins`/`Phi`/`Jump`/`Con`/`Tmp`/`Dat` 等，全部后端包共享 |
+| 通用工具 | `util` | 错误类型、字符串驻留 (Interner)、输出、排序 |
+| 词法分析 | `lexer` | IL 文本 → token 序列，错误收集到 `err_msgs` 而非抛异常 |
+| 语法分析 | `parser` | token 序列 → `Fn`/`Dat`/`Typ`，含 `type`/`data`/`function` 三种顶层定义 |
+| CFG 分析 | `cfg` | 反向后序、前驱、支配者树、支配边界、循环深度、别名分析、跳转简化 |
+| SSA 构造 | `ssa` | 使用链、memopt、phi 插入、块重命名、loadopt、copy 传播、合法性检查 |
+| 常量折叠 | `fold` | 操作数均为常量的指令直接求值并替换 |
+| ABI 处理 | `abi` | System V AMD64 调用约定：参数/返回寄存器、栈溢出、vararg |
+| 指令选择 | `isel` | amd64 指令模式：立即数、地址模式、除法魔法数、条件跳转 |
+| 活跃分析 | `live` | 反向数据流求 in/out，块边界统计 `nlive_w`/`nlive_d` |
+| 寄存器溢出 | `spill` | 基于代价与循环加权选择溢出点，迭代到收敛 |
+| 寄存器分配 | `rega` | 基于活跃集合构建干涉图，贪心染色 |
+| 汇编输出 | `emit` | 渲染 GAS 汇编（Linux `.L`/macOS `L`、`_` 前缀） |
+| CLI 入口 | `cmd/main` | 参数解析与流水线调度 |
+
+完整流水线（`cmd/main/main.mbt` 中 `run_passes`）：
+
+```
+parse → fillrpo → fillpreds → filluse → memopt
+      → filldom → fillfron → filllive(false) → phiins → renblk → filluse → ssacheck
+      → fillloop → fillalias → loadopt → filluse → ssacheck
+      → copy → filluse → fold
+      → abi → fillpreds → filluse
+      → isel
+      → fillrpo → filllive → fillcost → spill → rega
+      → fillrpo → simpljmp → fillrpo → fillpreds
+      → emitfn
+```
+
+## 中间表示设计
+
+- **SSA IR**：函数 (`Fn`)、基本块 (`Blk`)、临时变量 (`Tmp`)、指令 (`Ins`) 均为可变结构体，就地修改，不产生副本；支持 phi 节点与多种跳转形式（无条件跳转、条件跳转、整数/浮点条件跳转、5 种返回）。
+- **操作码**：`Op` 枚举覆盖 qbe 全部 100+ 指令（算术、位运算、移位、比较、load/store、扩展/转换、alloc、vararg、call 与内部指令 `Nop`/`Addr`/`Swap`/`Xcmp` 等），通过 `OpInfo` 携带操作数属性与可折叠标记。
+- **引用类型**：`Ref` 为操作数引用，统一表示临时变量 (`RTmp`)、常量 (`RCon`)、类型 (`RType`)、栈槽 (`RSlot`)、调用点 (`RCall`)、内存 (`RMem`)。
+- **位集** `BSet`：以 `Array[UInt64]` 实现的紧凑位集，用于活跃变量集合与寄存器掩码。
+- **寄存器编号**：`RAX=1..RSP=16, XMM0=17..XMM15=32`，`RXX=0` 表示"无寄存器"。
+
+## 关键算法
+
+- **SSA 构造**：基于支配边界 (`fillfron`) 插入 phi 节点，块与变量重命名建立 SSA 形式，`ssacheck` 做合法性校验。
+- **活跃分析**：反向数据流迭代到不动点；`gen_set` 首建后复用，仅重算 in/out。
+- **寄存器分配**：spill 先按代价（使用/定义点计数 + `10^loop_depth` 循环加权，word/double 通道分别按 `NGPS=9`/`NFPS=15` 评估）决定溢出到栈槽的临时变量，再在 `rega` 中按活跃集合构建干涉图并贪心染色；块边界寄存器不一致处插入 `copy` 同步。
+- **指令选择**：做语义保持的强度提升——立即数折叠进指令、`add` 链组合为 `[base + index*scale + offset]` 寻址、常量除数除法转魔法数乘加移位、比较+`jnz` 模式转为 amd64 条件跳转。
+- **内存优化**：memopt 消除冗余 alloc/load/store；loadopt 消除同块同址的无介入 store 的重复 load；copy 传播合并等价临时变量。
+
+## ABI 与目标支持
+
+- 当前仅支持 **amd64_sysv**（System V AMD64 调用约定）；`abi/` 与 `isel/` 为未来多目标（wasm、arm64 等）预留了同签名扩展位。
+- `abi` 阶段把抽象 `Arg`/`Par`/`Ret*` 替换为具体寄存器/栈槽引用，聚合类型按 System V 规则决定走寄存器还是内存。
+- 输出两种 GAS 风格：Linux（`-G e`，`.L` 标签、无符号前缀）与 macOS（`-G m`，`L` 标签、`_` 前缀），可直接 `gcc`/`clang` 汇编链接。
+
+## 调试与测试
+
+- 命令行 `-d <flags>` 提供分阶段 dump（`-dP` parse、`-dM` memopt、`-dN` SSA、`-dC` copy、`-dF` fold、`-dA` abi、`-dI` isel、`-dL` live、`-dS` spill、`-dR` rega），可组合；开启调试时不再输出汇编。
+- 测试量：223 个 MoonBit 测试文件（`*_test.mbt` / `*_wbtest.mbt`），505 个 `.ssa` 回归用例，覆盖解析、SSA 构建、寄存器分配、汇编输出与端到端编译。
+
 # 移植或参考说明
 原项目信息
 原项目名称：Quick Backend (qbe)
