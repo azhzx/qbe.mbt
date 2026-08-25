@@ -30,22 +30,3 @@ pub fn Interner::intern(self : Self, s : String) -> Int {
 pub fn Interner::get(self : Self, id : Int) -> String {
   self.values[id]
 }
-
-///|
-// Look up a string's id, returns -1 if not interned
-pub fn Interner::lookup(self : Self, s : String) -> Int {
-  match self.table.get(s) {
-    Some(id) => id
-    None => -1
-  }
-}
-
-///|
-// Module-wide string interner, mirroring QBE's global `intern()` in util.c.
-// Used for generated symbol labels (e.g. floating point constants).
-let global_interner : Interner = Interner::new()
-
-///|
-pub fn intern(s : String) -> Int {
-  global_interner.intern(s)
-}

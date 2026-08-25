@@ -117,10 +117,10 @@ fn limit(st : SpillState, b : @types.BSet, k : Int, f : @types.BSet?) -> Unit {
     t = b.iter(t + 1)
   }
   if f is None {
-    @util.qsort_int(tarr, 0, nt - 1, fn(pa, pb) { tcmp0(st, pa, pb) })
+    tarr.sort_by(fn(pa, pb) { tcmp0(st, pa, pb) })
   } else {
     st.fst = f
-    @util.qsort_int(tarr, 0, nt - 1, fn(pa, pb) { tcmp1(st, pa, pb) })
+    tarr.sort_by(fn(pa, pb) { tcmp1(st, pa, pb) })
   }
   let mut i = 0
   while i < k && i < nt {
@@ -219,7 +219,7 @@ fn dopm(st : SpillState, b : @types.Blk, i : Int, v : @types.BSet) -> Int {
     let rr = @types.retregs(b.ins[idx - 1].arg2)
     v.bits[0] = v.bits[0] & rr.0.lnot()
     limit2(st, v, 9, 15, None)
-    for n = 0; n < @types.rsave.length(); n = n + 1 {
+    for n in 0..<@types.rsave.length() {
       r = r | (1UL << @types.rsave[n])
     }
     let ar = @types.argregs(b.ins[idx - 1].arg2)
@@ -258,7 +258,7 @@ pub fn spill(
   }
   st.mask.push(@types.BSet::new(st.ntmp))
   st.mask.push(@types.BSet::new(st.ntmp))
-  for t = 0; t < st.ntmp; t = t + 1 {
+  for t in 0..<st.ntmp {
     let mut k = 0
     if t >= @types.XMM0 && t < @types.XMM0 + @types.NFPR {
       k = 1
@@ -289,7 +289,7 @@ pub fn spill(
       // back-edge
       let hgen = fn_.blks[hd].gen_set.unwrap()
       hgen.bits[0] = hgen.bits[0] | @types.rglob_mask()
-      for k = 0; k < 2; k = k + 1 {
+      for k in 0..<2 {
         let nreg = if k == 0 { 16 } else { 15 }
         let u = @types.BSet::new(st.ntmp)
         u.copy_from(b.out_set.unwrap())
@@ -361,13 +361,13 @@ pub fn spill(
         }
       }
       let mut j = @types.op_info(ins.op).nmem
-      for n2 = 0; n2 < 2; n2 = n2 + 1 {
+      for n2 in 0..<2 {
         let arg = if n2 == 0 { ins.arg1 } else { ins.arg2 }
         if arg.is_mem() {
           j = j - 1
         }
       }
-      for n2 = 0; n2 < 2; n2 = n2 + 1 {
+      for n2 in 0..<2 {
         let arg = if n2 == 0 { ins.arg1 } else { ins.arg2 }
         match arg {
           @types.RMem(mi) => {
@@ -396,7 +396,7 @@ pub fn spill(
       let u = @types.BSet::new(st.ntmp)
       u.copy_from(v)
       limit2(st, v, 0, 0, Some(w))
-      for n2 = 0; n2 < 2; n2 = n2 + 1 {
+      for n2 in 0..<2 {
         let arg = if n2 == 0 { ins.arg1 } else { ins.arg2 }
         if arg.is_tmp() {
           let tt = arg.tmp_val()

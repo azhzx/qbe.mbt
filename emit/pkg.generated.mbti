@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn emitfn(@types.Fn, @util.Interner, String, String, StringBuilder) -> Unit
+pub fn emitfn(@types.Fn, @util.Interner, String, String, StringBuilder) -> Unit raise
 
 pub fn gasemitdat(@types.Dat, String, String, StringBuilder) -> Unit
 

@@ -125,7 +125,7 @@ pub fn con_raw_bits(c : Con) -> Int64 {
 ///|
 // Interning comparison: type + raw bits + label (ignores flt flag),
 // matching C's `con[i].type == c.type && con[i].bits.i == c.bits.i`
-pub fn con_eq(c : Con, other : Con) -> Bool {
+fn con_eq(c : Con, other : Con) -> Bool {
   c.kind == other.kind &&
   con_raw_bits(c) == con_raw_bits(other) &&
   c.label == other.label

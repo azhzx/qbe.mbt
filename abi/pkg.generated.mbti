@@ -7,15 +7,7 @@ import {
 }
 
 // Values
-pub fn abi(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String
-
-pub fn argregs(@types.Ref) -> (UInt64, Int, Int)
-
-pub let rclob : Array[Int]
-
-pub fn retregs(@types.Ref) -> (UInt64, Int, Int)
-
-pub let rsave : Array[Int]
+pub fn abi(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
 // Errors
 

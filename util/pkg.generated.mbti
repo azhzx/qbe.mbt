@@ -10,13 +10,9 @@ pub async fn eprint(String) -> Unit
 
 pub fn fmt_fixed(Double, Int) -> String
 
-pub fn intern(String) -> Int
-
 pub async fn iprint(String) -> Unit
 
 pub fn lpad(String, Int) -> String
-
-pub fn qsort_int(Array[Int], Int, Int, (Int, Int) -> Int) -> Unit
 
 pub fn rpad(Int, Int) -> String
 
@@ -26,7 +22,6 @@ pub(all) suberror QbeError {
   CompileError(String)
   Ice(String)
 } derive(@debug.Debug)
-pub fn QbeError::parse_error(file~ : String, line~ : Int, msg~ : String) -> Self
 
 // Types and methods
 pub struct Interner {
@@ -35,7 +30,6 @@ pub struct Interner {
 }
 pub fn Interner::get(Self, Int) -> String
 pub fn Interner::intern(Self, String) -> Int
-pub fn Interner::lookup(Self, String) -> Int
 pub fn Interner::new() -> Self
 
 // Type aliases

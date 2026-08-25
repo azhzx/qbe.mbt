@@ -162,7 +162,7 @@ pub fn copy(
         let _ = b.phi.remove(pi)
         continue
       }
-      for ai = 0; ai < p.args.length(); ai = ai + 1 {
+      for ai in 0..<p.args.length() {
         let a = p.args[ai]
         let rr = copyof(a.value, cp)
         b.phi[pi].args[ai] = @types.PhiArg::{ value: rr, blk_id: a.blk_id }
@@ -170,7 +170,7 @@ pub fn copy(
       pi = pi + 1
     }
     // Instructions
-    for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+    for ii in 0..<b.ins.length() {
       let i = b.ins[ii]
       let r = copyof(i.to, cp)
       if !@types.req(r, i.to) {

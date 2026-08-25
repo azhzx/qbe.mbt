@@ -13,7 +13,7 @@ pub enum AliasResult {
 ///|
 // Fetch the alias info of a reference, following stack slots up to the
 // underlying alloc's current type (C getalias).
-pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
+fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
   match r {
     @types.RTmp(v) => {
       let a = fn_.tmps[v].alias_info
@@ -131,7 +131,7 @@ fn esc(r : @types.Ref, fn_ : @types.Fn) -> Unit {
 ///|
 // Fill alias information for all temporaries (C fillalias).
 pub fn fillalias(fn_ : @types.Fn) -> Unit {
-  for n = 0; n < fn_.rpo.length(); n = n + 1 {
+  for n in 0..<fn_.rpo.length() {
     let b = fn_.blks[fn_.rpo[n]]
     // Phi nodes
     for p in b.phi {

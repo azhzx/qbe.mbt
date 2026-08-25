@@ -40,7 +40,7 @@ fn sel_emit(st : IselState, i : @types.Ins) -> Unit {
 
 ///|
 // Select a single instruction (C sel).
-fn sel(st : IselState, i : @types.Ins) -> Unit {
+fn sel(st : IselState, i : @types.Ins) -> Unit raise {
   if i.to.is_tmp() {
     if !isreg(i.to) && !isreg(i.arg1) && !isreg(i.arg2) {
       if st.fn_.tmps[i.to.tmp_val()].nuse == 0 {
@@ -219,7 +219,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit {
             st.buf[idx].op = flag_op(cmpop(x))
           }
         } else {
-          abort("unknown instruction \{@types.op_info(i.op).name}")
+          raise @util.QbeError::Ice(
+            "unknown instruction \{@types.op_info(i.op).name}",
+          )
         }
       }
   }
@@ -321,7 +323,7 @@ pub fn isel(
   interner : @util.Interner,
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = IselState::{
     fn_,
     buf: Array::new(),
@@ -333,10 +335,10 @@ pub fn isel(
   // assign slots to fast allocs in the start block
   let start = fn_.blks[fn_.start_id]
   let sizes = [4, 8, 16]
-  for s = 0; s < 3; s = s + 1 {
+  for s in 0..<3 {
     let n = sizes[s]
     let op = @types.op_from_index(@types.op_index(@types.Alloc4) + s)
-    for idx = 0; idx < start.ins.length(); idx = idx + 1 {
+    for idx in 0..<start.ins.length() {
       let i = start.ins[idx]
       if i.op == op {
         if !i.arg1.is_con() {
@@ -359,7 +361,7 @@ pub fn isel(
   }
 
   // process basic blocks in definition order (the C link order)
-  for k = 0; k < fn_.def_order.length(); k = k + 1 {
+  for k in 0..<fn_.def_order.length() {
     let bid = fn_.def_order[k]
     let b = fn_.blks[bid]
     st.buf.clear()
@@ -381,7 +383,7 @@ pub fn isel(
       }
     }
     st.an.clear()
-    for z = 0; z < fn_.tmps.length(); z = z + 1 {
+    for _ in 0..<fn_.tmps.length() {
       st.an.push(ANum::new())
     }
     anumber(st, b)

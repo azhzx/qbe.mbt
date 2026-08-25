@@ -48,7 +48,7 @@ fn np_free(pool : NamePool, idx : Int) -> Unit {
 
 ///|
 // Insert phi nodes (C phiins) - requires filllive (b.in), filldom, fillfron
-pub fn phiins(fn_ : @types.Fn) -> Unit {
+pub fn phiins(fn_ : @types.Fn) -> Unit raise {
   let nb = fn_.nblk()
   let nt = fn_.ntmp()
   let u = @types.BSet::new(nb)
@@ -67,7 +67,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit {
       let b = fn_.blks[id]
       b.visit = 0
       let mut r = @types.ref_none()
-      for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+      for ii in 0..<b.ins.length() {
         let i = b.ins[ii]
         if !r.is_none() {
           if @types.req(i.arg1, @types.Ref::tmp(t)) {
@@ -93,7 +93,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit {
             // C: if (clsmerge(&k, i->cls)) die("invalid input");
             let k_ref : Ref[Int] = Ref::{ val: k }
             if clsmerge(k_ref, kcode(i.cls)) {
-              abort("invalid input class")
+              raise @util.QbeError::Ice("invalid input class")
             }
             k = k_ref.val
           }
@@ -147,7 +147,7 @@ fn ren_dfs(
 ) -> Unit {
   let b = fn_.blks[bid]
   // Rename phi destinations
-  for pi = 0; pi < b.phi.length(); pi = pi + 1 {
+  for pi in 0..<b.phi.length() {
     let p = b.phi[pi]
     if p.to.is_tmp() {
       let t = p.to.tmp_val()
@@ -160,7 +160,7 @@ fn ren_dfs(
     }
   }
   // Rename instruction args and destinations
-  for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+  for ii in 0..<b.ins.length() {
     let ins = b.ins[ii]
     // Rename args
     if ins.arg1.is_tmp() {
@@ -203,7 +203,7 @@ fn ren_dfs(
   }
   for s_id in succs {
     let s = fn_.blks[s_id]
-    for pi = 0; pi < s.phi.length(); pi = pi + 1 {
+    for pi in 0..<s.phi.length() {
       let p = s.phi[pi]
       if p.to.is_tmp() {
         // C ssa.c: t = p->to.val; if ((t = fn->tmp[t].visit)) ...

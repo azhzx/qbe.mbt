@@ -101,7 +101,7 @@ pub fn Fn::add_tmp(self : Self, name : String, cls : Class) -> Int {
 // Pre-populate Tmp0 (64) register temporaries (matches C parse.c:779-783)
 // Called at the start of function parsing so register temps occupy indices 0..Tmp0-1
 pub fn Fn::init_regs(self : Self) -> Unit {
-  for i = 0; i < Tmp0; i = i + 1 {
+  for i in 0..<Tmp0 {
     let cls = if XMM0 <= i && i < XMM0 + NFPR { Kd } else { Kl }
     let tmp = Tmp::new("", cls)
     tmp.slot = -1
@@ -145,7 +145,7 @@ pub fn Fn::add_con(self : Self, con : Con) -> Int {
 // Intern a constant: return existing id if a matching one exists,
 // otherwise add it. Matching is by raw bits (like C's union compare).
 pub fn Fn::get_con_by(self : Self, con : Con) -> Int {
-  for i = 0; i < self.cons.length(); i = i + 1 {
+  for i in 0..<self.cons.length() {
     if con_eq(self.cons[i], con) {
       return i
     }
@@ -156,7 +156,7 @@ pub fn Fn::get_con_by(self : Self, con : Con) -> Int {
 ///|
 // Get a constant reference for an integer value
 pub fn Fn::get_con(self : Self, val : Int64) -> Int {
-  for i = 0; i < self.cons.length(); i = i + 1 {
+  for i in 0..<self.cons.length() {
     let c = self.cons[i]
     if c.kind == CBits && c.flt == 0 && c.bits.i == val {
       return i

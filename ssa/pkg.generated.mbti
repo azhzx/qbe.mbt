@@ -4,35 +4,22 @@ package "azhzx/qbe/ssa"
 import {
   "azhzx/qbe/types",
   "azhzx/qbe/util",
-  "moonbitlang/core/ref",
 }
 
 // Values
-pub fn clsmerge(@ref.Ref[Int], Int) -> Bool
-
 pub fn copy(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 
-pub fn filluse(@types.Fn) -> Unit
-
-pub fn kcode(@types.Class) -> Int
-
-pub fn kx() -> Int
+pub fn filluse(@types.Fn) -> Unit raise
 
 pub fn loadopt(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 
-pub fn loadsz(@types.Ins) -> Int
+pub fn memopt(@types.Fn) -> Unit raise
 
-pub fn memopt(@types.Fn) -> Unit
-
-pub fn phicls(Int, Array[@types.Tmp]) -> Int
-
-pub fn phiins(@types.Fn) -> Unit
+pub fn phiins(@types.Fn) -> Unit raise
 
 pub fn renblk(@types.Fn) -> Unit
 
-pub fn ssacheck(@types.Fn) -> Unit
-
-pub fn storesz(@types.Ins) -> Int
+pub fn ssacheck(@types.Fn) -> Unit raise
 
 // Errors
 

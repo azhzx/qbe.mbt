@@ -53,7 +53,7 @@ fn foldint(
   w : Bool,
   cl : @types.Con,
   cr : @types.Con,
-) -> (Bool, @types.Con) {
+) -> (Bool, @types.Con) raise {
   let l = cl.bits.i
   let r = cr.bits.i
   let mut typ = @types.CBits
@@ -61,7 +61,7 @@ fn foldint(
   if op == @types.Add {
     if cl.kind == @types.CAddr {
       if cr.kind == @types.CAddr {
-        abort("undefined addition (addr + addr)")
+        raise @util.QbeError::Ice("undefined addition (addr + addr)")
       }
       lab = cl.label
       typ = @types.CAddr
@@ -75,16 +75,16 @@ fn foldint(
         lab = cl.label
         typ = @types.CAddr
       } else if cl.label != cr.label {
-        abort("undefined substraction (addr1 - addr2)")
+        raise @util.QbeError::Ice("undefined substraction (addr1 - addr2)")
       }
     } else if cr.kind == @types.CAddr {
-      abort("undefined substraction (num - addr)")
+      raise @util.QbeError::Ice("undefined substraction (num - addr)")
     }
   } else if cl.kind == @types.CAddr || cr.kind == @types.CAddr {
     if is_long_cmp(op) {
       return (true, @types.Con::new())
     }
-    abort("invalid address operand")
+    raise @util.QbeError::Ice("invalid address operand")
   }
   let x : Int64 = if is_word_cmp(op) || is_long_cmp(op) {
     let ci = if is_word_cmp(op) {
@@ -218,9 +218,9 @@ fn foldflt(
   w : Bool,
   cl : @types.Con,
   cr : @types.Con,
-) -> @types.Con {
+) -> @types.Con raise {
   if cl.kind != @types.CBits || cr.kind != @types.CBits {
-    abort("invalid address operand")
+    raise @util.QbeError::Ice("invalid address operand")
   }
   if w {
     let ld = con_double(cl)
@@ -275,7 +275,7 @@ fn opfold(
   cls : @types.Class,
   cl : @types.Con,
   cr : @types.Con,
-) -> Int {
+) -> Int raise {
   if (
       op == @types.Div ||
       op == @types.Udiv ||
@@ -283,7 +283,7 @@ fn opfold(
       op == @types.Urem
     ) &&
     czero(cr, @types.kwide(cls) == 1) {
-    abort("null divisor")
+    raise @util.QbeError::Ice("null divisor")
   }
   let (is_bot, c) = if cls == @types.Kw || cls == @types.Kl {
     foldint(op, cls == @types.Kl, cl, cr)

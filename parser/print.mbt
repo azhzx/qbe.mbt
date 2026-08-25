@@ -16,7 +16,7 @@ fn ktoc(k : @types.Class) -> Char {
 
 ///|
 // Jump kind to string
-pub fn jtoa(j : @types.JumpKind) -> String {
+fn jtoa(j : @types.JumpKind) -> String {
   match j {
     @types.Jret0 => "ret0"
     @types.Jretw => "retw"
@@ -244,7 +244,7 @@ pub fn printfn(
       @types.Jjmp => {
         // Omit jmp to the next block in definition order (fall-through)
         let mut next = -1
-        for i = 0; i < fn_.def_order.length(); i = i + 1 {
+        for i in 0..<fn_.def_order.length() {
           if fn_.def_order[i] == b.id {
             if i + 1 < fn_.def_order.length() {
               next = fn_.def_order[i + 1]

@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn isel(@types.Fn, @util.Interner, Bool, Array[@types.Typ]) -> String
+pub fn isel(@types.Fn, @util.Interner, Bool, Array[@types.Typ]) -> String raise
 
 // Errors
 

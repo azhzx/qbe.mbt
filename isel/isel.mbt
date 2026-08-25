@@ -164,7 +164,7 @@ fn fixarg(
 
 ///|
 // Recognize complex addressing modes (C seladdr).
-fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref {
+fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
   let r0 = r
   if r0.is_tmp() {
     let av = @types.Addr::new()

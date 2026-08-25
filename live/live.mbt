@@ -129,7 +129,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
           b.gen_set.unwrap().set(t)
           in_.clr(t)
         }
-        for k = 0; k < 2; k = k + 1 {
+        for k in 0..<2 {
           let arg = if k == 0 { ins.arg1 } else { ins.arg2 }
           match arg {
             @types.RMem(m) => {

@@ -97,7 +97,7 @@ fn visitphi(st : FoldState, p : @types.Phi, n : Int) -> Unit {
 }
 
 ///|
-fn visitins(st : FoldState, i : @types.Ins) -> Unit {
+fn visitins(st : FoldState, i : @types.Ins) -> Unit raise {
   if !i.to.is_tmp() {
     return
   }
@@ -141,7 +141,7 @@ fn visitjmp(st : FoldState, b : @types.Blk, n : Int) -> Unit {
 
 ///|
 // Visit the block at RPO index d (shared by the start edge and block edges).
-fn visit_blk(st : FoldState, d : Int) -> Unit {
+fn visit_blk(st : FoldState, d : Int) -> Unit raise {
   let b = st.fn_.blks[st.fn_.rpo[d]]
   for p in b.phi {
     visitphi(st, p, d)
@@ -178,7 +178,7 @@ pub fn fold(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let nb = fn_.rpo.length()
   let nt = fn_.ntmp()
   let st = FoldState::{
@@ -189,7 +189,7 @@ pub fn fold(
     nuse: 0,
     work: Array::new(),
   }
-  for n = 0; n < nb; n = n + 1 {
+  for n in 0..<nb {
     let b = fn_.blks[fn_.rpo[n]]
     b.visit = 0
     let s1 = if b.jmp.s1 >= 0 { fn_.blks[b.jmp.s1].rpo_id } else { -1 }
@@ -311,7 +311,7 @@ pub fn fold(
       }
     }
     // trim instructions
-    for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+    for ii in 0..<b.ins.length() {
       let i = b.ins[ii]
       if !i.to.is_none() {
         let new_to = renref(st, i.to)

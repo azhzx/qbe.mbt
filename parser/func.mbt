@@ -10,7 +10,7 @@ enum PState {
 ///|
 // Parse a function definition
 // export: whether the function is exported
-pub fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
+fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
   self.curblk = -1
   // Parse return class and function name
   // If next token is not TGlo, parse the return class first
@@ -85,7 +85,7 @@ pub fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
 // Parse parameter/argument reference list
 // arg: true if parsing call arguments, false if parsing function parameters
 // Returns true if the list is variadic (contains ...)
-pub fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
+fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
   self.expect(TLpa) // (
   let mut hasenv = false
   while true {
@@ -167,7 +167,7 @@ pub fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
 
 ///|
 // Find or create a block by name
-pub fn Parser::findblk(self : Self, name : String) -> Int {
+fn Parser::findblk(self : Self, name : String) -> Int raise {
   let fn_ = self.curfn()
   let existing = fn_.find_blk(name)
   if existing >= 0 {
@@ -178,7 +178,7 @@ pub fn Parser::findblk(self : Self, name : String) -> Int {
 
 ///|
 // Parse a single line of the function body (block label, instruction, or jump)
-pub fn Parser::parseline(self : Self, ps : PState) -> PState raise {
+fn Parser::parseline(self : Self, ps : PState) -> PState raise {
   let t = self.next_nl()
   let fn_ = self.curfn()
   if ps == PLbl && t != TLoc && t != TRbr {

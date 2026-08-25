@@ -31,14 +31,14 @@ let add_tab : Array[Array[Int]] = [
 ]
 
 ///|
-fn aref(st : IselState, r : @types.Ref) -> Int {
+fn aref(st : IselState, r : @types.Ref) -> Int raise {
   if r.is_con() {
     return 2
   }
   if r.is_tmp() {
     return st.an[r.tmp_val()].n
   }
-  abort("constant or temporary expected")
+  raise @util.QbeError::Ice("constant or temporary expected")
 }
 
 ///|
@@ -56,9 +56,9 @@ fn ascale(r : @types.Ref, cons : Array[@types.Con]) -> Bool {
 
 ///|
 // Number the addressable form of each add/mul in the block (C anumber).
-fn anumber(st : IselState, b : @types.Blk) -> Unit {
+fn anumber(st : IselState, b : @types.Blk) -> Unit raise {
   let ins = b.ins
-  for idx = 0; idx < ins.length(); idx = idx + 1 {
+  for idx in 0..<ins.length() {
     let i = ins[idx]
     if i.to.is_tmp() {
       st.an[i.to.tmp_val()].i = idx
@@ -116,7 +116,12 @@ fn anumber(st : IselState, b : @types.Blk) -> Unit {
 ///|
 // Match a temporary to an address (C amatch). The Addr is boxed and mutated
 // in place.
-fn amatch(st : IselState, a : @types.Addr, r : @types.Ref, top : Bool) -> Unit {
+fn amatch(
+  st : IselState,
+  a : @types.Addr,
+  r : @types.Ref,
+  top : Bool,
+) -> Unit raise {
   if r.is_con() {
     a.offset = @types.addcon(a.offset, st.fn_.cons[r.con_val()])
     return

@@ -21,7 +21,7 @@ pub fn BSet::new(nt : Int) -> BSet {
 // Zero out all bits
 pub fn BSet::zero(self : Self) -> Unit {
   let zero : UInt64 = 0
-  for i = 0; i < self.bits.length(); i = i + 1 {
+  for i in 0..<self.bits.length() {
     self.bits[i] = zero
   }
 }
@@ -61,13 +61,7 @@ pub fn BSet::has(self : Self, elt : Int) -> Bool {
 pub fn BSet::count(self : Self) -> Int {
   let mut cnt = 0
   for w in self.bits {
-    let mut v = w
-    let zero : UInt64 = 0
-    while v != zero {
-      cnt = cnt + 1
-      let one : UInt64 = 1
-      v = v & (v - one)
-    }
+    cnt = cnt + w.popcnt()
   }
   cnt
 }
@@ -76,7 +70,7 @@ pub fn BSet::count(self : Self) -> Int {
 // Copy from another BSet
 pub fn BSet::copy_from(self : Self, other : BSet) -> Unit {
   let len = self.bits.length().min(other.bits.length())
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     self.bits[i] = other.bits[i]
   }
 }
@@ -86,7 +80,7 @@ pub fn BSet::copy_from(self : Self, other : BSet) -> Unit {
 pub fn BSet::union(self : Self, other : BSet) -> Bool {
   let len = self.bits.length().min(other.bits.length())
   let mut changed = false
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     let old = self.bits[i]
     self.bits[i] = self.bits[i] | other.bits[i]
     if old != self.bits[i] {
@@ -100,7 +94,7 @@ pub fn BSet::union(self : Self, other : BSet) -> Bool {
 // Intersect: self &= other
 pub fn BSet::inter(self : Self, other : BSet) -> Unit {
   let len = self.bits.length().min(other.bits.length())
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     self.bits[i] = self.bits[i] & other.bits[i]
   }
 }
@@ -109,7 +103,7 @@ pub fn BSet::inter(self : Self, other : BSet) -> Unit {
 // Difference: self &= ~other
 pub fn BSet::diff(self : Self, other : BSet) -> Unit {
   let len = self.bits.length().min(other.bits.length())
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     self.bits[i] = self.bits[i] & other.bits[i].lnot()
   }
 }
@@ -118,7 +112,7 @@ pub fn BSet::diff(self : Self, other : BSet) -> Unit {
 // Equality check
 pub fn BSet::equal(self : Self, other : BSet) -> Bool {
   let len = self.bits.length().min(other.bits.length())
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     if self.bits[i] != other.bits[i] {
       return false
     }

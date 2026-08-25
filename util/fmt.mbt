@@ -7,7 +7,7 @@ pub fn fmt_fixed(v : Double, prec : Int) -> String {
   let neg = v < 0.0
   let x = if neg { -v } else { v }
   let mut scale : Int64 = 1
-  for i = 0; i < prec; i = i + 1 {
+  for i in 0..<prec {
     ignore(i)
     scale = scale * 10
   }

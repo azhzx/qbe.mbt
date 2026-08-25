@@ -3,13 +3,13 @@
 
 ///|
 // Class enumeration values (match C: Kx=-1, Kw=0, Kl=1, Ks=2, Kd=3)
-pub fn kx() -> Int {
+fn kx() -> Int {
   -1
 }
 
 ///|
 // Convert Class to int code (C: Kx=-1, Kw=0, Kl=1, Ks=2, Kd=3)
-pub fn kcode(k : @types.Class) -> Int {
+fn kcode(k : @types.Class) -> Int {
   match k {
     @types.Kx => -1
     @types.Kw => 0
@@ -21,7 +21,7 @@ pub fn kcode(k : @types.Class) -> Int {
 
 ///|
 // Merge a class into a running class. Returns true if incompatible.
-pub fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
+fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
   let k1 = pk.val
   if k1 == kx() {
     pk.val = k
@@ -36,7 +36,7 @@ pub fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
 
 ///|
 // Phi class resolution with path compression (C phicls)
-pub fn phicls(t : Int, tmps : Array[@types.Tmp]) -> Int {
+fn phicls(t : Int, tmps : Array[@types.Tmp]) -> Int {
   let mut t1 = tmps[t].is_phi
   if t1 == 0 {
     return t
@@ -48,7 +48,7 @@ pub fn phicls(t : Int, tmps : Array[@types.Tmp]) -> Int {
 
 ///|
 // Load size in bytes (C load.c loadsz: Oload size depends on the class width)
-pub fn loadsz(i : @types.Ins) -> Int {
+fn loadsz(i : @types.Ins) -> Int {
   match i.op {
     @types.Loadsb | @types.Loadub => 1
     @types.Loadsh | @types.Loaduh => 2
@@ -60,7 +60,7 @@ pub fn loadsz(i : @types.Ins) -> Int {
 
 ///|
 // Store size in bytes
-pub fn storesz(i : @types.Ins) -> Int {
+fn storesz(i : @types.Ins) -> Int {
   match i.op {
     @types.Storeb => 1
     @types.Storeh => 2
@@ -71,7 +71,7 @@ pub fn storesz(i : @types.Ins) -> Int {
 
 ///|
 // Fill usage, width, phi, and class information (C filluse)
-pub fn filluse(fn_ : @types.Fn) -> Unit {
+pub fn filluse(fn_ : @types.Fn) -> Unit raise {
   for t = @types.Tmp0; t < fn_.ntmp(); t = t + 1 {
     let tmp = fn_.tmps[t]
     tmp.ndef = 0
@@ -84,10 +84,10 @@ pub fn filluse(fn_ : @types.Fn) -> Unit {
   for id in fn_.def_order {
     let b = fn_.blks[id]
     // Phis
-    for pi = 0; pi < b.phi.length(); pi = pi + 1 {
+    for pi in 0..<b.phi.length() {
       let p = b.phi[pi]
       if !p.to.is_tmp() {
-        abort("phi to not a tmp")
+        raise @util.QbeError::Ice("phi to not a tmp")
       }
       let tp = p.to.tmp_val()
       fn_.tmps[tp].ndef = fn_.tmps[tp].ndef + 1
@@ -105,11 +105,11 @@ pub fn filluse(fn_ : @types.Fn) -> Unit {
       }
     }
     // Instructions
-    for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+    for ii in 0..<b.ins.length() {
       let ins = b.ins[ii]
       if !ins.to.is_none() {
         if !ins.to.is_tmp() {
-          abort("ins to not a tmp")
+          raise @util.QbeError::Ice("ins to not a tmp")
         }
         let mut w = @types.WFull
         if is_load(ins.op) && ins.op != @types.Load {
@@ -126,7 +126,7 @@ pub fn filluse(fn_ : @types.Fn) -> Unit {
         fn_.tmps[t].ndef = fn_.tmps[t].ndef + 1
         fn_.tmps[t].cls = ins.cls
       }
-      for m = 0; m < 2; m = m + 1 {
+      for m in 0..<2 {
         let arg = if m == 0 { ins.arg1 } else { ins.arg2 }
         if arg.is_tmp() {
           adduse(fn_, arg.tmp_val(), @types.UIns, id, ii, m)

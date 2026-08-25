@@ -68,12 +68,6 @@ pub fn Token::new(
 }
 
 ///|
-// Check if token is an opcode identifier
-pub fn Token::is_id(self : Token) -> Bool {
-  self.kind == TId
-}
-
-///|
 // Get token kind name for error messages
 pub fn Token::kind_str(self : Token) -> String {
   match self.kind {

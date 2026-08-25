@@ -61,20 +61,6 @@ pub fn req(a : Ref, b : Ref) -> Bool {
 }
 
 ///|
-/// rtype - reference type, returns -1 for RNone (corresponds to C rtype())
-pub fn rtype(r : Ref) -> Int {
-  match r {
-    RNone => -1
-    RTmp(_) => 0
-    RCon(_) => 1
-    RType(_) => 2
-    RSlot(_) => 3
-    RCall(_) => 4
-    RMem(_) => 5
-  }
-}
-
-///|
 /// is_none - check for empty reference
 pub fn Ref::is_none(self : Ref) -> Bool {
   match self {

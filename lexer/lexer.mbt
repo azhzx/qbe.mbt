@@ -14,16 +14,7 @@ pub fn Lexer::new(source : String, source_file : String) -> Lexer {
 
 ///|
 fn is_ident_char(c : Char) -> Bool {
-  (c >= 'a' && c <= 'z') ||
-  (c >= 'A' && c <= 'Z') ||
-  (c >= '0' && c <= '9') ||
-  c == '_' ||
-  c == '.'
-}
-
-///|
-fn is_digit(c : Char) -> Bool {
-  c >= '0' && c <= '9'
+  c.is_ascii_alphabetic() || c.is_ascii_digit() || c == '_' || c == '.'
 }
 
 ///|
@@ -72,7 +63,7 @@ fn read_number(s : StringView) -> (String, Bool, StringView) {
   for cur = s {
     match cur {
       [c, .. r] => {
-        if is_digit(c) {
+        if c.is_ascii_digit() {
           builder.write_char(c)
           rest = r
           continue r

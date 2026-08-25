@@ -192,10 +192,10 @@ pub fn argregs(r : Ref) -> (UInt64, Int, Int) {
   let ni = (v >> 4) & 15
   let nf = (v >> 8) & 15
   let ra = (v >> 12) & 1
-  for j = 0; j < ni; j = j + 1 {
+  for j in 0..<ni {
     b = b | (1UL << rsave[j])
   }
-  for j = 0; j < nf; j = j + 1 {
+  for j in 0..<nf {
     b = b | (1UL << (XMM0 + j))
   }
   if ra != 0 {
@@ -214,42 +214,3 @@ pub fn rglob_mask() -> UInt64 {
 ///|
 // Number of globally live registers
 pub const NRGLOB : Int = 2
-
-///|
-// Get the name of a register (for emission)
-pub fn regname(r : Int) -> String {
-  if r >= XMM0 {
-    "xmm\{r - XMM0}"
-  } else {
-    match r {
-      0 => "???"
-      1 => "rax"
-      2 => "rcx"
-      3 => "rdx"
-      4 => "rsi"
-      5 => "rdi"
-      6 => "r8"
-      7 => "r9"
-      8 => "r10"
-      9 => "r11"
-      10 => "rbx"
-      11 => "r12"
-      12 => "r13"
-      13 => "r14"
-      14 => "r15"
-      15 => "rbp"
-      16 => "rsp"
-      _ => "???"
-    }
-  }
-}
-
-///|
-// Whether a register is caller-save (index into rsave)
-pub fn is_callersave(r : Int) -> Bool {
-  (RAX <= r && r <= R11) || (XMM0 <= r && r < XMM0 + NFPS)
-}
-
-///|
-// Number of registers per class: [ngpr, nfpr]
-pub let nregs_per_class : Array[Int] = [NGPR, NFPR]

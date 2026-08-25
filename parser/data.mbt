@@ -1,7 +1,7 @@
 ///|
 // Parse a data definition
 // export: whether the data is exported
-pub fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
+fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
   // Emit DStart
   let d = @types.Dat::start()
   d.is_export = is_export
@@ -150,7 +150,7 @@ pub fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
 
 ///|
 // Parse a type definition: type :name = [align N] { fields }
-pub fn Parser::parsetyp(self : Self) -> Unit raise {
+fn Parser::parsetyp(self : Self) -> Unit raise {
   // Create the type
   let ty = @types.Typ::new("")
   ty.align = -1
@@ -225,7 +225,7 @@ pub fn Parser::parsetyp(self : Self) -> Unit raise {
 // Parse type fields
 // ty: the type being built (for size/alignment calculation)
 // t: the first token of the first field
-pub fn Parser::parsefields(
+fn Parser::parsefields(
   self : Self,
   ty : @types.Typ,
   t : @lexer.TokenKind,

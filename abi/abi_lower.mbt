@@ -3,10 +3,15 @@
 // Corresponds to the remainder of sysv.c / amd64/sysv.c.
 
 ///|
-fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit {
+fn selcall(
+  st : AbiState,
+  orig : Array[@types.Ins],
+  i0 : Int,
+  i1 : Int,
+) -> Unit raise {
   let nargs = i1 - i0
   let ac : Array[AClass] = Array::new()
-  for k = 0; k < nargs; k = k + 1 {
+  for _ in 0..<nargs {
     ac.push(AClass::new())
   }
   let callins = orig[i1]
@@ -35,7 +40,7 @@ fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit 
   for a = nargs - 1; a >= 0; a = a - 1 {
     if ac[a].inmem != 0 {
       if ac[a].align > 4 {
-        abort("sysv abi requires alignments of 16 or less")
+        raise @util.QbeError::Ice("sysv abi requires alignments of 16 or less")
       }
       stk = stk + ac[a].size
       if ac[a].align == 4 {
@@ -132,7 +137,7 @@ fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit 
   let envc = !st.env.is_none()
   let varc = callins.op == @types.Vacall
   if varc && envc {
-    abort("sysv abi does not support variadic env calls")
+    raise @util.QbeError::Ice("sysv abi does not support variadic env calls")
   }
   ca = ca | ((if varc || envc { 1 } else { 0 }) << 12)
   emit(
@@ -176,7 +181,7 @@ fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit 
       @types.ref_none(),
     )
   }
-  for a = 0; a < nargs; a = a + 1 {
+  for a in 0..<nargs {
     let i = orig[i0 + a]
     if ac[a].inmem != 0 {
       continue
@@ -200,7 +205,7 @@ fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit 
   }
   let r = abi_newtmp(st, @types.Kl)
   let mut off = 0
-  for a = 0; a < nargs; a = a + 1 {
+  for a in 0..<nargs {
     let i = orig[i0 + a]
     if ac[a].inmem == 0 {
       continue
@@ -228,12 +233,12 @@ fn selcall(st : AbiState, orig : Array[@types.Ins], i0 : Int, i1 : Int) -> Unit 
 }
 
 ///|
-fn selpar(st : AbiState, par_end : Int) -> Int {
+fn selpar(st : AbiState, par_end : Int) -> Int raise {
   // par_end: index of the first non-par instruction in the start block
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ac : Array[AClass] = Array::new()
-  for k = 0; k < npar; k = k + 1 {
+  for _ in 0..<npar {
     ac.push(AClass::new())
   }
   st.buf.clear()
@@ -262,7 +267,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int {
   )
 
   // Allocate register-copied aggregates
-  for a = 0; a < npar; a = a + 1 {
+  for a in 0..<npar {
     let i = ins[a]
     if i.op != @types.Parc || ac[a].inmem != 0 {
       continue
@@ -302,12 +307,14 @@ fn selpar(st : AbiState, par_end : Int) -> Int {
   }
 
   let mut s = 4
-  for a = 0; a < npar; a = a + 1 {
+  for a in 0..<npar {
     let i = ins[a]
     match ac[a].inmem {
       1 => {
         if ac[a].align > 4 {
-          abort("sysv abi requires alignments of 16 or less")
+          raise @util.QbeError::Ice(
+            "sysv abi requires alignments of 16 or less",
+          )
         }
         if ac[a].align == 4 {
           s = (s + 3) & -4
@@ -536,7 +543,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
 
 ///|
 // Lower a single block's calls/returns/vararg instructions (C abi inner loop).
-fn process_block(st : AbiState, bid : Int) -> Unit {
+fn process_block(st : AbiState, bid : Int) -> Unit raise {
   let b = st.fn_.blks[bid]
   let orig : Array[@types.Ins] = Array::new()
   for x in b.ins {
@@ -588,7 +595,7 @@ pub fn abi(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = AbiState::{
     fn_,
     typs,

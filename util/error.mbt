@@ -5,13 +5,3 @@ pub(all) suberror QbeError {
   CompileError(String)
   Ice(String)
 } derive(Debug)
-
-///|
-/// ParseError constructor with named args
-pub fn QbeError::parse_error(
-  file~ : String,
-  line~ : Int,
-  msg~ : String,
-) -> QbeError {
-  ParseError(file, line, msg)
-}

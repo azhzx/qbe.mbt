@@ -98,7 +98,7 @@ fn classify(
 ) -> Unit {
   let fields = t.fields
   let mut member_start = 0
-  for n = 0; n < t.nunion; n = n + 1 {
+  for _ in 0..<t.nunion {
     let mut s = s0
     let mut fi = member_start
     while fi < fields.length() && fields[fi].kind != @types.FEnd {
@@ -355,7 +355,7 @@ fn rarg(
   ns : @ref.Ref[Int],
 ) -> @types.Ref {
   if kbase(ty) == 0 {
-    let r = @types.Ref::tmp(rsave[ni.val])
+    let r = @types.Ref::tmp(@types.rsave[ni.val])
     ni.val = ni.val + 1
     r
   } else {

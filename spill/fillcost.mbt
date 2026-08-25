@@ -57,7 +57,7 @@ pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
       }
     }
   }
-  for t = 0; t < fn_.tmps.length(); t = t + 1 {
+  for t in 0..<fn_.tmps.length() {
     let mx = if t < @types.Tmp0 { ((1L << 32) - 1L).to_int() } else { 0 }
     fn_.tmps[t].cost = mx
     fn_.tmps[t].nuse = 0

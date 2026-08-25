@@ -27,7 +27,7 @@ fn rmap_new(nt : Int) -> RMap {
 // Copy of the mapping arrays (C rcopy). The BSet bits are never read from
 // the copies, so sharing the reference is fine.
 fn rcopy(ma : RMap, mb : RMap) -> Unit {
-  for i = 0; i < 64; i = i + 1 {
+  for i in 0..<64 {
     ma.t[i] = mb.t[i]
     ma.r[i] = mb.r[i]
     ma.w[i] = mb.w[i]
@@ -99,7 +99,7 @@ fn emit_block(st : RState) -> Array[@types.Ins] {
 
 ///|
 fn rfind(m : RMap, t : Int) -> Int {
-  for i = 0; i < m.n; i = i + 1 {
+  for i in 0..<m.n {
     if m.t[i] == t {
       return m.r[i]
     }
@@ -129,7 +129,7 @@ fn radd(st : RState, m : RMap, t : Int, r : Int) -> Unit {
 }
 
 ///|
-fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref {
+fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
   if t < @types.Tmp0 {
     return @types.Ref::tmp(t)
   }
@@ -170,7 +170,7 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref {
     }
     if found < 0 {
       let mut dbg = ""
-      for zz = 0; zz < 64; zz = zz + 1 {
+      for zz in 0..<64 {
         if m.b.has(zz) {
           dbg = dbg + zz.to_string() + ","
         }
@@ -189,7 +189,7 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref {
         " m.b=" +
         dbg,
       )
-      abort("no more regs")
+      raise @util.QbeError::Ice("no more regs")
     }
     r = found
   }
@@ -204,7 +204,7 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref {
 }
 
 ///|
-fn ralloc(st : RState, m : RMap, t : Int) -> @types.Ref {
+fn ralloc(st : RState, m : RMap, t : Int) -> @types.Ref raise {
   ralloctry(st, m, t, false)
 }
 
@@ -345,7 +345,7 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
 ///|
 fn pmgen(st : RState) -> Unit {
   let status : Array[Int] = Array::make(st.npm, TOMOVE)
-  for i = 0; i < st.npm; i = i + 1 {
+  for i in 0..<st.npm {
     if status[i] == TOMOVE {
       ignore(pmrec(st, status, i, @ref.new(@types.kcode(st.pm[i].cls))))
     }
@@ -353,7 +353,7 @@ fn pmgen(st : RState) -> Unit {
 }
 
 ///|
-fn r_move(st : RState, r : Int, to : @types.Ref, m : RMap) -> Unit {
+fn r_move(st : RState, r : Int, to : @types.Ref, m : RMap) -> Unit raise {
   if to.is_tmp() {
     ignore(rfree(st, m, to.tmp_val()))
   }
@@ -375,9 +375,9 @@ fn r_move(st : RState, r : Int, to : @types.Ref, m : RMap) -> Unit {
 ///|
 // Process a run of consecutive copy-from-register instructions in rega
 // (C dopm in rega.c). Returns the index of the first copy in the run.
-fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int {
+fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int raise {
   let m0 = rmap_new(st.fn_.ntmp())
-  for z = 0; z < 64; z = z + 1 {
+  for z in 0..<64 {
     m0.t[z] = m.t[z]
     m0.r[z] = m.r[z]
   }
@@ -396,14 +396,14 @@ fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int {
   if idx != 0 && b.ins[idx - 1].op == @types.Call {
     let rr = @types.retregs(b.ins[idx - 1].arg2)
     let def = rr.0 | @types.rglob_mask()
-    for z = 0; z < @types.rsave.length(); z = z + 1 {
+    for z in 0..<@types.rsave.length() {
       if (def & (1UL << @types.rsave[z])) == 0 {
         r_move(st, @types.rsave[z], @types.ref_none(), m)
       }
     }
   }
   st.npm = 0
-  for n = 0; n < m.n; n = n + 1 {
+  for n in 0..<m.n {
     let t = m.t[n]
     let s = st.fn_.tmps[t].slot
     let r1 = m.r[n]
@@ -513,7 +513,7 @@ fn doblk_def(st : RState, cur : RMap, last : Int) -> Int {
 
 ///|
 // Allocate registers for one block (C doblk).
-fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit {
+fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
   // registers live-in are mapped to themselves
   let mut r = b.out_set.unwrap().iter(0)
   while r >= 0 && r < @types.Tmp0 {
@@ -534,7 +534,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit {
     if ins.op == @types.Call {
       let ar = @types.argregs(ins.arg2)
       let rs = ar.0 | @types.rglob_mask()
-      for z = 0; z < @types.rsave.length(); z = z + 1 {
+      for z in 0..<@types.rsave.length() {
         if (rs & (1UL << @types.rsave[z])) == 0 {
           ignore(rfree(st, cur, @types.rsave[z]))
         }
@@ -561,7 +561,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit {
     // collect and prioritize arguments
     let ra : Array[(Int, Int, Int)] = Array::make(4, (0, 0, 0))
     let mut nr = 0
-    for x = 0; x < 2; x = x + 1 {
+    for x in 0..<2 {
       let arg = if x == 0 { st.buf[last].arg1 } else { st.buf[last].arg2 }
       match arg {
         @types.RMem(mi) => {
@@ -582,7 +582,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit {
         _ => ()
       }
     }
-    for z = 0; z < nr; z = z + 1 {
+    for z in 0..<nr {
       let slot = ra[z]
       let v = read_slot(st, slot)
       write_slot(st, slot, ralloc(st, cur, v.tmp_val()))
@@ -606,7 +606,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit {
             )
             st.stmov = st.stmov + 1
             cur.w[rf] = 0
-            for z = 0; z < nr; z = z + 1 {
+            for z in 0..<nr {
               let slot = ra[z]
               if @types.req(read_slot(st, slot), @types.Ref::tmp(rt)) {
                 write_slot(st, slot, @types.Ref::tmp(rf))
@@ -664,7 +664,7 @@ pub fn rega(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = RState::{
     fn_,
     buf: Array::new(),
@@ -682,14 +682,14 @@ pub fn rega(
   let nblk = fn_.rpo.length()
   let end : Array[RMap] = Array::new()
   let beg : Array[RMap] = Array::new()
-  for n = 0; n < nblk; n = n + 1 {
+  for _ in 0..<nblk {
     end.push(rmap_new(fn_.ntmp()))
     beg.push(rmap_new(fn_.ntmp()))
   }
 
   // 1. setup
   st.cur_loop = 2147483647
-  for t = 0; t < fn_.tmps.length(); t = t + 1 {
+  for t in 0..<fn_.tmps.length() {
     fn_.tmps[t].hint.r = if t < @types.Tmp0 { t } else { -1 }
     fn_.tmps[t].hint.w = st.cur_loop
     fn_.tmps[t].visit = -1
@@ -699,9 +699,9 @@ pub fn rega(
   for id in fn_.def_order {
     blk.push(id)
   }
-  @util.qsort_int(blk, 0, nblk - 1, fn(a, b) { carve_cmp(st, a, b) })
+  blk.sort_by(fn(a, b) { carve_cmp(st, a, b) })
   // hint the leading copy chain of the start block
-  for idx = 0; idx < fn_.blks[fn_.start_id].ins.length(); idx = idx + 1 {
+  for idx in 0..<fn_.blks[fn_.start_id].ins.length() {
     let i = fn_.blks[fn_.start_id].ins[idx]
     if i.op != @types.Copy || !isreg(i.arg1) {
       break
@@ -711,7 +711,7 @@ pub fn rega(
   }
 
   // 2. assign registers
-  for z = 0; z < nblk; z = z + 1 {
+  for z in 0..<nblk {
     let b = fn_.blks[blk[z]]
     let n = b.rpo_id
     st.cur_loop = b.loop_depth
@@ -735,10 +735,10 @@ pub fn rega(
       }
       t = b.out_set.unwrap().iter(t + 1)
     }
-    for j = 0; j < x; j = j + 1 {
+    for j in 0..<x {
       ignore(ralloctry(st, cur, rl[j], true))
     }
-    for j = 0; j < x; j = j + 1 {
+    for j in 0..<x {
       ignore(ralloc(st, cur, rl[j]))
     }
     rcopy(end[n], cur)
@@ -786,13 +786,13 @@ pub fn rega(
         rl[r] = -1
       }
     }
-    for j = 0; j < m.n; j = j + 1 {
+    for j in 0..<m.n {
       let t = m.t[j]
       let r = m.r[j]
       if rl[r] != 0 || t < @types.Tmp0 {
         continue
       }
-      for bp = 0; bp < s.npred; bp = bp + 1 {
+      for bp in 0..<s.npred {
         let xx = rfind(end[fn_.blks[s.pred[bp]].rpo_id], t)
         if xx != -1 {
           if rl[r] == 0 || rl[r] == xx {
@@ -804,7 +804,7 @@ pub fn rega(
       }
     }
     st.npm = 0
-    for j = 0; j < m.n; j = j + 1 {
+    for j in 0..<m.n {
       let t = m.t[j]
       let r = m.r[j]
       let xx = rl[r]
@@ -836,10 +836,10 @@ pub fn rega(
   // 4. emit remaining copies in new blocks
   let blist : Array[Int] = Array::new()
   let nblocks0 = fn_.def_order.length()
-  for bi = 0; bi < nblocks0; bi = bi + 1 {
+  for bi in 0..<nblocks0 {
     let b_id = fn_.def_order[bi]
     let b = fn_.blks[b_id]
-    for succ_idx = 0; succ_idx < 2; succ_idx = succ_idx + 1 {
+    for succ_idx in 0..<2 {
       let sp = if succ_idx == 0 { b.jmp.s1 } else { b.jmp.s2 }
       if sp < 0 {
         continue
@@ -910,7 +910,7 @@ pub fn rega(
   if print_dbg {
     let sb = StringBuilder::new()
     sb.write_string("\n> Register mappings:\n")
-    for n = 0; n < nblk; n = n + 1 {
+    for n in 0..<nblk {
       let b = fn_.rpo[n]
       sb.write_string("\t")
       sb.write_string(@util.lpad(fn_.blks[b].name, 10))
@@ -940,7 +940,7 @@ pub fn rega(
 // Dump the register mapping of a block (C mdump).
 fn mdump(st : RState, m : RMap) -> String {
   let sb = StringBuilder::new()
-  for i = 0; i < m.n; i = i + 1 {
+  for i in 0..<m.n {
     if m.t[i] >= @types.Tmp0 {
       sb.write_string(" (")
       sb.write_string(st.fn_.tmps[m.t[i]].name)

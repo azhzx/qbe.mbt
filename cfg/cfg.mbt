@@ -9,7 +9,7 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
   // built yet (unit tests), fall back to all blocks.
   let chain : Array[Int] = if f.def_order.length() == 0 {
     let a : Array[Int] = Array::new()
-    for i = 0; i < f.blks.length(); i = i + 1 {
+    for i in 0..<f.blks.length() {
       a.push(i)
     }
     a
@@ -17,12 +17,12 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
     f.def_order
   }
   // Reset predecessors for all blocks
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].pred.clear()
     f.blks[i].npred = 0
   }
   // Count predecessors for each successor
-  for i = 0; i < chain.length(); i = i + 1 {
+  for i in 0..<chain.length() {
     let b = f.blks[chain[i]]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
@@ -34,7 +34,7 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
     }
   }
   // Add predecessor entries
-  for i = 0; i < chain.length(); i = i + 1 {
+  for i in 0..<chain.length() {
     let b = f.blks[chain[i]]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
@@ -81,7 +81,7 @@ fn rpo_dfs(f : @types.Fn, blk_id : Int, post_order : Array[Int]) -> Unit {
 ///|
 // Remove one phi argument supplied by a deleted predecessor (C edgedel).
 fn remove_phi_arg(f : @types.Fn, succ : Int, dead : Int) -> Unit {
-  for pi = 0; pi < f.blks[succ].phi.length(); pi = pi + 1 {
+  for pi in 0..<f.blks[succ].phi.length() {
     let p = f.blks[succ].phi[pi]
     let mut i = 0
     while i < p.args.length() {
@@ -129,7 +129,7 @@ pub fn edgedel(f : @types.Fn, bs : Int, succ : Int) -> Unit {
 // blocks that the DFS from start cannot reach).
 pub fn fillrpo(f : @types.Fn) -> Unit {
   // Reset rpo_id for all blocks
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].rpo_id = -1
   }
   // DFS post-order from start block
@@ -197,7 +197,7 @@ fn dom_inter(f : @types.Fn, b1 : Int, b2 : Int) -> Int {
 // Corresponds to filldom() in cfg.c
 pub fn filldom(f : @types.Fn) -> Unit {
   // Reset dominator info
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].idom = -1
     f.blks[i].dom_link = -1
     f.blks[i].dom_next = -1
@@ -207,11 +207,11 @@ pub fn filldom(f : @types.Fn) -> Unit {
   while changed {
     changed = false
     // Skip start block (rpo index 0)
-    for n = 1; n < f.rpo.length(); n = n + 1 {
+    for n in 1..<f.rpo.length() {
       let b_id = f.rpo[n]
       let mut d = -1
       // Find first processed predecessor
-      for p = 0; p < f.blks[b_id].npred; p = p + 1 {
+      for p in 0..<f.blks[b_id].npred {
         let pred_id = f.blks[b_id].pred[p]
         // Start block or block with idom already set
         if pred_id == f.start_id || f.blks[pred_id].idom >= 0 {
@@ -244,7 +244,7 @@ pub fn filldom(f : @types.Fn) -> Unit {
 
 ///|
 // Check if b1 strictly dominates b2
-pub fn sdom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+fn sdom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
   if b1 == b2 {
     return false
   }
@@ -256,15 +256,9 @@ pub fn sdom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
 }
 
 ///|
-// Check if b1 dominates b2 (or b1 == b2)
-pub fn dom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
-  b1 == b2 || sdom(f, b1, b2)
-}
-
-///|
 // Add block b to dominance frontier of block a
 fn add_frontier(a : Int, b : Int, f : @types.Fn) -> Unit {
-  for i = 0; i < f.blks[a].fron.length(); i = i + 1 {
+  for i in 0..<f.blks[a].fron.length() {
     if f.blks[a].fron[i] == b {
       return
     }
@@ -278,12 +272,12 @@ fn add_frontier(a : Int, b : Int, f : @types.Fn) -> Unit {
 // Corresponds to fillfron() in cfg.c
 pub fn fillfron(f : @types.Fn) -> Unit {
   // Reset frontiers
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].fron.clear()
   }
   // For each block, walk up the dom tree from block to its idom,
   // adding the successor to the frontier of each block that doesn't dominate it
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     let b = f.blks[i]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
@@ -316,7 +310,7 @@ fn loop_mark(f : @types.Fn, hd : Int, b : Int, fv : (Int, Int) -> Unit) -> Unit 
   }
   f.blks[b].visit = hd_id
   fv(hd, b)
-  for p = 0; p < f.blks[b].npred; p = p + 1 {
+  for p in 0..<f.blks[b].npred {
     loop_mark(f, hd, f.blks[b].pred[p], fv)
   }
 }
@@ -325,12 +319,12 @@ fn loop_mark(f : @types.Fn, hd : Int, b : Int, fv : (Int, Int) -> Unit) -> Unit 
 // Iterate over loops, calling f(hd, b) for every block b in a loop headed by
 // hd (C loopiter in cfg.c). Requires: fillrpo and fillpreds.
 pub fn loopiter(f : @types.Fn, fv : (Int, Int) -> Unit) -> Unit {
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].visit = -1
   }
-  for n = 0; n < f.rpo.length(); n = n + 1 {
+  for n in 0..<f.rpo.length() {
     let b = f.rpo[n]
-    for p = 0; p < f.blks[b].npred; p = p + 1 {
+    for p in 0..<f.blks[b].npred {
       if f.blks[f.blks[b].pred[p]].rpo_id >= n {
         loop_mark(f, b, f.blks[b].pred[p], fv)
       }
@@ -342,7 +336,7 @@ pub fn loopiter(f : @types.Fn, fv : (Int, Int) -> Unit) -> Unit {
 // Fill loop depth information (C fillloop in cfg.c): loop is a multiplicative
 // nesting factor (1, 10, 100, ...). Requires: fillrpo, fillpreds.
 pub fn fillloop(f : @types.Fn) -> Unit {
-  for i = 0; i < f.blks.length(); i = i + 1 {
+  for i in 0..<f.blks.length() {
     f.blks[i].loop_depth = 1
   }
   loopiter(f, fn(hd, b) {

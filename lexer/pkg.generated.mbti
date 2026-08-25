@@ -25,7 +25,6 @@ pub(all) struct Token {
   col : Int
   raw : String
 } derive(@debug.Debug)
-pub fn Token::is_id(Self) -> Bool
 pub fn Token::kind_str(Self) -> String
 pub fn Token::new(TokenKind, Int, Int, String) -> Self
 

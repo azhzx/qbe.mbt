@@ -2,7 +2,7 @@
 // Parse a class specifier: w, l, s, d, or :type
 // Returns (Class, type_index) where type_index is -1 if not a type class
 // and Class::Kx with type_index set if it's a :type reference
-pub fn Parser::parsecls(self : Self) -> (@types.Class, Int) raise {
+fn Parser::parsecls(self : Self) -> (@types.Class, Int) raise {
   let t = self.next()
   match t.kind {
     TTyp => {
@@ -24,7 +24,7 @@ pub fn Parser::parsecls(self : Self) -> (@types.Class, Int) raise {
 
 ///|
 // Find a type by name, returns its index or raises error
-pub fn Parser::findtyp(self : Self, name : String) -> Int raise {
+fn Parser::findtyp(self : Self, name : String) -> Int raise {
   let mut i = self.typs.length() - 1
   while i >= 0 {
     if self.typs[i].name == name {
@@ -37,7 +37,7 @@ pub fn Parser::findtyp(self : Self, name : String) -> Int raise {
 
 ///|
 // Get or create a temporary reference by name
-pub fn Parser::tmpref(self : Self, name : String) -> @types.Ref {
+fn Parser::tmpref(self : Self, name : String) -> @types.Ref raise {
   let fn_ = self.curfn()
   // Look up existing user temporary by name (skip register temps 0..Tmp0-1)
   for i = @types.Tmp0; i < fn_.ntmp(); i = i + 1 {
@@ -53,7 +53,7 @@ pub fn Parser::tmpref(self : Self, name : String) -> @types.Ref {
 ///|
 // Parse a reference (temp, constant, global, int, float)
 // Returns ref_none() if the token is not a valid reference
-pub fn Parser::parseref(self : Self) -> @types.Ref raise {
+fn Parser::parseref(self : Self) -> @types.Ref raise {
   let t = self.next()
   match t.kind {
     TTemp =>

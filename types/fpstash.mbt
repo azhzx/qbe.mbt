@@ -35,7 +35,7 @@ let fp_stash : Array[FpBits] = Array::new()
 
 ///|
 pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int) -> Int {
-  for i = 0; i < fp_stash.length(); i = i + 1 {
+  for i in 0..<fp_stash.length() {
     let e = fp_stash[i]
     if size <= e.size {
       if fp_memcmp(bits0, bits1, e.b0, e.b1, size) {

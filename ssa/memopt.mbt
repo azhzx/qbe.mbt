@@ -20,15 +20,15 @@ fn use_ins(fn_ : @types.Fn, u : @types.Use) -> @types.Ins {
 
 ///|
 // Promote uniform stack slots to temporaries (C memopt)
-pub fn memopt(fn_ : @types.Fn) -> Unit {
+pub fn memopt(fn_ : @types.Fn) -> Unit raise {
   let b = fn_.blks[fn_.start_id]
-  for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+  for ii in 0..<b.ins.length() {
     let i = b.ins[ii]
     if i.op != @types.Alloc4 && i.op != @types.Alloc8 && i.op != @types.Alloc16 {
       continue
     }
     if !i.to.is_tmp() {
-      abort("alloc to not a tmp")
+      raise @util.QbeError::Ice("alloc to not a tmp")
     }
     let alloc_t = i.to.tmp_val()
     if fn_.tmps[alloc_t].ndef != 1 {
@@ -90,7 +90,7 @@ pub fn memopt(fn_ : @types.Fn) -> Unit {
         fn_.tmps[alloc_t].ndef = fn_.tmps[alloc_t].ndef + 1
       } else {
         if k == -1 {
-          abort("slot is read but never stored to")
+          raise @util.QbeError::Ice("slot is read but never stored to")
         }
         // Turn loads into copies/extensions so they can be eliminated later.
         // C mem.c: Oloadsw/Oloaduw fall through to Oload when k != Kl.

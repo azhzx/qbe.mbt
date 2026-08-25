@@ -31,15 +31,19 @@ fn phicheck(fn_ : @types.Fn, p : @types.Phi, b : Int, t : @types.Ref) -> Bool {
 ///|
 // Verify SSA form (C ssacheck)
 // Requires: filluse and SSA construction done
-pub fn ssacheck(fn_ : @types.Fn) -> Unit {
+pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
   for t = @types.Tmp0; t < fn_.ntmp(); t = t + 1 {
     let tmp = fn_.tmps[t]
     if tmp.ndef > 1 {
-      abort("\{tmp.name} violates ssa invariant (defined more than once)")
+      raise @util.QbeError::CompileError(
+        "\{tmp.name} violates ssa invariant (defined more than once)",
+      )
     }
     if tmp.nuse > 0 && tmp.ndef == 0 {
       let bu = fn_.blks[tmp.uses[0].blk_id]
-      abort("\{tmp.name} is used undefined in @\{bu.name}")
+      raise @util.QbeError::CompileError(
+        "\{tmp.name} is used undefined in @\{bu.name}",
+      )
     }
   }
   for id in fn_.def_order {
@@ -53,15 +57,19 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit {
         if u.kind == @types.UPhi {
           let phi = fn_.blks[u.blk_id].phi[u.ins_idx]
           if phicheck(fn_, phi, id, r) {
-            abort("\{tmp.name} violates ssa invariant")
+            raise @util.QbeError::CompileError(
+              "\{tmp.name} violates ssa invariant",
+            )
           }
         } else if bu.id != id && !sdom(fn_, id, bu.id) {
-          abort("\{tmp.name} violates ssa invariant")
+          raise @util.QbeError::CompileError(
+            "\{tmp.name} violates ssa invariant",
+          )
         }
       }
     }
     // Check instructions
-    for ii = 0; ii < b.ins.length(); ii = ii + 1 {
+    for ii in 0..<b.ins.length() {
       let ins = b.ins[ii]
       if !ins.to.is_tmp() {
         continue
@@ -73,14 +81,20 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit {
         if u.kind == @types.UPhi {
           let phi = fn_.blks[u.blk_id].phi[u.ins_idx]
           if phicheck(fn_, phi, id, r) {
-            abort("\{tmp.name} violates ssa invariant")
+            raise @util.QbeError::CompileError(
+              "\{tmp.name} violates ssa invariant",
+            )
           }
         } else if bu.id == id {
           if u.kind == @types.UIns && u.ins_idx <= ii {
-            abort("\{tmp.name} violates ssa invariant")
+            raise @util.QbeError::CompileError(
+              "\{tmp.name} violates ssa invariant",
+            )
           }
         } else if !sdom(fn_, id, bu.id) {
-          abort("\{tmp.name} violates ssa invariant")
+          raise @util.QbeError::CompileError(
+            "\{tmp.name} violates ssa invariant",
+          )
         }
       }
     }

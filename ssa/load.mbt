@@ -350,7 +350,7 @@ fn def(
   })
   st.inum = st.inum + 1
   st.nlog = st.nlog + 1
-  for np = 0; np < npred; np = np + 1 {
+  for np in 0..<npred {
     let bp = st.fn_.blks[b].pred[np]
     let l = il
     if st.fn_.blks[bp].jmp.s2 < 0 &&
@@ -459,7 +459,7 @@ pub fn loadopt(
   let st = LoadState::{ fn_, inum: 0, ilog: Array::new(), nlog: 0 }
   // First pass: for each load, try to replace it
   for b_id in fn_.def_order {
-    for ii = 0; ii < fn_.blks[b_id].ins.length(); ii = ii + 1 {
+    for ii in 0..<fn_.blks[b_id].ins.length() {
       let ins = fn_.blks[b_id].ins[ii]
       if !@types.is_load(ins.op) {
         continue
@@ -487,7 +487,7 @@ pub fn loadopt(
     phi_p: @types.Phi::new(@types.ref_none(), @types.Kw),
   })
   let mut ist = 0
-  for n = 0; n < fn_.rpo.length(); n = n + 1 {
+  for n in 0..<fn_.rpo.length() {
     let b_id = fn_.rpo[n]
     // Prepend new phi nodes to the block
     while st.ilog[ist].bid == b_id && st.ilog[ist].isphi {

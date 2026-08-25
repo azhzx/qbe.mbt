@@ -215,7 +215,7 @@ fn regtoa(reg : Int, sz : Int) -> String {
 }
 
 ///|
-fn getarg(c : Char, i : @types.Ins) -> @types.Ref {
+fn getarg(c : Char, i : @types.Ins) -> @types.Ref raise {
   if c == '0' {
     i.arg1
   } else if c == '1' {
@@ -223,7 +223,7 @@ fn getarg(c : Char, i : @types.Ins) -> @types.Ref {
   } else if c == '=' {
     i.to
   } else {
-    abort("invalid arg letter")
+    raise @util.QbeError::Ice("invalid arg letter")
   }
 }
 
@@ -255,7 +255,7 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
 
 ///|
 // Emit a %0/%1/%= style reference with a size prefix (C Ref label in emitf).
-fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int) -> Unit {
+fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int) -> Unit raise {
   let rf = getarg(c, i)
   if rf.is_tmp() {
     st.sb.write_string("%")
@@ -274,7 +274,7 @@ fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int) -> Unit {
 
 ///|
 // Expand an instruction format string (C emitf).
-fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit {
+fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
   let mut s = fmt
   let ins = i
   if s.length() > 0 && (s[0] == '+' || s[0] == '-') {
@@ -364,17 +364,17 @@ fn emitcopy(
   r1 : @types.Ref,
   r2 : @types.Ref,
   k : @types.Class,
-) -> Unit {
+) -> Unit raise {
   let icp = @types.Ins::new(@types.Copy, k, r1, r2, @types.ref_none())
   emitins(st, icp)
 }
 
 ///|
 // Find the format for an instruction in the omap table (C Table label).
-fn find_omap(op : @types.Op, cls : @types.Class) -> String {
+fn find_omap(op : @types.Op, cls : @types.Class) -> String raise {
   let oi = @types.op_index(op)
   let ccode = @types.kcode(cls)
-  for o = 0; o < omap.length(); o = o + 1 {
+  for o in 0..<omap.length() {
     if omap[o].0 == oi {
       if omap[o].1 == ccode ||
         (omap[o].1 == KI && @types.kbase(cls) == 0) ||
@@ -383,11 +383,11 @@ fn find_omap(op : @types.Op, cls : @types.Class) -> String {
       }
     }
   }
-  abort("no match for instruction")
+  raise @util.QbeError::Ice("no match for instruction")
 }
 
 ///|
-fn emit_omap(st : EmitState, i : @types.Ins) -> Unit {
+fn emit_omap(st : EmitState, i : @types.Ins) -> Unit raise {
   emitf(st, find_omap(i.op, i.cls), i)
 }
 
@@ -402,7 +402,7 @@ fn neg_mask(cls : @types.Class) -> Int64 {
 }
 
 ///|
-fn emitins(st : EmitState, i : @types.Ins) -> Unit {
+fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
   let ins = i
   match ins.op {
     @types.Nop => ()
@@ -471,7 +471,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit {
       } else if ins.arg1.is_tmp() {
         emitf(st, "callq *%L0", ins)
       } else {
-        abort("invalid call argument")
+        raise @util.QbeError::Ice("invalid call argument")
       }
     @types.Salloc => {
       emitf(st, "subq %L0, %%rsp", ins)
@@ -514,7 +514,7 @@ pub fn emitfn(
   gasloc : String,
   gassym : String,
   sb : StringBuilder,
-) -> Unit {
+) -> Unit raise {
   let st = EmitState::{ fn_, interner, gasloc, gassym, sb }
   st.sb.write_string(".text\n")
   if fn_.is_export {
@@ -528,11 +528,11 @@ pub fn emitfn(
   }
   if fn_.is_vararg {
     let mut o = -176
-    for r = 0; r < 6; r = r + 1 {
+    for r in 0..<6 {
       st.sb.write_string("\tmovq %\{rname[@types.rsave[r]][0]}, \{o}(%rbp)\n")
       o = o + 8
     }
-    for n = 0; n < 8; n = n + 1 {
+    for n in 0..<8 {
       st.sb.write_string("\tmovaps %xmm\{n}, \{o}(%rbp)\n")
       o = o + 16
     }
@@ -552,7 +552,7 @@ pub fn emitfn(
   }
 
   let mut lbl = false
-  for idx = 0; idx < fn_.rpo.length(); idx = idx + 1 {
+  for idx in 0..<fn_.rpo.length() {
     let bid = fn_.rpo[idx]
     let b = fn_.blks[bid]
     let next = if idx + 1 < fn_.rpo.length() { fn_.rpo[idx + 1] } else { -1 }
@@ -614,7 +614,7 @@ pub fn emitfn(
             lbl = false
           }
         } else {
-          abort("unhandled jump")
+          raise @util.QbeError::Ice("unhandled jump")
         }
       }
     }
@@ -700,7 +700,7 @@ pub fn gasemitfin(gasloc : String, sb : StringBuilder) -> Unit {
   sb.write_string("/* floating point constants */\n.data\n")
   let sizes = [16, 8, 4]
   for sz in sizes {
-    for i = 0; i < @types.fp_stash_len(); i = i + 1 {
+    for i in 0..<@types.fp_stash_len() {
       let b = @types.fp_stash_at(i)
       if b.size == sz {
         sb.write_string(".align \{sz}\n\{gasloc}fp\{i}:")

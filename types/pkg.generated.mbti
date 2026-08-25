@@ -96,8 +96,6 @@ pub fn class_from_code(Int) -> Class
 
 pub fn cmpneg(Int) -> Int
 
-pub fn con_eq(Con, Con) -> Bool
-
 pub fn con_raw_bits(Con) -> Int64
 
 pub fn dumpts(BSet, Array[Tmp]) -> String
@@ -111,8 +109,6 @@ pub fn fp_stash_len() -> Int
 pub fn gasstash(Int64, Int64, Int) -> Int
 
 pub fn is_arg(Op) -> Bool
-
-pub fn is_callersave(Int) -> Bool
 
 pub fn is_ext(Op) -> Bool
 
@@ -136,8 +132,6 @@ pub fn kwide(Class) -> Int
 
 pub fn load_width_idx(Op) -> Int
 
-pub let nregs_per_class : Array[Int]
-
 pub fn op_from_index(Int) -> Op
 
 pub fn op_from_string(String) -> Op
@@ -152,8 +146,6 @@ pub let rclob : Array[Int]
 
 pub fn ref_none() -> Ref
 
-pub fn regname(Int) -> String
-
 pub fn req(Ref, Ref) -> Bool
 
 pub fn retregs(Ref) -> (UInt64, Int, Int)
@@ -161,8 +153,6 @@ pub fn retregs(Ref) -> (UInt64, Int, Int)
 pub fn rglob_mask() -> UInt64
 
 pub let rsave : Array[Int]
-
-pub fn rtype(Ref) -> Int
 
 pub fn width_code(TmpWidth) -> Int
 

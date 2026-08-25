@@ -51,27 +51,20 @@ pub fn Parser::new(
 }
 
 ///|
-// Construct parser from a lexer
-pub fn Parser::from_lexer(lex : @lexer.Lexer) -> Parser {
-  let tokens = lex.tokenize()
-  Parser::new(tokens, lex.source_file)
-}
-
-///|
 // Get current token (without advancing)
-pub fn Parser::peek(self : Self) -> @lexer.Token {
+fn Parser::peek(self : Self) -> @lexer.Token {
   self.tokens[self.pos]
 }
 
 ///|
 // Get current token kind
-pub fn Parser::peek_kind(self : Self) -> @lexer.TokenKind {
+fn Parser::peek_kind(self : Self) -> @lexer.TokenKind {
   self.tokens[self.pos].kind
 }
 
 ///|
 // Get current token and advance
-pub fn Parser::next(self : Self) -> @lexer.Token {
+fn Parser::next(self : Self) -> @lexer.Token {
   let t = self.tokens[self.pos]
   self.pos = self.pos + 1
   if t.kind == TNl {
@@ -82,14 +75,14 @@ pub fn Parser::next(self : Self) -> @lexer.Token {
 
 ///|
 // Get current token kind and advance
-pub fn Parser::next_kind(self : Self) -> @lexer.TokenKind {
+fn Parser::next_kind(self : Self) -> @lexer.TokenKind {
   let t = self.next()
   t.kind
 }
 
 ///|
 // Advance past newlines, return the first non-newline token kind
-pub fn Parser::next_nl(self : Self) -> @lexer.TokenKind {
+fn Parser::next_nl(self : Self) -> @lexer.TokenKind {
   let mut k = self.next_kind()
   while k == TNl {
     k = self.next_kind()
@@ -98,18 +91,8 @@ pub fn Parser::next_nl(self : Self) -> @lexer.TokenKind {
 }
 
 ///|
-// Advance past newlines, return the first non-newline token
-pub fn Parser::next_nl_tok(self : Self) -> @lexer.Token {
-  let mut t = self.next()
-  while t.kind == TNl {
-    t = self.next()
-  }
-  t
-}
-
-///|
 // Expect a specific token kind, error if not
-pub fn Parser::expect(self : Self, expected : @lexer.TokenKind) -> Unit raise {
+fn Parser::expect(self : Self, expected : @lexer.TokenKind) -> Unit raise {
   let t = self.next()
   if t.kind != expected {
     raise @util.QbeError::ParseError(
@@ -121,48 +104,17 @@ pub fn Parser::expect(self : Self, expected : @lexer.TokenKind) -> Unit raise {
 }
 
 ///|
-// Expect a specific token kind (skip newlines first)
-pub fn Parser::expect_nl(
-  self : Self,
-  expected : @lexer.TokenKind,
-) -> Unit raise {
-  let k = self.next_nl()
-  if k != expected {
-    raise @util.QbeError::ParseError(
-      self.source_file,
-      self.line,
-      "\{expected} expected",
-    )
-  }
-}
-
-///|
-// Get the raw string of the current token (without advancing)
-pub fn Parser::cur_raw(self : Self) -> String {
-  self.tokens[self.pos].raw
-}
-
-///|
 // Report a parse error
-pub fn Parser::error(self : Self, msg : String) -> @util.QbeError {
+fn Parser::error(self : Self, msg : String) -> @util.QbeError {
   @util.QbeError::ParseError(self.source_file, self.line, msg)
 }
 
 ///|
 // Get the current function (must be inside function parsing)
-pub fn Parser::curfn(self : Self) -> @types.Fn {
+fn Parser::curfn(self : Self) -> @types.Fn raise {
   match self.curfn {
     Some(fn_) => fn_
-    None => abort("no current function")
-  }
-}
-
-///|
-// Get mutable current function (must be inside function parsing)
-pub fn Parser::curfn_mut(self : Self) -> @types.Fn {
-  match self.curfn {
-    Some(fn_) => fn_
-    None => abort("no current function")
+    None => raise @util.QbeError::Ice("no current function")
   }
 }
 
