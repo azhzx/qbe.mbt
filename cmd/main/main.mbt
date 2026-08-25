@@ -3,15 +3,21 @@
 // Entry point for the CLI.
 
 ///|
-async fn print_usage() -> Unit {
-  @util.iprint("Usage: qbe [OPTIONS] {file.ssa, -}\n")
-  @util.iprint("\t-h          prints this help\n")
-  @util.iprint("\t-o file     output to file\n")
-  @util.iprint("\t-t <target> generate for a target among:\n")
-  @util.iprint("\t            amd64_sysv\n")
-  @util.iprint("\t-G {e,m}    generate gas (e) or osx (m) asm\n")
-  @util.iprint("\t-d <flags>  dump debug information\n")
-}
+// CLI command specification. @argparse auto-generates -h/--help from this.
+let cmd : @argparse.Command = @argparse.Command(
+  "qbe",
+  about="QBE compiler backend (MoonBit port)",
+  options=[
+    @argparse.OptionArg("output", short='o'),
+    @argparse.OptionArg("target", short='t'),
+    @argparse.OptionArg("gas", short='G'),
+    @argparse.OptionArg("debug", short='d'),
+  ],
+  positionals=[
+    @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
+  ],
+  arg_required_else_help=true,
+)
 
 ///|
 // Debug flags (P/A/I/L/M/N/C/F/S/R as in QBE main.c)
@@ -108,16 +114,16 @@ async fn dbg_function(
 ///|
 // Whether any debug flag is set.
 fn any_dbg(dbg : DbFlags) -> Bool {
-  dbg.p
-  || dbg.a
-  || dbg.i
-  || dbg.l
-  || dbg.m
-  || dbg.n
-  || dbg.c
-  || dbg.f
-  || dbg.s
-  || dbg.r
+  dbg.p ||
+  dbg.a ||
+  dbg.i ||
+  dbg.l ||
+  dbg.m ||
+  dbg.n ||
+  dbg.c ||
+  dbg.f ||
+  dbg.s ||
+  dbg.r
 }
 
 ///|
@@ -255,72 +261,54 @@ async fn process_file(
 
 ///|
 async fn main {
-  let args = @env.args()
-  if args.length() < 2 {
-    print_usage()
-    return
+  let parsed = cmd.parse() catch {
+    e => {
+      @util.eprint("\{e}\n")
+      return
+    }
   }
-  // Parse arguments
-  let files : Array[String] = Array::new()
   let dbg = DbFlags::new()
-  let mut out_file = ""
+  match parsed.values.get("debug") {
+    Some(flags) =>
+      for f in flags {
+        for j in 0..<f.length() {
+          set_dbg(dbg, f[j])
+        }
+      }
+    None => ()
+  }
+  let out_file = match parsed.values.get("output") {
+    Some(arr) if arr.length() > 0 => arr[0]
+    _ => ""
+  }
   let mut gasloc = ".L"
   let mut gassym = ""
-  let mut i = 1
-  while i < args.length() {
-    let arg = args[i]
-    match arg {
-      "-h" => print_usage()
-      _ if arg.length() > 2 && arg[:2].to_owned() == "-d" => {
-        let flags = arg[2:].to_owned()
-        for j = 0; j < flags.length(); j = j + 1 {
-          set_dbg(dbg, flags[j])
+  match parsed.values.get("gas") {
+    Some(arr) if arr.length() > 0 =>
+      match arr[0] {
+        "e" => ()
+        "m" => {
+          gasloc = "L"
+          gassym = "_"
+        }
+        g => {
+          @util.eprint("unknown gas flavor '\{g}'\n")
+          return
         }
       }
-      "-d" => {
-        i = i + 1
-        if i < args.length() {
-          let flags = args[i]
-          for j = 0; j < flags.length(); j = j + 1 {
-            set_dbg(dbg, flags[j])
-          }
-        }
+    _ => ()
+  }
+  match parsed.values.get("target") {
+    Some(arr) if arr.length() > 0 =>
+      if arr[0] != "amd64_sysv" {
+        @util.eprint("unknown target '\{arr[0]}'\n")
+        return
       }
-      "-o" => {
-        i = i + 1
-        if i < args.length() {
-          out_file = args[i]
-        }
-      }
-      "-t" => {
-        i = i + 1
-        if i < args.length() {
-          let t = args[i]
-          if t != "amd64_sysv" {
-            @util.eprint("unknown target '\{t}'\n")
-            return
-          }
-        }
-      }
-      "-G" => {
-        i = i + 1
-        if i < args.length() {
-          let g = args[i]
-          if g == "e" {
-            gasloc = ".L"
-            gassym = ""
-          } else if g == "m" {
-            gasloc = "L"
-            gassym = "_"
-          } else {
-            @util.eprint("unknown gas flavor '\{g}'\n")
-            return
-          }
-        }
-      }
-      _ => files.push(arg)
-    }
-    i = i + 1
+    _ => ()
+  }
+  let files = match parsed.values.get("file") {
+    Some(arr) => arr
+    None => Array::new()
   }
   if files.length() == 0 {
     @util.eprint("qbe: no input files\n")

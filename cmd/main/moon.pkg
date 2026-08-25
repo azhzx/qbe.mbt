@@ -12,6 +12,7 @@ import {
   "azhzx/qbe/emit",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
+  "moonbitlang/core/argparse",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
   "moonbitlang/async",
