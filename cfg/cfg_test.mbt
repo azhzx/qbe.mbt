@@ -5,8 +5,9 @@
 // Helper to create a simple function with blocks
 fn make_test_fn(name : String, nblk : Int) -> @types.Fn {
   let f = @types.Fn::new(name)
-  for i = 0; i < nblk; i = i + 1 {
-    let _ = f.add_blk("b\{i}")
+  for i in 0..<nblk {
+    let id = f.add_blk("b\{i}")
+    f.def_order.push(id)
   }
   f
 }
@@ -104,4 +105,52 @@ test "fillloop - simple loop" {
   fillloop(f)
   // b1 is in a loop (has back edge from itself)
   assert_true(f.blks[1].loop_depth >= 1)
+}
+
+///|
+test "fillfron - diamond" {
+  // b0 -> b1, b2 -> b3
+  let f = make_test_fn("test", 4)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  filldom(f)
+  fillfron(f)
+  // The join block b3 is in the dominance frontier of both branches.
+  assert_true(f.blks[1].fron.contains(3))
+  assert_true(f.blks[2].fron.contains(3))
+  assert_true(f.blks[0].fron.length() == 0)
+  assert_true(f.blks[3].fron.length() == 0)
+}
+
+///|
+test "simpljmp - merges empty jump blocks" {
+  // b0 -> b1 (empty, jmp) -> b2
+  let f = make_test_fn("test", 3)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  simpljmp(f)
+  // b1 is an empty jmp-only block, so b0 now jumps straight to b2.
+  assert_true(f.blks[0].jmp.s1 == 2)
+}
+
+///|
+test "simpljmp - conditional with identical targets becomes jmp" {
+  let f = make_test_fn("test", 3)
+  f.start_id = 0
+  f.blks[0].jmp = @types.Jump::full(@types.Jjfieq, @types.ref_none(), 1, 1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  simpljmp(f)
+  // A conditional jump with both targets equal becomes an unconditional jump.
+  assert_true(f.blks[0].jmp.kind == @types.Jjmp)
 }

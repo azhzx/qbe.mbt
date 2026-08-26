@@ -1,1 +1,15 @@
-
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/parser",
+  "azhzx/qbe/cfg",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/live",
+  "azhzx/qbe/fold",
+  "azhzx/qbe/abi",
+  "azhzx/qbe/isel",
+  "azhzx/qbe/spill",
+  "azhzx/qbe/rega",
+  "azhzx/qbe/emit",
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
