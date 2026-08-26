@@ -71,8 +71,8 @@ fn iins(
     bid: l.blk,
     off: l.off,
     ins,
-    phi_m: Slice::{ r: @types.ref_none(), sz: 0, cls: @types.Kw },
-    phi_p: @types.Phi::new(@types.ref_none(), @types.Kw),
+    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw },
+    phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   st.inum = st.inum + 1
   st.nlog = st.nlog + 1
@@ -94,14 +94,14 @@ fn cast(
   if cls0 == cls || (cls == @types.Kw && cls0 == @types.Kl) {
     return r
   }
-  if @types.kwide(cls) == @types.kwide(cls0) {
-    iins(st, cls, @types.Cast, r, @types.ref_none(), l)
+  if cls.wide() == cls0.wide() {
+    iins(st, cls, @types.Cast, r, @types.Ref::none(), l)
   } else {
     let mut r1 = r
     if cls0 == @types.Ks {
-      r1 = iins(st, @types.Kw, @types.Cast, r1, @types.ref_none(), l)
+      r1 = iins(st, @types.Kw, @types.Cast, r1, @types.Ref::none(), l)
     }
-    iins(st, @types.Kl, @types.Extuw, r1, @types.ref_none(), l)
+    iins(st, @types.Kl, @types.Extuw, r1, @types.Ref::none(), l)
   }
 }
 
@@ -155,7 +155,7 @@ fn load(st : LoadState, sl : Slice, msk : UInt64, l : Loc) -> @types.Ref {
       _ => ()
     }
   }
-  r = iins(st, cls, ld, r, @types.ref_none(), l)
+  r = iins(st, cls, ld, r, @types.Ref::none(), l)
   if !all {
     r = mask(st, r, cls, msk, l)
   }
@@ -170,7 +170,7 @@ fn killsl(st : LoadState, r : @types.Ref, sl : Slice) -> Bool {
   }
   let a = st.fn_.tmps[sl.r.tmp_val()].alias_info
   match a.kind {
-    @types.ALoc | @types.AEsc | @types.AUnk => @types.req(a.base, r)
+    @types.ALoc | @types.AEsc | @types.AUnk => a.base.eq(r)
     @types.ACon | @types.ASym => false
     _ => false
   }
@@ -191,7 +191,7 @@ fn load_abort(
   st.ilog.truncate(oldl)
   st.nlog = oldl
   if il.kind != LocType::LLoad {
-    @types.ref_none()
+    @types.Ref::none()
   } else {
     load(st, sl, msk, il)
   }
@@ -224,14 +224,14 @@ fn def(
     }
     let mut ld = false
     let mut sz = 0
-    let mut r1 = @types.ref_none()
-    let mut r = @types.ref_none()
-    if @types.is_load(ins.op) {
+    let mut r1 = @types.Ref::none()
+    let mut r = @types.Ref::none()
+    if ins.op.is_load() {
       ld = true
       sz = loadsz(ins)
       r1 = ins.arg1
       r = ins.to
-    } else if @types.is_store(ins.op) {
+    } else if ins.op.is_store() {
       sz = storesz(ins)
       r1 = ins.arg2
       r = ins.arg1
@@ -295,7 +295,7 @@ fn def(
   for ist in st.ilog {
     if ist.isphi &&
       ist.bid == b &&
-      @types.req(ist.phi_m.r, sl.r) &&
+      ist.phi_m.r.eq(sl.r) &&
       ist.phi_m.sz == sl.sz {
       let mut r = ist.phi_p.to
       if msk != msks {
@@ -342,8 +342,8 @@ fn def(
     ins: @types.Ins::new_void(
       @types.Nop,
       @types.Kw,
-      @types.ref_none(),
-      @types.ref_none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
     ),
     phi_m: sl,
     phi_p: p,
@@ -461,7 +461,7 @@ pub fn loadopt(
   for b_id in fn_.def_order {
     for ii in 0..<fn_.blks[b_id].ins.length() {
       let ins = fn_.blks[b_id].ins[ii]
-      if !@types.is_load(ins.op) {
+      if !ins.op.is_load() {
         continue
       }
       let sz = loadsz(ins)
@@ -480,11 +480,11 @@ pub fn loadopt(
     ins: @types.Ins::new_void(
       @types.Nop,
       @types.Kw,
-      @types.ref_none(),
-      @types.ref_none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
     ),
-    phi_m: Slice::{ r: @types.ref_none(), sz: 0, cls: @types.Kw },
-    phi_p: @types.Phi::new(@types.ref_none(), @types.Kw),
+    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw },
+    phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   let mut ist = 0
   for n in 0..<fn_.rpo.length() {
@@ -506,12 +506,10 @@ pub fn loadopt(
         }
         let ins = fn_.blks[b_id].ins[ni]
         ni = ni + 1
-        if @types.is_load(ins.op) && !ins.arg2.is_none() {
+        if ins.op.is_load() && !ins.arg2.is_none() {
           // The load was replaced: turn it into a copy/extension
-          let ext = @types.op_from_index(
-            @types.op_index(@types.Extsb) +
-            @types.op_index(ins.op) -
-            @types.op_index(@types.Loadsb),
+          let ext = @types.Op::from_index(
+            ins.op.index() - @types.Loadsb.index(),
           )
           match ins.op {
             @types.Loadsb | @types.Loadub | @types.Loadsh | @types.Loaduh =>
@@ -526,7 +524,7 @@ pub fn loadopt(
             _ => ()
           }
           ins.arg1 = ins.arg2
-          ins.arg2 = @types.ref_none()
+          ins.arg2 = @types.Ref::none()
         }
         ib.push(ins)
       }

@@ -7,9 +7,9 @@
 ///|
 // Map a load op to its corresponding extension op (loadsb->extsb, ...)
 fn load_to_ext(op : @types.Op) -> @types.Op {
-  let i = @types.op_index(op)
-  let base = @types.op_index(@types.Extsb) + i - @types.op_index(@types.Loadsb)
-  @types.op_from_index(base)
+  let i = op.index()
+  let base = @types.Extsb.index() + i - @types.Loadsb.index()
+  @types.Op::from_index(base)
 }
 
 ///|
@@ -43,7 +43,7 @@ pub fn memopt(fn_ : @types.Fn) -> Unit raise {
         break
       }
       let l = use_ins(fn_, u)
-      if @types.is_load(l.op) {
+      if l.op.is_load() {
         if s == -1 || s == loadsz(l) {
           s = loadsz(l)
           continue
@@ -51,9 +51,9 @@ pub fn memopt(fn_ : @types.Fn) -> Unit raise {
         usable = false
         break
       }
-      if @types.is_store(l.op) {
-        if @types.req(i.to, l.arg2) &&
-          !@types.req(i.to, l.arg1) &&
+      if l.op.is_store() {
+        if i.to.eq(l.arg2) &&
+          !i.to.eq(l.arg1) &&
           (s == -1 || s == storesz(l)) &&
           (k == -1 || k == @types.op_info(l.op).a0[0]) {
           s = storesz(l)
@@ -73,19 +73,19 @@ pub fn memopt(fn_ : @types.Fn) -> Unit raise {
     b.ins[ii] = @types.Ins::new_void(
       @types.Nop,
       @types.Kw,
-      @types.ref_none(),
-      @types.ref_none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
     )
     fn_.tmps[alloc_t].ndef = fn_.tmps[alloc_t].ndef - 1
     for u in fn_.tmps[alloc_t].uses {
       let l = use_ins(fn_, u)
-      if @types.is_store(l.op) {
+      if l.op.is_store() {
         // store value, addr -> copy addr, value
         let ins = fn_.blks[u.blk_id].ins[u.ins_idx]
-        ins.cls = @types.class_from_code(k)
+        ins.cls = @types.Class::from_code(k)
         ins.op = @types.Copy
         ins.to = l.arg2
-        ins.arg2 = @types.ref_none()
+        ins.arg2 = @types.Ref::none()
         fn_.tmps[alloc_t].nuse = fn_.tmps[alloc_t].nuse - 1
         fn_.tmps[alloc_t].ndef = fn_.tmps[alloc_t].ndef + 1
       } else {

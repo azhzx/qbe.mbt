@@ -36,7 +36,7 @@ fn s_emiti(st : SpillState, i : @types.Ins) -> Unit {
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : SpillState) -> Array[@types.Ins] {
   let r : Array[@types.Ins] = Array::new()
-  for k = st.buf.length() - 1; k >= 0; k = k - 1 {
+  for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
   r
@@ -57,7 +57,7 @@ fn is_regcpy(i : @types.Ins) -> Bool {
 fn sp_slot(st : SpillState, t : Int) -> @types.Ref {
   let mut s = st.fn_.tmps[t].slot
   if s == -1 {
-    if @types.kwide(st.fn_.tmps[t].cls) == 1 {
+    if st.fn_.tmps[t].cls.wide() == 1 {
       s = st.slot8
       if st.slot4 == st.slot8 {
         st.slot4 = st.slot4 + 2
@@ -110,12 +110,10 @@ fn limit(st : SpillState, b : @types.BSet, k : Int, f : @types.BSet?) -> Unit {
     return
   }
   let tarr : Array[Int] = Array::new()
-  let mut t = b.iter(0)
-  while t >= 0 {
+  b.each(t => {
     b.clr(t)
     tarr.push(t)
-    t = b.iter(t + 1)
-  }
+  })
   if f is None {
     tarr.sort_by(fn(pa, pb) { tcmp0(st, pa, pb) })
   } else {
@@ -153,18 +151,15 @@ fn limit2(
 
 ///|
 fn sethint(st : SpillState, u : @types.BSet, r : UInt64) -> Unit {
-  let mut t = u.iter(@types.Tmp0)
-  while t >= 0 {
+  u.each_from(@types.Tmp0, t => {
     let pc = @types.phicls(t, st.fn_.tmps)
     st.fn_.tmps[pc].hint.m = st.fn_.tmps[pc].hint.m | r
-    t = u.iter(t + 1)
-  }
+  })
 }
 
 ///|
 fn reloads(st : SpillState, u : @types.BSet, v : @types.BSet) -> Unit {
-  let mut t = u.iter(@types.Tmp0)
-  while t >= 0 {
+  u.each_from(@types.Tmp0, t => {
     if !v.has(t) {
       s_emit(
         st,
@@ -172,21 +167,19 @@ fn reloads(st : SpillState, u : @types.BSet, v : @types.BSet) -> Unit {
         st.fn_.tmps[t].cls,
         @types.Ref::tmp(t),
         sp_slot(st, t),
-        @types.ref_none(),
+        @types.Ref::none(),
       )
     }
-    t = u.iter(t + 1)
-  }
+  })
 }
 
 ///|
 fn store(st : SpillState, r : @types.Ref, s : Int) -> Unit {
   if s != -1 {
-    let op = @types.op_from_index(
-      @types.op_index(@types.Storew) +
-      @types.kcode(st.fn_.tmps[r.tmp_val()].cls),
+    let op = @types.Op::from_index(
+      @types.Storew.index() + st.fn_.tmps[r.tmp_val()].cls.code(),
     )
-    s_emit(st, op, @types.Kw, @types.ref_none(), r, @types.Ref::slot(s))
+    s_emit(st, op, @types.Kw, @types.Ref::none(), r, @types.Ref::slot(s))
   }
 }
 
@@ -216,13 +209,13 @@ fn dopm(st : SpillState, b : @types.Blk, i : Int, v : @types.BSet) -> Int {
   u.copy_from(v)
   let mut r : UInt64 = 0
   if idx != 0 && b.ins[idx - 1].op == @types.Call {
-    let rr = @types.retregs(b.ins[idx - 1].arg2)
+    let rr = b.ins[idx - 1].arg2.retregs()
     v.bits[0] = v.bits[0] & rr.0.lnot()
     limit2(st, v, 9, 15, None)
     for n in 0..<@types.rsave.length() {
       r = r | (1UL << @types.rsave[n])
     }
-    let ar = @types.argregs(b.ins[idx - 1].arg2)
+    let ar = b.ins[idx - 1].arg2.argregs()
     v.bits[0] = v.bits[0] | ar.0
   } else {
     limit2(st, v, 0, 0, None)
@@ -264,12 +257,12 @@ pub fn spill(
       k = 1
     }
     if t >= @types.Tmp0 {
-      k = @types.kbase(fn_.tmps[t].cls)
+      k = fn_.tmps[t].cls.base()
     }
     st.mask[k].set(t)
   }
 
-  for n = fn_.rpo.length() - 1; n >= 0; n = n - 1 {
+  for n in (fn_.rpo.length() - 1)>=..0 {
     let bid = fn_.rpo[n]
     let b = fn_.blks[bid]
     // 1. find temporaries in registers at the end of the block (v)
@@ -326,17 +319,13 @@ pub fn spill(
     } else {
       v.copy_from(b.out_set.unwrap())
       if b.jmp.arg.call_val() >= 0 {
-        v.bits[0] = v.bits[0] | @types.retregs(b.jmp.arg).0
+        v.bits[0] = v.bits[0] | b.jmp.arg.retregs().0
       }
     }
     // spill temps live-out but not in registers at the border
-    let mut t = b.out_set.unwrap().iter(@types.Tmp0)
-    while t >= 0 {
-      if !v.has(t) {
-        ignore(sp_slot(st, t))
-      }
-      t = b.out_set.unwrap().iter(t + 1)
-    }
+    b.out_set
+    .unwrap()
+    .each_from(@types.Tmp0, t => if !v.has(t) { ignore(sp_slot(st, t)) })
     b.out_set.unwrap().copy_from(v)
 
     // 2. process the block instructions

@@ -21,7 +21,7 @@ fn update(
   visited : Array[Bool],
 ) -> Unit {
   let rv = r.tmp_val()
-  if !@types.req(cp[rv], rcp) {
+  if !cp[rv].eq(rcp) {
     cp[rv] = rcp
     if !visited[rv] {
       visited[rv] = true
@@ -36,7 +36,7 @@ fn iscopy(i : @types.Ins, r : @types.Ref, fn_ : @types.Fn) -> Bool {
   if i.op == @types.Copy {
     return true
   }
-  if !@types.is_ext(i.op) || !r.is_tmp() {
+  if !i.op.is_ext() || !r.is_tmp() {
     return false
   }
   if (i.op == @types.Extsw || i.op == @types.Extuw) && i.cls == @types.Kw {
@@ -47,8 +47,8 @@ fn iscopy(i : @types.Ins, r : @types.Ref, fn_ : @types.Fn) -> Bool {
     return false
   }
   // width-based extension copy check
-  let b = extcpy_width(@types.width_code(t.width))
-  let w = @types.ext_width_idx(i.op)
+  let b = extcpy_width(t.width.code())
+  let w = i.op.ext_width_idx()
   (b & (1 << w)) != 0
 }
 
@@ -74,13 +74,13 @@ fn visitphi(
   wl : Array[Int],
   visited : Array[Bool],
 ) -> Unit {
-  let mut r = @types.ref_none()
+  let mut r = @types.Ref::none()
   for a in p.args {
     let r1 = copyof(a.value, cp)
-    if r1.is_none() || @types.req(r1, p.to) {
+    if r1.is_none() || r1.eq(p.to) {
       continue
     }
-    if r.is_none() || @types.req(r, r1) {
+    if r.is_none() || r.eq(r1) {
       r = r1
     } else {
       r = p.to
@@ -116,7 +116,7 @@ pub fn copy(
   all_typs : Array[@types.Typ],
 ) -> String {
   let nt = fn_.ntmp()
-  let cp : Array[@types.Ref] = Array::make(nt, @types.ref_none())
+  let cp : Array[@types.Ref] = Array::make(nt, @types.Ref::none())
   let wl : Array[Int] = Array::new()
   let visited : Array[Bool] = Array::make(nt, false)
   // Initial visit
@@ -158,7 +158,7 @@ pub fn copy(
     while pi < b.phi.length() {
       let p = b.phi[pi]
       let r = cp[p.to.tmp_val()]
-      if !@types.req(r, p.to) {
+      if !r.eq(p.to) {
         let _ = b.phi.remove(pi)
         continue
       }
@@ -173,12 +173,12 @@ pub fn copy(
     for ii in 0..<b.ins.length() {
       let i = b.ins[ii]
       let r = copyof(i.to, cp)
-      if !@types.req(r, i.to) {
+      if !r.eq(i.to) {
         b.ins[ii] = @types.Ins::new_void(
           @types.Nop,
           @types.Kw,
-          @types.ref_none(),
-          @types.ref_none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
         )
         continue
       }
@@ -195,8 +195,8 @@ pub fn copy(
   if print_dbg {
     let sb = StringBuilder::new()
     sb.write_string("\n> Copy information:")
-    for t = @types.Tmp0; t < nt; t = t + 1 {
-      if @types.req(cp[t], @types.ref_none()) {
+    for t in @types.Tmp0..<nt {
+      if cp[t].eq(@types.Ref::none()) {
         sb.write_char('\n')
         let name = fn_.tmps[t].name
         let pad = " ".repeat(
@@ -209,7 +209,7 @@ pub fn copy(
         sb.write_string(pad)
         sb.write_string(name)
         sb.write_string(" not seen!")
-      } else if !@types.req(cp[t], @types.Ref::tmp(t)) {
+      } else if !cp[t].eq(@types.Ref::tmp(t)) {
         sb.write_char('\n')
         let name = fn_.tmps[t].name
         let pad = " ".repeat(

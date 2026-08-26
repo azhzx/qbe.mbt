@@ -16,9 +16,9 @@ fn make_test_fn(name : String, nblk : Int) -> @types.Fn {
 test "fillpreds - linear blocks" {
   // b0 -> b1 -> b2
   let f = make_test_fn("test", 3)
-  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillpreds(f)
   assert_true(f.blks[0].npred == 0)
   assert_true(f.blks[1].npred == 1)
@@ -31,10 +31,10 @@ test "fillpreds - branch block" {
   // b1 -> b3
   // b2 -> b3
   let f = make_test_fn("test", 4)
-  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillpreds(f)
   assert_true(f.blks[0].npred == 0)
   assert_true(f.blks[1].npred == 1)
@@ -46,9 +46,9 @@ test "fillpreds - branch block" {
 test "fillrpo - linear blocks" {
   let f = make_test_fn("test", 3)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   // RPO should be [0, 1, 2]
   assert_true(f.rpo.length() == 3)
@@ -62,10 +62,10 @@ test "fillrpo - branch and merge" {
   // b0 -> b1, b2 -> b3
   let f = make_test_fn("test", 4)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   // Start should be first
   assert_true(f.rpo[0] == 0)
@@ -77,10 +77,10 @@ test "filldom - simple diamond" {
   // b0 -> b1, b2 -> b3
   let f = make_test_fn("test", 4)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)
   filldom(f)
@@ -97,9 +97,9 @@ test "fillloop - simple loop" {
   //         ^----'
   let f = make_test_fn("test", 3)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 2, 1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 2, 1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)
   fillloop(f)
@@ -112,10 +112,10 @@ test "fillfron - diamond" {
   // b0 -> b1, b2 -> b3
   let f = make_test_fn("test", 4)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.ref_none(), 1, 2)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 3, -1)
-  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)
   filldom(f)
@@ -132,9 +132,9 @@ test "simpljmp - merges empty jump blocks" {
   // b0 -> b1 (empty, jmp) -> b2
   let f = make_test_fn("test", 3)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 1, -1)
-  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.ref_none(), 2, -1)
-  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)
   simpljmp(f)
@@ -146,8 +146,8 @@ test "simpljmp - merges empty jump blocks" {
 test "simpljmp - conditional with identical targets becomes jmp" {
   let f = make_test_fn("test", 3)
   f.start_id = 0
-  f.blks[0].jmp = @types.Jump::full(@types.Jjfieq, @types.ref_none(), 1, 1)
-  f.blks[1].jmp = @types.Jump::full(@types.Jret0, @types.ref_none(), -1, -1)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjfieq, @types.Ref::none(), 1, 1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)
   simpljmp(f)

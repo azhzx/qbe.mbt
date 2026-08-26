@@ -17,12 +17,12 @@ fn selcmp(
     arg1 = arg0
     arg0 = t
   }
-  emit(st, @types.Xcmp, k, @types.ref_none(), arg1, arg0)
+  emit(st, @types.Xcmp, k, @types.Ref::none(), arg1, arg0)
   let idx = st.buf.length() - 1
   if arg0.is_con() {
     let r = isel_newtmp(st, k)
     st.buf[idx].arg1 = r
-    emit(st, @types.Copy, k, r, arg0, @types.ref_none())
+    emit(st, @types.Copy, k, r, arg0, @types.Ref::none())
   }
   st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xcmp))
   st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(@types.Xcmp))
@@ -53,11 +53,11 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
   let k = i.cls
   match i.op {
     @types.Div | @types.Rem | @types.Udiv | @types.Urem =>
-      if @types.kbase(k) == 1 {
+      if k.base() == 1 {
         sel_emit(st, i)
       } else {
-        let mut r0 = @types.ref_none()
-        let mut r1 = @types.ref_none()
+        let mut r0 = @types.Ref::none()
+        let mut r1 = @types.Ref::none()
         if i.op == @types.Div || i.op == @types.Udiv {
           r0 = @types.Ref::tmp(@types.RAX)
           r1 = @types.Ref::tmp(@types.RDX)
@@ -65,32 +65,32 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           r0 = @types.Ref::tmp(@types.RDX)
           r1 = @types.Ref::tmp(@types.RAX)
         }
-        emit(st, @types.Copy, k, i.to, r0, @types.ref_none())
-        emit(st, @types.Copy, k, @types.ref_none(), r1, @types.ref_none())
+        emit(st, @types.Copy, k, i.to, r0, @types.Ref::none())
+        emit(st, @types.Copy, k, @types.Ref::none(), r1, @types.Ref::none())
         if i.arg2.is_con() {
           r0 = isel_newtmp(st, k)
         } else {
           r0 = i.arg2
         }
         if i.op == @types.Div || i.op == @types.Rem {
-          emit(st, @types.Xidiv, k, @types.ref_none(), r0, @types.ref_none())
+          emit(st, @types.Xidiv, k, @types.Ref::none(), r0, @types.Ref::none())
           emit(
             st,
             @types.Sign,
             k,
             @types.Ref::tmp(@types.RDX),
             @types.Ref::tmp(@types.RAX),
-            @types.ref_none(),
+            @types.Ref::none(),
           )
         } else {
-          emit(st, @types.Xdiv, k, @types.ref_none(), r0, @types.ref_none())
+          emit(st, @types.Xdiv, k, @types.Ref::none(), r0, @types.Ref::none())
           emit(
             st,
             @types.Copy,
             k,
             @types.Ref::tmp(@types.RDX),
             @types.Ref::con(st.fn_.get_con(0L)),
-            @types.ref_none(),
+            @types.Ref::none(),
           )
         }
         emit(
@@ -99,12 +99,12 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           k,
           @types.Ref::tmp(@types.RAX),
           i.arg1,
-          @types.ref_none(),
+          @types.Ref::none(),
         )
         let idx = st.buf.length() - 1
         st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Copy))
         if i.arg2.is_con() {
-          emit(st, @types.Copy, k, r0, i.arg2, @types.ref_none())
+          emit(st, @types.Copy, k, r0, i.arg2, @types.Ref::none())
         }
       }
     @types.Sar | @types.Shr | @types.Shl =>
@@ -118,9 +118,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           st,
           @types.Copy,
           @types.Kw,
-          @types.ref_none(),
+          @types.Ref::none(),
           @types.Ref::tmp(@types.RCX),
-          @types.ref_none(),
+          @types.Ref::none(),
         )
         emiti(st, i1)
         emit(
@@ -129,7 +129,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Kw,
           @types.Ref::tmp(@types.RCX),
           r0,
-          @types.ref_none(),
+          @types.Ref::none(),
         )
       }
     @types.Nop => ()
@@ -179,12 +179,12 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Kl,
           i.to,
           @types.Ref::con(st.fn_.get_con(sz)),
-          @types.ref_none(),
+          @types.Ref::none(),
         )
       } else {
         let r0 = isel_newtmp(st, @types.Kl)
         let r1 = isel_newtmp(st, @types.Kl)
-        emit(st, @types.Salloc, @types.Kl, i.to, r0, @types.ref_none())
+        emit(st, @types.Salloc, @types.Kl, i.to, r0, @types.Ref::none())
         emit(
           st,
           @types.And,
@@ -204,16 +204,16 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
       }
     }
     _ =>
-      if @types.is_ext(i.op) {
+      if i.op.is_ext() {
         sel_emit(st, i)
-      } else if @types.is_load(i.op) {
+      } else if i.op.is_load() {
         let i1 = i
         i1.arg1 = seladdr(st, i1.arg1)
         sel_emit(st, i1)
       } else {
         let (is_cmp, kc, x) = iscmp(i.op)
         if is_cmp {
-          emit(st, flag_op(x), k, i.to, @types.ref_none(), @types.ref_none())
+          emit(st, flag_op(x), k, i.to, @types.Ref::none(), @types.Ref::none())
           let idx = st.buf.length() - 1
           if selcmp(st, i.arg1, i.arg2, kc) {
             st.buf[idx].op = flag_op(cmpop(x))
@@ -254,7 +254,7 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
   }
   let r = b.jmp.arg
   let t = r.tmp_val()
-  b.jmp.arg = @types.ref_none()
+  b.jmp.arg = @types.Ref::none()
   if b.jmp.s1 == b.jmp.s2 {
     chuse(st, r, -1)
     b.jmp.kind = @types.Jjmp
@@ -262,7 +262,7 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
     return
   }
   let fi = flagi(b.ins, b.ins.length())
-  if fi < 0 || !@types.req(b.ins[fi].to, r) {
+  if fi < 0 || !b.ins[fi].to.eq(r) {
     let c0 = @types.Ref::con(st.fn_.get_con(0L))
     ignore(selcmp(st, r, c0, @types.Kw))
     b.jmp.kind = jjf_op(1)
@@ -278,9 +278,9 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
         b.ins[fi] = @types.Ins::new(
           @types.Nop,
           @types.Kx,
-          @types.ref_none(),
-          @types.ref_none(),
-          @types.ref_none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
         )
         b.jmp.kind = jjf_op(c1)
       } else {
@@ -292,7 +292,7 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
       (b.ins[fi].arg1.is_tmp() || b.ins[fi].arg2.is_tmp()) {
       let ins = b.ins[fi]
       ins.op = @types.Xtest
-      ins.to = @types.ref_none()
+      ins.to = @types.Ref::none()
       if ins.arg2.is_con() {
         let rr = ins.arg2
         ins.arg2 = ins.arg1
@@ -306,9 +306,9 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
           st,
           @types.Copy,
           @types.Kw,
-          @types.ref_none(),
+          @types.Ref::none(),
           r,
-          @types.ref_none(),
+          @types.Ref::none(),
         )
       }
       b.jmp.kind = jjf_op(1)
@@ -337,7 +337,7 @@ pub fn isel(
   let sizes = [4, 8, 16]
   for s in 0..<3 {
     let n = sizes[s]
-    let op = @types.op_from_index(@types.op_index(@types.Alloc4) + s)
+    let op = @types.Op::from_index(@types.Alloc4.index() + s)
     for idx in 0..<start.ins.length() {
       let i = start.ins[idx]
       if i.op == op {
@@ -352,9 +352,9 @@ pub fn isel(
         start.ins[idx] = @types.Ins::new(
           @types.Nop,
           @types.Kx,
-          @types.ref_none(),
-          @types.ref_none(),
-          @types.ref_none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
         )
       }
     }
@@ -415,7 +415,7 @@ pub fn isel(
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : IselState) -> Array[@types.Ins] {
   let r : Array[@types.Ins] = Array::new()
-  for k = st.buf.length() - 1; k >= 0; k = k - 1 {
+  for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
   r

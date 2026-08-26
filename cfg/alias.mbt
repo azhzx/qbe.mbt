@@ -17,7 +17,7 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
   match r {
     @types.RTmp(v) => {
       let a = fn_.tmps[v].alias_info
-      if @types.astack(a.kind) {
+      if a.kind.astack() {
         // The underlying slot's type reflects escaping.
         let slot = fn_.tmps[a.slot].alias_info
         @types.AliasInfo::{
@@ -42,7 +42,7 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
       if c.kind == @types.CAddr {
         @types.AliasInfo::{
           kind: ASym,
-          base: @types.ref_none(),
+          base: @types.Ref::none(),
           label: c.label,
           offset: c.bits.i,
           slot: -1,
@@ -50,7 +50,7 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
       } else {
         @types.AliasInfo::{
           kind: ACon,
-          base: @types.ref_none(),
+          base: @types.Ref::none(),
           label: 0,
           offset: c.bits.i,
           slot: -1,
@@ -76,8 +76,8 @@ pub fn check_alias(
   let delta = ap.offset - aq.offset
   let ovlap = ap.offset < aq.offset + sq.to_int64() &&
     aq.offset < ap.offset + sp.to_int64()
-  if @types.astack(ap.kind) && @types.astack(aq.kind) {
-    if @types.req(ap.base, aq.base) && ovlap {
+  if ap.kind.astack() && aq.kind.astack() {
+    if ap.base.eq(aq.base) && ovlap {
       return (MustAlias, delta)
     }
     return (NoAlias, delta)
@@ -92,7 +92,7 @@ pub fn check_alias(
     return (NoAlias, delta)
   }
   if (ap.kind == @types.ACon && aq.kind == @types.ACon) ||
-    (ap.kind == aq.kind && @types.req(ap.base, aq.base)) {
+    (ap.kind == aq.kind && ap.base.eq(aq.base)) {
     if ovlap {
       return (MustAlias, delta)
     }
@@ -114,7 +114,7 @@ pub fn escapes(r : @types.Ref, fn_ : @types.Fn) -> Bool {
     return true
   }
   let a = fn_.tmps[r.tmp_val()].alias_info
-  !@types.astack(a.kind) || fn_.tmps[a.slot].alias_info.kind == @types.AEsc
+  !a.kind.astack() || fn_.tmps[a.slot].alias_info.kind == @types.AEsc
 }
 
 ///|
@@ -122,7 +122,7 @@ pub fn escapes(r : @types.Ref, fn_ : @types.Fn) -> Bool {
 fn esc(r : @types.Ref, fn_ : @types.Fn) -> Unit {
   if r.is_tmp() {
     let a = fn_.tmps[r.tmp_val()].alias_info
-    if @types.astack(a.kind) {
+    if a.kind.astack() {
       fn_.tmps[a.slot].alias_info.kind = @types.AEsc
     }
   }
@@ -182,10 +182,10 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
         @types.AUnk
       }
       if !has_to || cur == @types.AUnk {
-        if !@types.is_load(ins.op) {
+        if !ins.op.is_load() {
           esc(ins.arg1, fn_)
         }
-        if !@types.is_store(ins.op) {
+        if !ins.op.is_store() {
           esc(ins.arg2, fn_)
         }
       }

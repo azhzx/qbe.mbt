@@ -86,21 +86,9 @@ pub const XMM8 : Int = 25
 
 pub const XMM9 : Int = 26
 
-pub fn addcon(Con, Con) -> Con
-
-pub fn argregs(Ref) -> (UInt64, Int, Int)
-
-pub fn astack(AliasType) -> Bool
-
-pub fn class_from_code(Int) -> Class
-
 pub fn cmpneg(Int) -> Int
 
-pub fn con_raw_bits(Con) -> Int64
-
 pub fn dumpts(BSet, Array[Tmp]) -> String
-
-pub fn ext_width_idx(Op) -> Int
 
 pub fn fp_stash_at(Int) -> FpBits
 
@@ -108,55 +96,15 @@ pub fn fp_stash_len() -> Int
 
 pub fn gasstash(Int64, Int64, Int) -> Int
 
-pub fn is_arg(Op) -> Bool
-
-pub fn is_ext(Op) -> Bool
-
-pub fn is_load(Op) -> Bool
-
-pub fn is_par(Op) -> Bool
-
-pub fn is_ret(JumpKind) -> Bool
-
-pub fn is_store(Op) -> Bool
-
-pub fn jump_from_index(Int) -> JumpKind
-
-pub fn jump_index(JumpKind) -> Int
-
-pub fn kbase(Class) -> Int
-
-pub fn kcode(Class) -> Int
-
-pub fn kwide(Class) -> Int
-
-pub fn load_width_idx(Op) -> Int
-
-pub fn op_from_index(Int) -> Op
-
-pub fn op_from_string(String) -> Op
-
-pub fn op_index(Op) -> Int
-
 pub fn op_info(Op) -> OpInfo
 
 pub fn phicls(Int, Array[Tmp]) -> Int
 
 pub let rclob : Array[Int]
 
-pub fn ref_none() -> Ref
-
-pub fn req(Ref, Ref) -> Bool
-
-pub fn retregs(Ref) -> (UInt64, Int, Int)
-
 pub fn rglob_mask() -> UInt64
 
 pub let rsave : Array[Int]
-
-pub fn width_code(TmpWidth) -> Int
-
-pub fn width_from_code(Int) -> TmpWidth
 
 // Errors
 
@@ -186,6 +134,8 @@ pub(all) enum AliasType {
   ASym
   AUnk
 } derive(Eq, @debug.Debug)
+#as_free_fn(astack, deprecated)
+pub fn AliasType::astack(Self) -> Bool
 
 pub(all) struct BSet {
   nt : Int
@@ -195,6 +145,8 @@ pub fn BSet::clr(Self, Int) -> Unit
 pub fn BSet::copy_from(Self, Self) -> Unit
 pub fn BSet::count(Self) -> Int
 pub fn BSet::diff(Self, Self) -> Unit
+pub fn BSet::each(Self, (Int) -> Unit) -> Unit
+pub fn BSet::each_from(Self, Int, (Int) -> Unit) -> Unit
 pub fn BSet::equal(Self, Self) -> Bool
 pub fn BSet::has(Self, Int) -> Bool
 pub fn BSet::inter(Self, Self) -> Unit
@@ -235,6 +187,14 @@ pub(all) enum Class {
   Ks
   Kd
 } derive(Eq, @debug.Debug)
+#as_free_fn(kbase, deprecated)
+pub fn Class::base(Self) -> Int
+#as_free_fn(kcode, deprecated)
+pub fn Class::code(Self) -> Int
+#as_free_fn(class_from_code, deprecated)
+pub fn Class::from_code(Int) -> Self
+#as_free_fn(kwide, deprecated)
+pub fn Class::wide(Self) -> Int
 
 pub(all) struct Con {
   kind : ConType
@@ -242,19 +202,23 @@ pub(all) struct Con {
   bits : ConBits
   flt : Int
   is_local : Bool
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
+#as_free_fn(addcon, deprecated)
+pub fn Con::add(Self, Self) -> Self
 pub fn Con::addr(Int) -> Self
 pub fn Con::double(Double) -> Self
 pub fn Con::int(Int64) -> Self
 pub fn Con::is_zero(Self, Bool) -> Bool
 pub fn Con::new() -> Self
+#as_free_fn(con_raw_bits, deprecated)
+pub fn Con::raw_bits(Self) -> Int64
 pub fn Con::single(Float) -> Self
 
 pub(all) struct ConBits {
   i : Int64
   d : Double
   s : Float
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum ConType {
   CUndef
@@ -295,15 +259,10 @@ pub(all) enum DatKind {
   DZ
 } derive(Eq, @debug.Debug)
 
-pub(all) struct DatRef {
-  name : String
-  offset : Int64
-} derive(@debug.Debug)
-
 pub(all) struct Field {
   kind : FieldType
   len : Int
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 pub fn Field::end() -> Self
 pub fn Field::new(FieldType, Int) -> Self
 
@@ -365,7 +324,7 @@ pub(all) struct Ins {
   mut to : Ref
   mut arg1 : Ref
   mut arg2 : Ref
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
 pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
 
@@ -407,6 +366,12 @@ pub(all) enum JumpKind {
   Jjffo
   Jjffuo
 } derive(Eq, @debug.Debug)
+#as_free_fn(jump_from_index, deprecated)
+pub fn JumpKind::from_index(Int) -> Self
+#as_free_fn(jump_index, deprecated)
+pub fn JumpKind::index(Self) -> Int
+#as_free_fn(is_ret, deprecated)
+pub fn JumpKind::is_ret(Self) -> Bool
 
 pub(all) enum Op {
   Oxxx
@@ -530,6 +495,26 @@ pub(all) enum Op {
   Flagfo
   Flagfuo
 } derive(Eq, @debug.Debug)
+#as_free_fn(ext_width_idx, deprecated)
+pub fn Op::ext_width_idx(Self) -> Int
+#as_free_fn(op_from_index, deprecated)
+pub fn Op::from_index(Int) -> Self
+#as_free_fn(op_from_string, deprecated)
+pub fn Op::from_string(String) -> Self
+#as_free_fn(op_index, deprecated)
+pub fn Op::index(Self) -> Int
+#as_free_fn(is_arg, deprecated)
+pub fn Op::is_arg(Self) -> Bool
+#as_free_fn(is_ext, deprecated)
+pub fn Op::is_ext(Self) -> Bool
+#as_free_fn(is_load, deprecated)
+pub fn Op::is_load(Self) -> Bool
+#as_free_fn(is_par, deprecated)
+pub fn Op::is_par(Self) -> Bool
+#as_free_fn(is_store, deprecated)
+pub fn Op::is_store(Self) -> Bool
+#as_free_fn(load_width_idx, deprecated)
+pub fn Op::load_width_idx(Self) -> Int
 pub fn Op::name(Self) -> String
 
 pub(all) struct OpInfo {
@@ -546,13 +531,13 @@ pub(all) struct Phi {
   mut cls : Class
   mut to : Ref
   args : Array[PhiArg]
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 pub fn Phi::new(Ref, Class) -> Self
 
 pub(all) struct PhiArg {
   mut value : Ref
   mut blk_id : Int
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum Ref {
   RNone
@@ -563,10 +548,14 @@ pub(all) enum Ref {
   RCall(Int)
   RMem(Int)
 } derive(Eq, @debug.Debug)
+#as_free_fn(argregs, deprecated)
+pub fn Ref::argregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::call(Int) -> Self
 pub fn Ref::call_val(Self) -> Int
 pub fn Ref::con(Int) -> Self
 pub fn Ref::con_val(Self) -> Int
+#as_free_fn(req, deprecated)
+pub fn Ref::eq(Self, Self) -> Bool
 pub fn Ref::is_con(Self) -> Bool
 pub fn Ref::is_mem(Self) -> Bool
 pub fn Ref::is_none(Self) -> Bool
@@ -574,6 +563,10 @@ pub fn Ref::is_slot(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
 pub fn Ref::mem(Int) -> Self
 pub fn Ref::mem_val(Self) -> Int
+#as_free_fn(ref_none, deprecated)
+pub fn Ref::none() -> Self
+#as_free_fn(retregs, deprecated)
+pub fn Ref::retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::slot(Int) -> Self
 pub fn Ref::slot_val(Self) -> Int
 pub fn Ref::tmp(Int) -> Self
@@ -613,6 +606,10 @@ pub(all) enum TmpWidth {
   Wsw
   Wuw
 } derive(Eq, @debug.Debug)
+#as_free_fn(width_code, deprecated)
+pub fn TmpWidth::code(Self) -> Int
+#as_free_fn(width_from_code, deprecated)
+pub fn TmpWidth::from_code(Int) -> Self
 
 pub(all) struct Typ {
   mut name : String
@@ -621,7 +618,7 @@ pub(all) struct Typ {
   mut size : Int64
   mut nunion : Int
   fields : Array[Field]
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 pub fn Typ::new(String) -> Self
 
 pub(all) struct Use {
@@ -629,7 +626,7 @@ pub(all) struct Use {
   blk_id : Int
   ins_idx : Int
   arg_num : Int
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum UseKind {
   UXXX

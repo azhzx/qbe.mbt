@@ -13,13 +13,6 @@ pub(all) enum DatKind {
 } derive(Eq, Debug)
 
 ///|
-// Reference to another symbol
-pub(all) struct DatRef {
-  name : String
-  offset : Int64
-} derive(Debug)
-
-///|
 // Data section item - corresponds to struct Dat in QBE
 pub(all) struct Dat {
   mut kind : DatKind

@@ -12,8 +12,9 @@ pub(all) enum TmpWidth {
 
 ///|
 // Width index as int (C: WFull=0, Wsb=1, ... Wuw=6)
-pub fn width_code(w : TmpWidth) -> Int {
-  match w {
+#as_free_fn(width_code, deprecated="use `TmpWidth::code` instead")
+pub fn TmpWidth::code(self : TmpWidth) -> Int {
+  match self {
     WFull => 0
     Wsb => 1
     Wub => 2
@@ -26,7 +27,8 @@ pub fn width_code(w : TmpWidth) -> Int {
 
 ///|
 // Construct TmpWidth from an int code (1..6 => Wsb..Wuw)
-pub fn width_from_code(c : Int) -> TmpWidth {
+#as_free_fn(width_from_code, deprecated="use `TmpWidth::from_code` instead")
+pub fn TmpWidth::from_code(c : Int) -> TmpWidth {
   match c {
     1 => Wsb
     2 => Wub
@@ -54,7 +56,7 @@ pub(all) struct Use {
   blk_id : Int
   ins_idx : Int
   arg_num : Int
-} derive(Debug)
+} derive(Debug, Eq)
 
 ///|
 // Register allocation hint
@@ -81,8 +83,9 @@ pub(all) enum AliasType {
 } derive(Eq, Debug)
 
 ///|
-pub fn astack(t : AliasType) -> Bool {
-  match t {
+#as_free_fn(astack, deprecated="use `AliasType::astack` instead")
+pub fn AliasType::astack(self : AliasType) -> Bool {
+  match self {
     ALoc | AEsc => true
     _ => false
   }
@@ -102,7 +105,7 @@ pub(all) struct AliasInfo {
 
 ///|
 pub fn AliasInfo::default() -> AliasInfo {
-  AliasInfo::{ kind: ABot, base: ref_none(), label: 0, offset: 0, slot: -1 }
+  AliasInfo::{ kind: ABot, base: Ref::none(), label: 0, offset: 0, slot: -1 }
 }
 
 ///|

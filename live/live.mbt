@@ -40,7 +40,7 @@ fn bset(
   b.gen_set.unwrap().set(rv)
   let in_ = b.in_set.unwrap()
   if !in_.has(rv) {
-    nlv[@types.kbase(tmp[rv].cls)] = nlv[@types.kbase(tmp[rv].cls)] + 1
+    nlv[tmp[rv].cls.base()] = nlv[tmp[rv].cls.base()] + 1
     in_.set(rv)
   }
 }
@@ -59,7 +59,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
   let mut chg = true
   while chg {
     chg = false
-    for n = fn_.rpo.length() - 1; n >= 0; n = n - 1 {
+    for n in (fn_.rpo.length() - 1)>=..0 {
       let bid = fn_.rpo[n]
       let b = fn_.blks[bid]
       let out = b.out_set.unwrap()
@@ -83,14 +83,11 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       let in_ = b.in_set.unwrap()
       in_.copy_from(out)
       let nlv : Array[Int] = Array::make(2, 0)
-      let mut t = in_.iter(-1)
-      while t >= 0 {
-        nlv[@types.kbase(fn_.tmps[t].cls)] = nlv[@types.kbase(fn_.tmps[t].cls)] +
-          1
-        t = in_.iter(t + 1)
-      }
+      in_.each(t => {
+        nlv[fn_.tmps[t].cls.base()] = nlv[fn_.tmps[t].cls.base()] + 1
+      })
       if b.jmp.arg.call_val() >= 0 {
-        let rr = @types.retregs(b.jmp.arg)
+        let rr = b.jmp.arg.retregs()
         in_.bits[0] = in_.bits[0] | rr.0
         nlv[0] = rr.1
         nlv[1] = rr.2
@@ -100,10 +97,10 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       b.nlive_w = nlv[0]
       b.nlive_d = nlv[1]
       // instructions in reverse
-      for ii = b.ins.length() - 1; ii >= 0; ii = ii - 1 {
+      for ii in (b.ins.length() - 1)>=..0 {
         let ins = b.ins[ii]
         if ins.op == @types.Call && ins.arg2.call_val() >= 0 {
-          let rr = @types.retregs(ins.arg2)
+          let rr = ins.arg2.retregs()
           in_.bits[0] = in_.bits[0] & rr.0.lnot()
           nlv[0] = nlv[0] - rr.1 + 9
           nlv[1] = nlv[1] - rr.2 + 15
@@ -113,7 +110,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
           if nlv[1] > b.nlive_d {
             b.nlive_d = nlv[1]
           }
-          let ar = @types.argregs(ins.arg2)
+          let ar = ins.arg2.argregs()
           in_.bits[0] = in_.bits[0] | ar.0
           nlv[0] = nlv[0] - 9 + ar.1
           nlv[1] = nlv[1] - 15 + ar.2
@@ -121,10 +118,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
         if !ins.to.is_none() {
           let t = ins.to.tmp_val()
           if in_.has(t) {
-            nlv[@types.kbase(fn_.tmps[t].cls)] = nlv[@types.kbase(
-                fn_.tmps[t].cls,
-              )] -
-              1
+            nlv[fn_.tmps[t].cls.base()] = nlv[fn_.tmps[t].cls.base()] - 1
           }
           b.gen_set.unwrap().set(t)
           in_.clr(t)

@@ -40,7 +40,7 @@ fn Parser::findtyp(self : Self, name : String) -> Int raise {
 fn Parser::tmpref(self : Self, name : String) -> @types.Ref raise {
   let fn_ = self.curfn()
   // Look up existing user temporary by name (skip register temps 0..Tmp0-1)
-  for i = @types.Tmp0; i < fn_.ntmp(); i = i + 1 {
+  for i in @types.Tmp0..<fn_.ntmp() {
     if fn_.tmps[i].name == name {
       return @types.Ref::tmp(i)
     }
@@ -91,7 +91,7 @@ fn Parser::parseref(self : Self) -> @types.Ref raise {
       let con = @types.Con::addr(label)
       @types.Ref::con(self.curfn().get_con_by(con))
     }
-    _ => @types.ref_none()
+    _ => @types.Ref::none()
   }
 }
 

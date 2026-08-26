@@ -20,12 +20,10 @@ pub fn phicls(t : Int, tmps : Array[Tmp]) -> Int {
 pub fn dumpts(bs : BSet, tmps : Array[Tmp]) -> String {
   let sb = StringBuilder::new()
   sb.write_char('[')
-  let mut t = bs.iter(Tmp0)
-  while t >= 0 {
+  bs.each_from(Tmp0, t => {
     sb.write_char(' ')
     sb.write_string(tmps[t].name)
-    t = bs.iter(t + 1)
-  }
+  })
   sb.write_string(" ]\n")
   sb.to_string()
 }

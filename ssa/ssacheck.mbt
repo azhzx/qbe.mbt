@@ -18,7 +18,7 @@ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
 // Check phi: whether phi p in block b uses temp t illegally
 fn phicheck(fn_ : @types.Fn, p : @types.Phi, b : Int, t : @types.Ref) -> Bool {
   for a in p.args {
-    if @types.req(a.value, t) {
+    if a.value.eq(t) {
       let b1 = a.blk_id
       if b1 != b && !sdom(fn_, b, b1) {
         return true
@@ -32,7 +32,7 @@ fn phicheck(fn_ : @types.Fn, p : @types.Phi, b : Int, t : @types.Ref) -> Bool {
 // Verify SSA form (C ssacheck)
 // Requires: filluse and SSA construction done
 pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
-  for t = @types.Tmp0; t < fn_.ntmp(); t = t + 1 {
+  for t in @types.Tmp0..<fn_.ntmp() {
     let tmp = fn_.tmps[t]
     if tmp.ndef > 1 {
       raise @util.QbeError::CompileError(

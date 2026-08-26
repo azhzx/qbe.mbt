@@ -47,9 +47,13 @@
 //   assert_true(assembly.contains("one:"))
 // }
 // ```
-pub fn compile(text : String, gas~ : String = "e") -> Result[String, @util.QbeError] {
-  compile_raise(text, gas) catch {
-    @util.QbeError::ParseError(f, l, m) => Err(@util.QbeError::ParseError(f, l, m))
+pub fn compile(
+  text : String,
+  gas? : String = "e",
+) -> Result[String, @util.QbeError] {
+  try compile_raise(text, gas) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
     @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
     e => Err(@util.QbeError::Ice("\{e}"))
@@ -82,8 +86,9 @@ pub fn compile_debug(
   text : String,
   flags : String,
 ) -> Result[String, @util.QbeError] {
-  compile_debug_raise(text, flags) catch {
-    @util.QbeError::ParseError(f, l, m) => Err(@util.QbeError::ParseError(f, l, m))
+  try compile_debug_raise(text, flags) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
     @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
     e => Err(@util.QbeError::Ice("\{e}"))
@@ -123,24 +128,35 @@ fn compile_debug_raise(text : String, flags : String) -> String raise {
 
 pub type Fn = @types.Fn
 
+///|
 pub type Blk = @types.Blk
 
+///|
 pub type Ins = @types.Ins
 
+///|
 pub type Tmp = @types.Tmp
 
+///|
 pub type Ref = @types.Ref
 
+///|
 pub type Con = @types.Con
 
+///|
 pub type Op = @types.Op
 
+///|
 pub type Jump = @types.Jump
 
+///|
 pub type Dat = @types.Dat
 
+///|
 pub type Typ = @types.Typ
 
+///|
 pub type BSet = @types.BSet
 
+///|
 pub type Class = @types.Class

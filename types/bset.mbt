@@ -134,3 +134,23 @@ pub fn BSet::iter(self : Self, start : Int) -> Int {
   }
   -1
 }
+
+///|
+// Call f for every set bit, in increasing order.
+pub fn BSet::each(self : Self, f : (Int) -> Unit) -> Unit {
+  for i in 0..<(self.bits.length() * nbit) {
+    if self.has(i) {
+      f(i)
+    }
+  }
+}
+
+///|
+// Call f for every set bit with index >= start, in increasing order.
+pub fn BSet::each_from(self : Self, start : Int, f : (Int) -> Unit) -> Unit {
+  for i in start.max(0)..<(self.bits.length() * nbit) {
+    if self.has(i) {
+      f(i)
+    }
+  }
+}

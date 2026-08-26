@@ -27,7 +27,7 @@ pub fn fmt_fixed(v : Double, prec : Int) -> String {
   sb.write_string(int_part.to_string())
   sb.write_char('.')
   let frac_str = frac_part.to_string()
-  for i = frac_str.length(); i < prec; i = i + 1 {
+  for i in frac_str.length()..<prec {
     ignore(i)
     sb.write_char('0')
   }

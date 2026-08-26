@@ -905,7 +905,7 @@ let optab : Array[OpInfo] = [
 ///|
 // Get OpInfo for an op
 pub fn op_info(o : Op) -> OpInfo {
-  let i = op_index(o)
+  let i = o.index()
   if i < 0 || i >= optab.length() {
     return optab[0]
   }
@@ -920,7 +920,8 @@ pub fn Op::name(self : Op) -> String {
 
 ///|
 // Convert an optab index back to an Op
-pub fn op_from_index(i : Int) -> Op {
+#as_free_fn(op_from_index, deprecated="use `Op::from_index` instead")
+pub fn Op::from_index(i : Int) -> Op {
   match i {
     0 => Oxxx
     1 => Add
@@ -1048,8 +1049,9 @@ pub fn op_from_index(i : Int) -> Op {
 
 ///|
 // Get the zero-based index of an op in the optab
-pub fn op_index(o : Op) -> Int {
-  match o {
+#as_free_fn(op_index, deprecated="use `Op::index` instead")
+pub fn Op::index(self : Op) -> Int {
+  match self {
     Oxxx => 0
     Add => 1
     Sub => 2

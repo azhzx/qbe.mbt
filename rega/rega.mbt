@@ -91,7 +91,7 @@ fn r_emiti(st : RState, i : @types.Ins) -> Unit {
 ///|
 fn emit_block(st : RState) -> Array[@types.Ins] {
   let r : Array[@types.Ins] = Array::new()
-  for k = st.buf.length() - 1; k >= 0; k = k - 1 {
+  for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
   r
@@ -143,25 +143,25 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
   }
   if r == -1 || m.b.has(r) {
     if try_ {
-      return @types.ref_none()
+      return @types.Ref::none()
     }
     let mut regs = st.fn_.tmps[@types.phicls(t, st.fn_.tmps)].hint.m
     regs = regs | m.b.bits[0]
-    let r0 = if @types.kbase(st.fn_.tmps[t].cls) == 0 {
+    let r0 = if st.fn_.tmps[t].cls.base() == 0 {
       @types.RAX
     } else {
       @types.XMM0
     }
-    let r1 = r0 + (if @types.kbase(st.fn_.tmps[t].cls) == 0 { 16 } else { 15 })
+    let r1 = r0 + (if st.fn_.tmps[t].cls.base() == 0 { 16 } else { 15 })
     let mut found = -1
-    for rr = r0; rr < r1; rr = rr + 1 {
+    for rr in r0..<r1 {
       if (regs & (1UL << rr)) == 0 {
         found = rr
         break
       }
     }
     if found < 0 {
-      for rr = r0; rr < r1; rr = rr + 1 {
+      for rr in r0..<r1 {
         if !m.b.has(rr) {
           found = rr
           break
@@ -179,7 +179,7 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
         "DBG ralloctry t=" +
         t.to_string() +
         " cls=" +
-        @types.kcode(st.fn_.tmps[t].cls).to_string() +
+        st.fn_.tmps[t].cls.code().to_string() +
         " r0=" +
         r0.to_string() +
         " r1=" +
@@ -262,14 +262,14 @@ const MOVED = 2
 
 ///|
 fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
-  if @types.req(st.pm[i].src, st.pm[i].dst) {
+  if st.pm[i].src.eq(st.pm[i].dst) {
     status[i] = MOVED
     return -1
   }
-  k.val = k.val | @types.kcode(st.pm[i].cls)
+  k.val = k.val | st.pm[i].cls.code()
   let mut j = 0
   while j < st.npm {
-    if @types.req(st.pm[j].dst, st.pm[i].src) {
+    if st.pm[j].dst.eq(st.pm[i].src) {
       break
     }
     j = j + 1
@@ -283,7 +283,7 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
       st.pm[i].cls,
       st.pm[i].dst,
       st.pm[i].src,
-      @types.ref_none(),
+      @types.Ref::none(),
     )
     return -1
   } else {
@@ -293,8 +293,8 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
         r_emit(
           st,
           @types.Swap,
-          @types.class_from_code(k.val),
-          @types.ref_none(),
+          @types.Class::from_code(k.val),
+          @types.Ref::none(),
           st.pm[i].src,
           st.pm[i].dst,
         )
@@ -308,8 +308,8 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
           r_emit(
             st,
             @types.Swap,
-            @types.class_from_code(k.val),
-            @types.ref_none(),
+            @types.Class::from_code(k.val),
+            @types.Ref::none(),
             st.pm[i].src,
             st.pm[i].dst,
           )
@@ -320,7 +320,7 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
             st.pm[i].cls,
             st.pm[i].dst,
             st.pm[i].src,
-            @types.ref_none(),
+            @types.Ref::none(),
           )
         }
       }
@@ -331,7 +331,7 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
           st.pm[i].cls,
           st.pm[i].dst,
           st.pm[i].src,
-          @types.ref_none(),
+          @types.Ref::none(),
         )
         c = -1
       }
@@ -347,7 +347,7 @@ fn pmgen(st : RState) -> Unit {
   let status : Array[Int] = Array::make(st.npm, TOMOVE)
   for i in 0..<st.npm {
     if status[i] == TOMOVE {
-      ignore(pmrec(st, status, i, @ref.new(@types.kcode(st.pm[i].cls))))
+      ignore(pmrec(st, status, i, @ref.new(st.pm[i].cls.code())))
     }
   }
 }
@@ -394,11 +394,11 @@ fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int raise {
     }
   }
   if idx != 0 && b.ins[idx - 1].op == @types.Call {
-    let rr = @types.retregs(b.ins[idx - 1].arg2)
+    let rr = b.ins[idx - 1].arg2.retregs()
     let def = rr.0 | @types.rglob_mask()
     for z in 0..<@types.rsave.length() {
       if (def & (1UL << @types.rsave[z])) == 0 {
-        r_move(st, @types.rsave[z], @types.ref_none(), m)
+        r_move(st, @types.rsave[z], @types.Ref::none(), m)
       }
     }
   }
@@ -414,7 +414,7 @@ fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int raise {
       pmadd(st, @types.Ref::tmp(r1), @types.Ref::slot(s), st.fn_.tmps[t].cls)
     }
   }
-  for ip = idx; ip < i1; ip = ip + 1 {
+  for ip in idx..<i1 {
     if !b.ins[ip].to.is_none() {
       ignore(rfree(st, m, b.ins[ip].to.tmp_val()))
     }
@@ -515,10 +515,10 @@ fn doblk_def(st : RState, cur : RMap, last : Int) -> Int {
 // Allocate registers for one block (C doblk).
 fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
   // registers live-in are mapped to themselves
-  let mut r = b.out_set.unwrap().iter(0)
-  while r >= 0 && r < @types.Tmp0 {
-    radd(st, cur, r, r)
-    r = b.out_set.unwrap().iter(r + 1)
+  for r in 0..<@types.Tmp0 {
+    if b.out_set.unwrap().has(r) {
+      radd(st, cur, r, r)
+    }
   }
   if b.jmp.arg.is_tmp() {
     b.jmp.arg = ralloc(st, cur, b.jmp.arg.tmp_val())
@@ -532,7 +532,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
     let ins = st.buf[last]
     let mut rf = -1
     if ins.op == @types.Call {
-      let ar = @types.argregs(ins.arg2)
+      let ar = ins.arg2.argregs()
       let rs = ar.0 | @types.rglob_mask()
       for z in 0..<@types.rsave.length() {
         if (rs & (1UL << @types.rsave[z])) == 0 {
@@ -602,13 +602,13 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
               st.fn_.tmps[t].cls,
               @types.Ref::tmp(rt),
               @types.Ref::tmp(rf),
-              @types.ref_none(),
+              @types.Ref::none(),
             )
             st.stmov = st.stmov + 1
             cur.w[rf] = 0
             for z in 0..<nr {
               let slot = ra[z]
-              if @types.req(read_slot(st, slot), @types.Ref::tmp(rt)) {
+              if read_slot(st, slot).eq(@types.Ref::tmp(rt)) {
                 write_slot(st, slot, @types.Ref::tmp(rf))
               }
             }
@@ -670,8 +670,8 @@ pub fn rega(
     buf: Array::new(),
     regu: 0,
     pm: Array::make(64, PmEntry::{
-      src: @types.ref_none(),
-      dst: @types.ref_none(),
+      src: @types.Ref::none(),
+      dst: @types.Ref::none(),
       cls: @types.Kx,
     }),
     npm: 0,
@@ -719,8 +719,9 @@ pub fn rega(
     // sort out-set temps by priority (C prio2 insertion sort)
     let rl : Array[Int] = Array::make(64, 0)
     let mut x = 0
-    let mut t = b.out_set.unwrap().iter(@types.Tmp0)
-    while t >= 0 {
+    b.out_set
+    .unwrap()
+    .each_from(@types.Tmp0, t => {
       rl[x] = t
       let mut j = x
       x = x + 1
@@ -733,8 +734,7 @@ pub fn rega(
           break
         }
       }
-      t = b.out_set.unwrap().iter(t + 1)
-    }
+    })
     for j in 0..<x {
       ignore(ralloctry(st, cur, rl[j], true))
     }
@@ -865,13 +865,13 @@ pub fn rega(
         }
         pmadd(st, src, dst, p.cls)
       }
-      let mut t = s.in_set.unwrap().iter(@types.Tmp0)
-      while t >= 0 {
+      s.in_set
+      .unwrap()
+      .each_from(@types.Tmp0, t => {
         let src = rref(st, end[fn_.blks[b_id].rpo_id], t)
         let dst = rref(st, beg[s.rpo_id], t)
         pmadd(st, src, dst, fn_.tmps[t].cls)
-        t = s.in_set.unwrap().iter(t + 1)
-      }
+      })
       st.buf.clear()
       pmgen(st)
       let nb = emit_block(st)
@@ -899,7 +899,7 @@ pub fn rega(
   }
   // append the new blocks at the end of the link chain (in reverse
   // creation order, as the C prepends to blist)
-  for k = blist.length() - 1; k >= 0; k = k - 1 {
+  for k in (blist.length() - 1)>=..0 {
     fn_.def_order.push(blist[k])
   }
   for id in fn_.def_order {

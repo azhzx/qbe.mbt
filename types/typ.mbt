@@ -16,7 +16,7 @@ pub(all) enum FieldType {
 pub(all) struct Field {
   kind : FieldType
   len : Int
-} derive(Debug)
+} derive(Debug, Eq)
 
 ///|
 pub fn Field::new(kind : FieldType, len : Int) -> Field {
@@ -37,7 +37,7 @@ pub(all) struct Typ {
   mut size : Int64
   mut nunion : Int
   fields : Array[Field]
-} derive(Debug)
+} derive(Debug, Eq)
 
 ///|
 pub fn Typ::new(name : String) -> Typ {

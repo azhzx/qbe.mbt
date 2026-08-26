@@ -6,14 +6,14 @@ pub type BlkId = Int
 // Jump at end of basic block
 pub(all) struct Jump {
   mut kind : JumpKind
-  mut arg : Ref // Argument for jnz/comparison (ref_none() if none)
+  mut arg : Ref // Argument for jnz/comparison (Ref::none() if none)
   mut s1 : Int // First successor block id (-1 if none)
   mut s2 : Int // Second successor block id (-1 if none)
 } derive(Debug)
 
 ///|
 pub fn Jump::new(kind : JumpKind) -> Jump {
-  Jump::{ kind, arg: ref_none(), s1: -1, s2: -1 }
+  Jump::{ kind, arg: Ref::none(), s1: -1, s2: -1 }
 }
 
 ///|

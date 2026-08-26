@@ -123,14 +123,14 @@ fn amatch(
   top : Bool,
 ) -> Unit raise {
   if r.is_con() {
-    a.offset = @types.addcon(a.offset, st.fn_.cons[r.con_val()])
+    a.offset = a.offset.add(st.fn_.cons[r.con_val()])
     return
   }
   let idx = st.an[r.tmp_val()].i
   let mut nl = st.an[r.tmp_val()].l
   let mut nr = st.an[r.tmp_val()].r
-  let mut al = @types.ref_none()
-  let mut ar = @types.ref_none()
+  let mut al = @types.Ref::none()
+  let mut ar = @types.Ref::none()
   if idx >= 0 {
     let ins = st.cur_ins[idx]
     if nl > nr {

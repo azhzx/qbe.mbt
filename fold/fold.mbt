@@ -34,9 +34,9 @@ fn czero(c : @types.Con, w : Bool) -> Bool {
   // The C Con is a union; the divisor's raw bits determine whether it is
   // zero, regardless of whether it is an integer or float constant.
   if w {
-    @types.con_raw_bits(c) == 0L
+    c.raw_bits() == 0L
   } else {
-    (@types.con_raw_bits(c) & 0xFFFFFFFF) == 0L
+    (c.raw_bits() & 0xFFFFFFFF) == 0L
   }
 }
 
@@ -248,7 +248,7 @@ pub fn fold(
 
   if print_dbg {
     sb.write_string("\n> SCCP findings:")
-    for t = @types.Tmp0; t < nt; t = t + 1 {
+    for t in @types.Tmp0..<nt {
       if st.val[t] == BOT {
         continue
       }
@@ -315,19 +315,19 @@ pub fn fold(
       let i = b.ins[ii]
       if !i.to.is_none() {
         let new_to = renref(st, i.to)
-        if !@types.req(new_to, i.to) {
+        if !new_to.eq(i.to) {
           b.ins[ii] = @types.Ins::new_void(
             @types.Nop,
             @types.Kw,
-            @types.ref_none(),
-            @types.ref_none(),
+            @types.Ref::none(),
+            @types.Ref::none(),
           )
           continue
         }
       }
       let a1 = renref(st, i.arg1)
       let a2 = renref(st, i.arg2)
-      if !@types.req(a1, i.arg1) || !@types.req(a2, i.arg2) {
+      if !a1.eq(i.arg1) || !a2.eq(i.arg2) {
         b.ins[ii] = @types.Ins::new(i.op, i.cls, i.to, a1, a2)
       }
     }
@@ -342,7 +342,7 @@ pub fn fold(
         @cfg.edgedel(fn_, id, b.jmp.s2)
       }
       b.jmp.kind = @types.Jjmp
-      b.jmp.arg = @types.ref_none()
+      b.jmp.arg = @types.Ref::none()
     }
   }
   fn_.def_order.clear()

@@ -59,74 +59,74 @@ let rname : Array[Array[String]] = [
 ///|
 // Instruction format table (C omap in amd64/emit.c). (op index, cls code, asm)
 let omap : Array[(Int, Int, String)] = [
-  (@types.op_index(@types.Add), KA, "+add%k %1, %="),
-  (@types.op_index(@types.Sub), KA, "-sub%k %1, %="),
-  (@types.op_index(@types.And), KI, "+and%k %1, %="),
-  (@types.op_index(@types.Or), KI, "+or%k %1, %="),
-  (@types.op_index(@types.Xor), KI, "+xor%k %1, %="),
-  (@types.op_index(@types.Sar), KI, "-sar%k %B1, %="),
-  (@types.op_index(@types.Shr), KI, "-shr%k %B1, %="),
-  (@types.op_index(@types.Shl), KI, "-shl%k %B1, %="),
-  (@types.op_index(@types.Mul), KI, "+imul%k %1, %="),
-  (@types.op_index(@types.Mul), 2, "+mulss %1, %="),
-  (@types.op_index(@types.Mul), 3, "+mulsd %1, %="),
-  (@types.op_index(@types.Div), KA, "-div%k %1, %="),
-  (@types.op_index(@types.Storel), KA, "movq %L0, %M1"),
-  (@types.op_index(@types.Storew), KA, "movl %W0, %M1"),
-  (@types.op_index(@types.Storeh), KA, "movw %H0, %M1"),
-  (@types.op_index(@types.Storeb), KA, "movb %B0, %M1"),
-  (@types.op_index(@types.Stores), KA, "movss %S0, %M1"),
-  (@types.op_index(@types.Stored), KA, "movsd %D0, %M1"),
-  (@types.op_index(@types.Load), KA, "mov%k %M0, %="),
-  (@types.op_index(@types.Loadsw), 1, "movslq %M0, %L="),
-  (@types.op_index(@types.Loadsw), 0, "movl %M0, %W="),
-  (@types.op_index(@types.Loaduw), KI, "movl %M0, %W="),
-  (@types.op_index(@types.Loadsh), KI, "movsw%k %M0, %="),
-  (@types.op_index(@types.Loaduh), KI, "movzw%k %M0, %="),
-  (@types.op_index(@types.Loadsb), KI, "movsb%k %M0, %="),
-  (@types.op_index(@types.Loadub), KI, "movzb%k %M0, %="),
-  (@types.op_index(@types.Extsw), 1, "movslq %W0, %L="),
-  (@types.op_index(@types.Extuw), 1, "movl %W0, %W="),
-  (@types.op_index(@types.Extsh), KI, "movsw%k %H0, %="),
-  (@types.op_index(@types.Extuh), KI, "movzw%k %H0, %="),
-  (@types.op_index(@types.Extsb), KI, "movsb%k %B0, %="),
-  (@types.op_index(@types.Extub), KI, "movzb%k %B0, %="),
-  (@types.op_index(@types.Exts), 3, "cvtss2sd %0, %="),
-  (@types.op_index(@types.Truncd), 2, "cvttsd2ss %0, %="),
-  (@types.op_index(@types.Stosi), KI, "cvttss2si%k %0, %="),
-  (@types.op_index(@types.Dtosi), KI, "cvttsd2si%k %0, %="),
-  (@types.op_index(@types.Swtof), KA, "cvtsi2%k %W0, %="),
-  (@types.op_index(@types.Sltof), KA, "cvtsi2%k %L0, %="),
-  (@types.op_index(@types.Cast), KI, "movq %D0, %L="),
-  (@types.op_index(@types.Cast), KA, "movq %L0, %D="),
-  (@types.op_index(@types.Addr), KI, "lea%k %M0, %="),
-  (@types.op_index(@types.Swap), KI, "xchg%k %0, %1"),
-  (@types.op_index(@types.Sign), 1, "cqto"),
-  (@types.op_index(@types.Sign), 0, "cltd"),
-  (@types.op_index(@types.Xdiv), KI, "div%k %0"),
-  (@types.op_index(@types.Xidiv), KI, "idiv%k %0"),
-  (@types.op_index(@types.Xcmp), 2, "comiss %S0, %S1"),
-  (@types.op_index(@types.Xcmp), 3, "comisd %D0, %D1"),
-  (@types.op_index(@types.Xcmp), KI, "cmp%k %0, %1"),
-  (@types.op_index(@types.Xtest), KI, "test%k %0, %1"),
-  (@types.op_index(@types.Flagieq) + 8, KI, "setbe %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 9, KI, "setb %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 4, KI, "setle %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 5, KI, "setl %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 3, KI, "setg %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 2, KI, "setge %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 7, KI, "seta %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 6, KI, "setae %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 0, KI, "setz %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 1, KI, "setnz %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 13, KI, "setbe %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 14, KI, "setb %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 12, KI, "seta %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 11, KI, "setae %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 10, KI, "setz %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 15, KI, "setnz %B=\n\tmovzb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 16, KI, "setnp %B=\n\tmovsb%k %B=, %="),
-  (@types.op_index(@types.Flagieq) + 17, KI, "setp %B=\n\tmovsb%k %B=, %="),
+  (@types.Add.index(), KA, "+add%k %1, %="),
+  (@types.Sub.index(), KA, "-sub%k %1, %="),
+  (@types.And.index(), KI, "+and%k %1, %="),
+  (@types.Or.index(), KI, "+or%k %1, %="),
+  (@types.Xor.index(), KI, "+xor%k %1, %="),
+  (@types.Sar.index(), KI, "-sar%k %B1, %="),
+  (@types.Shr.index(), KI, "-shr%k %B1, %="),
+  (@types.Shl.index(), KI, "-shl%k %B1, %="),
+  (@types.Mul.index(), KI, "+imul%k %1, %="),
+  (@types.Mul.index(), 2, "+mulss %1, %="),
+  (@types.Mul.index(), 3, "+mulsd %1, %="),
+  (@types.Div.index(), KA, "-div%k %1, %="),
+  (@types.Storel.index(), KA, "movq %L0, %M1"),
+  (@types.Storew.index(), KA, "movl %W0, %M1"),
+  (@types.Storeh.index(), KA, "movw %H0, %M1"),
+  (@types.Storeb.index(), KA, "movb %B0, %M1"),
+  (@types.Stores.index(), KA, "movss %S0, %M1"),
+  (@types.Stored.index(), KA, "movsd %D0, %M1"),
+  (@types.Load.index(), KA, "mov%k %M0, %="),
+  (@types.Loadsw.index(), 1, "movslq %M0, %L="),
+  (@types.Loadsw.index(), 0, "movl %M0, %W="),
+  (@types.Loaduw.index(), KI, "movl %M0, %W="),
+  (@types.Loadsh.index(), KI, "movsw%k %M0, %="),
+  (@types.Loaduh.index(), KI, "movzw%k %M0, %="),
+  (@types.Loadsb.index(), KI, "movsb%k %M0, %="),
+  (@types.Loadub.index(), KI, "movzb%k %M0, %="),
+  (@types.Extsw.index(), 1, "movslq %W0, %L="),
+  (@types.Extuw.index(), 1, "movl %W0, %W="),
+  (@types.Extsh.index(), KI, "movsw%k %H0, %="),
+  (@types.Extuh.index(), KI, "movzw%k %H0, %="),
+  (@types.Extsb.index(), KI, "movsb%k %B0, %="),
+  (@types.Extub.index(), KI, "movzb%k %B0, %="),
+  (@types.Exts.index(), 3, "cvtss2sd %0, %="),
+  (@types.Truncd.index(), 2, "cvttsd2ss %0, %="),
+  (@types.Stosi.index(), KI, "cvttss2si%k %0, %="),
+  (@types.Dtosi.index(), KI, "cvttsd2si%k %0, %="),
+  (@types.Swtof.index(), KA, "cvtsi2%k %W0, %="),
+  (@types.Sltof.index(), KA, "cvtsi2%k %L0, %="),
+  (@types.Cast.index(), KI, "movq %D0, %L="),
+  (@types.Cast.index(), KA, "movq %L0, %D="),
+  (@types.Addr.index(), KI, "lea%k %M0, %="),
+  (@types.Swap.index(), KI, "xchg%k %0, %1"),
+  (@types.Sign.index(), 1, "cqto"),
+  (@types.Sign.index(), 0, "cltd"),
+  (@types.Xdiv.index(), KI, "div%k %0"),
+  (@types.Xidiv.index(), KI, "idiv%k %0"),
+  (@types.Xcmp.index(), 2, "comiss %S0, %S1"),
+  (@types.Xcmp.index(), 3, "comisd %D0, %D1"),
+  (@types.Xcmp.index(), KI, "cmp%k %0, %1"),
+  (@types.Xtest.index(), KI, "test%k %0, %1"),
+  (@types.Flagieq.index() + 8, KI, "setbe %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 9, KI, "setb %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 4, KI, "setle %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 5, KI, "setl %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 3, KI, "setg %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 2, KI, "setge %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 7, KI, "seta %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 6, KI, "setae %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 0, KI, "setz %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 1, KI, "setnz %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 13, KI, "setbe %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 14, KI, "setb %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 12, KI, "seta %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 11, KI, "setae %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 10, KI, "setz %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 15, KI, "setnz %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 16, KI, "setnp %B=\n\tmovsb%k %B=, %="),
+  (@types.Flagieq.index() + 17, KI, "setp %B=\n\tmovsb%k %B=, %="),
 ]
 
 ///|
@@ -200,7 +200,7 @@ fn emitcon(st : EmitState, con : @types.Con) -> Unit {
         st.sb.write_string(s64_plus(con.bits.i))
       }
     }
-    @types.CBits => st.sb.write_string(@types.con_raw_bits(con).to_string())
+    @types.CBits => st.sb.write_string(con.raw_bits().to_string())
     _ => abort("unreachable")
   }
 }
@@ -232,7 +232,7 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
   let m = st.fn_.mems[rf.mem_val()]
   if m.base.is_slot() {
     let off = @types.Con::int(slot(st, m.base.slot_val()).to_int64())
-    m.offset = @types.addcon(m.offset, off)
+    m.offset = m.offset.add(off)
     m.base = @types.Ref::tmp(@types.RBP)
   }
   if m.offset.kind != @types.CUndef {
@@ -279,7 +279,7 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
   let ins = i
   if s.length() > 0 && (s[0] == '+' || s[0] == '-') {
     if s[0] == '+' {
-      if @types.req(ins.arg2, ins.to) {
+      if ins.arg2.eq(ins.to) {
         let rf = ins.arg1
         ins.arg1 = ins.arg2
         ins.arg2 = rf
@@ -304,9 +304,9 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
     pos = pos + 1
     match c {
       '%' => st.sb.write_char('%')
-      'k' => st.sb.write_string(clstoa[@types.kcode(ins.cls)])
+      'k' => st.sb.write_string(clstoa[ins.cls.code()])
       '0' | '1' | '=' => {
-        let sz = if @types.kwide(ins.cls) == 1 { SLONG } else { SWORD }
+        let sz = if ins.cls.wide() == 1 { SLONG } else { SWORD }
         emit_ref(st, ins, c.unsafe_to_char(), sz)
       }
       'D' | 'S' => {
@@ -365,19 +365,19 @@ fn emitcopy(
   r2 : @types.Ref,
   k : @types.Class,
 ) -> Unit raise {
-  let icp = @types.Ins::new(@types.Copy, k, r1, r2, @types.ref_none())
+  let icp = @types.Ins::new(@types.Copy, k, r1, r2, @types.Ref::none())
   emitins(st, icp)
 }
 
 ///|
 // Find the format for an instruction in the omap table (C Table label).
 fn find_omap(op : @types.Op, cls : @types.Class) -> String raise {
-  let oi = @types.op_index(op)
-  let ccode = @types.kcode(cls)
+  let oi = op.index()
+  let ccode = cls.code()
   for o in 0..<omap.length() {
     if omap[o].0 == oi {
       if omap[o].1 == ccode ||
-        (omap[o].1 == KI && @types.kbase(cls) == 0) ||
+        (omap[o].1 == KI && cls.base() == 0) ||
         omap[o].1 == KA {
         return omap[o].2
       }
@@ -412,15 +412,15 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         ins.arg1 = ins.arg2
         ins.arg2 = r
       }
-      if @types.kbase(ins.cls) == 0 && ins.arg1.is_con() && ins.arg2.is_tmp() {
+      if ins.cls.base() == 0 && ins.arg1.is_con() && ins.arg2.is_tmp() {
         emitf(st, "imul%k %0, %1, %=", ins)
       } else {
         emit_omap(st, ins)
       }
     }
     @types.Sub =>
-      if @types.req(ins.to, ins.arg2) {
-        if @types.kbase(ins.cls) == 0 {
+      if ins.to.eq(ins.arg2) {
+        if ins.cls.base() == 0 {
           emitf(st, "neg%k %=", ins)
         } else {
           let n = @types.gasstash(neg_mask(ins.cls), 0L, 16)
@@ -435,7 +435,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         emit_omap(st, ins)
       }
     @types.Div => {
-      if @types.req(ins.to, ins.arg2) {
+      if ins.to.eq(ins.arg2) {
         ins.arg2 = @types.Ref::tmp(@types.XMM0 + 15)
         emitf(st, "mov%k %=, %1", ins)
         emitf(st, "mov%k %0, %=", ins)
@@ -450,7 +450,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         ins.arg1.is_con() &&
         ins.cls == @types.Kl &&
         st.fn_.cons[ins.arg1.con_val()].kind == @types.CBits {
-        let val = @types.con_raw_bits(st.fn_.cons[ins.arg1.con_val()])
+        let val = st.fn_.cons[ins.arg1.con_val()].raw_bits()
         if val >= 0L && val <= 4294967295L {
           emitf(st, "movl %W0, %W=", ins)
         } else {
@@ -460,7 +460,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         ins.arg1.is_con() &&
         st.fn_.cons[ins.arg1.con_val()].kind == @types.CAddr {
         emitf(st, "lea%k %M0, %=", ins)
-      } else if !@types.req(ins.arg1, ins.to) {
+      } else if !ins.arg1.eq(ins.to) {
         emitf(st, "mov%k %0, %=", ins)
       }
     @types.Call =>
@@ -480,7 +480,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
       }
     }
     @types.Swap =>
-      if @types.kbase(ins.cls) == 0 {
+      if ins.cls.base() == 0 {
         emit_omap(st, ins)
       } else {
         emitcopy(st, @types.Ref::tmp(@types.XMM0 + 15), ins.arg1, ins.cls)
@@ -542,9 +542,9 @@ pub fn emitfn(
       let itmp = @types.Ins::new(
         @types.Copy,
         @types.Kx,
-        @types.ref_none(),
+        @types.Ref::none(),
         @types.Ref::tmp(r),
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       emitf(st, "pushq %L0", itmp)
       fs = fs + 8
@@ -568,14 +568,14 @@ pub fn emitfn(
         if fn_.has_dynalloc {
           st.sb.write_string("\tmovq %rbp, %rsp\n\tsubq $\{fs}, %rsp\n")
         }
-        for ri = @types.rclob.length() - 1; ri >= 0; ri = ri - 1 {
+        for ri in (@types.rclob.length() - 1)>=..0 {
           if (fn_.reg & (1UL << @types.rclob[ri])) != 0 {
             let itmp = @types.Ins::new(
               @types.Copy,
               @types.Kx,
-              @types.ref_none(),
+              @types.Ref::none(),
               @types.Ref::tmp(@types.rclob[ri]),
-              @types.ref_none(),
+              @types.Ref::none(),
             )
             emitf(st, "popq %L0", itmp)
           }
@@ -591,8 +591,7 @@ pub fn emitfn(
           lbl = false
         }
       _ => {
-        let mut c = @types.jump_index(b.jmp.kind) -
-          @types.jump_index(@types.Jjfieq)
+        let mut c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c >= 0 && c <= 18 {
           let mut s1 = b.jmp.s1
           let mut s2 = b.jmp.s2

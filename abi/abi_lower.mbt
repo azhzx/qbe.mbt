@@ -21,7 +21,7 @@ fn selcall(
   } else {
     AClass::new()
   }
-  st.env = @types.ref_none()
+  st.env = @types.Ref::none()
   let mut ca = argsclass(
     st,
     orig,
@@ -37,7 +37,7 @@ fn selcall(
   )
   // compute stack size for in-memory arguments
   let mut stk = 0
-  for a = nargs - 1; a >= 0; a = a - 1 {
+  for a in (nargs - 1)>=..0 {
     if ac[a].inmem != 0 {
       if ac[a].align > 4 {
         raise @util.QbeError::Ice("sysv abi requires alignments of 16 or less")
@@ -51,12 +51,19 @@ fn selcall(
   stk = stk + (stk & 15)
   if stk != 0 {
     let r = getcon(st, (-stk).to_int64())
-    emit(st, @types.Salloc, @types.Kl, @types.ref_none(), r, @types.ref_none())
+    emit(
+      st,
+      @types.Salloc,
+      @types.Kl,
+      @types.Ref::none(),
+      r,
+      @types.Ref::none(),
+    )
   }
 
   let ni = Ref::{ val: 0 }
   let ns = Ref::{ val: 0 }
-  let reg : Array[@types.Ref] = Array::make(2, @types.ref_none())
+  let reg : Array[@types.Ref] = Array::make(2, @types.Ref::none())
 
   if has_retty {
     if aret.inmem != 0 {
@@ -68,7 +75,7 @@ fn selcall(
         @types.Kl,
         callins.to,
         @types.Ref::tmp(@types.RAX),
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       ca = ca + 1
       let al = if aret.align >= 2 { aret.align - 2 } else { 0 }
@@ -78,7 +85,7 @@ fn selcall(
           @types.Kl,
           r1,
           getcon(st, aret.size.to_int64()),
-          @types.ref_none(),
+          @types.Ref::none(),
         ),
         link: st.ral,
       }
@@ -87,18 +94,25 @@ fn selcall(
       if aret.size > 8 {
         let r = abi_newtmp(st, @types.Kl)
         let r1 = abi_newtmp(st, aret.cls[1])
-        emit(st, @types.Storel, @types.Kw, @types.ref_none(), r1, r)
+        emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r1, r)
         emit(st, @types.Add, @types.Kl, r, callins.to, getcon(st, 8L))
         aret.r[1] = r1
       }
       let r0 = abi_newtmp(st, aret.cls[0])
-      emit(st, @types.Storel, @types.Kw, @types.ref_none(), r0, callins.to)
+      emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, callins.to)
       aret.r[0] = r0
       ca = ca + retr(reg, aret)
       if aret.size > 8 {
-        emit(st, @types.Copy, aret.cls[1], aret.r[1], reg[1], @types.ref_none())
+        emit(
+          st,
+          @types.Copy,
+          aret.cls[1],
+          aret.r[1],
+          reg[1],
+          @types.Ref::none(),
+        )
       }
-      emit(st, @types.Copy, aret.cls[0], aret.r[0], reg[0], @types.ref_none())
+      emit(st, @types.Copy, aret.cls[0], aret.r[0], reg[0], @types.Ref::none())
       let al = if aret.align >= 2 { aret.align - 2 } else { 0 }
       let ra = RAlloc::{
         i: @types.Ins::new(
@@ -106,7 +120,7 @@ fn selcall(
           @types.Kl,
           callins.to,
           getcon(st, aret.size.to_int64()),
-          @types.ref_none(),
+          @types.Ref::none(),
         ),
         link: st.ral,
       }
@@ -119,7 +133,7 @@ fn selcall(
       callins.cls,
       callins.to,
       @types.Ref::tmp(@types.RAX),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
     ca = ca + 1
   } else {
@@ -129,7 +143,7 @@ fn selcall(
       callins.cls,
       callins.to,
       @types.Ref::tmp(@types.XMM0),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
     ca = ca + (1 << 2)
   }
@@ -144,7 +158,7 @@ fn selcall(
     st,
     @types.Call,
     callins.cls,
-    @types.ref_none(),
+    @types.Ref::none(),
     callins.arg1,
     call_ref(ca),
   )
@@ -155,7 +169,7 @@ fn selcall(
       @types.Kl,
       @types.Ref::tmp(@types.RAX),
       st.env,
-      @types.ref_none(),
+      @types.Ref::none(),
     )
   }
   if varc {
@@ -165,7 +179,7 @@ fn selcall(
       @types.Kw,
       @types.Ref::tmp(@types.RAX),
       getcon(st, ((ca >> 8) & 15).to_int64()),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
   }
 
@@ -178,7 +192,7 @@ fn selcall(
       @types.Kl,
       rarg(st, @types.Kl, ni, ns),
       ra.i.to,
-      @types.ref_none(),
+      @types.Ref::none(),
     )
   }
   for a in 0..<nargs {
@@ -191,12 +205,12 @@ fn selcall(
       if ac[a].size > 8 {
         let r2 = rarg(st, ac[a].cls[1], ni, ns)
         let r = abi_newtmp(st, @types.Kl)
-        emit(st, @types.Load, ac[a].cls[1], r2, r, @types.ref_none())
+        emit(st, @types.Load, ac[a].cls[1], r2, r, @types.Ref::none())
         emit(st, @types.Add, @types.Kl, r, i.arg2, getcon(st, 8L))
       }
-      emit(st, @types.Load, ac[a].cls[0], r1, i.arg2, @types.ref_none())
+      emit(st, @types.Load, ac[a].cls[0], r1, i.arg2, @types.Ref::none())
     } else {
-      emit(st, @types.Copy, i.cls, r1, i.arg1, @types.ref_none())
+      emit(st, @types.Copy, i.cls, r1, i.arg1, @types.Ref::none())
     }
   }
 
@@ -217,7 +231,7 @@ fn selcall(
       blit(st, r, off, i.arg2, ac[a].size)
     } else {
       let r1 = abi_newtmp(st, @types.Kl)
-      emit(st, @types.Storel, @types.Kw, @types.ref_none(), i.arg1, r1)
+      emit(st, @types.Storel, @types.Kw, @types.Ref::none(), i.arg1, r1)
       emit(st, @types.Add, @types.Kl, r1, r, getcon(st, off.to_int64()))
     }
     off = off + ac[a].size
@@ -228,7 +242,7 @@ fn selcall(
     @types.Kl,
     r,
     getcon(st, stk.to_int64()),
-    @types.ref_none(),
+    @types.Ref::none(),
   )
 }
 
@@ -251,7 +265,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
   } else {
     AClass::new()
   }
-  st.env = @types.ref_none()
+  st.env = @types.Ref::none()
   let fa = argsclass(
     st,
     ins,
@@ -275,12 +289,12 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
     if ac[a].size > 8 {
       let r = abi_newtmp(st, @types.Kl)
       let r1 = abi_newtmp(st, @types.Kl)
-      emit(st, @types.Storel, @types.Kw, @types.ref_none(), r1, r)
+      emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r1, r)
       emit(st, @types.Add, @types.Kl, r, i.to, getcon(st, 8L))
       ac[a].r[1] = r1
     }
     let r0 = abi_newtmp(st, @types.Kl)
-    emit(st, @types.Storel, @types.Kw, @types.ref_none(), r0, i.to)
+    emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, i.to)
     ac[a].r[0] = r0
     let al = if ac[a].align >= 2 { ac[a].align - 2 } else { 0 }
     emit(
@@ -289,7 +303,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
       @types.Kl,
       i.to,
       getcon(st, ac[a].size.to_int64()),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
   }
 
@@ -301,7 +315,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
       @types.Kl,
       r,
       rarg(st, @types.Kl, ni, ns),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
     st.fn_.retr = r
   }
@@ -329,20 +343,20 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
           i.cls,
           i.to,
           @types.Ref::slot(-s),
-          @types.ref_none(),
+          @types.Ref::none(),
         )
         s = s + 2
       }
       _ => {
         let r = rarg(st, ac[a].cls[0], ni, ns)
         if i.op == @types.Parc {
-          emit(st, @types.Copy, @types.Kl, ac[a].r[0], r, @types.ref_none())
+          emit(st, @types.Copy, @types.Kl, ac[a].r[0], r, @types.Ref::none())
           if ac[a].size > 8 {
             let r2 = rarg(st, ac[a].cls[1], ni, ns)
-            emit(st, @types.Copy, @types.Kl, ac[a].r[1], r2, @types.ref_none())
+            emit(st, @types.Copy, @types.Kl, ac[a].r[1], r2, @types.Ref::none())
           }
         } else {
-          emit(st, @types.Copy, i.cls, i.to, r, @types.ref_none())
+          emit(st, @types.Copy, i.cls, i.to, r, @types.Ref::none())
         }
       }
     }
@@ -355,7 +369,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
       @types.Kl,
       st.env,
       @types.Ref::tmp(@types.RAX),
-      @types.ref_none(),
+      @types.Ref::none(),
     )
   }
   fa | ((s * 4) << 12)
@@ -412,7 +426,7 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   let isint = kbase(va.cls) == 0
 
   let loc = abi_newtmp(st, @types.Kl)
-  emit(st, @types.Load, va.cls, va.to, loc, @types.ref_none())
+  emit(st, @types.Load, va.cls, va.to, loc, @types.Ref::none())
   let b0 = split(st, bid)
   // b0 inherits b's jump
   let b0b = st.fn_.blks[b0]
@@ -428,7 +442,7 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   let nr = abi_newtmp(st, @types.Kl)
   let r0 = abi_newtmp(st, @types.Kw)
   let r1 = abi_newtmp(st, @types.Kl)
-  emit(st, @types.Storew, @types.Kw, @types.ref_none(), r0, r1)
+  emit(st, @types.Storew, @types.Kw, @types.Ref::none(), r0, r1)
   emit(
     st,
     @types.Add,
@@ -445,7 +459,7 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   let r2 = abi_newtmp(st, @types.Kl)
   let r3 = abi_newtmp(st, @types.Kl)
   emit(st, @types.Add, @types.Kl, lreg, r3, nr)
-  emit(st, @types.Load, @types.Kl, r3, r2, @types.ref_none())
+  emit(st, @types.Load, @types.Kl, r3, r2, @types.Ref::none())
   emit(st, @types.Add, @types.Kl, r2, ap, c16)
   let breg = split(st, bid)
   st.fn_.blks[breg].jmp = @types.Jump::new(@types.Jjmp)
@@ -454,9 +468,9 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   let lstk = abi_newtmp(st, @types.Kl)
   let r4 = abi_newtmp(st, @types.Kl)
   let r5 = abi_newtmp(st, @types.Kl)
-  emit(st, @types.Storel, @types.Kw, @types.ref_none(), r5, r4)
+  emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r5, r4)
   emit(st, @types.Add, @types.Kl, r5, lstk, c8)
-  emit(st, @types.Load, @types.Kl, lstk, r4, @types.ref_none())
+  emit(st, @types.Load, @types.Kl, lstk, r4, @types.Ref::none())
   emit(st, @types.Add, @types.Kl, r4, ap, c8)
   let bstk = split(st, bid)
   st.fn_.blks[bstk].jmp = @types.Jump::new(@types.Jjmp)
@@ -476,7 +490,7 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   b.jmp.s2 = bstk
   let c = getcon(st, (if isint { 48 } else { 176 }).to_int64())
   emit(st, @types.Cultw, @types.Kw, r7, nr, c)
-  emit(st, @types.Loadsw, @types.Kl, nr, r6, @types.ref_none())
+  emit(st, @types.Loadsw, @types.Kl, nr, r6, @types.Ref::none())
   emit(
     st,
     @types.Add,
@@ -499,7 +513,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
   let sp = fa >> 12
   let r0 = abi_newtmp(st, @types.Kl)
   let r1 = abi_newtmp(st, @types.Kl)
-  emit(st, @types.Storel, @types.Kw, @types.ref_none(), r1, r0)
+  emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r1, r0)
   emit(
     st,
     @types.Add,
@@ -511,7 +525,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
   emit(st, @types.Add, @types.Kl, r0, ap, getcon(st, 16L))
   let r2 = abi_newtmp(st, @types.Kl)
   let r3 = abi_newtmp(st, @types.Kl)
-  emit(st, @types.Storel, @types.Kw, @types.ref_none(), r3, r2)
+  emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r3, r2)
   emit(
     st,
     @types.Add,
@@ -526,7 +540,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
     st,
     @types.Storew,
     @types.Kw,
-    @types.ref_none(),
+    @types.Ref::none(),
     getcon(st, fp.to_int64()),
     r4,
   )
@@ -535,7 +549,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
     st,
     @types.Storew,
     @types.Kw,
-    @types.ref_none(),
+    @types.Ref::none(),
     getcon(st, gp.to_int64()),
     ap,
   )
@@ -559,7 +573,7 @@ fn process_block(st : AbiState, bid : Int) -> Unit raise {
       @types.Call | @types.Vacall => {
         let mut i0 = i
         while i0 > 0 {
-          if !@types.is_arg(orig[i0 - 1].op) {
+          if !orig[i0 - 1].op.is_arg() {
             break
           }
           i0 = i0 - 1
@@ -601,7 +615,7 @@ pub fn abi(
     typs,
     buf: Array::new(),
     ral: None,
-    env: @types.ref_none(),
+    env: @types.Ref::none(),
     fa: 0,
   }
   for id in fn_.def_order {
@@ -612,7 +626,7 @@ pub fn abi(
   let mut par_end = 0
   while par_end < start.ins.length() {
     let op = start.ins[par_end].op
-    if !@types.is_par(op) {
+    if !op.is_par() {
       break
     }
     par_end = par_end + 1
@@ -625,7 +639,7 @@ pub fn abi(
   for x in emitted {
     new_ins.push(x)
   }
-  for k = par_end; k < start.ins.length(); k = k + 1 {
+  for k in par_end..<start.ins.length() {
     new_ins.push(start.ins[k])
   }
   start.ins.clear()

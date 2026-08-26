@@ -137,7 +137,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
   rpo_dfs(f, f.start_id, post_order)
   // Build RPO array (reverse of post-order)
   f.rpo.clear()
-  for i = post_order.length() - 1; i >= 0; i = i - 1 {
+  for i in (post_order.length() - 1)>=..0 {
     let blk_id = post_order[i]
     f.blks[blk_id].rpo_id = f.rpo.length()
     f.rpo.push(blk_id)
@@ -383,7 +383,7 @@ pub fn simpljmp(f : @types.Fn) -> Unit {
     if b.jmp.s2 >= 0 {
       b.jmp.s2 = uf_find(f, b.jmp.s2, uf)
     }
-    let c = @types.jump_index(b.jmp.kind) - @types.jump_index(@types.Jjfieq)
+    let c = b.jmp.kind.index() - @types.Jjfieq.index()
     if c >= 0 && c <= 18 {
       if b.jmp.s1 == b.jmp.s2 {
         b.jmp.kind = @types.Jjmp

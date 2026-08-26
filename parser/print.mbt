@@ -128,7 +128,7 @@ fn hex4(v : Int) -> String {
   while chars.length() < 4 {
     chars.push('0')
   }
-  for k = chars.length() - 1; k >= 0; k = k - 1 {
+  for k in (chars.length() - 1)>=..0 {
     sb.write_char(chars[k])
   }
   sb.to_string()

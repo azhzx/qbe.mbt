@@ -66,7 +66,7 @@ fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int {
   match fn_.cons[r.con_val()].kind {
     @types.CAddr => 0
     @types.CBits => {
-      let val = @types.con_raw_bits(fn_.cons[r.con_val()])
+      let val = fn_.cons[r.con_val()].raw_bits()
       if val < -2147483648L || val > 2147483647L {
         1
       } else {
@@ -82,9 +82,9 @@ fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int {
 fn argcls(i : @types.Ins, n : Int) -> @types.Class {
   let info = @types.op_info(i.op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
-  let c = @types.kcode(i.cls)
+  let c = i.cls.code()
   let idx = if c < 0 { 0 } else { c }
-  @types.class_from_code(arr[idx])
+  @types.Class::from_code(arr[idx])
 }
 
 ///|
@@ -100,21 +100,12 @@ fn fixarg(
   let mut r1 = r0
   let s = rslot(r0, st.fn_)
   let cpy = op is None || op == Some(@types.Copy)
-  let mem = op is Some(o) &&
-    (@types.is_store(o) || @types.is_load(o) || o == @types.Call)
-  if @types.kbase(k) == 1 && r0.is_con() {
+  let mem = op is Some(o) && (o.is_store() || o.is_load() || o == @types.Call)
+  if k.base() == 1 && r0.is_con() {
     // load floating point constants from memory slots
     let n = st.fn_.mems.length()
-    let bits = @types.con_raw_bits(st.fn_.cons[r0.con_val()])
-    let nfp = @types.gasstash(
-      bits,
-      0L,
-      if @types.kwide(k) == 1 {
-        8
-      } else {
-        4
-      },
-    )
+    let bits = st.fn_.cons[r0.con_val()].raw_bits()
+    let nfp = @types.gasstash(bits, 0L, if k.wide() == 1 { 8 } else { 4 })
     let label = st.interner.intern("fp\{nfp}")
     let a = @types.Addr::new()
     a.offset = @types.Con::{
@@ -129,17 +120,24 @@ fn fixarg(
   } else if !cpy && k == @types.Kl && noimm(r0, st.fn_) != 0 {
     // load constants that do not fit in a 32bit signed integer
     r1 = isel_newtmp(st, @types.Kl)
-    emit(st, @types.Copy, @types.Kl, r1, r0, @types.ref_none())
+    emit(st, @types.Copy, @types.Kl, r1, r0, @types.Ref::none())
   } else if s != -1 {
     // load fast locals' addresses into temporaries
     r1 = isel_newtmp(st, @types.Kl)
-    emit(st, @types.Addr, @types.Kl, r1, @types.Ref::slot(s), @types.ref_none())
+    emit(
+      st,
+      @types.Addr,
+      @types.Kl,
+      r1,
+      @types.Ref::slot(s),
+      @types.Ref::none(),
+    )
   } else if !mem &&
     r0.is_con() &&
     st.fn_.cons[r0.con_val()].kind == @types.CAddr {
     // apple asm fix
     r1 = isel_newtmp(st, @types.Kl)
-    emit(st, @types.Addr, @types.Kl, r1, r0, @types.ref_none())
+    emit(st, @types.Addr, @types.Kl, r1, r0, @types.Ref::none())
   } else if r0.is_mem() {
     // apple asm fix: materialize a memory base when it is empty
     let m = st.fn_.mems[r0.mem_val()]
@@ -153,7 +151,7 @@ fn fixarg(
         @types.Kl,
         r0,
         @types.Ref::con(n),
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       m.base = r0
       m.offset = @types.Con::new()
@@ -169,7 +167,7 @@ fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
   if r0.is_tmp() {
     let av = @types.Addr::new()
     amatch(st, av, r0, true)
-    if @types.req(av.base, r0) {
+    if av.base.eq(r0) {
       return r0
     }
     if av.offset.kind == @types.CAddr {
@@ -180,7 +178,7 @@ fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
         } else {
           av.index = av.base
           av.scale = 1
-          av.base = @types.ref_none()
+          av.base = @types.Ref::none()
         }
       }
     }

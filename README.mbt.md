@@ -27,9 +27,39 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 
 提供调试辅助模块
 
-提供不少于 300 个 MoonBit 测试文件，并持续保持核心回归测试通过；
+提供统一编译入口 `@qbe.compile` / `@qbe.compile_debug`，覆盖 IL 解析、SSA 构建、寄存器分配、汇编输出；
+
+提供 MoonBit 单元 / 黑盒 / 白盒测试，并持续保持核心回归测试通过（`.ssa` 差分回归 + `moon test`）；
 
 提供 README 示例，覆盖 IL 解析、SSA 构建、寄存器分配、汇编输出和目标架构选择。
+
+# 快速上手
+
+`@qbe.compile` 把一段 IL 文本编译成 amd64 GAS 汇编；`@qbe.compile_debug` 返回各阶段 dump：
+
+```mbt check
+///|
+test {
+  let src =
+    #|export function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  match @qbe.compile(src) {
+    Ok(assembly) => {
+      assert_true(assembly.contains("addl"))
+      assert_true(assembly.contains("add:"))
+    }
+    Err(_) => fail("compile failed")
+  }
+  match @qbe.compile_debug(src, "P") {
+    Ok(dump) => assert_true(dump.contains("After parsing"))
+    Err(_) => fail("compile failed")
+  }
+}
+```
 
 # 技术细节
 
@@ -52,9 +82,10 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 | 寄存器溢出 | `spill` | 基于代价与循环加权选择溢出点，迭代到收敛 |
 | 寄存器分配 | `rega` | 基于活跃集合构建干涉图，贪心染色 |
 | 汇编输出 | `emit` | 渲染 GAS 汇编（Linux `.L`/macOS `L`、`_` 前缀） |
-| CLI 入口 | `cmd/main` | 参数解析与流水线调度 |
+| CLI 入口 | `cmd/main` | 参数解析与文件 I/O（薄壳，调用 `@qbe` facade） |
+| 库入口 | `.` | 统一编译 API `compile` / `compile_debug` 与 IR 类型再导出 |
 
-完整流水线（`cmd/main/main.mbt` 中 `run_passes`）：
+完整流水线（`pipeline.mbt` 中 `run_passes`，对库用户封装在 `@qbe.compile`）：
 
 ```
 parse → fillrpo → fillpreds → filluse → memopt
@@ -92,8 +123,12 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 ## 调试与测试
 
-- 命令行 `-d <flags>` 提供分阶段 dump（`-dP` parse、`-dM` memopt、`-dN` SSA、`-dC` copy、`-dF` fold、`-dA` abi、`-dI` isel、`-dL` live、`-dS` spill、`-dR` rega），可组合；开启调试时不再输出汇编。
-- 测试量：223 个 MoonBit 测试文件（`*_test.mbt` / `*_wbtest.mbt`），505 个 `.ssa` 回归用例，覆盖解析、SSA 构建、寄存器分配、汇编输出与端到端编译。
+- 命令行 `-d <flags>` 提供分阶段 dump（`-dP` parse、`-dM` memopt、`-dN` SSA、`-dC` copy、`-dF` fold、`-dA` abi、`-dI` isel、`-dL` live、`-dS` spill、`-dR` rega），可组合；开启调试时不再输出汇编。库入口 `compile_debug(text, flags)` 返回同样的 dump 文本。
+- 测试分三层：
+  - **单元/白盒测试** `*_wbtest.mbt`：`types`（BSet/Con/Ref/Op/Class/Jump 等）、`util`（Interner/格式化）、`lexer`、`parser`、`fold`、`cfg`、`ssa`、`live` 的核心函数；
+  - **黑盒测试** `qbe_test.mbt`：直接调用 `@qbe.compile` / `@qbe.compile_debug`，覆盖端到端编译（算术、浮点、内存、递归、循环 phi）与错误路径；
+  - **差分回归**：`test/*.ssa`（406 个用例）与参考 qbe 二进制逐字节对比（`compare.py`）。
+- 运行：`moon test`；更新快照：`moon test --update`；覆盖率：`moon coverage analyze`。
 
 # 移植或参考说明
 原项目信息

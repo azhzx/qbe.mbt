@@ -154,8 +154,9 @@ pub(all) enum Op {
 
 ///|
 // Check if op is a store
-pub fn is_store(o : Op) -> Bool {
-  match o {
+#as_free_fn(is_store, deprecated="use `Op::is_store` instead")
+pub fn Op::is_store(self : Op) -> Bool {
+  match self {
     Storeb | Storeh | Storew | Storel | Stores | Stored => true
     _ => false
   }
@@ -163,8 +164,9 @@ pub fn is_store(o : Op) -> Bool {
 
 ///|
 // Check if op is a load
-pub fn is_load(o : Op) -> Bool {
-  match o {
+#as_free_fn(is_load, deprecated="use `Op::is_load` instead")
+pub fn Op::is_load(self : Op) -> Bool {
+  match self {
     Loadsb | Loadub | Loadsh | Loaduh | Loadsw | Loaduw | Load => true
     _ => false
   }
@@ -172,8 +174,9 @@ pub fn is_load(o : Op) -> Bool {
 
 ///|
 // Check if op is an extension
-pub fn is_ext(o : Op) -> Bool {
-  match o {
+#as_free_fn(is_ext, deprecated="use `Op::is_ext` instead")
+pub fn Op::is_ext(self : Op) -> Bool {
+  match self {
     Extsb | Extub | Extsh | Extuh | Extsw | Extuw => true
     _ => false
   }
@@ -181,9 +184,9 @@ pub fn is_ext(o : Op) -> Bool {
 
 ///|
 // Width index for a load op: Loadsb=Wsb, Loadub=Wub, ... Loaduw=Wuw
-// (C: Wsb + (op - Oloadsb))
-pub fn load_width_idx(o : Op) -> Int {
-  match o {
+#as_free_fn(load_width_idx, deprecated="use `Op::load_width_idx` instead")
+pub fn Op::load_width_idx(self : Op) -> Int {
+  match self {
     Loadsb => 1
     Loadub => 2
     Loadsh => 3
@@ -196,8 +199,9 @@ pub fn load_width_idx(o : Op) -> Int {
 
 ///|
 // Width index for an extension op (C: Wsb + (op - Oextsb))
-pub fn ext_width_idx(o : Op) -> Int {
-  match o {
+#as_free_fn(ext_width_idx, deprecated="use `Op::ext_width_idx` instead")
+pub fn Op::ext_width_idx(self : Op) -> Int {
+  match self {
     Extsb => 1
     Extub => 2
     Extsh => 3
@@ -210,19 +214,22 @@ pub fn ext_width_idx(o : Op) -> Int {
 
 ///|
 // Check if op is a parameter
-pub fn is_par(o : Op) -> Bool {
-  o == Par || o == Parc || o == Pare
+#as_free_fn(is_par, deprecated="use `Op::is_par` instead")
+pub fn Op::is_par(self : Op) -> Bool {
+  self == Par || self == Parc || self == Pare
 }
 
 ///|
 // Check if op is an argument
-pub fn is_arg(o : Op) -> Bool {
-  o == Arg || o == Argc || o == Arge
+#as_free_fn(is_arg, deprecated="use `Op::is_arg` instead")
+pub fn Op::is_arg(self : Op) -> Bool {
+  self == Arg || self == Argc || self == Arge
 }
 
 ///|
 // Parse op from string (the SSA opcode name)
-pub fn op_from_string(s : String) -> Op {
+#as_free_fn(op_from_string, deprecated="use `Op::from_string` instead")
+pub fn Op::from_string(s : String) -> Op {
   match s {
     "add" => Add
     "sub" => Sub

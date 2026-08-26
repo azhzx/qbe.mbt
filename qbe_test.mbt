@@ -112,7 +112,10 @@ test "compile rejects malformed input" {
 
 ///|
 test "compile rejects unknown gas flavor" {
-  let result = @qbe.compile("export function w $f() { @start ret 0 }\n", gas="x")
+  let result = @qbe.compile(
+    "export function w $f() { @start ret 0 }\n",
+    gas="x",
+  )
   match result {
     Ok(_) => fail("expected a compile error")
     Err(@util.QbeError::CompileError(msg)) =>
@@ -168,6 +171,71 @@ test "compile_debug full pipeline flags" {
   }
   assert_true(dump.contains("After SSA construction"))
   assert_true(dump.contains("Liveness analysis"))
+}
+
+///|
+test "compile float arithmetic emits double instructions" {
+  let src =
+    #|export function d $poly(d %x) {
+    #|@start
+    #|  %x2 =d mul %x, %x
+    #|  %r =d mul %x2, d_2.0
+    #|  %r2 =d add %r, %x2
+    #|  ret %r2
+    #|}
+    #|
+  let assembly = match @qbe.compile(src) {
+    Ok(s) => s
+    Err(_) => fail("compile failed")
+  }
+  assert_true(assembly.contains("poly:"))
+  assert_true(assembly.contains("mulsd"))
+  assert_true(assembly.contains("addsd"))
+}
+
+///|
+test "compile memory ops emits load/store" {
+  let src =
+    #|export function l $mem_demo(l %n) {
+    #|@start
+    #|  %a =l alloc8 %n
+    #|  storel 42, %a
+    #|  %v =l load %a
+    #|  ret %v
+    #|}
+    #|
+  let assembly = match @qbe.compile(src) {
+    Ok(s) => s
+    Err(_) => fail("compile failed")
+  }
+  assert_true(assembly.contains("mem_demo:"))
+  assert_true(assembly.contains("movq"))
+}
+
+///|
+test "compile phi loop with many temps" {
+  // A small loop with a phi node exercises regalloc and loop analysis.
+  let src =
+    #|export function w $count(w %n) {
+    #|@start
+    #|  jmp @loop
+    #|@loop
+    #|  %i =w phi @start 0, @body %i2
+    #|  %c =w csltw %i, %n
+    #|  jnz %c, @body, @done
+    #|@body
+    #|  %i2 =w add %i, 1
+    #|  jmp @loop
+    #|@done
+    #|  ret %i
+    #|}
+    #|
+  let assembly = match @qbe.compile(src) {
+    Ok(s) => s
+    Err(_) => fail("compile failed")
+  }
+  assert_true(assembly.contains("count:"))
+  assert_true(assembly.contains("ret"))
 }
 
 ///|

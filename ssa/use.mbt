@@ -53,7 +53,7 @@ fn loadsz(i : @types.Ins) -> Int {
     @types.Loadsb | @types.Loadub => 1
     @types.Loadsh | @types.Loaduh => 2
     @types.Loadsw | @types.Loaduw => 4
-    @types.Load => if @types.kwide(i.cls) == 1 { 8 } else { 4 }
+    @types.Load => if i.cls.wide() == 1 { 8 } else { 4 }
     _ => 0
   }
 }
@@ -72,7 +72,7 @@ fn storesz(i : @types.Ins) -> Int {
 ///|
 // Fill usage, width, phi, and class information (C filluse)
 pub fn filluse(fn_ : @types.Fn) -> Unit raise {
-  for t = @types.Tmp0; t < fn_.ntmp(); t = t + 1 {
+  for t in @types.Tmp0..<fn_.ntmp() {
     let tmp = fn_.tmps[t]
     tmp.ndef = 0
     tmp.nuse = 0
@@ -113,10 +113,10 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
         }
         let mut w = @types.WFull
         if is_load(ins.op) && ins.op != @types.Load {
-          w = @types.width_from_code(@types.load_width_idx(ins.op))
+          w = @types.TmpWidth::from_code(ins.op.load_width_idx())
         }
         if is_ext(ins.op) {
-          w = @types.width_from_code(@types.ext_width_idx(ins.op))
+          w = @types.TmpWidth::from_code(ins.op.ext_width_idx())
         }
         if (w == @types.Wsw || w == @types.Wuw) && ins.cls == @types.Kw {
           w = @types.WFull
@@ -157,10 +157,10 @@ fn adduse(
 
 ///|
 fn is_load(o : @types.Op) -> Bool {
-  @types.is_load(o)
+  o.is_load()
 }
 
 ///|
 fn is_ext(o : @types.Op) -> Bool {
-  @types.is_ext(o)
+  o.is_ext()
 }

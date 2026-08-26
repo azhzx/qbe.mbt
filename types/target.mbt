@@ -163,9 +163,10 @@ pub let rclob : Array[Int] = [RBX, R12, R13, R14, R15]
 ///|
 // The registers returned by a call, given its RCall ref (C retregs).
 // Returns (bits, ngp, nfpr).
-pub fn retregs(r : Ref) -> (UInt64, Int, Int) {
+#as_free_fn(retregs, deprecated="use `Ref::retregs` instead")
+pub fn Ref::retregs(self : Ref) -> (UInt64, Int, Int) {
   let mut b : UInt64 = 0
-  let v = r.call_val()
+  let v = self.call_val()
   let ni = v & 3
   let nf = (v >> 2) & 3
   if ni >= 1 {
@@ -186,9 +187,10 @@ pub fn retregs(r : Ref) -> (UInt64, Int, Int) {
 ///|
 // The registers used to pass arguments, given an RCall ref (C argregs).
 // Returns (bits, ngp, nfpr).
-pub fn argregs(r : Ref) -> (UInt64, Int, Int) {
+#as_free_fn(argregs, deprecated="use `Ref::argregs` instead")
+pub fn Ref::argregs(self : Ref) -> (UInt64, Int, Int) {
   let mut b : UInt64 = 0
-  let v = r.call_val()
+  let v = self.call_val()
   let ni = (v >> 4) & 15
   let nf = (v >> 8) & 15
   let ra = (v >> 12) & 1

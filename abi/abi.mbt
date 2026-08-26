@@ -18,7 +18,7 @@ fn AClass::new() -> AClass {
     align: 0,
     size: 0,
     cls: [@types.Kx, @types.Kx],
-    r: [@types.ref_none(), @types.ref_none()],
+    r: [@types.Ref::none(), @types.Ref::none()],
   }
 }
 
@@ -58,7 +58,7 @@ fn emiti(st : AbiState, i : @types.Ins) -> Unit {
 ///|
 fn emit_block(st : AbiState) -> Array[@types.Ins] {
   let r : Array[@types.Ins] = Array::new()
-  for k = st.buf.length() - 1; k >= 0; k = k - 1 {
+  for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
   r
@@ -86,7 +86,7 @@ fn call_ref(ca : Int) -> @types.Ref {
 
 ///|
 fn alloc_op(al : Int) -> @types.Op {
-  @types.op_from_index(@types.op_index(@types.Alloc4) + al)
+  @types.Op::from_index(@types.Alloc4.index() + al)
 }
 
 ///|
@@ -178,7 +178,7 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
 
 ///|
 fn kbase(k : @types.Class) -> Int {
-  @types.kbase(k)
+  k.base()
 }
 
 ///|
@@ -196,10 +196,10 @@ fn blit(
   while sz > 0 {
     let r = blt_newtmp(st, @types.Kl)
     let r1 = blt_newtmp(st, @types.Kl)
-    emit(st, @types.Storel, @types.Kw, @types.ref_none(), r, r1)
+    emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r, r1)
     emit(st, @types.Add, @types.Kl, r1, rstk, getcon(st, soff.to_int64()))
     let r2 = blt_newtmp(st, @types.Kl)
-    emit(st, @types.Load, @types.Kl, r, r2, @types.ref_none())
+    emit(st, @types.Load, @types.Kl, r, r2, @types.Ref::none())
     emit(st, @types.Add, @types.Kl, r2, rsrc, getcon(st, boff.to_int64()))
     sz = sz - 8
     soff = soff + 8
@@ -211,7 +211,7 @@ fn blit(
 fn selret(st : AbiState, bid : Int) -> Unit {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
-  if !@types.is_ret(j) || j == @types.Jret0 {
+  if !j.is_ret() || j == @types.Jret0 {
     return
   }
   let r0 = b.jmp.arg
@@ -226,22 +226,22 @@ fn selret(st : AbiState, bid : Int) -> Unit {
         @types.Kl,
         @types.Ref::tmp(@types.RAX),
         st.fn_.retr,
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       blit(st, st.fn_.retr, 0, r0, aret.size)
       ca = 1
     } else {
-      let reg : Array[@types.Ref] = Array::make(2, @types.ref_none())
+      let reg : Array[@types.Ref] = Array::make(2, @types.Ref::none())
       ca = retr(reg, aret)
       if aret.size > 8 {
         let r = abi_newtmp(st, @types.Kl)
-        emit(st, @types.Load, @types.Kl, reg[1], r, @types.ref_none())
+        emit(st, @types.Load, @types.Kl, reg[1], r, @types.Ref::none())
         emit(st, @types.Add, @types.Kl, r, r0, getcon(st, 8L))
       }
-      emit(st, @types.Load, @types.Kl, reg[0], r0, @types.ref_none())
+      emit(st, @types.Load, @types.Kl, reg[0], r0, @types.Ref::none())
     }
   } else {
-    let k = @types.class_from_code(ret_class(j))
+    let k = @types.Class::from_code(ret_class(j))
     if kbase(k) == 0 {
       emit(
         st,
@@ -249,7 +249,7 @@ fn selret(st : AbiState, bid : Int) -> Unit {
         k,
         @types.Ref::tmp(@types.RAX),
         r0,
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       ca = 1
     } else {
@@ -259,7 +259,7 @@ fn selret(st : AbiState, bid : Int) -> Unit {
         k,
         @types.Ref::tmp(@types.XMM0),
         r0,
-        @types.ref_none(),
+        @types.Ref::none(),
       )
       ca = 1 << 2
     }
@@ -293,7 +293,7 @@ fn argsclass(
   let mut nsse = 8
   let par = op == @types.Par
   let mut a = 0
-  for i = i0; i < i1; i = i + 1 {
+  for i in i0..<i1 {
     let cur = orig[i]
     if cur.op == @types.Arg || cur.op == @types.Par {
       let pn = kbase(cur.cls)

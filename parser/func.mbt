@@ -71,7 +71,7 @@ fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
   fn_final.start_id = start_id
   if self.par_ins.length() > 0 {
     let start = fn_final.blks[start_id]
-    for i = self.par_ins.length() - 1; i >= 0; i = i - 1 {
+    for i in (self.par_ins.length() - 1)>=..0 {
       start.ins.insert(0, self.par_ins[i])
     }
   }
@@ -119,7 +119,7 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
         @types.Ins::new(
           @types.Argc,
           @types.Kl,
-          @types.ref_none(),
+          @types.Ref::none(),
           @types.Ref::typ(ty),
           r,
         )
@@ -129,19 +129,31 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
           @types.Kl,
           r,
           @types.Ref::typ(ty),
-          @types.ref_none(),
+          @types.Ref::none(),
         )
       }
     } else if env {
       if arg {
-        @types.Ins::new(@types.Arge, k, @types.ref_none(), r, @types.ref_none())
+        @types.Ins::new(
+          @types.Arge,
+          k,
+          @types.Ref::none(),
+          r,
+          @types.Ref::none(),
+        )
       } else {
-        @types.Ins::new(@types.Pare, k, r, @types.ref_none(), @types.ref_none())
+        @types.Ins::new(
+          @types.Pare,
+          k,
+          r,
+          @types.Ref::none(),
+          @types.Ref::none(),
+        )
       }
     } else if arg {
-      @types.Ins::new(@types.Arg, k, @types.ref_none(), r, @types.ref_none())
+      @types.Ins::new(@types.Arg, k, @types.Ref::none(), r, @types.Ref::none())
     } else {
-      @types.Ins::new(@types.Par, k, r, @types.ref_none(), @types.ref_none())
+      @types.Ins::new(@types.Par, k, r, @types.Ref::none(), @types.Ref::none())
     }
     // Add instruction to current block (or pending list during signature)
     if self.curblk >= 0 {
@@ -288,7 +300,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       }
       // Regular instruction
       let op = if op_tok.kind == TId {
-        @types.op_from_string(op_tok.raw)
+        @types.Op::from_string(op_tok.raw)
       } else {
         @types.Oxxx
       }
@@ -305,9 +317,9 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
     TId => {
       // Instruction without result (store, call, vastart)
       let name = self.tokens[self.pos - 1].raw
-      if @types.is_store(@types.op_from_string(name)) {
+      if @types.Op::from_string(name).is_store() {
         // Store instruction: storew value, addr
-        let op = @types.op_from_string(name)
+        let op = @types.Op::from_string(name)
         let (arg1, arg2) = self.parse_ins_args()
         let ins = @types.Ins::new_void(op, @types.Kw, arg1, arg2)
         fn_.blks[self.curblk].ins.push(ins)
@@ -323,7 +335,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
           @types.Vastart,
           @types.Kw,
           r,
-          @types.ref_none(),
+          @types.Ref::none(),
         )
         fn_.blks[self.curblk].ins.push(ins)
         self.expect(TNl)
@@ -331,7 +343,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       }
       if name == "call" {
         // Call without result
-        self.parse_call(@types.ref_none(), @types.Kw, -1)
+        self.parse_call(@types.Ref::none(), @types.Kw, -1)
         self.expect(TNl)
         return PIns
       }
@@ -390,7 +402,7 @@ fn Parser::parse_call(
   let (call_cls, arg2) = if cls == @types.Kx {
     (@types.Kl, @types.Ref::typ(ty))
   } else {
-    (cls, @types.ref_none())
+    (cls, @types.Ref::none())
   }
   let ins = @types.Ins::new(op, call_cls, to, callee, arg2)
   self.curfn().blks[self.curblk].ins.push(ins)
@@ -400,8 +412,8 @@ fn Parser::parse_call(
 // Parse instruction arguments (0, 1, or 2 refs)
 // Returns (arg1, arg2) where unused args are ref_none()
 fn Parser::parse_ins_args(self : Self) -> (@types.Ref, @types.Ref) raise {
-  let mut arg1 = @types.ref_none()
-  let mut arg2 = @types.ref_none()
+  let mut arg1 = @types.Ref::none()
+  let mut arg2 = @types.Ref::none()
   if self.peek_kind() == TNl {
     return (arg1, arg2)
   }

@@ -84,7 +84,7 @@ pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
   }
   if print_dbg {
     sb.write_string("\n> Spill costs:\n")
-    for n = @types.Tmp0; n < fn_.tmps.length(); n = n + 1 {
+    for n in @types.Tmp0..<fn_.tmps.length() {
       sb.write_string("\t")
       sb.write_string(@util.lpad(fn_.tmps[n].name, 10))
       sb.write_string(" ")

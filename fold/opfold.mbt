@@ -4,26 +4,26 @@
 
 ///|
 fn is_word_cmp(op : @types.Op) -> Bool {
-  let i = @types.op_index(op)
-  i >= @types.op_index(@types.Ceqw) && i <= @types.op_index(@types.Cultw)
+  let i = op.index()
+  i >= @types.Ceqw.index() && i <= @types.Cultw.index()
 }
 
 ///|
 fn is_long_cmp(op : @types.Op) -> Bool {
-  let i = @types.op_index(op)
-  i >= @types.op_index(@types.Ceql) && i <= @types.op_index(@types.Cultl)
+  let i = op.index()
+  i >= @types.Ceql.index() && i <= @types.Cultl.index()
 }
 
 ///|
 fn is_single_cmp(op : @types.Op) -> Bool {
-  let i = @types.op_index(op)
-  i >= @types.op_index(@types.Ceqs) && i <= @types.op_index(@types.Cuos)
+  let i = op.index()
+  i >= @types.Ceqs.index() && i <= @types.Cuos.index()
 }
 
 ///|
 fn is_double_cmp(op : @types.Op) -> Bool {
-  let i = @types.op_index(op)
-  i >= @types.op_index(@types.Ceqd) && i <= @types.op_index(@types.Cuod)
+  let i = op.index()
+  i >= @types.Ceqd.index() && i <= @types.Cuod.index()
 }
 
 ///|
@@ -35,13 +35,13 @@ fn sext32(v : Int64) -> Int64 {
 ///|
 // The double value of a con (C union's .fd view of the raw bits).
 fn con_double(c : @types.Con) -> Double {
-  @types.con_raw_bits(c).reinterpret_as_double()
+  c.raw_bits().reinterpret_as_double()
 }
 
 ///|
 // The single value of a con (C union's .fs view of the raw bits).
 fn con_single(c : @types.Con) -> Float {
-  let i = @types.con_raw_bits(c)
+  let i = c.raw_bits()
   let u : UInt = (i & 0xFFFFFFFF).reinterpret_as_uint64().to_uint()
   Float::reinterpret_from_uint(u)
 }
@@ -88,9 +88,9 @@ fn foldint(
   }
   let x : Int64 = if is_word_cmp(op) || is_long_cmp(op) {
     let ci = if is_word_cmp(op) {
-      @types.op_index(op) - @types.op_index(@types.Ceqw)
+      op.index() - @types.Ceqw.index()
     } else {
-      @types.op_index(op) - @types.op_index(@types.Ceql)
+      op.index() - @types.Ceql.index()
     }
     let l = if is_word_cmp(op) { sext32(l) } else { l }
     let r = if is_word_cmp(op) { sext32(r) } else { r }
@@ -127,7 +127,7 @@ fn foldint(
         } // Ciult
     }
   } else if is_single_cmp(op) {
-    let ci = @types.op_index(op) - @types.op_index(@types.Ceqs)
+    let ci = op.index() - @types.Ceqs.index()
     let ls = con_single(cl)
     let rs = con_single(cr)
     match ci {
@@ -141,7 +141,7 @@ fn foldint(
       _ => if !(ls < rs || ls >= rs) { 1L } else { 0L } // Cfuo
     }
   } else if is_double_cmp(op) {
-    let ci = @types.op_index(op) - @types.op_index(@types.Ceqd)
+    let ci = op.index() - @types.Ceqd.index()
     let ld = con_double(cl)
     let rd = con_double(cr)
     match ci {
@@ -282,7 +282,7 @@ fn opfold(
       op == @types.Rem ||
       op == @types.Urem
     ) &&
-    czero(cr, @types.kwide(cls) == 1) {
+    czero(cr, cls.wide() == 1) {
     raise @util.QbeError::Ice("null divisor")
   }
   let (is_bot, c) = if cls == @types.Kw || cls == @types.Kl {

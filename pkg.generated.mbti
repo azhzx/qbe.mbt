@@ -1,13 +1,44 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "azhzx/qbe"
 
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
 // Values
+pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
+
+pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 
 // Errors
 
 // Types and methods
 
 // Type aliases
+pub using @types {type BSet}
+
+pub using @types {type Blk}
+
+pub using @types {type Class}
+
+pub using @types {type Con}
+
+pub using @types {type Dat}
+
+pub using @types {type Fn}
+
+pub using @types {type Ins}
+
+pub using @types {type Jump}
+
+pub using @types {type Op}
+
+pub using @types {type Ref}
+
+pub using @types {type Tmp}
+
+pub using @types {type Typ}
 
 // Traits
 

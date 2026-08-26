@@ -23,11 +23,11 @@ let cmd : @argparse.Command = @argparse.Command(
 
 ///|
 // Format a compile error the way the reference CLI does.
-fn format_qbe_error(e : @qbe.QbeError) -> String {
+fn format_qbe_error(e : @util.QbeError) -> String {
   match e {
-    @qbe.QbeError::ParseError(f, line, msg) => "\{f}:\{line}: error: \{msg}"
-    @qbe.QbeError::CompileError(msg) => "error: \{msg}"
-    @qbe.QbeError::Ice(msg) => "ICE: \{msg}"
+    @util.QbeError::ParseError(f, line, msg) => "\{f}:\{line}: error: \{msg}"
+    @util.QbeError::CompileError(msg) => "error: \{msg}"
+    @util.QbeError::Ice(msg) => "ICE: \{msg}"
   }
 }
 
@@ -64,7 +64,7 @@ async fn process_file(file : String, flags : String, gas : String) -> String {
     }
   } else {
     match @qbe.compile(source, gas~) {
-      Ok(asm) => asm
+      Ok(assembly) => assembly
       Err(e) => {
         @util.eprint(format_qbe_error(e) + "\n")
         ""

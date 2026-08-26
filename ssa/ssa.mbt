@@ -55,7 +55,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
   let defs = @types.BSet::new(nb)
   // LIFO worklist, mirroring cfg.c's `*--bp` / `*bp++` stack.
   let work : Array[Int] = Array::new()
-  for t = @types.Tmp0; t < nt; t = t + 1 {
+  for t in @types.Tmp0..<nt {
     fn_.tmps[t].visit = 0
     if fn_.tmps[t].is_phi != 0 {
       continue
@@ -66,18 +66,18 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
     for id in fn_.def_order {
       let b = fn_.blks[id]
       b.visit = 0
-      let mut r = @types.ref_none()
+      let mut r = @types.Ref::none()
       for ii in 0..<b.ins.length() {
         let i = b.ins[ii]
         if !r.is_none() {
-          if @types.req(i.arg1, @types.Ref::tmp(t)) {
+          if i.arg1.eq(@types.Ref::tmp(t)) {
             b.ins[ii].arg1 = r
           }
-          if @types.req(i.arg2, @types.Ref::tmp(t)) {
+          if i.arg2.eq(@types.Ref::tmp(t)) {
             b.ins[ii].arg2 = r
           }
         }
-        if !i.to.is_none() && @types.req(i.to, @types.Ref::tmp(t)) {
+        if !i.to.is_none() && i.to.eq(@types.Ref::tmp(t)) {
           if !b.out_set.unwrap().has(t) {
             if fn_.tmps[t].ndef == 1 {
               r = @types.Ref::tmp(t)
@@ -99,7 +99,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
           }
         }
       }
-      if !r.is_none() && @types.req(b.jmp.arg, @types.Ref::tmp(t)) {
+      if !r.is_none() && b.jmp.arg.eq(@types.Ref::tmp(t)) {
         fn_.blks[id].jmp.arg = r
       }
     }
@@ -115,7 +115,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
           fn_.blks[f].visit = 1
           if fn_.blks[f].in_set.unwrap().has(t) {
             let p = @types.Phi::new(@types.Ref::tmp(t), @types.Kw)
-            p.cls = @types.class_from_code(k)
+            p.cls = @types.Class::from_code(k)
             // C phiins prepends: p->link = a->phi; a->phi = p;
             fn_.blks[f].phi.insert(0, p)
             if !defs.has(f) && !u.has(f) {

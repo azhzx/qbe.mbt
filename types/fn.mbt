@@ -9,7 +9,7 @@ pub(all) struct Addr {
 
 ///|
 pub fn Addr::new() -> Addr {
-  Addr::{ offset: Con::new(), base: ref_none(), index: ref_none(), scale: 1 }
+  Addr::{ offset: Con::new(), base: Ref::none(), index: Ref::none(), scale: 1 }
 }
 
 ///|
@@ -46,7 +46,7 @@ pub fn Fn::new(name : String) -> Fn {
     rpo: Array::new(),
     def_order: Array::new(),
     ret_ty: -1,
-    retr: ref_none(),
+    retr: Ref::none(),
     reg: 0,
     slot: 0,
     is_export: false,
