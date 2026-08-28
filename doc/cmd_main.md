@@ -4,6 +4,8 @@
 
 CLI 入口。读取命令行参数，调度各阶段，输出汇编或调试 dump。对应 QBE 原项目的 `main.c`。
 
+注意：当前 CLI 仅支持 amd64 目标。Wasm 编译通过库 API `@qbe.compile_wasm` 使用，不经过 CLI。
+
 ## 命令行接口
 
 ```
