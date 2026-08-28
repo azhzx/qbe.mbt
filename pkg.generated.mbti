@@ -11,6 +11,10 @@ pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 
+pub fn compile_wasm(String) -> Result[String, @util.QbeError]
+
+pub fn compile_wasm_debug(String, String) -> Result[String, @util.QbeError]
+
 // Errors
 
 // Types and methods

@@ -122,6 +122,88 @@ fn compile_debug_raise(text : String, flags : String) -> String raise {
 }
 
 ///|
+// Compile IL source text to WAT (WebAssembly Text format).
+//
+// Returns the generated WAT module, or a `@util.QbeError` describing
+// a lexing, parsing, or internal compiler error.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let wat = match compile_wasm(src) {
+//     Ok(wat) => wat
+//     Err(_) => fail("wasm compile failed")
+//   }
+//   assert_true(wat.contains("(func $one"))
+//   assert_true(wat.contains("i32.const 1"))
+// }
+// ```
+pub fn compile_wasm(text : String) -> Result[String, @util.QbeError] {
+  try compile_wasm_raise(text) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// Compile IL source text to WAT and return staged debug dumps.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let dump = match compile_wasm_debug(src, "PN") {
+//     Ok(dump) => dump
+//     Err(_) => fail("wasm compile failed")
+//   }
+//   assert_true(dump.contains("> After parsing:"))
+// }
+// ```
+pub fn compile_wasm_debug(
+  text : String,
+  flags : String,
+) -> Result[String, @util.QbeError] {
+  try compile_wasm_debug_raise(text, flags) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// Wasm compile, raising `@util.QbeError` on failure.
+fn compile_wasm_raise(text : String) -> String raise {
+  let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
+  let sb = StringBuilder::new()
+  emit_wasm_module(funcs, datas, order, typs, interner, sb)
+  sb.to_string()
+}
+
+///|
+// Wasm debug-dump compile, raising `@util.QbeError` on failure.
+fn compile_wasm_debug_raise(text : String, flags : String) -> String raise {
+  let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
+  let dbg = dbg_from_flags(flags)
+  let out = StringBuilder::new()
+  for fn_ in funcs {
+    out.write_string("**** Function \{fn_.name} ****")
+    run_passes_wasm(fn_, interner, typs, dbg, out)
+    out.write_string("\n")
+  }
+  out.to_string()
+}
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".

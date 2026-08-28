@@ -12,4 +12,7 @@ import {
   "azhzx/qbe/emit",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
+  "azhzx/qbe/abi_wasm",
+  "azhzx/qbe/isel_wasm",
+  "azhzx/qbe/emit_wasm",
 }

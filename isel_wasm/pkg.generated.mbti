@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/isel_wasm"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn convert_ctrl_flow(@types.Fn, @util.Interner) -> Array[Array[WasmCtrl]]
+
+pub fn decompose_addr(@types.Ref, @types.Ref, Int, @types.Con) -> (@types.Ref, @types.Ref, Int, @types.Con)
+
+pub fn get_loop_header(@types.Fn, Int) -> Int
+
+pub fn is_loop_header(@types.Fn, Int) -> Bool
+
+pub fn is_simple_addr(@types.Ref, @types.Ref, Int) -> Bool
+
+pub fn is_wasm_mem_offset(@types.Con) -> Bool
+
+pub fn isel_wasm(@types.Fn, @util.Interner, Bool, Array[@types.Typ]) -> String raise
+
+pub fn wasm_mem_offset(@types.Con) -> Int64
+
+// Errors
+
+// Types and methods
+pub enum WasmCtrl {
+  WBlock(String)
+  WLoop(String)
+  WIf(String)
+  WElse
+  WEnd
+  WBr(Int)
+  WBrIf(Int)
+  WReturn
+  WCall(Int)
+  WUnreachable
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

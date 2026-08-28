@@ -15,6 +15,9 @@
 | CFG 分析 | `cfg` | [cfg.md](cfg.md) | 前驱、支配者、支配边界、循环、别名 |
 | SSA 构造 | `ssa` | [ssa.md](ssa.md) | 使用链、phi 插入、memopt/loadopt/copy |
 | 常量折叠 | `fold` | [fold.md](fold.md) | 常量指令求值 |
+| Wasm ABI | `abi_wasm` | [abi_wasm.md](abi_wasm.md) | wasm 调用约定：Par/Arg→Nop，Call 简化 |
+| Wasm 指令选择 | `isel_wasm` | [isel_wasm.md](isel_wasm.md) | wasm op 映射、地址模式分解、CFG→结构化控制流 |
+| Wasm 汇编输出 | `emit_wasm` | [emit_wasm.md](emit_wasm.md) | WAT 文本格式输出 |
 | ABI 处理 | `abi` | [abi.md](abi.md) | 参数/返回值的平台 ABI |
 | 指令选择 | `isel` | [isel.md](isel.md) | amd64 指令模式选择 |
 | 活跃分析 | `live` | [live.md](live.md) | in/out 活跃集合 |
@@ -61,7 +64,45 @@
                               emit.emitfn
                                     │
                                     ▼
-                              out.s (GAS 汇编)
+                               out.s (GAS 汇编)
+```
+
+### Wasm 流水线
+
+```
+            ┌──────┐  ┌───────┐
+   src.ssa ─►│lexer │─►│parser │─┐
+            └──────┘  └───────┘ │
+                                  ▼
+                              ┌─────┐
+                              │types│  Fn/Dat/Typ
+                              └─────┘
+                                  │
+   ┌──────────────────────────────┼──────────────────────────────┐
+   │                                ▼                              │
+   │  cfg.fillrpo/preds/dom/fron/loop/alias                        │
+   │                                │                              │
+   │                                ▼                              │
+   │           ssa.filluse → ssa.memopt → ssa.phiins → renblk     │
+   │                                │                              │
+   │                                ▼                              │
+   │           ssa.loadopt → ssa.copy → fold.fold                  │
+   │                                │                              │
+   │                                ▼                              │
+   │                       abi_wasm.abi_wasm                       │
+   │                                │                              │
+   │                                ▼                              │
+   │                      isel_wasm.isel_wasm                      │
+   │                                │                              │
+   │                                ▼                              │
+   │              [跳过 spill/rega — wasm 无物理寄存器]              │
+   │                                │                              │
+   └────────────────────────────────┼─────────────────────────────┘
+                                    ▼
+                              emit_wasm.emit_fn
+                                    │
+                                    ▼
+                              out.wat (WAT 文本)
 ```
 
 每个带 `-d*` 标志的阶段在调试模式下会输出 IL 形式的快照到 stderr，参考 [cmd_main.md](cmd_main.md) 的标志表。

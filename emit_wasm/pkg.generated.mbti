@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/emit_wasm"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn emit_fn(@types.Fn, @util.Interner, StringBuilder) -> Unit
+
+pub fn emit_wat_module(Array[@types.Fn], Array[@types.Dat], Array[String], @util.Interner, StringBuilder) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

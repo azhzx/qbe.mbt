@@ -21,6 +21,8 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 
 支持 amd64
 
+支持 WebAssembly (wasm32)
+
 支持基础后端流程
 
 支持常用 IL 指令
@@ -28,6 +30,8 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 提供调试辅助模块
 
 提供统一编译入口 `@qbe.compile` / `@qbe.compile_debug`，覆盖 IL 解析、SSA 构建、寄存器分配、汇编输出；
+
+提供 WebAssembly 编译入口 `@qbe.compile_wasm` / `@qbe.compile_debug`，覆盖 IL 解析、SSA 构建、WAT 文本输出；
 
 提供 MoonBit 单元 / 黑盒 / 白盒测试，并持续保持核心回归测试通过（`.ssa` 差分回归 + `moon test`）；
 
@@ -61,6 +65,28 @@ test {
 }
 ```
 
+`@qbe.compile_wasm` 把一段 IL 文本编译成 WAT (WebAssembly Text) 格式：
+
+```mbt check
+///|
+test {
+  let src =
+    #|export function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  match @qbe.compile_wasm(src) {
+    Ok(wat) => {
+      assert_true(wat.contains("(func $add"))
+      assert_true(wat.contains("i32.add"))
+    }
+    Err(_) => fail("wasm compile failed")
+  }
+}
+```
+
 # 技术细节
 
 ## 包结构与编译流水线
@@ -76,6 +102,9 @@ test {
 | CFG 分析 | `cfg` | 反向后序、前驱、支配者树、支配边界、循环深度、别名分析、跳转简化 |
 | SSA 构造 | `ssa` | 使用链、memopt、phi 插入、块重命名、loadopt、copy 传播、合法性检查 |
 | 常量折叠 | `fold` | 操作数均为常量的指令直接求值并替换 |
+| Wasm ABI | `abi_wasm` | wasm 调用约定：Par/Arg→Nop，Call 简化 |
+| Wasm 指令选择 | `isel_wasm` | wasm op 映射、地址模式分解、CFG→结构化控制流 |
+| Wasm 汇编输出 | `emit_wasm` | WAT 文本格式输出 |
 | ABI 处理 | `abi` | System V AMD64 调用约定：参数/返回寄存器、栈溢出、vararg |
 | 指令选择 | `isel` | amd64 指令模式：立即数、地址模式、除法魔法数、条件跳转 |
 | 活跃分析 | `live` | 反向数据流求 in/out，块边界统计 `nlive_w`/`nlive_d` |
@@ -99,6 +128,19 @@ parse → fillrpo → fillpreds → filluse → memopt
       → emitfn
 ```
 
+Wasm 流水线（`run_passes_wasm`，对库用户封装在 `@qbe.compile_wasm`）：
+
+```
+parse → fillrpo → fillpreds → filluse → memopt
+      → filldom → fillfron → filllive(false) → phiins → renblk → filluse → ssacheck
+      → fillloop → fillalias → loadopt → filluse → ssacheck
+      → copy → filluse → fold
+      → abi_wasm → fillpreds → filluse
+      → isel_wasm
+      → [跳过 spill/rega — wasm 无物理寄存器]
+      → emit_wasm
+```
+
 ## 中间表示设计
 
 - **SSA IR**：函数 (`Fn`)、基本块 (`Blk`)、临时变量 (`Tmp`)、指令 (`Ins`) 均为可变结构体，就地修改，不产生副本；支持 phi 节点与多种跳转形式（无条件跳转、条件跳转、整数/浮点条件跳转、5 种返回）。
@@ -117,9 +159,9 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 ## ABI 与目标支持
 
-- 当前仅支持 **amd64_sysv**（System V AMD64 调用约定）；`abi/` 与 `isel/` 为未来多目标（wasm、arm64 等）预留了同签名扩展位。
-- `abi` 阶段把抽象 `Arg`/`Par`/`Ret*` 替换为具体寄存器/栈槽引用，聚合类型按 System V 规则决定走寄存器还是内存。
-- 输出两种 GAS 风格：Linux（`-G e`，`.L` 标签、无符号前缀）与 macOS（`-G m`，`L` 标签、`_` 前缀），可直接 `gcc`/`clang` 汇编链接。
+- 支持 **amd64_sysv**（System V AMD64 调用约定）和 **wasm**（WebAssembly）两个目标。
+- **amd64**：`abi` 阶段把抽象 `Arg`/`Par`/`Ret*` 替换为具体寄存器/栈槽引用，聚合类型按 System V 规则决定走寄存器还是内存；输出两种 GAS 风格（Linux/macOS）。
+- **wasm**：`abi_wasm` 阶段将 `Par`/`Arg` 指令替换为 `Nop`（参数直接通过局部变量传递），简化 `Call` 引用；`isel_wasm` 做指令映射后跳过寄存器分配（wasm 是栈机，无物理寄存器），`emit_wasm` 输出 WAT 文本格式。Wasm32 指针宽度为 32 位（`Km = Kw`），无 `Kl` 类型。
 
 ## 调试与测试
 
@@ -172,6 +214,6 @@ DEALINGS IN THE SOFTWARE.
 改写原c代码的手动内存管理为MoonBit安全数据结构与枚举类型，降低内存风险；
 
 # 未来计划
-- 支持更多平台（包括wasm）的代码生成支持
+- ✅ 支持 WebAssembly (wasm32) 的代码生成支持（WAT 文本输出）
 - 添加方便JIT的相关接口
 - 对接mbtcc，验证全流程的端到端的可行性

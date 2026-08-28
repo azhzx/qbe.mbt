@@ -248,3 +248,74 @@ fn emit_module(
   }
   @emit.gasemitfin(gasloc, sb)
 }
+
+///|
+// Run wasm compilation pipeline on a function.
+// Reuses SSA passes (target-agnostic), skips spill/rega (wasm has no
+// physical registers), and runs wasm-specific ABI + isel.
+fn run_passes_wasm(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  typs : Array[@types.Typ],
+  dbg : DbFlags,
+  out : StringBuilder,
+) -> Unit raise {
+  if dbg.p {
+    out.write_string("\n> After parsing:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillrpo(fn_)
+  @cfg.fillpreds(fn_)
+  @ssa.filluse(fn_)
+  @ssa.memopt(fn_)
+  if dbg.m {
+    out.write_string("\n> After memory optimization:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.filldom(fn_)
+  if dbg.n {
+    out.write_string("\n> Dominators:\n")
+    dbg_dominators(fn_, out)
+  }
+  @cfg.fillfron(fn_)
+  out.write_string(@live.filllive(fn_, false))
+  @ssa.phiins(fn_)
+  @ssa.renblk(fn_)
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  if dbg.n {
+    out.write_string("\n> After SSA construction:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillloop(fn_)
+  @cfg.fillalias(fn_)
+  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
+  @ssa.filluse(fn_)
+  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  // Wasm ABI lowering
+  out.write_string(@abi_wasm.abi_wasm(fn_, typs, dbg.a, interner, typs))
+  @cfg.fillpreds(fn_)
+  @ssa.filluse(fn_)
+  // Wasm instruction selection
+  out.write_string(@isel_wasm.isel_wasm(fn_, interner, dbg.i, typs))
+  // Skip spill/rega — wasm has no physical registers
+}
+
+///|
+// Emit WAT module for the whole module in input order.
+fn emit_wasm_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  order : Array[String],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+  sb : StringBuilder,
+) -> Unit raise {
+  for fn_ in funcs {
+    run_passes_wasm(fn_, interner, typs, DbFlags::new(), sb)
+  }
+  @emit_wasm.emit_wat_module(funcs, datas, order, interner, sb)
+}
