@@ -5,3 +5,11 @@ import {
   "azhzx/qbe/live",
   "azhzx/qbe/parser",
 }
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/fold",
+  "azhzx/qbe/abi",
+  "azhzx/qbe/isel",
+} for "wbtest"

@@ -4,3 +4,12 @@ import {
   "azhzx/qbe/parser",
   "moonbitlang/core/ref",
 }
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/cfg",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/live",
+  "azhzx/qbe/fold",
+  "azhzx/qbe/abi",
+} for "wbtest"

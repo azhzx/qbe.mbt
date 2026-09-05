@@ -154,3 +154,46 @@ test "duplicate block names rejected" {
     _ => fail("expected a parse error")
   }
 }
+
+///|
+test "parse errors carry the source line" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  !
+    #|  ret %x
+    #|}
+    #|
+  let lexer = @lexer.Lexer::new(src, "bad.ssa")
+  let parser = Parser::new(lexer.tokenize(), "bad.ssa")
+  try parser.parse() catch {
+    @util.QbeError::ParseError(f, line, _) => {
+      assert_eq(f, "bad.ssa")
+      assert_true(line == 3)
+    }
+    _ => fail("expected a ParseError")
+  } noraise {
+    _ => fail("expected a ParseError")
+  }
+}
+
+///|
+test "parse multiple functions preserves module order" {
+  let src =
+    #|function w $first() {
+    #|@start
+    #|  ret 1
+    #|}
+    #|function w $second() {
+    #|@start
+    #|  ret 2
+    #|}
+    #|
+  let lexer = @lexer.Lexer::new(src, "test")
+  let parser = Parser::new(lexer.tokenize(), "test")
+  parser.parse()
+  let funcs = parser.get_funcs()
+  assert_eq(funcs.length(), 2)
+  assert_eq(funcs[0].name, "first")
+  assert_eq(funcs[1].name, "second")
+}

@@ -63,3 +63,52 @@ test "filllive debug output mentions liveness" {
   assert_true(out.contains("Liveness analysis"))
   assert_true(out.contains("in:"))
 }
+
+///|
+test "filllive keeps values live around a back edge" {
+  // b0: %t = add %a, 1; %c = copy %a; jmp b1
+  // b1: jnz %c, b2, b1        (self loop)
+  // b2: retw %t               (%t crosses the loop block b1)
+  let f = @types.Fn::new("t")
+  f.def_order.push(f.add_blk("b0"))
+  f.def_order.push(f.add_blk("b1"))
+  f.def_order.push(f.add_blk("b2"))
+  f.init_regs()
+  let ta = f.add_tmp("a", @types.Kw)
+  let tt = f.add_tmp("t", @types.Kw)
+  let tc = f.add_tmp("c", @types.Kw)
+  f.blks[0].ins.push(
+    @types.Ins::new(
+      @types.Add,
+      @types.Kw,
+      @types.Ref::tmp(tt),
+      @types.Ref::tmp(ta),
+      @types.Ref::con(f.get_con(1)),
+    ),
+  )
+  f.blks[0].ins.push(
+    @types.Ins::new(
+      @types.Copy,
+      @types.Kw,
+      @types.Ref::tmp(tc),
+      @types.Ref::tmp(ta),
+      @types.Ref::none(),
+    ),
+  )
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::tmp(tc), 2, 1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jretw, @types.Ref::tmp(tt), -1, -1)
+  @cfg.fillrpo(f)
+  @cfg.fillpreds(f)
+  @ssa.filluse(f)
+  let _ = filllive(f, false)
+  // %t is defined before the loop and used after it: live-in at b1
+  let b1_in = f.blks[1].in_set.unwrap()
+  assert_true(b1_in.has(tt))
+  assert_true(b1_in.has(tc))
+  // %t is defined in b0, so it is not live-in there
+  assert_true(!f.blks[0].in_set.unwrap().has(tt))
+  // b2 is the exit: only %t is live-in
+  assert_true(f.blks[2].in_set.unwrap().has(tt))
+  assert_true(!f.blks[2].in_set.unwrap().has(tc))
+}

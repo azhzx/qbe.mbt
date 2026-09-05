@@ -56,3 +56,12 @@ pub fn fp_stash_len() -> Int {
 pub fn fp_stash_at(i : Int) -> FpBits {
   fp_stash[i]
 }
+
+///|
+// Reset the stash. The C reference processes one input file per process run;
+// as a library, successive compile() calls in the same process must each start
+// with an empty stash so fp label numbering (and the emitted rodata section)
+// stays deterministic per module.
+pub fn fp_stash_reset() -> Unit {
+  fp_stash.clear()
+}

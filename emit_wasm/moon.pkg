@@ -2,3 +2,14 @@ import {
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/parser",
+  "azhzx/qbe/cfg",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/live",
+  "azhzx/qbe/fold",
+  "azhzx/qbe/abi_wasm",
+  "azhzx/qbe/isel_wasm",
+} for "wbtest"

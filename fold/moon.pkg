@@ -4,3 +4,8 @@ import {
   "azhzx/qbe/parser",
   "azhzx/qbe/cfg",
 }
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/ssa",
+} for "wbtest"

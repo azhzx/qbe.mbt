@@ -225,6 +225,7 @@ fn emit_module(
   gassym : String,
   sb : StringBuilder,
 ) -> Unit raise {
+  @types.fp_stash_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -314,6 +315,7 @@ fn emit_wasm_module(
   interner : @util.Interner,
   sb : StringBuilder,
 ) -> Unit raise {
+  @types.fp_stash_reset()
   for fn_ in funcs {
     run_passes_wasm(fn_, interner, typs, DbFlags::new(), sb)
   }
