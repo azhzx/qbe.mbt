@@ -1,0 +1,11 @@
+2026.8.24: v0.1.0
+    finish x86-64 backend
+
+2026.8.24: v0.2.0
+    fix some bug and add some tests
+
+2026.8.28: v0.3.0
+    finish wasm backend
+
+2026.9.5: v0.4.0
+    finish risc-v64 backend

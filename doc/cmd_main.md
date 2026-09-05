@@ -4,7 +4,8 @@
 
 CLI 入口。读取命令行参数，调度各阶段，输出汇编或调试 dump。对应 QBE 原项目的 `main.c`。
 
-注意：当前 CLI 仅支持 amd64 目标。Wasm 编译通过库 API `@qbe.compile_wasm` 使用，不经过 CLI。
+CLI 支持三个目标：`amd64_sysv`（默认）、`wasm`、`rv64`，通过 `-t` 选择；
+分别调用库入口 `@qbe.compile` / `@qbe.compile_wasm` / `@qbe.compile_rv64`。
 
 ## 命令行接口
 
@@ -13,9 +14,25 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     -h          prints this help
     -o file     output to file
     -t <target> generate for a target among:
-                amd64_sysv
-    -G {e,m}    generate gas (e) or osx (m) asm
+                amd64_sysv (default), wasm, rv64
+    -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
+```
+
+### `-t` 目标选择
+
+| 目标 | 输出 | 说明 |
+| --- | --- | --- |
+| `amd64_sysv` | x86-64 GAS 汇编 | 默认；`-G e`（Linux `.L` 标签）/ `-G m`（macOS `L` + `_` 前缀）选择 GAS 风格 |
+| `wasm` | WAT 文本 | WebAssembly 文本格式；跳过寄存器分配 |
+| `rv64` | RISC-V 64 GAS 汇编 | `-G` 不生效 |
+
+示例：
+
+```
+moon run cmd/main -- -t rv64 demo/01_arith.ssa
+moon run cmd/main -- -t wasm demo/05_float.ssa
+moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 ```
 
 ### `-d` 调试标志
@@ -55,12 +72,10 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 ## 主要函数
 
-- `process_file(file, dbg, gasloc, gassym) -> String` - 处理单个输入文件
+- `process_file(file, flags, gas, target) -> String` - 处理单个输入文件
   - `file == "-"` 表示从 stdin 读取
-  - 返回生成的汇编字符串（调试模式返回 `""`）
-- `run_passes(fn_, interner, typs, dbg) -> Unit` - 跑全部后端阶段
-- `dbg_dominators(fn_) -> Unit` - `-dN` 输出支配者链
-- `dbg_function(fn_, interner, typs) -> Unit` - 打印当前函数的 IL
+  - 按 `target` 分发到 `@qbe.compile*` / `@qbe.compile_*_debug`
+  - 返回生成的汇编字符串（调试模式返回 `""`，dump 输出到 stderr）
 
 ## 依赖
 
@@ -77,4 +92,6 @@ parse → fillrpo → fillpreds → filluse → memopt
 - `azhzx/qbe/spill`
 - `azhzx/qbe/rega`
 - `azhzx/qbe/emit`
-- `moonbitlang/x` (`@stdio`、`@fs`、`@env`)
+- `azhzx/qbe/abi_wasm` / `azhzx/qbe/isel_wasm` / `azhzx/qbe/emit_wasm`
+- `azhzx/qbe/abi_rv64` / `azhzx/qbe/isel_rv64` / `azhzx/qbe/emit_rv64`
+- `moonbitlang/x` (`@fs`)、`moonbitlang/async` (`@stdio`)、`moonbitlang/core/argparse`

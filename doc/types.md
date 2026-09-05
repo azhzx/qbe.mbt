@@ -230,6 +230,43 @@ pub fn BSet::iter(Self, Int) -> Int       // 迭代器，返回下一个 set 的
 - `FpBits` + `fp_stash_at/fp_stash_len`：浮点常数缓冲
 - `gasstash(Int64, Int64, Int) -> Int`：数据段位置管理
 
+## 目标抽象 `TargetCfg`
+
+`spill`/`rega` 是目标无关的 pass，它们通过全局 `target_cfg` 读取当前目标的
+寄存器布局——对应 C QBE 的 `struct Target T`（`all.h`）：
+
+```moonbit
+pub struct TargetCfg {
+  mut gpr_base : Int          // rega 扫描的首个 GPR 编号
+  mut fpr_base : Int          // rega 扫描的首个 FPR 编号
+  mut ngpr : Int              // GPR 数量（rega/spill 扫描宽度）
+  mut nfpr : Int              // FPR 数量
+  mut fpr_class_base : Int    // spill 按 id 分类浮点临时的起始编号
+  mut post_call_gpr : Int     // call 之后立即生效的 GPR 上限
+  mut post_call_fpr : Int     // call 之后立即生效的 FPR 上限
+  mut rglob_mask : UInt64     // 全局活跃寄存器位掩码（RBP|RSP 等）
+  mut rsave : Array[Int]      // 调用者保存寄存器列表
+  mut retregs : (Ref) -> (UInt64, Int, Int)   // 调用返回寄存器映射
+  mut argregs : (Ref) -> (UInt64, Int, Int)   // 调用参数寄存器映射
+}
+
+pub let target_cfg : TargetCfg          // 当前目标，默认 amd64_sysv
+pub fn init_amd64_target() -> Unit      // 选择 amd64_sysv
+pub fn init_rv64_target() -> Unit       // 选择 rv64
+pub fn target_retregs(Ref) -> (UInt64, Int, Int)
+pub fn target_argregs(Ref) -> (UInt64, Int, Int)
+```
+
+- `pipeline.mbt` 在 amd64 与 rv64 流水线的 post-isel 阶段分别调用
+  `init_amd64_target()` / `init_rv64_target()` 完成切换；wasm 流水线跳过
+  spill/rega，不依赖该配置。
+- amd64 寄存器编号在 `target.mbt`：`RAX=1..RSP=16`、`XMM0=17..XMM15=32`、
+  `Tmp0=64`；rv64 编号在 `target_rv64.mbt`：`T0=1..A7=14`、`S1..S11=15..25`、
+  `FP/SP/GP/TP/RA=26..30`、`FT0..FA7=31..49`、`FS0..FS11=50..61`、
+  `Rv64Tmp0=64`。
+- `abi`/`isel`/`emit`（amd64 专属）与 `abi_rv64`/`isel_rv64`/`emit_rv64`
+  仍直接使用各自 `target*.mbt` 中的常量，不经 `TargetCfg`。
+
 ## 类型别名
 
 ```moonbit

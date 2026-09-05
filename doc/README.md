@@ -24,6 +24,9 @@
 | 寄存器溢出 | `spill` | [spill.md](spill.md) | 寄存器压力下的栈溢出 |
 | 寄存器分配 | `rega` | [rega.md](rega.md) | 虚拟 → 物理寄存器 |
 | 汇编输出 | `emit` | [emit.md](emit.md) | 渲染 GAS 汇编 |
+| RISC-V ABI | `abi_rv64` | [abi_rv64.md](abi_rv64.md) | rv64 调用约定：A0-A7/FA0-FA7 参数与返回 |
+| RISC-V 指令选择 | `isel_rv64` | [isel_rv64.md](isel_rv64.md) | rv64 指令映射、比较+分支合并 |
+| RISC-V 汇编输出 | `emit_rv64` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS 文本输出 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
 
 ## 流水线一览
@@ -113,3 +116,22 @@
 - 演示样例：[demo/](../demo/README.md)
 - 回归测试：[test/](../test/)
 - 编码规范：[AGENTS.md](../AGENTS.md)
+
+### RISC-V 64 流水线
+
+```
+parse → fillrpo → fillpreds → filluse → memopt
+      → filldom → fillfron → filllive(false) → phiins → renblk → filluse → ssacheck
+      → fillloop → fillalias → loadopt → filluse → ssacheck
+      → copy → filluse → fold
+      → abi_rv64 → fillpreds → filluse
+      → isel_rv64
+      → init_rv64_target()   ← 切换 TargetCfg（寄存器布局）
+      → fillrpo → filllive → fillcost → spill → rega
+      → fillrpo → simpljmp → fillrpo → fillpreds
+      → emit_rv64
+```
+
+rv64 与 amd64 共享同一套 `spill`/`rega`：目标差异通过 `types.target_cfg`
+（见 [types.md](types.md) 的 TargetCfg 章节）在运行时切换。
+rv64 后端目前没有差分参考验证，`data` 段与浮点常量 rodata 输出待完善。

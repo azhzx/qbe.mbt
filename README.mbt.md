@@ -19,9 +19,11 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 
 提供统一编译入口
 
-支持 amd64
+支持 amd64（System V，GAS 输出，Linux/macOS 两种风格）
 
-支持 WebAssembly (wasm32)
+支持 WebAssembly (wasm32，WAT 文本输出)
+
+支持 RISC-V 64（rv64，GAS 输出）
 
 支持基础后端流程
 
@@ -31,7 +33,9 @@ qbe.mbt 计划将 Quick Backend (qbe) 的核心后端能力移植到 MoonBit 生
 
 提供统一编译入口 `@qbe.compile` / `@qbe.compile_debug`，覆盖 IL 解析、SSA 构建、寄存器分配、汇编输出；
 
-提供 WebAssembly 编译入口 `@qbe.compile_wasm` / `@qbe.compile_debug`，覆盖 IL 解析、SSA 构建、WAT 文本输出；
+提供 WebAssembly 编译入口 `@qbe.compile_wasm` / `@qbe.compile_wasm_debug`，覆盖 IL 解析、SSA 构建、WAT 文本输出；
+
+提供 RISC-V 编译入口 `@qbe.compile_rv64` / `@qbe.compile_rv64_debug`，覆盖 IL 解析、SSA 构建、RISC-V 寄存器分配与汇编输出；
 
 提供 MoonBit 单元 / 黑盒 / 白盒测试，并持续保持核心回归测试通过（`.ssa` 差分回归 + `moon test`）；
 
@@ -87,6 +91,28 @@ test {
 }
 ```
 
+`@qbe.compile_rv64` 把一段 IL 文本编译成 RISC-V 64 GAS 汇编：
+
+```mbt check
+///|
+test {
+  let src =
+    #|export function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  match @qbe.compile_rv64(src) {
+    Ok(assembly) => {
+      assert_true(assembly.contains("add:"))
+      assert_true(assembly.contains("addw a0, a0, a1"))
+    }
+    Err(_) => fail("rv64 compile failed")
+  }
+}
+```
+
 # 技术细节
 
 ## 包结构与编译流水线
@@ -111,7 +137,10 @@ test {
 | 寄存器溢出 | `spill` | 基于代价与循环加权选择溢出点，迭代到收敛 |
 | 寄存器分配 | `rega` | 基于活跃集合构建干涉图，贪心染色 |
 | 汇编输出 | `emit` | 渲染 GAS 汇编（Linux `.L`/macOS `L`、`_` 前缀） |
-| CLI 入口 | `cmd/main` | 参数解析与文件 I/O（薄壳，调用 `@qbe` facade） |
+| RISC-V ABI | `abi_rv64` | rv64 调用约定：A0–A7 / FA0–FA7 参数与返回、聚合类型拆分 |
+| RISC-V 指令选择 | `isel_rv64` | rv64 指令映射、比较+分支合并 |
+| RISC-V 汇编输出 | `emit_rv64` | RISC-V GAS 文本输出 |
+| CLI 入口 | `cmd/main` | 参数解析与文件 I/O（薄壳，调用 `@qbe` facade，`-t` 选目标） |
 | 库入口 | `.` | 统一编译 API `compile` / `compile_debug` 与 IR 类型再导出 |
 
 完整流水线（`pipeline.mbt` 中 `run_passes`，对库用户封装在 `@qbe.compile`）：
@@ -141,6 +170,21 @@ parse → fillrpo → fillpreds → filluse → memopt
       → emit_wasm
 ```
 
+RISC-V 流水线（`run_passes_rv64`，对库用户封装在 `@qbe.compile_rv64`）：
+
+```
+parse → fillrpo → fillpreds → filluse → memopt
+      → filldom → fillfron → filllive(false) → phiins → renblk → filluse → ssacheck
+      → fillloop → fillalias → loadopt → filluse → ssacheck
+      → copy → filluse → fold
+      → abi_rv64 → fillpreds → filluse
+      → isel_rv64
+      → init_rv64_target()   ← 切换 TargetCfg（寄存器布局）
+      → fillrpo → filllive → fillcost → spill → rega
+      → fillrpo → simpljmp → fillrpo → fillpreds
+      → emit_rv64
+```
+
 ## 中间表示设计
 
 - **SSA IR**：函数 (`Fn`)、基本块 (`Blk`)、临时变量 (`Tmp`)、指令 (`Ins`) 均为可变结构体，就地修改，不产生副本；支持 phi 节点与多种跳转形式（无条件跳转、条件跳转、整数/浮点条件跳转、5 种返回）。
@@ -159,15 +203,27 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 ## ABI 与目标支持
 
-- 支持 **amd64_sysv**（System V AMD64 调用约定）和 **wasm**（WebAssembly）两个目标。
-- **amd64**：`abi` 阶段把抽象 `Arg`/`Par`/`Ret*` 替换为具体寄存器/栈槽引用，聚合类型按 System V 规则决定走寄存器还是内存；输出两种 GAS 风格（Linux/macOS）。
+支持三个目标，命令行用 `-t` 选择（`amd64_sysv` 默认），库 API 各有独立入口：
+
+- **amd64_sysv**：`abi` 阶段把抽象 `Arg`/`Par`/`Ret*` 替换为具体寄存器/栈槽引用，聚合类型按 System V 规则决定走寄存器还是内存；输出两种 GAS 风格（Linux `.L` / macOS `L` + `_` 前缀，`-G` 选择）。有完整的 406 用例差分回归。
 - **wasm**：`abi_wasm` 阶段将 `Par`/`Arg` 指令替换为 `Nop`（参数直接通过局部变量传递），简化 `Call` 引用；`isel_wasm` 做指令映射后跳过寄存器分配（wasm 是栈机，无物理寄存器），`emit_wasm` 输出 WAT 文本格式。Wasm32 指针宽度为 32 位（`Km = Kw`），无 `Kl` 类型。
+- **rv64**：`abi_rv64` 按 RISC-V 调用约定把参数降到 `A0–A7` / `FA0–FA7`，返回值走 `A0`/`A1` / `FA0`/`FA1`；`isel_rv64` 把 IL 指令映射为 RISC-V 指令（比较 + 分支直接合并，无 flags、无魔法数除法、无复杂寻址）；随后与 amd64 一样跑 `spill`/`rega` —— 目标差异通过 `types.TargetCfg` 在运行时切换（`init_amd64_target()` / `init_rv64_target()`），`emit_rv64` 输出 RISC-V GAS 汇编（`fp`/`ra` 帧链，16 字节栈对齐）。
+
+三个目标的对比：
+
+| | amd64_sysv | wasm | rv64 |
+| --- | --- | --- | --- |
+| 库入口 | `compile` / `compile_debug` | `compile_wasm` / `compile_wasm_debug` | `compile_rv64` / `compile_rv64_debug` |
+| CLI | `-t amd64_sysv`（默认） | `-t wasm` | `-t rv64` |
+| 输出 | x86-64 GAS | WAT | RISC-V GAS |
+| 寄存器分配 | spill + rega | 跳过（栈机） | spill + rega（`TargetCfg` 切换） |
+| 验证强度 | 差分回归逐字节 | 单测 + 快照 | 仅单测（无参考基线） |
 
 ## 调试与测试
 
 - 命令行 `-d <flags>` 提供分阶段 dump（`-dP` parse、`-dM` memopt、`-dN` SSA、`-dC` copy、`-dF` fold、`-dA` abi、`-dI` isel、`-dL` live、`-dS` spill、`-dR` rega），可组合；开启调试时不再输出汇编。库入口 `compile_debug(text, flags)` 返回同样的 dump 文本。
 - 测试分三层：
-  - **单元/白盒测试** `*_wbtest.mbt`：覆盖全部编译流水线包——`types`（BSet/Con/Ref/Op/Class/Jump 等）、`util`（Interner/格式化）、`lexer`、`parser`、`cfg`（支配树/循环/跳转简化）、`ssa`（phi 插入/copy/memopt）、`fold`、`live`、`abi`/`abi_wasm`、`isel`/`isel_wasm`、`spill`、`rega`、`emit`/`emit_wasm`、`cmd/main`；
+  - **单元/白盒测试** `*_wbtest.mbt`：覆盖全部编译流水线包——`types`（BSet/Con/Ref/Op/Class/Jump 等）、`util`（Interner/格式化）、`lexer`、`parser`、`cfg`（支配树/循环/跳转简化）、`ssa`（phi 插入/copy/memopt）、`fold`、`live`、`abi`/`abi_wasm`/`abi_rv64`、`isel`/`isel_wasm`/`isel_rv64`、`spill`、`rega`、`emit`/`emit_wasm`/`emit_rv64`、`cmd/main`；
   - **黑盒测试** `qbe_test.mbt` + `qbe_snapshot_test.mbt`：直接调用 `@qbe.compile` / `@qbe.compile_debug`，覆盖端到端编译（算术、浮点、内存、递归、循环 phi）与错误路径；`qbe_snapshot_test.mbt` 由 `python tools/gen_snapshot_mbt.py` 从 `test/` 各类别生成，以 `inspect` 快照锚定汇编输出；
   - **差分回归**：`test/*.ssa`（406 个用例）与参考 qbe 二进制（`tools/qbe-ref` 中钉住的快照，`make -C tools/qbe-ref` 构建）逐字节对比（`python compare.py`，可用 `QBE_REF` 指定其他二进制）。
 - 运行：`moon test`；更新快照：`moon test --update`；覆盖率：`moon coverage analyze`。
@@ -215,5 +271,7 @@ DEALINGS IN THE SOFTWARE.
 
 # 未来计划
 - ✅ 支持 WebAssembly (wasm32) 的代码生成支持（WAT 文本输出）
+- ✅ 支持 RISC-V 64 (rv64) 的代码生成（GAS 输出，复用 spill/rega）
+- rv64 后端完善：`data` 段与浮点常量 rodata 输出、差分参考验证
 - 添加方便JIT的相关接口
 - 对接mbtcc，验证全流程的端到端的可行性
