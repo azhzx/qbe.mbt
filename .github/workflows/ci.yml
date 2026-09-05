@@ -99,11 +99,11 @@ jobs:
       # compare.py builds `_build/native/debug/build/cmd/main/main.exe`
       # internally, then diffs stdout/stderr against the reference binary
       # (auto-detected at tools/qbe-ref/obj/qbe, or via $QBE_REF).
-      - name: Differential: all debug flags
+      - name: "Differential: all debug flags"
         run: python compare.py
 
-      - name: Differential: assembly (-G e)
+      - name: "Differential: assembly (-G e)"
         run: python compare.py --asm
 
-      - name: Differential: assembly (-G m)
+      - name: "Differential: assembly (-G m)"
         run: python compare.py --asm -G m
