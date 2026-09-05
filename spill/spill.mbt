@@ -144,8 +144,8 @@ fn limit2(
   b2.copy_from(b1)
   b1.inter(st.mask[0])
   b2.inter(st.mask[1])
-  limit(st, b1, 16 - k1, fst)
-  limit(st, b2, 15 - k2, fst)
+  limit(st, b1, @types.target_cfg.ngpr - k1, fst)
+  limit(st, b2, @types.target_cfg.nfpr - k2, fst)
   ignore(b1.union(b2))
 }
 
@@ -209,13 +209,19 @@ fn dopm(st : SpillState, b : @types.Blk, i : Int, v : @types.BSet) -> Int {
   u.copy_from(v)
   let mut r : UInt64 = 0
   if idx != 0 && b.ins[idx - 1].op == @types.Call {
-    let rr = b.ins[idx - 1].arg2.retregs()
+    let rr = @types.target_retregs(b.ins[idx - 1].arg2)
     v.bits[0] = v.bits[0] & rr.0.lnot()
-    limit2(st, v, 9, 15, None)
-    for n in 0..<@types.rsave.length() {
-      r = r | (1UL << @types.rsave[n])
+    limit2(
+      st,
+      v,
+      @types.target_cfg.post_call_gpr,
+      @types.target_cfg.post_call_fpr,
+      None,
+    )
+    for n in 0..<@types.target_cfg.rsave.length() {
+      r = r | (1UL << @types.target_cfg.rsave[n])
     }
-    let ar = b.ins[idx - 1].arg2.argregs()
+    let ar = @types.target_argregs(b.ins[idx - 1].arg2)
     v.bits[0] = v.bits[0] | ar.0
   } else {
     limit2(st, v, 0, 0, None)
@@ -253,7 +259,8 @@ pub fn spill(
   st.mask.push(@types.BSet::new(st.ntmp))
   for t in 0..<st.ntmp {
     let mut k = 0
-    if t >= @types.XMM0 && t < @types.XMM0 + @types.NFPR {
+    if t >= @types.target_cfg.fpr_class_base &&
+      t < @types.target_cfg.fpr_class_base + @types.target_cfg.nfpr {
       k = 1
     }
     if t >= @types.Tmp0 {
@@ -281,9 +288,13 @@ pub fn spill(
     if hd >= 0 {
       // back-edge
       let hgen = fn_.blks[hd].gen_set.unwrap()
-      hgen.bits[0] = hgen.bits[0] | @types.rglob_mask()
+      hgen.bits[0] = hgen.bits[0] | @types.target_cfg.rglob_mask
       for k in 0..<2 {
-        let nreg = if k == 0 { 16 } else { 15 }
+        let nreg = if k == 0 {
+          @types.target_cfg.ngpr
+        } else {
+          @types.target_cfg.nfpr
+        }
         let u = @types.BSet::new(st.ntmp)
         u.copy_from(b.out_set.unwrap())
         u.inter(st.mask[k])
@@ -319,7 +330,7 @@ pub fn spill(
     } else {
       v.copy_from(b.out_set.unwrap())
       if b.jmp.arg.call_val() >= 0 {
-        v.bits[0] = v.bits[0] | b.jmp.arg.retregs().0
+        v.bits[0] = v.bits[0] | @types.target_retregs(b.jmp.arg).0
       }
     }
     // spill temps live-out but not in registers at the border

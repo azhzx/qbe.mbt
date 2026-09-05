@@ -15,4 +15,7 @@ import {
   "azhzx/qbe/abi_wasm",
   "azhzx/qbe/isel_wasm",
   "azhzx/qbe/emit_wasm",
+  "azhzx/qbe/abi_rv64",
+  "azhzx/qbe/isel_rv64",
+  "azhzx/qbe/emit_rv64",
 }

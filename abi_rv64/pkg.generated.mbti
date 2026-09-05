@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/abi_rv64"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn abi_rv64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -6,6 +6,90 @@ import {
 }
 
 // Values
+pub const A0 : Int = 7
+
+pub const A1 : Int = 8
+
+pub const A2 : Int = 9
+
+pub const A3 : Int = 10
+
+pub const A4 : Int = 11
+
+pub const A5 : Int = 12
+
+pub const A6 : Int = 13
+
+pub const A7 : Int = 14
+
+pub const FA0 : Int = 42
+
+pub const FA1 : Int = 43
+
+pub const FA2 : Int = 44
+
+pub const FA3 : Int = 45
+
+pub const FA4 : Int = 46
+
+pub const FA5 : Int = 47
+
+pub const FA6 : Int = 48
+
+pub const FA7 : Int = 49
+
+pub const FP : Int = 26
+
+pub const FS0 : Int = 50
+
+pub const FS1 : Int = 51
+
+pub const FS10 : Int = 60
+
+pub const FS11 : Int = 61
+
+pub const FS2 : Int = 52
+
+pub const FS3 : Int = 53
+
+pub const FS4 : Int = 54
+
+pub const FS5 : Int = 55
+
+pub const FS6 : Int = 56
+
+pub const FS7 : Int = 57
+
+pub const FS8 : Int = 58
+
+pub const FS9 : Int = 59
+
+pub const FT0 : Int = 31
+
+pub const FT1 : Int = 32
+
+pub const FT10 : Int = 41
+
+pub const FT11 : Int = 63
+
+pub const FT2 : Int = 33
+
+pub const FT3 : Int = 34
+
+pub const FT4 : Int = 35
+
+pub const FT5 : Int = 36
+
+pub const FT6 : Int = 37
+
+pub const FT7 : Int = 38
+
+pub const FT8 : Int = 39
+
+pub const FT9 : Int = 40
+
+pub const GP : Int = 28
+
 pub const NCLR : Int = 5
 
 pub const NFPR : Int = 15
@@ -34,6 +118,8 @@ pub const R8 : Int = 6
 
 pub const R9 : Int = 7
 
+pub const RA : Int = 30
+
 pub const RAX : Int = 1
 
 pub const RBP : Int = 15
@@ -51,6 +137,62 @@ pub const RSI : Int = 4
 pub const RSP : Int = 16
 
 pub const RXX : Int = 0
+
+pub const Rv64KmIsWide : Int = 1
+
+pub const Rv64NCLR : Int = 23
+
+pub const Rv64NFPR : Int = 32
+
+pub const Rv64NFPS : Int = 18
+
+pub const Rv64NGPR : Int = 30
+
+pub const Rv64NGPS : Int = 14
+
+pub const Rv64NRGLOB : Int = 5
+
+pub const Rv64Tmp0 : Int = 64
+
+pub const S1 : Int = 15
+
+pub const S10 : Int = 24
+
+pub const S11 : Int = 25
+
+pub const S2 : Int = 16
+
+pub const S3 : Int = 17
+
+pub const S4 : Int = 18
+
+pub const S5 : Int = 19
+
+pub const S6 : Int = 20
+
+pub const S7 : Int = 21
+
+pub const S8 : Int = 22
+
+pub const S9 : Int = 23
+
+pub const SP : Int = 27
+
+pub const T0 : Int = 1
+
+pub const T1 : Int = 2
+
+pub const T2 : Int = 3
+
+pub const T3 : Int = 4
+
+pub const T4 : Int = 5
+
+pub const T5 : Int = 6
+
+pub const T6 : Int = 62
+
+pub const TP : Int = 29
 
 pub const Tmp0 : Int = 64
 
@@ -131,6 +273,14 @@ pub let rclob : Array[Int]
 pub fn rglob_mask() -> UInt64
 
 pub let rsave : Array[Int]
+
+pub let rv64_rclob : Array[Int]
+
+pub fn rv64_reg_name(Int) -> String
+
+pub fn rv64_rglob_mask() -> UInt64
+
+pub let rv64_rsave : Array[Int]
 
 pub fn wasm_load_op(Class) -> String
 
@@ -606,6 +756,8 @@ pub fn Ref::mem_val(Self) -> Int
 pub fn Ref::none() -> Self
 #as_free_fn(retregs, deprecated)
 pub fn Ref::retregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::rv64_argregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::rv64_retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::slot(Int) -> Self
 pub fn Ref::slot_val(Self) -> Int
 pub fn Ref::tmp(Int) -> Self

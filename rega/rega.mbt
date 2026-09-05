@@ -148,11 +148,16 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
     let mut regs = st.fn_.tmps[@types.phicls(t, st.fn_.tmps)].hint.m
     regs = regs | m.b.bits[0]
     let r0 = if st.fn_.tmps[t].cls.base() == 0 {
-      @types.RAX
+      @types.target_cfg.gpr_base
     } else {
-      @types.XMM0
+      @types.target_cfg.fpr_base
     }
-    let r1 = r0 + (if st.fn_.tmps[t].cls.base() == 0 { 16 } else { 15 })
+    let r1 = r0 +
+      (if st.fn_.tmps[t].cls.base() == 0 {
+        @types.target_cfg.ngpr
+      } else {
+        @types.target_cfg.nfpr
+      })
     let mut found = -1
     for rr in r0..<r1 {
       if (regs & (1UL << rr)) == 0 {
@@ -394,11 +399,11 @@ fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int raise {
     }
   }
   if idx != 0 && b.ins[idx - 1].op == @types.Call {
-    let rr = b.ins[idx - 1].arg2.retregs()
-    let def = rr.0 | @types.rglob_mask()
-    for z in 0..<@types.rsave.length() {
-      if (def & (1UL << @types.rsave[z])) == 0 {
-        r_move(st, @types.rsave[z], @types.Ref::none(), m)
+    let rr = @types.target_retregs(b.ins[idx - 1].arg2)
+    let def = rr.0 | @types.target_cfg.rglob_mask
+    for z in 0..<@types.target_cfg.rsave.length() {
+      if (def & (1UL << @types.target_cfg.rsave[z])) == 0 {
+        r_move(st, @types.target_cfg.rsave[z], @types.Ref::none(), m)
       }
     }
   }
@@ -497,7 +502,7 @@ fn doblk_def(st : RState, cur : RMap, last : Int) -> Int {
   let ins = st.buf[last]
   if !ins.to.is_none() {
     let r = ins.to.tmp_val()
-    if r < @types.Tmp0 && (@types.rglob_mask() & (1UL << r)) != 0 {
+    if r < @types.Tmp0 && (@types.target_cfg.rglob_mask & (1UL << r)) != 0 {
       return -1
     }
     let rf = rfree(st, cur, r)
@@ -532,11 +537,11 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
     let ins = st.buf[last]
     let mut rf = -1
     if ins.op == @types.Call {
-      let ar = ins.arg2.argregs()
-      let rs = ar.0 | @types.rglob_mask()
-      for z in 0..<@types.rsave.length() {
-        if (rs & (1UL << @types.rsave[z])) == 0 {
-          ignore(rfree(st, cur, @types.rsave[z]))
+      let ar = @types.target_argregs(ins.arg2)
+      let rs = ar.0 | @types.target_cfg.rglob_mask
+      for z in 0..<@types.target_cfg.rsave.length() {
+        if (rs & (1UL << @types.target_cfg.rsave[z])) == 0 {
+          ignore(rfree(st, cur, @types.target_cfg.rsave[z]))
         }
       }
     } else {

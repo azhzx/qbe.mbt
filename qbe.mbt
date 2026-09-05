@@ -204,6 +204,88 @@ fn compile_wasm_debug_raise(text : String, flags : String) -> String raise {
 }
 
 ///|
+// Compile IL source text to RISC-V GAS assembly (target: rv64).
+//
+// Returns the generated assembly, or a `@util.QbeError` describing a lexing,
+// parsing, or internal compiler error.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let assembly = match compile_rv64(src) {
+//     Ok(assembly) => assembly
+//     Err(_) => fail("rv64 compile failed")
+//   }
+//   assert_true(assembly.contains("one:"))
+//   assert_true(assembly.contains("li"))
+// }
+// ```
+pub fn compile_rv64(text : String) -> Result[String, @util.QbeError] {
+  try compile_rv64_raise(text) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// Compile IL source text to RISC-V assembly and return staged debug dumps.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let dump = match compile_rv64_debug(src, "PN") {
+//     Ok(dump) => dump
+//     Err(_) => fail("rv64 compile failed")
+//   }
+//   assert_true(dump.contains("> After parsing:"))
+// }
+// ```
+pub fn compile_rv64_debug(
+  text : String,
+  flags : String,
+) -> Result[String, @util.QbeError] {
+  try compile_rv64_debug_raise(text, flags) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// RISC-V compile, raising `@util.QbeError` on failure.
+fn compile_rv64_raise(text : String) -> String raise {
+  let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
+  let sb = StringBuilder::new()
+  emit_rv64_module(funcs, datas, order, typs, interner, sb)
+  sb.to_string()
+}
+
+///|
+// RISC-V debug-dump compile, raising `@util.QbeError` on failure.
+fn compile_rv64_debug_raise(text : String, flags : String) -> String raise {
+  let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
+  let dbg = dbg_from_flags(flags)
+  let out = StringBuilder::new()
+  for fn_ in funcs {
+    out.write_string("**** Function \{fn_.name} ****")
+    run_passes_rv64(fn_, interner, typs, dbg, out)
+    out.write_string("\n")
+  }
+  out.to_string()
+}
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".

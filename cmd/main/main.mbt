@@ -1,14 +1,14 @@
 ///|
 // QBE compiler backend - MoonBit implementation
 // Entry point for the CLI. A thin wrapper over the `@qbe` library API: it
-// handles argument parsing and file I/O, and delegates the pipeline to
-// `@qbe.compile` / `@qbe.compile_debug`.
+// handles argument parsing and file I/O, and delegates the pipeline to the
+// selected target backend (amd64_sysv, wasm, or rv64).
 
 ///|
 // CLI command specification. @argparse auto-generates -h/--help from this.
 let cmd : @argparse.Command = @argparse.Command(
   "qbe",
-  about="QBE compiler backend (MoonBit port)",
+  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64",
   options=[
     @argparse.OptionArg("output", short='o'),
     @argparse.OptionArg("target", short='t'),
@@ -44,32 +44,83 @@ async fn read_source(file : String) -> String {
 ///|
 // Process one input file. Returns the generated assembly (empty in debug mode,
 // where the debug dump is printed to stderr instead).
-async fn process_file(file : String, flags : String, gas : String) -> String {
+async fn process_file(
+  file : String,
+  flags : String,
+  gas : String,
+  target : String,
+) -> String {
   let source = read_source(file) catch {
     e => {
       @util.eprint("error: \{e}\n")
       return ""
     }
   }
-  if flags != "" {
-    match @qbe.compile_debug(source, flags) {
-      Ok(dump) => {
-        @util.eprint(dump)
-        ""
+  match target {
+    "wasm" =>
+      if flags != "" {
+        match @qbe.compile_wasm_debug(source, flags) {
+          Ok(dump) => {
+            @util.eprint(dump)
+            ""
+          }
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      } else {
+        match @qbe.compile_wasm(source) {
+          Ok(wat) => wat
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
       }
-      Err(e) => {
-        @util.eprint(format_qbe_error(e) + "\n")
-        ""
+    "rv64" =>
+      if flags != "" {
+        match @qbe.compile_rv64_debug(source, flags) {
+          Ok(dump) => {
+            @util.eprint(dump)
+            ""
+          }
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      } else {
+        match @qbe.compile_rv64(source) {
+          Ok(assembly) => assembly
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
       }
-    }
-  } else {
-    match @qbe.compile(source, gas~) {
-      Ok(assembly) => assembly
-      Err(e) => {
-        @util.eprint(format_qbe_error(e) + "\n")
-        ""
+    _ =>
+      // amd64_sysv (default)
+      if flags != "" {
+        match @qbe.compile_debug(source, flags) {
+          Ok(dump) => {
+            @util.eprint(dump)
+            ""
+          }
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      } else {
+        match @qbe.compile(source, gas~) {
+          Ok(assembly) => assembly
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
       }
-    }
   }
 }
 
@@ -98,11 +149,15 @@ async fn main {
     Some(arr) if arr.length() > 0 => gas = arr[0]
     _ => ()
   }
+  let mut target = "amd64_sysv"
   match parsed.values.get("target") {
     Some(arr) if arr.length() > 0 =>
-      if arr[0] != "amd64_sysv" {
-        @util.eprint("unknown target '\{arr[0]}'\n")
-        return
+      match arr[0] {
+        "amd64_sysv" | "wasm" | "rv64" => target = arr[0]
+        t => {
+          @util.eprint("unknown target '\{t}'\n")
+          return
+        }
       }
     _ => ()
   }
@@ -117,7 +172,7 @@ async fn main {
   // Process each file, accumulating the output.
   let out = StringBuilder::new()
   for file in files {
-    let s = process_file(file, flags, gas)
+    let s = process_file(file, flags, gas, target)
     out.write_string(s)
   }
   if flags == "" {
