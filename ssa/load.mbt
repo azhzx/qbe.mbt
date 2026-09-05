@@ -509,7 +509,7 @@ pub fn loadopt(
         if ins.op.is_load() && !ins.arg2.is_none() {
           // The load was replaced: turn it into a copy/extension
           let ext = @types.Op::from_index(
-            ins.op.index() - @types.Loadsb.index(),
+            @types.Extsb.index() + ins.op.index() - @types.Loadsb.index(),
           )
           match ins.op {
             @types.Loadsb | @types.Loadub | @types.Loadsh | @types.Loaduh =>

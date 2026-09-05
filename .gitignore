@@ -3,4 +3,4 @@ _build/
 target/
 target
 .mooncakes/
-.moonagent/
+.moonagent/tools/qbe-ref/obj/

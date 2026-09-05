@@ -178,3 +178,92 @@ test "foldint address arithmetic keeps label" {
     _ => fail("expected ICE for addr1 - addr2")
   }
 }
+
+///|
+test "null divisor raises an ICE during folding" {
+  // folding `div 1, 0` must surface an error, not trap the compiler
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  %x =w div 1, 0
+    #|  ret %x
+    #|}
+    #|
+  let lexer = @lexer.Lexer::new(src, "<test>")
+  let parser = @parser.Parser::new(lexer.tokenize(), "<test>")
+  parser.parse()
+  let f = parser.get_funcs()[0]
+  @cfg.fillrpo(f)
+  @cfg.fillpreds(f)
+  @ssa.filluse(f)
+  try fold(f, false, parser.interner_ref(), []) catch {
+    @util.QbeError::Ice(_) => ()
+    _ => fail("expected ICE for a null divisor")
+  } noraise {
+    _ => fail("expected ICE for a null divisor")
+  }
+}
+
+///|
+test "foldint signed word comparisons sign-extend operands" {
+  // -1 as a 32-bit word compares less than 1 once sign-extended
+  let m1 = 0xFFFFFFFFL
+  check_int(
+    foldint(@types.Csltw, false, @types.Con::int(m1), @types.Con::int(1)),
+    1,
+  )
+  // the same bits compared unsigned are much greater
+  check_int(
+    foldint(@types.Cultw, false, @types.Con::int(m1), @types.Con::int(1)),
+    0,
+  )
+}
+
+///|
+test "foldint address arithmetic produces CAddr labels" {
+  let a = @types.Con::addr(7)
+  let r = foldint(@types.Add, false, a, @types.Con::int(4))
+  assert_true(!r.0)
+  assert_true(r.1.kind == @types.CAddr)
+  assert_true(r.1.label == 7)
+  // addr + addr is a compile-time error
+  try foldint(@types.Add, false, a, a) catch {
+    @util.QbeError::Ice(_) => ()
+    _ => fail("expected ICE for addr + addr")
+  } noraise {
+    _ => fail("expected ICE for addr + addr")
+  }
+}
+
+///|
+test "foldflt folds double and single arithmetic" {
+  let one = @types.Con::double(1.0)
+  let two = @types.Con::double(2.0)
+  let d = foldflt(@types.Add, true, one, two)
+  assert_true(d.kind == @types.CBits)
+  assert_eq(con_double(d), 3.0)
+  let half = foldflt(
+    @types.Div,
+    false,
+    @types.Con::single(1.0),
+    @types.Con::single(2.0),
+  )
+  assert_eq(con_single(half), 0.5)
+}
+
+///|
+test "comparison predicate classification" {
+  assert_true(is_word_cmp(@types.Ceqw) && is_word_cmp(@types.Cultw))
+  assert_true(!is_word_cmp(@types.Ceql))
+  assert_true(is_long_cmp(@types.Ceql) && is_long_cmp(@types.Cugel))
+  assert_true(!is_long_cmp(@types.Ceqw))
+  assert_true(is_single_cmp(@types.Ceqs) && !is_single_cmp(@types.Ceqd))
+  assert_true(is_double_cmp(@types.Ceqd) && !is_double_cmp(@types.Ceqs))
+}
+
+///|
+test "sext32 sign-extends the low word" {
+  assert_eq(sext32(0xFFFFFFFFL), -1L)
+  assert_eq(sext32(5L), 5L)
+  assert_eq(sext32(0x80000000L), -2147483648L)
+}

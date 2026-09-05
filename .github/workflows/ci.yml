@@ -1,12 +1,11 @@
 # CI for qbe.mbt — a 1:1 MoonBit reimplementation of QBE.
 #
-# Two jobs:
+# Three jobs:
 #   check  — cross-platform sanity: formatting, generated interface (`.mbti`)
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every
-#            debug flag and of the emitted assembly against the reference
-#            `qbe-master/obj_qbe.exe`. Because the reference is a Windows
-#            binary, this job runs on Windows.
+#            debug flag and of the emitted assembly against the reference C QBE
+#            built from the pinned snapshot in tools/qbe-ref (Ubuntu).
 #
 # Expected baselines (see test/README.md):
 #   python compare.py          -> 5684/5684
@@ -37,6 +36,8 @@ jobs:
         run: git config --global core.autocrlf false
 
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install MoonBit
         run: |
@@ -69,7 +70,7 @@ jobs:
 
   diff:
     name: Byte-differential vs reference QBE
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
       contents: read
@@ -78,12 +79,13 @@ jobs:
         run: git config --global core.autocrlf false
 
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install MoonBit
         run: |
-          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-          irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
-          "$env:USERPROFILE\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Toolchain version
         run: moon version --all
@@ -91,8 +93,12 @@ jobs:
       - name: Sync dependencies
         run: moon update
 
+      - name: Build reference QBE from the pinned snapshot
+        run: make -C tools/qbe-ref
+
       # compare.py builds `_build/native/debug/build/cmd/main/main.exe`
-      # internally, then diffs stdout/stderr against qbe-master/obj_qbe.exe.
+      # internally, then diffs stdout/stderr against the reference binary
+      # (auto-detected at tools/qbe-ref/obj/qbe, or via $QBE_REF).
       - name: Differential: all debug flags
         run: python compare.py
 
@@ -101,6 +107,3 @@ jobs:
 
       - name: Differential: assembly (-G m)
         run: python compare.py --asm -G m
-
-      - name: Unit tests (native)
-        run: moon test --target native

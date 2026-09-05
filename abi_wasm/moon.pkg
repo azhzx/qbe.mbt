@@ -2,3 +2,9 @@ import {
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/parser",
+  "azhzx/qbe/cfg",
+} for "wbtest"

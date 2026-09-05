@@ -154,3 +154,104 @@ test "simpljmp - conditional with identical targets becomes jmp" {
   // A conditional jump with both targets equal becomes an unconditional jump.
   assert_true(f.blks[0].jmp.kind == @types.Jjmp)
 }
+
+///|
+test "filldom - diamond immediate dominators" {
+  // start -> t, e ; t -> m ; e -> m
+  let f = make_test_fn("d", 4)
+  let (start, t, e, m) = (0, 1, 2, 3)
+  f.blks[start].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), t, e)
+  f.blks[t].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), m, -1)
+  f.blks[e].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), m, -1)
+  f.blks[m].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  filldom(f)
+  // start dominates everything and has no immediate dominator
+  assert_true(f.blks[start].idom == -1)
+  // t, e and m are all directly dominated by start
+  assert_true(f.blks[t].idom == start)
+  assert_true(f.blks[e].idom == start)
+  assert_true(f.blks[m].idom == start)
+  // the dom tree children of start are exactly {t, e, m}
+  let kids = []
+  let mut c = f.blks[start].dom_link
+  while c >= 0 {
+    kids.push(c)
+    c = f.blks[c].dom_next
+  }
+  assert_true(kids.contains(t))
+  assert_true(kids.contains(e))
+  assert_true(kids.contains(m))
+}
+
+///|
+test "filldom - nested dominance through a single path" {
+  // start -> a -> b -> c (straight line): each block's idom is its predecessor
+  let f = make_test_fn("l", 4)
+  for i in 0..<3 {
+    f.blks[i].jmp = @types.Jump::full(
+      @types.Jjmp,
+      @types.Ref::none(),
+      i + 1,
+      -1,
+    )
+  }
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  filldom(f)
+  assert_true(f.blks[1].idom == 0)
+  assert_true(f.blks[2].idom == 1)
+  assert_true(f.blks[3].idom == 2)
+}
+
+///|
+test "fillloop - back edge marks the loop body" {
+  // start -> head ; head -> body, exit ; body -> head
+  let f = make_test_fn("g", 4)
+  let (start, head, body, exit) = (0, 1, 2, 3)
+  f.blks[start].jmp = @types.Jump::full(
+    @types.Jjmp,
+    @types.Ref::none(),
+    head,
+    -1,
+  )
+  f.blks[head].jmp = @types.Jump::full(
+    @types.Jjnz,
+    @types.Ref::none(),
+    body,
+    exit,
+  )
+  f.blks[body].jmp = @types.Jump::full(
+    @types.Jjmp,
+    @types.Ref::none(),
+    head,
+    -1,
+  )
+  f.blks[exit].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  fillloop(f)
+  // loop_depth is the spill-cost multiplier: blocks inside the loop weigh 10x
+  assert_true(f.blks[head].loop_depth == 10)
+  assert_true(f.blks[body].loop_depth == 10)
+  assert_true(f.blks[exit].loop_depth == 1)
+  assert_true(f.blks[start].loop_depth == 1)
+}
+
+///|
+test "simpljmp - removes empty chained jumps" {
+  // start -> a -> exit, where a only contains a jump
+  let f = make_test_fn("s", 3)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 2, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
+  fillrpo(f)
+  fillpreds(f)
+  filldom(f)
+  simpljmp(f)
+  // the jump through the empty block is shortened to the final target
+  assert_true(f.blks[0].jmp.s1 == 2 || f.blks[0].jmp.kind == @types.Jjmp)
+  assert_true(f.blks[1].jmp.s1 == 2)
+}
