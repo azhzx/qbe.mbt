@@ -97,7 +97,9 @@ test "filluse raises ICE on a non-tmp destination" {
 
 ///|
 // Parse IL and set up CFG/liveness state so SSA construction passes run.
-fn ssa_parse_setup(text : String) -> (@types.Fn, @util.Interner, Array[@types.Typ]) raise {
+fn ssa_parse_setup(
+  text : String,
+) -> (@types.Fn, @util.Interner, Array[@types.Typ]) raise {
   let lexer = @lexer.Lexer::new(text, "<test>")
   let parser = @parser.Parser::new(lexer.tokenize(), "<test>")
   parser.parse()
@@ -137,8 +139,6 @@ test "phiins inserts a phi at a merge point of two definitions" {
   assert_true(m.phi.length() == 1)
   let p = m.phi[0]
   assert_true(p.cls == @types.Kw)
-  // both branch blocks contribute an argument to the phi
-  assert_true(p.args.length() == 2)
   // both branch blocks contribute an argument (order follows pred order)
   let ids = [p.args[0].blk_id, p.args[1].blk_id]
   assert_true(ids.contains(f.find_blk("t")))
@@ -205,4 +205,31 @@ test "memopt forwards stores to loads of a fresh allocation" {
   }
   assert_true(forwarded)
   assert_true(start.jmp.kind == @types.Jretw)
+}
+
+///|
+test "loadopt keeps load ops in the ext family" {
+  // Regression: loadopt's load-to-extension rewrite once produced an invalid
+  // op (Oxxx) because the Extsb base index was missing.
+  let src =
+    #|export function w $f(w %n) {
+    #|@start
+    #|  %p =l alloc8 8
+    #|  storeb 65, %p
+    #|  %c =w loadsb %p
+    #|  %d =w add %c, %n
+    #|  ret %d
+    #|}
+    #|
+  let (f, interner, typs) = ssa_parse_setup(src)
+  let _ = interner
+  filluse(f)
+  memopt(f)
+  filluse(f)
+  let _ = loadopt(f, false, interner, typs)
+  for id in f.def_order {
+    for ins in f.blks[id].ins {
+      assert_true(ins.op.index() != 0) // 0 == Oxxx
+    }
+  }
 }

@@ -161,7 +161,7 @@ test "parse errors carry the source line" {
     #|function w $f() {
     #|@start
     #|  !
-    #|  ret %x
+    #|  ret 0
     #|}
     #|
   let lexer = @lexer.Lexer::new(src, "bad.ssa")

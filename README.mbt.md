@@ -167,9 +167,9 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 - 命令行 `-d <flags>` 提供分阶段 dump（`-dP` parse、`-dM` memopt、`-dN` SSA、`-dC` copy、`-dF` fold、`-dA` abi、`-dI` isel、`-dL` live、`-dS` spill、`-dR` rega），可组合；开启调试时不再输出汇编。库入口 `compile_debug(text, flags)` 返回同样的 dump 文本。
 - 测试分三层：
-  - **单元/白盒测试** `*_wbtest.mbt`：`types`（BSet/Con/Ref/Op/Class/Jump 等）、`util`（Interner/格式化）、`lexer`、`parser`、`fold`、`cfg`、`ssa`、`live` 的核心函数；
-  - **黑盒测试** `qbe_test.mbt`：直接调用 `@qbe.compile` / `@qbe.compile_debug`，覆盖端到端编译（算术、浮点、内存、递归、循环 phi）与错误路径；
-  - **差分回归**：`test/*.ssa`（406 个用例）与参考 qbe 二进制逐字节对比（`compare.py`）。
+  - **单元/白盒测试** `*_wbtest.mbt`：覆盖全部编译流水线包——`types`（BSet/Con/Ref/Op/Class/Jump 等）、`util`（Interner/格式化）、`lexer`、`parser`、`cfg`（支配树/循环/跳转简化）、`ssa`（phi 插入/copy/memopt）、`fold`、`live`、`abi`/`abi_wasm`、`isel`/`isel_wasm`、`spill`、`rega`、`emit`/`emit_wasm`、`cmd/main`；
+  - **黑盒测试** `qbe_test.mbt` + `qbe_snapshot_test.mbt`：直接调用 `@qbe.compile` / `@qbe.compile_debug`，覆盖端到端编译（算术、浮点、内存、递归、循环 phi）与错误路径；`qbe_snapshot_test.mbt` 由 `python tools/gen_snapshot_mbt.py` 从 `test/` 各类别生成，以 `inspect` 快照锚定汇编输出；
+  - **差分回归**：`test/*.ssa`（406 个用例）与参考 qbe 二进制（`tools/qbe-ref` 中钉住的快照，`make -C tools/qbe-ref` 构建）逐字节对比（`python compare.py`，可用 `QBE_REF` 指定其他二进制）。
 - 运行：`moon test`；更新快照：`moon test --update`；覆盖率：`moon coverage analyze`。
 
 # 移植或参考说明

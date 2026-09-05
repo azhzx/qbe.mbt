@@ -190,7 +190,12 @@ test "filldom - nested dominance through a single path" {
   // start -> a -> b -> c (straight line): each block's idom is its predecessor
   let f = make_test_fn("l", 4)
   for i in 0..<3 {
-    f.blks[i].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), i + 1, -1)
+    f.blks[i].jmp = @types.Jump::full(
+      @types.Jjmp,
+      @types.Ref::none(),
+      i + 1,
+      -1,
+    )
   }
   f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
@@ -206,9 +211,24 @@ test "fillloop - back edge marks the loop body" {
   // start -> head ; head -> body, exit ; body -> head
   let f = make_test_fn("g", 4)
   let (start, head, body, exit) = (0, 1, 2, 3)
-  f.blks[start].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), head, -1)
-  f.blks[head].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), body, exit)
-  f.blks[body].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), head, -1)
+  f.blks[start].jmp = @types.Jump::full(
+    @types.Jjmp,
+    @types.Ref::none(),
+    head,
+    -1,
+  )
+  f.blks[head].jmp = @types.Jump::full(
+    @types.Jjnz,
+    @types.Ref::none(),
+    body,
+    exit,
+  )
+  f.blks[body].jmp = @types.Jump::full(
+    @types.Jjmp,
+    @types.Ref::none(),
+    head,
+    -1,
+  )
   f.blks[exit].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
   fillrpo(f)
   fillpreds(f)

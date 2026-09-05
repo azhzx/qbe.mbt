@@ -1,8 +1,23 @@
 # Test suite
 
 This directory holds the `.ssa` inputs used by `compare.py` to verify the
-MoonBit QBE implementation against the reference `qbe-master/obj_qbe.exe`.
+MoonBit QBE implementation against the reference C QBE built from the pinned
+snapshot in `tools/qbe-ref` (see below).
 All 422 files must compile identically on both implementations.
+
+## Reference binary
+
+`compare.py` locates the reference binary in this order:
+
+1. the `QBE_REF` environment variable;
+2. `tools/qbe-ref/obj/qbe(.exe)` — the pinned QBE snapshot shipped under
+   `tools/qbe-ref`, built with `make -C tools/qbe-ref`;
+3. `vendor/qbe/qbe(.exe)` and the legacy `qbe-master/obj_qbe.exe`.
+
+The snapshot in `tools/qbe-ref` is the exact upstream version the port was
+validated against byte-for-byte; the `vendor/qbe` submodule is a fork whose
+emitted assembly intentionally differs, so do not use it for `--asm`
+comparisons.
 
 ## Layout
 

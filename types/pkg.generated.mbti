@@ -118,6 +118,8 @@ pub fn fp_stash_at(Int) -> FpBits
 
 pub fn fp_stash_len() -> Int
 
+pub fn fp_stash_reset() -> Unit
+
 pub fn gasstash(Int64, Int64, Int) -> Int
 
 pub fn op_info(Op) -> OpInfo
