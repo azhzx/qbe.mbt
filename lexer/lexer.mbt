@@ -9,7 +9,7 @@ pub struct Lexer {
 
 ///|
 pub fn Lexer::new(source : String, source_file : String) -> Lexer {
-  Lexer::{ source, source_file, tokens: Array::new(), err_msgs: Array::new() }
+  Lexer::{ source, source_file, tokens: Array::new(), err_msgs: Array::new(), }
 }
 
 ///|

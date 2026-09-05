@@ -16,4 +16,3 @@ pub fn fold(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
 // Type aliases
 
 // Traits
-

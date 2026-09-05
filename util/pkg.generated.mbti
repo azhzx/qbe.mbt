@@ -35,4 +35,3 @@ pub fn Interner::new() -> Self
 // Type aliases
 
 // Traits
-

@@ -18,4 +18,3 @@ pub fn emit_wat_module(Array[@types.Fn], Array[@types.Dat], Array[String], @util
 // Type aliases
 
 // Traits
-

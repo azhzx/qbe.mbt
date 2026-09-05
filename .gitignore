@@ -4,3 +4,5 @@ target/
 target
 .mooncakes/
 .moonagent/tools/qbe-ref/obj/
+tools/qbe-ref/obj/
+tools/qbe-ref/config.h

@@ -43,7 +43,7 @@ pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int) -> Int {
       }
     }
   }
-  fp_stash.push(FpBits::{ b0: bits0, b1: bits1, size })
+  fp_stash.push(FpBits::{ b0: bits0, b1: bits1, size, })
   fp_stash.length() - 1
 }
 

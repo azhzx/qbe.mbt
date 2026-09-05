@@ -21,7 +21,7 @@ fn mk(
   cf : Bool,
   x : (Int, Int, Int),
 ) -> OpInfo {
-  OpInfo::{ name, a0, a1, canfold: cf, nmem: x.0, zf: x.1, lf: x.2 }
+  OpInfo::{ name, a0, a1, canfold: cf, nmem: x.0, zf: x.1, lf: x.2, }
 }
 
 ///|

@@ -16,4 +16,3 @@ pub fn abi(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]
 // Type aliases
 
 // Traits
-

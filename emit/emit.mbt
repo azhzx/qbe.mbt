@@ -515,7 +515,7 @@ pub fn emitfn(
   gassym : String,
   sb : StringBuilder,
 ) -> Unit raise {
-  let st = EmitState::{ fn_, interner, gasloc, gassym, sb }
+  let st = EmitState::{ fn_, interner, gasloc, gassym, sb, }
   st.sb.write_string(".text\n")
   if fn_.is_export {
     st.sb.write_string(".globl \{gassym}\{fn_.name}\n")

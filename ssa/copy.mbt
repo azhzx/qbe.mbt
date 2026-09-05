@@ -165,7 +165,7 @@ pub fn copy(
       for ai in 0..<p.args.length() {
         let a = p.args[ai]
         let rr = copyof(a.value, cp)
-        b.phi[pi].args[ai] = @types.PhiArg::{ value: rr, blk_id: a.blk_id }
+        b.phi[pi].args[ai] = @types.PhiArg::{ value: rr, blk_id: a.blk_id, }
       }
       pi = pi + 1
     }

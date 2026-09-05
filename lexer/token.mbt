@@ -64,7 +64,7 @@ pub fn Token::new(
   col : Int,
   raw : String,
 ) -> Token {
-  Token::{ kind, line, col, raw }
+  Token::{ kind, line, col, raw, }
 }
 
 ///|

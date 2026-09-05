@@ -205,7 +205,7 @@ fn foldint(
     @types.Con::{
       kind: typ,
       label: lab,
-      bits: @types.ConBits::{ i: x, d: 0.0, s: 0.0 },
+      bits: @types.ConBits::{ i: x, d: 0.0, s: 0.0, },
       flt: 0,
       is_local: false,
     },
@@ -239,7 +239,7 @@ fn foldflt(
     @types.Con::{
       kind: @types.CBits,
       label: 0,
-      bits: @types.ConBits::{ i: 0, d: xd, s: 0.0 },
+      bits: @types.ConBits::{ i: 0, d: xd, s: 0.0, },
       flt: 2,
       is_local: false,
     }
@@ -260,7 +260,7 @@ fn foldflt(
     @types.Con::{
       kind: @types.CBits,
       label: 0,
-      bits: @types.ConBits::{ i: 0, d: 0.0, s: xs },
+      bits: @types.ConBits::{ i: 0, d: 0.0, s: xs, },
       flt: 1,
       is_local: false,
     }

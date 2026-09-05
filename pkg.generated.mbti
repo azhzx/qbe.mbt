@@ -45,4 +45,3 @@ pub using @types {type Tmp}
 pub using @types {type Typ}
 
 // Traits
-

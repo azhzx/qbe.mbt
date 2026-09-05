@@ -18,4 +18,3 @@ pub fn spill(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 // Type aliases
 
 // Traits
-

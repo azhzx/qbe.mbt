@@ -13,12 +13,12 @@ pub(all) struct Jump {
 
 ///|
 pub fn Jump::new(kind : JumpKind) -> Jump {
-  Jump::{ kind, arg: Ref::none(), s1: -1, s2: -1 }
+  Jump::{ kind, arg: Ref::none(), s1: -1, s2: -1, }
 }
 
 ///|
 pub fn Jump::full(kind : JumpKind, arg : Ref, s1 : Int, s2 : Int) -> Jump {
-  Jump::{ kind, arg, s1, s2 }
+  Jump::{ kind, arg, s1, s2, }
 }
 
 ///|

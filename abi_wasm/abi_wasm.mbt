@@ -9,7 +9,7 @@ priv struct WasmAbiState {
 
 ///|
 fn wasm_abi_new(fn_ : @types.Fn) -> WasmAbiState {
-  WasmAbiState::{ fn_, buf: Array::new() }
+  WasmAbiState::{ fn_, buf: Array::new(), }
 }
 
 ///|

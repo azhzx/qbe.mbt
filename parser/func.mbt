@@ -371,7 +371,7 @@ fn Parser::parse_phi(
       if val.is_none() {
         raise self.error("invalid phi argument")
       }
-      phi.args.push(@types.PhiArg::{ value: val, blk_id })
+      phi.args.push(@types.PhiArg::{ value: val, blk_id, })
       if self.peek_kind() == TNl {
         break
       }

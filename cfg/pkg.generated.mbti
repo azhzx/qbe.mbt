@@ -40,4 +40,3 @@ pub enum AliasResult {
 // Type aliases
 
 // Traits
-

@@ -11,7 +11,7 @@ priv struct WasmIselState {
 
 ///|
 fn wasm_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> WasmIselState {
-  WasmIselState::{ fn_, buf: Array::new(), interner }
+  WasmIselState::{ fn_, buf: Array::new(), interner, }
 }
 
 ///|

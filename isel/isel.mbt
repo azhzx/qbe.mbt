@@ -111,7 +111,7 @@ fn fixarg(
     a.offset = @types.Con::{
       kind: @types.CAddr,
       label,
-      bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0 },
+      bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
       flt: 0,
       is_local: true,
     }

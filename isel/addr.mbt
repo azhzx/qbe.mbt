@@ -14,7 +14,7 @@ priv struct ANum {
 
 ///|
 fn ANum::new() -> ANum {
-  ANum::{ n: 0, l: 0, r: 0, i: -1 }
+  ANum::{ n: 0, l: 0, r: 0, i: -1, }
 }
 
 ///|

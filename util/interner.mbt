@@ -8,7 +8,7 @@ pub struct Interner {
 
 ///|
 pub fn Interner::new() -> Interner {
-  Interner::{ table: Map([], capacity=16), values: Array::new() }
+  Interner::{ table: Map([], capacity=16), values: Array::new(), }
 }
 
 ///|

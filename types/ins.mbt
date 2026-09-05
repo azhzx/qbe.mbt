@@ -11,13 +11,13 @@ pub(all) struct Ins {
 
 ///|
 pub fn Ins::new(op : Op, cls : Class, to : Ref, arg1 : Ref, arg2 : Ref) -> Ins {
-  Ins::{ op, cls, to, arg1, arg2 }
+  Ins::{ op, cls, to, arg1, arg2, }
 }
 
 ///|
 // Create an instruction with no destination
 pub fn Ins::new_void(op : Op, cls : Class, arg1 : Ref, arg2 : Ref) -> Ins {
-  Ins::{ op, cls, to: Ref::none(), arg1, arg2 }
+  Ins::{ op, cls, to: Ref::none(), arg1, arg2, }
 }
 
 ///|
@@ -37,5 +37,5 @@ pub(all) struct Phi {
 
 ///|
 pub fn Phi::new(to : Ref, cls : Class) -> Phi {
-  Phi::{ to, cls, args: Array::new() }
+  Phi::{ to, cls, args: Array::new(), }
 }

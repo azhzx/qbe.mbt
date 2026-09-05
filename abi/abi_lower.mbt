@@ -61,8 +61,8 @@ fn selcall(
     )
   }
 
-  let ni = Ref::{ val: 0 }
-  let ns = Ref::{ val: 0 }
+  let ni = Ref::{ val: 0, }
+  let ns = Ref::{ val: 0, }
   let reg : Array[@types.Ref] = Array::make(2, @types.Ref::none())
 
   if has_retty {
@@ -256,8 +256,8 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
     ac.push(AClass::new())
   }
   st.buf.clear()
-  let ni = Ref::{ val: 0 }
-  let ns = Ref::{ val: 0 }
+  let ni = Ref::{ val: 0, }
+  let ns = Ref::{ val: 0, }
   let retty = st.fn_.ret_ty
   let has_retty = retty >= 0
   let aret = if has_retty {
@@ -478,8 +478,8 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
 
   // b0 gets a phi: %loc =l phi @bstk %lstk, @breg %lreg
   let phi = @types.Phi::new(loc, @types.Kl)
-  phi.args.push(@types.PhiArg::{ value: lstk, blk_id: bstk })
-  phi.args.push(@types.PhiArg::{ value: lreg, blk_id: breg })
+  phi.args.push(@types.PhiArg::{ value: lstk, blk_id: bstk, })
+  phi.args.push(@types.PhiArg::{ value: lreg, blk_id: breg, })
   st.fn_.blks[b0].phi.insert(0, phi)
 
   let r6 = abi_newtmp(st, @types.Kl)

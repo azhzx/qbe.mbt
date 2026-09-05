@@ -152,7 +152,7 @@ fn adduse(
 ) -> Unit {
   let tmp = fn_.tmps[t]
   tmp.nuse = tmp.nuse + 1
-  tmp.uses.push(@types.Use::{ kind, blk_id, ins_idx, arg_num })
+  tmp.uses.push(@types.Use::{ kind, blk_id, ins_idx, arg_num, })
 }
 
 ///|

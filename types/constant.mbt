@@ -29,7 +29,7 @@ pub fn Con::new() -> Con {
   Con::{
     kind: CUndef,
     label: 0,
-    bits: ConBits::{ i: 0, d: 0.0, s: 0.0 },
+    bits: ConBits::{ i: 0, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
   }
@@ -40,7 +40,7 @@ pub fn Con::int(i : Int64) -> Con {
   Con::{
     kind: CBits,
     label: 0,
-    bits: ConBits::{ i, d: 0.0, s: 0.0 },
+    bits: ConBits::{ i, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
   }
@@ -51,7 +51,7 @@ pub fn Con::double(d : Double) -> Con {
   Con::{
     kind: CBits,
     label: 0,
-    bits: ConBits::{ i: 0, d, s: 0.0 },
+    bits: ConBits::{ i: 0, d, s: 0.0, },
     flt: 2,
     is_local: false,
   }
@@ -62,7 +62,7 @@ pub fn Con::single(s : Float) -> Con {
   Con::{
     kind: CBits,
     label: 0,
-    bits: ConBits::{ i: 0, d: 0.0, s },
+    bits: ConBits::{ i: 0, d: 0.0, s, },
     flt: 1,
     is_local: false,
   }
@@ -73,7 +73,7 @@ pub fn Con::addr(label : Int) -> Con {
   Con::{
     kind: CAddr,
     label,
-    bits: ConBits::{ i: 0, d: 0.0, s: 0.0 },
+    bits: ConBits::{ i: 0, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
   }

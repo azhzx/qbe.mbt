@@ -25,17 +25,17 @@ priv struct NamePool {
 
 ///|
 fn NamePool::new() -> NamePool {
-  NamePool::{ entries: Array::new(), free: Array::new() }
+  NamePool::{ entries: Array::new(), free: Array::new(), }
 }
 
 ///|
 fn np_alloc(pool : NamePool, r : @types.Ref, blk_id : Int, up : Int) -> Int {
   let idx = if pool.free.length() > 0 {
     let f = pool.free.pop().unwrap()
-    pool.entries[f] = Name::{ r, blk_id, up }
+    pool.entries[f] = Name::{ r, blk_id, up, }
     f
   } else {
-    pool.entries.push(Name::{ r, blk_id, up })
+    pool.entries.push(Name::{ r, blk_id, up, })
     pool.entries.length() - 1
   }
   idx
@@ -91,7 +91,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
               work.push(id)
             }
             // C: if (clsmerge(&k, i->cls)) die("invalid input");
-            let k_ref : Ref[Int] = Ref::{ val: k }
+            let k_ref : Ref[Int] = Ref::{ val: k, }
             if clsmerge(k_ref, kcode(i.cls)) {
               raise @util.QbeError::Ice("invalid input class")
             }

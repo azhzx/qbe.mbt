@@ -28,4 +28,3 @@ pub fn ssacheck(@types.Fn) -> Unit raise
 // Type aliases
 
 // Traits
-

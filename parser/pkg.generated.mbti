@@ -43,4 +43,3 @@ pub fn Parser::parse(Self) -> Unit raise
 // Type aliases
 
 // Traits
-

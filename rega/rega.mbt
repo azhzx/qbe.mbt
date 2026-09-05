@@ -246,7 +246,7 @@ fn pmadd(
   dst : @types.Ref,
   k : @types.Class,
 ) -> Unit {
-  st.pm[st.npm] = PmEntry::{ src, dst, cls: k }
+  st.pm[st.npm] = PmEntry::{ src, dst, cls: k, }
   st.npm = st.npm + 1
 }
 

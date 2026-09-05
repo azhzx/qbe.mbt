@@ -15,7 +15,7 @@ fn wat_emit_new(
   interner : @util.Interner,
   sb : StringBuilder,
 ) -> WatEmitState {
-  WatEmitState::{ fn_, interner, sb, indent: 0 }
+  WatEmitState::{ fn_, interner, sb, indent: 0, }
 }
 
 ///|

@@ -43,4 +43,3 @@ pub enum WasmCtrl {
 // Type aliases
 
 // Traits
-

@@ -20,4 +20,3 @@ pub fn gasemitfin(String, StringBuilder) -> Unit
 // Type aliases
 
 // Traits
-

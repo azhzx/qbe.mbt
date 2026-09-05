@@ -14,7 +14,7 @@ let nbit = 64
 pub fn BSet::new(nt : Int) -> BSet {
   let nwords = (nt + nbit - 1) / nbit
   let zero : UInt64 = 0
-  BSet::{ nt, bits: Array::make(nwords, zero) }
+  BSet::{ nt, bits: Array::make(nwords, zero), }
 }
 
 ///|

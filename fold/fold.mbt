@@ -195,8 +195,8 @@ pub fn fold(
     let s1 = if b.jmp.s1 >= 0 { fn_.blks[b.jmp.s1].rpo_id } else { -1 }
     let s2 = if b.jmp.s2 >= 0 { fn_.blks[b.jmp.s2].rpo_id } else { -1 }
     st.edges.push([
-      Edge::{ dest: s1, dead: true },
-      Edge::{ dest: s2, dead: true },
+      Edge::{ dest: s1, dead: true, },
+      Edge::{ dest: s2, dead: true, },
     ])
   }
   // The start edge into rpo[0] (the start block).

@@ -20,12 +20,12 @@ pub(all) struct Field {
 
 ///|
 pub fn Field::new(kind : FieldType, len : Int) -> Field {
-  Field::{ kind, len }
+  Field::{ kind, len, }
 }
 
 ///|
 pub fn Field::end() -> Field {
-  Field::{ kind: FEnd, len: 0 }
+  Field::{ kind: FEnd, len: 0, }
 }
 
 ///|
@@ -41,5 +41,5 @@ pub(all) struct Typ {
 
 ///|
 pub fn Typ::new(name : String) -> Typ {
-  Typ::{ name, dark: 0, align: 0, size: 0, nunion: 1, fields: Array::new() }
+  Typ::{ name, dark: 0, align: 0, size: 0, nunion: 1, fields: Array::new(), }
 }

@@ -68,7 +68,7 @@ pub(all) struct RegHint {
 
 ///|
 pub fn RegHint::default() -> RegHint {
-  RegHint::{ r: -1, w: 0, m: 0 }
+  RegHint::{ r: -1, w: 0, m: 0, }
 }
 
 ///|
@@ -105,7 +105,7 @@ pub(all) struct AliasInfo {
 
 ///|
 pub fn AliasInfo::default() -> AliasInfo {
-  AliasInfo::{ kind: ABot, base: Ref::none(), label: 0, offset: 0, slot: -1 }
+  AliasInfo::{ kind: ABot, base: Ref::none(), label: 0, offset: 0, slot: -1, }
 }
 
 ///|

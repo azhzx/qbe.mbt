@@ -71,7 +71,7 @@ fn iins(
     bid: l.blk,
     off: l.off,
     ins,
-    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw },
+    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw, },
     phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   st.inum = st.inum + 1
@@ -146,7 +146,7 @@ fn load(st : LoadState, sl : Slice, msk : UInt64, l : Loc) -> @types.Ref {
         let c = st.fn_.add_con(@types.Con::{
           kind: @types.CAddr,
           label: a.label,
-          bits: @types.ConBits::{ i: a.offset, d: 0.0, s: 0.0 },
+          bits: @types.ConBits::{ i: a.offset, d: 0.0, s: 0.0, },
           flt: 0,
           is_local: false,
         })
@@ -366,7 +366,7 @@ fn def(
     if r1.is_none() {
       return load_abort(st, sl, msk, il, oldl, oldt)
     }
-    p.args.push(@types.PhiArg::{ value: r1, blk_id: bp })
+    p.args.push(@types.PhiArg::{ value: r1, blk_id: bp, })
   }
   let mut r = @types.Ref::tmp(r)
   if msk != msks {
@@ -456,7 +456,7 @@ pub fn loadopt(
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
 ) -> String {
-  let st = LoadState::{ fn_, inum: 0, ilog: Array::new(), nlog: 0 }
+  let st = LoadState::{ fn_, inum: 0, ilog: Array::new(), nlog: 0, }
   // First pass: for each load, try to replace it
   for b_id in fn_.def_order {
     for ii in 0..<fn_.blks[b_id].ins.length() {
@@ -465,8 +465,8 @@ pub fn loadopt(
         continue
       }
       let sz = loadsz(ins)
-      let sl = Slice::{ r: ins.arg1, sz, cls: ins.cls }
-      let l = Loc::{ kind: LocType::LRoot, off: ii, blk: b_id }
+      let sl = Slice::{ r: ins.arg1, sz, cls: ins.cls, }
+      let l = Loc::{ kind: LocType::LRoot, off: ii, blk: b_id, }
       fn_.blks[b_id].ins[ii].arg2 = def(st, sl, mask_of(sz), b_id, ii, l)
     }
   }
@@ -483,7 +483,7 @@ pub fn loadopt(
       @types.Ref::none(),
       @types.Ref::none(),
     ),
-    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw },
+    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw, },
     phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   let mut ist = 0
