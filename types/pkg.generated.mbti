@@ -264,6 +264,10 @@ pub fn fp_stash_reset() -> Unit
 
 pub fn gasstash(Int64, Int64, Int) -> Int
 
+pub fn init_amd64_target() -> Unit
+
+pub fn init_rv64_target() -> Unit
+
 pub fn op_info(Op) -> OpInfo
 
 pub fn phicls(Int, Array[Tmp]) -> Int
@@ -281,6 +285,12 @@ pub fn rv64_reg_name(Int) -> String
 pub fn rv64_rglob_mask() -> UInt64
 
 pub let rv64_rsave : Array[Int]
+
+pub fn target_argregs(Ref) -> (UInt64, Int, Int)
+
+pub let target_cfg : TargetCfg
+
+pub fn target_retregs(Ref) -> (UInt64, Int, Int)
 
 pub fn wasm_load_op(Class) -> String
 
@@ -771,6 +781,20 @@ pub(all) struct RegHint {
   mut m : UInt64
 } derive(@debug.Debug)
 pub fn RegHint::default() -> Self
+
+pub struct TargetCfg {
+  mut gpr_base : Int
+  mut fpr_base : Int
+  mut ngpr : Int
+  mut nfpr : Int
+  mut fpr_class_base : Int
+  mut post_call_gpr : Int
+  mut post_call_fpr : Int
+  mut rglob_mask : UInt64
+  mut rsave : Array[Int]
+  mut retregs : (Ref) -> (UInt64, Int, Int)
+  mut argregs : (Ref) -> (UInt64, Int, Int)
+}
 
 pub(all) struct Tmp {
   name : String

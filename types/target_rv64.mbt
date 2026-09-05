@@ -420,3 +420,61 @@ pub fn rv64_reg_name(reg : Int) -> String {
 // RISC-V pointer size: Kl (64-bit).
 // On amd64 Km=Kl; on wasm32 Km=Kw; on rv64 Km=Kl.
 pub const Rv64KmIsWide : Int = 1
+
+///|
+// RISC-V call return registers (C rv64 retregs): A0/A1 and FA0/FA1.
+fn rv64_target_retregs(r : Ref) -> (UInt64, Int, Int) {
+  let mut b : UInt64 = 0
+  let v = r.call_val()
+  let ni = v & 3
+  let nf = (v >> 2) & 3
+  if ni >= 1 {
+    b = b | (1UL << A0)
+  }
+  if ni >= 2 {
+    b = b | (1UL << A1)
+  }
+  if nf >= 1 {
+    b = b | (1UL << FA0)
+  }
+  if nf >= 2 {
+    b = b | (1UL << FA1)
+  }
+  (b, ni, nf)
+}
+
+///|
+// RISC-V call argument registers (C rv64 argregs): A0.. and FA0...
+fn rv64_target_argregs(r : Ref) -> (UInt64, Int, Int) {
+  let mut b : UInt64 = 0
+  let v = r.call_val()
+  let ni = (v >> 4) & 15
+  let nf = (v >> 8) & 15
+  let ra = (v >> 12) & 1
+  for j in 0..<ni {
+    b = b | (1UL << (A0 + j))
+  }
+  for j in 0..<nf {
+    b = b | (1UL << (FA0 + j))
+  }
+  if ra != 0 {
+    b = b | (1UL << A0)
+  }
+  (b, ni + ra, nf)
+}
+
+///|
+// Select the rv64 target (C init(T_rv64)).
+pub fn init_rv64_target() -> Unit {
+  target_cfg.gpr_base = T0
+  target_cfg.fpr_base = FT0
+  target_cfg.ngpr = Rv64NGPR
+  target_cfg.nfpr = Rv64NFPR
+  target_cfg.fpr_class_base = FT0
+  target_cfg.post_call_gpr = Rv64NGPS
+  target_cfg.post_call_fpr = Rv64NFPS
+  target_cfg.rglob_mask = rv64_rglob_mask()
+  target_cfg.rsave = rv64_rsave
+  target_cfg.retregs = rv64_target_retregs
+  target_cfg.argregs = rv64_target_argregs
+}
