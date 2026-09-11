@@ -178,7 +178,7 @@ async fn main {
   if flags == "" {
     if out_file != "" && out_file != "-" {
       @fs.write_string_to_file(out_file, out.to_string()) catch {
-        e => @util.eprint("error: \{e}\n")
+        e => @util.eprint("error: \{Repr(e)}\n")
       }
     } else {
       @util.iprint(out.to_string())
