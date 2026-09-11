@@ -1,48 +1,50 @@
-# `rega` 包接口介绍
+# `rega` Package API Reference
 
-包路径: `azhzx/qbe/rega`
+Package path: `azhzx/qbe/rega`
 
-寄存器分配 (Register Allocation)。在 spill 之后，把每个虚拟临时变量绑定到具体的物理寄存器。对应 QBE 原项目的 `rega.c`。
+Register Allocation. After spilling, binds each virtual temporary variable to a specific physical register. Corresponds to `rega.c` in the original QBE project.
 
-## 入口
+[中文版本 (Chinese Version)](zh/rega.md)
+
+## Entry Point
 
 ```moonbit
 pub fn rega(
   @types.Fn,
-  Bool,                  // -dR 调试开关
+  Bool,                  // -dR debug switch
   @util.Interner,
   Array[@types.Typ],
 ) -> String
 ```
 
-`rega` 完成以下工作：
+`rega` performs the following work:
 
-1. **图染色**：基于 `live` 包计算的活跃集合，构建干涉图（同时活跃的临时变量之间有边）。
-2. **优先级排序**：按 `cost`（spill 阶段已算好）与 `hint`（寄存器提示，比如返回值倾向 RAX）排序。
-3. **寄存器选择**：贪心选色（最先可用的非冲突寄存器），更新每个 `Tmp` 的 `slot` 字段为物理寄存器编号。
-4. **`copy` 插入**：块边界处若两边的临时变量被分到不同寄存器，插入 `copy` 指令在块边界同步。
-5. **`Fn.reg` 掩掩码**：把所有用到的寄存器累计到 `Fn.reg` 掩码，供 emit 阶段决定保存哪些 callee-saved 寄存器。
+1. **Graph coloring**: Based on liveness sets computed by the `live` package, builds an interference graph (edges between simultaneously live temporary variables).
+2. **Priority sorting**: Sorted by `cost` (already computed in spill phase) and `hint` (register hints, e.g., return values favor RAX).
+3. **Register selection**: Greedy color selection (first available non-conflicting register), updating each `Tmp`'s `slot` field to the physical register number.
+4. **`copy` insertion**: At block boundaries, if temporary variables on both sides are assigned to different registers, inserts `copy` instructions to synchronize at block boundaries.
+5. **`Fn.reg` mask**: Accumulates all used registers into the `Fn.reg` mask, used by the emit phase to determine which callee-saved registers to save.
 
-返回 `-dR` 调试文本：每个临时变量与其最终寄存器的映射。
+Returns `-dR` debug text: mapping of each temporary variable to its final register.
 
-## 典型调用
+## Typical Calls
 
 ```moonbit
 @util.eprint(@spill.spill(fn_, dbg.s, interner, typs))
 @util.eprint(@rega.rega(fn_, dbg.r, interner, typs))
-@cfg.fillrpo(fn_)        // rega 可能新增块边界 copy，重算
-@cfg.simpljmp(fn_)       // 简化跳转
+@cfg.fillrpo(fn_)        // rega may add block boundary copies, recompute
+@cfg.simpljmp(fn_)       // simplify jumps
 @cfg.fillrpo(fn_)
 @cfg.fillpreds(fn_)
 ```
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- `rega` 的输出已经不再是"虚拟" SSA：每个 `Tmp` 都有了具体的物理寄存器（或 `RSlot` 表示已溢出）。
-- 实际寄存器编号遵循 `types` 包中的 `RAX=1`...`RSP=16`, `XMM0=17`...`XMM15=32`。
-- 如果 `rega` 仍无法分配（spill 不够激进），会抛 `Ice` 提示内部错误。
+- `rega`'s output is no longer "virtual" SSA: each `Tmp` has a concrete physical register (or `RSpill` indicating it has been spilled).
+- Actual register numbers follow `types` package's `RAX=1`...`RSP=16`, `XMM0=17`...`XMM15=32`.
+- If `rega` still cannot allocate (spill not aggressive enough), it throws `Ice` indicating an internal error.

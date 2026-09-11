@@ -1,62 +1,64 @@
-# `spill` 包接口介绍
+# `spill` Package API Reference
 
-包路径: `azhzx/qbe/spill`
+Package path: `azhzx/qbe/spill`
 
-寄存器溢出 (Spill)。当寄存器压力过大时，选择一些临时变量溢出到栈槽，在需要时再加载回寄存器。包含溢出代价估算与实际溢出两步。对应 QBE 原项目的 `spill.c`。
+Register Spilling. When register pressure is too high, selects some temporary variables to spill to stack slots, loading them back into registers when needed. Contains two steps: spilling cost estimation and actual spilling. Corresponds to `spill.c` in the original QBE project.
 
-## 1. 代价估算 - `fillcost`
+[中文版本 (Chinese Version)](zh/spill.md)
+
+## 1. Cost Estimation - `fillcost`
 
 ```moonbit
 pub fn fillcost(
   @types.Fn,
-  Bool,                  // -dS 调试开关
+  Bool,                  // -dS debug switch
 ) -> String
 ```
 
-为每个 `Tmp` 计算并写入 `cost` 字段：
+Computes and writes the `cost` field for each `Tmp`:
 
-- **使用代价**：每条使用点代价 +1，定义点代价 -1（粗略）；
-- **循环加权**：在循环内的代价按 `10^loop_depth` 放大；
-- **寄存器类**：分别对 `Kw`/`Kl`（word）与 `Ks`/`Kd`（double）通道计算，对应寄存器数 `NGPS`/`NFPS`。
+- **Use cost**: +1 for each use point, -1 for definition point (approximate);
+- **Loop weighting**: cost inside loops is amplified by `10^loop_depth`;
+- **Register class**: computed separately for `Kw`/`Kl` (word) and `Ks`/`Kd` (double) channels, corresponding to register counts `NGPS`/`NFPS`.
 
-`cost` 越高的临时变量越值得留在寄存器里，反之越值得溢出。返回值为 `-dS` 调试文本。
+Higher `cost` temporary variables are more worth keeping in registers; lower cost ones are more worth spilling. Returns `-dS` debug text.
 
-## 2. 溢出 - `spill`
+## 2. Spilling - `spill`
 
 ```moonbit
 pub fn spill(
   @types.Fn,
-  Bool,                  // -dS 调试开关
+  Bool,                  // -dS debug switch
   @util.Interner,
   Array[@types.Typ],
 ) -> String
 ```
 
-`spill` 完成以下工作：
+`spill` performs the following work:
 
-1. 检查每个基本块边界的活跃数 (`nlive_w`/`nlive_d`) 是否超过可用寄存器数 (`NGPS=9`/`NFPS=15`)；
-2. 若超过，在对应位置插入 `copy` 到/从新的栈槽（`RSlot`）；
-3. 被溢出的临时变量在原使用点之前 `load`，在原定义点之后 `store`；
-4. 重算活跃集合，迭代到收敛。
+1. Checks if the liveness count at each basic block boundary (`nlive_w`/`nlive_d`) exceeds the available register count (`NGPS=9`/`NFPS=15`);
+2. If exceeded, inserts `copy` to/from new stack slots (`RSpill`) at the corresponding positions;
+3. Spilled temporary variables are loaded before their original use points and stored after their original definition points;
+4. Recomputes live sets, iterating until convergence.
 
-如果一次溢出仍未满足，会继续迭代（最坏情况溢出所有非循环不变量）。
+If one round of spilling is still insufficient, it continues iterating (worst case: spill all non-loop-invariant temporaries).
 
-## 典型调用
+## Typical Calls
 
 ```moonbit
-@util.eprint(@live.filllive(fn_, dbg.l))      // 必须先算活跃
-@util.eprint(@spill.fillcost(fn_, dbg.s))     // 估算代价
-@util.eprint(@spill.spill(fn_, dbg.s, interner, typs))  // 执行溢出
-@util.eprint(@rega.rega(fn_, dbg.r, interner, typs))    // 再寄存器分配
+@util.eprint(@live.filllive(fn_, dbg.l))      // must compute liveness first
+@util.eprint(@spill.fillcost(fn_, dbg.s))     // estimate cost
+@util.eprint(@spill.spill(fn_, dbg.s, interner, typs))  // perform spilling
+@util.eprint(@rega.rega(fn_, dbg.r, interner, typs))    // then register allocation
 ```
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- `spill` 是一个**迭代**过程：每次插入溢出代码都会改变活跃集合，需要 `live.filllive` 重新分析。
-- 溢出使用的栈槽数通过 `Fn.slot` 累加，最终影响栈帧大小，由 `emit` 阶段写入函数序言。
-- 在 QBE 原项目中，spill 算法由 Pan, Andersson 等的线性扫描思路启发，但简化为基于代价的局部选择。
+- `spill` is an **iterative** process: each insertion of spill code changes the live sets, requiring `live.filllive` to re-analyze.
+- The number of stack slots used by spilling is accumulated via `Fn.slot`, ultimately affecting stack frame size, written into the function prologue by the `emit` phase.
+- In the original QBE project, the spill algorithm is inspired by Pan, Andersson, et al.'s linear scan approach, but simplified to cost-based local selection.

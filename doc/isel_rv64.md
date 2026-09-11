@@ -1,62 +1,55 @@
-# `isel_rv64` 包接口介绍
+# `isel_rv64` Package API Reference
 
-包路径: `azhzx/qbe/isel_rv64`
+Package path: `azhzx/qbe/isel_rv64`
 
-RISC-V 64 指令选择。在 `abi_rv64` 降级之后运行，把通用 SSA 指令映射为
-RISC-V 指令形态，对应上游 QBE 的 `rv64/isel.c`。
+RISC-V 64 instruction selection. Runs after `abi_rv64` lowering, mapping generic SSA instructions to RISC-V instruction forms. Corresponds to upstream QBE's `rv64/isel.c`.
 
-## 入口
+[中文版本 (Chinese Version)](zh/isel_rv64.md)
+
+## Entry Point
 
 ```moonbit
 pub fn isel_rv64(
-  @types.Fn,          // 待处理的函数（就地修改）
-  @util.Interner,     // 字符串驻留器
-  Bool,               // 调试开关（-dI dump）
-  Array[@types.Typ],  // 全局类型表
+  @types.Fn,          // function to process (modified in place)
+  @util.Interner,     // string interner
+  Bool,               // debug switch (-dI dump)
+  Array[@types.Typ],  // global type table
 ) -> String raise
 ```
 
-返回 `-dI` 调试文本（`print_dbg == false` 时为空字符串）。
+Returns `-dI` debug text (empty string when `print_dbg == false`).
 
-## 指令映射概要
+## Instruction Mapping Summary
 
 | QBE IL | RISC-V |
 | --- | --- |
-| `add`/`sub`/`mul` | `add`/`sub`/`mul`（按类别 `w`/`l` 选 `addw` 等） |
+| `add`/`sub`/`mul` | `add`/`sub`/`mul` (select `addw` etc. based on class `w`/`l`) |
 | `div`/`rem`/`udiv`/`urem` | `div`/`rem`/`divu`/`remu` |
 | `and`/`or`/`xor` | `and`/`or`/`xor` |
-| `shl`/`sar`/`shr` | `sll`/`sra`/`srl`（word 变体 `*w`） |
+| `shl`/`sar`/`shr` | `sll`/`sra`/`srl` (word variants `*w`) |
 | `loadsb/ub/sh/uh/sw/uw/l` | `lb/lbu/lh/lhu/lw/lwu/ld` |
 | `storeb/h/w/l` | `sb/sh/sw/sd` |
 | `loads`/`stores` | `flw`/`fsw` |
 | `loadd`/`stored` | `fld`/`fsd` |
-| `extsb`/`extsh`/`extsw` | `sext.b`/`sext.h`/`sext.w`（或合并进 load） |
-| 浮点运算 | `fadd.s`/`fsub.s`/`fmul.s`/`fdiv.s` 及 `d` 变体 |
-| 比较 | 先 `slt`/浮点比较，再经 `beq`/`bne` 等分支 |
+| `extsb`/`extsh`/`extsw` | `sext.b`/`sext.h`/`sext.w` (or merged into load) |
+| Floating-point ops | `fadd.s`/`fsub.s`/`fmul.s`/`fdiv.s` and `d` variants |
+| Comparison | First `slt`/floating-point comparison, then via `beq`/`bne` etc. branches |
 
-比较 + 分支的组合在指令选择层被改写为 RISC-V 分支指令直接消费比较结果的
-形态（RISC-V 没有独立的 flags 状态）。
+Compare + branch combinations are rewritten at the instruction selection level to RISC-V branch instructions directly consuming comparison results (RISC-V has no independent flags state).
 
-## 与 amd64 isel 的区别
+## Differences from amd64 isel
 
-- **无 flags 寄存器**：amd64 用 `xcmp` + flag-op + `jX...`，rv64 直接生成
-  比较 + 分支序列。
-- **无复杂寻址**：amd64 可把 `add` 链折叠成 `[base + index*scale + offset]`
-  寻址操作数；RISC-V 只支持 `[rs1 + imm]`，`isel_rv64` 仅做
-  `base + offset` 形式识别（`decompose_addr`/`is_simple_addr` 语义），
-  复杂地址保留显式 `add` 指令。
-- **无魔法数除法**：amd64 把常量除法降为乘加移位序列；rv64 直接用
-  `div`/`rem` 指令。
-- **立即数**：RISC-V 指令立即数位宽有限，大常量先 `li` 装载到寄存器。
+- **No flags register**: amd64 uses `xcmp` + flag-op + `jX...`, rv64 directly generates compare + branch sequences.
+- **No complex addressing**: amd64 can fold `add` chains into `[base + index*scale + offset]` addressing operands; RISC-V only supports `[rs1 + imm]`, `isel_rv64` only does `base + offset` form recognition (`decompose_addr`/`is_simple_addr` semantics), complex addresses keep explicit `add` instructions.
+- **No magic number division**: amd64 converts constant division to multiply + shift sequence; rv64 directly uses `div`/`rem` instructions.
+- **Immediates**: RISC-V instruction immediate bit-width is limited; large constants are first loaded into registers with `li`.
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- 指令选择在 ABI 降级之后运行，此时参数/返回值已是具体寄存器引用。
-- rv64 复用 amd64 的 `spill`/`rega`（通过 `types.target_cfg` 切换目标），
-  因此 isel_rv64 输出的指令引用的寄存器编号遵循
-  `types/target_rv64.mbt` 的编号方案。
+- Instruction selection runs after ABI lowering, at which point parameters/return values are already concrete register references.
+- rv64 reuses amd64's `spill`/`rega` (via `types.target_cfg` target switching), so register numbers referenced by isel_rv64 output follow the numbering scheme in `types/target_rv64.mbt`.

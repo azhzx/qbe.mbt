@@ -1,71 +1,61 @@
-# `abi_rv64` 包接口介绍
+# `abi_rv64` Package API Reference
 
-包路径: `azhzx/qbe/abi_rv64`
+Package path: `azhzx/qbe/abi_rv64`
 
-RISC-V 64 (rv64) ABI 处理。在指令选择前把抽象的函数参数/返回值引用替换为
-RISC-V 调用约定的具体寄存器引用。与 `abi`（amd64 System V）平级，对应上游
-QBE 的 `rv64/abi.c`。
+RISC-V 64 (rv64) ABI processing. Before instruction selection, replaces abstract function parameter/return value references with concrete register references per the RISC-V calling convention. On the same level as `abi` (amd64 System V), corresponding to upstream QBE's `rv64/abi.c`.
 
-## 入口
+[中文版本 (Chinese Version)](zh/abi_rv64.md)
+
+## Entry Point
 
 ```moonbit
 pub fn abi_rv64(
-  @types.Fn,             // 待处理的函数（就地修改）
-  Array[@types.Typ],     // 函数局部类型表
-  Bool,                  // 调试开关（-dA dump）
-  @util.Interner,        // 字符串驻留器
-  Array[@types.Typ],     // 全局类型表
+  @types.Fn,             // function to process (modified in place)
+  Array[@types.Typ],     // function-local type table
+  Bool,                  // debug switch (-dA dump)
+  @util.Interner,        // string interner
+  Array[@types.Typ],     // global type table
 ) -> String
 ```
 
-返回 `-dA` 调试文本（`print_dbg == false` 时为空字符串）。
+Returns `-dA` debug text (empty string when `print_dbg == false`).
 
-## 调用约定
+## Calling Convention
 
-| 类别 | 寄存器 |
+| Category | Registers |
 | --- | --- |
-| 整数参数 | `A0`–`A7`（`t` 类传参借用 `T0`–`T5`，见下） |
-| 浮点参数 | `FA0`–`FA7` |
-| 整数返回值 | `A0`、`A1` |
-| 浮点返回值 | `FA0`、`FA1` |
-| 调用者保存 | `T0`–`T5`、`A0`–`A7`、`FA0`–`FA7`、`FT0`–`FT10` |
-| 被调用者保存 | `S1`–`S11`、`FS0`–`FS11` |
+| Integer parameters | `A0`–`A7` (`t` class parameters borrow `T0`–`T5`, see below) |
+| Floating-point parameters | `FA0`–`FA7` |
+| Integer return values | `A0`, `A1` |
+| Floating-point return values | `FA0`, `FA1` |
+| Caller-saved | `T0`–`T5`, `A0`–`A7`, `FA0`–`FA7`, `FT0`–`FT10` |
+| Callee-saved | `S1`–`S11`, `FS0`–`FS11` |
 
-寄存器以 tmp id 编号（见 `types/target_rv64.mbt`）：`T0=1..A7=14`，
-`S1..S11=15..25`，`FP=26 SP=27 GP=28 TP=29 RA=30`，
-`FT0..FA7=31..49`，`FS0..FS11=50..61`，首个非寄存器临时 `Rv64Tmp0=64`。
+Registers are numbered by tmp id (see `types/target_rv64.mbt`): `T0=1..A7=14`, `S1..S11=15..25`, `FP=26 SP=27 GP=28 TP=29 RA=30`, `FT0..FA7=31..49`, `FS0..FS11=50..61`, first non-register temporary `Rv64Tmp0=64`.
 
-## 完成的工作
+## Work Performed
 
-1. **参数降低 (`selpar`)**：把入口块的 `Par` 指令替换为从 `A0..`/`FA0..`
-   （超出寄存器的走栈槽 `Salloc`）的 copy；聚合类型经 `rv64_typclass` 判定
-   走寄存器还是内存，逐字段搬运（`rv64_ldregs`/`rv64_sttmps`）。
-2. **调用降低 (`selcall`)**：把 `Arg` 替换为到参数寄存器/栈槽的 copy；
-   超出寄存器数量的参数在栈上预留空间；聚合参数经 `rv64_blit`/
-   `rv64_fpstruct` 拆分。
-3. **返回值降低**：`Ret` 跳转前把结果 copy 到 `A0`/`A1`/`FA0`/`FA1`；
-   大聚合通过隐藏指针返回。
-4. **vararg**：`vastart`/`vaarg` 按 RISC-V `va_list` 布局处理寄存器保存区。
+1. **Parameter lowering (`selpar`)**: Replaces `Par` instructions in the entry block with copy from `A0..`/`FA0..` (overflow goes to stack slots `Salloc`); aggregate types are classified by `rv64_typclass` to use registers or memory, with field-by-field movement (`rv64_ldregs`/`rv64_sttmps`).
+2. **Call lowering (`selcall`)**: Replaces `Arg` with copy to parameter registers/stack slots; parameters exceeding register count reserve space on stack; aggregate parameters are split via `rv64_blit`/`rv64_fpstruct`.
+3. **Return value lowering**: Before `Ret` jumps, copies result to `A0`/`A1`/`FA0`/`FA1`; large aggregates returned via hidden pointer.
+4. **vararg**: `vastart`/`vaarg` processed per RISC-V `va_list` layout register save area.
 
-## 与其它后端 ABI 的区别
+## Differences from Other Backend ABIs
 
-| 特性 | amd64_sysv (`abi`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
+| Feature | amd64_sysv (`abi`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
 |------|--------------------|--------------------|-------------------|
-| 整数参数 | RDI,RSI,RDX,RCX,R8,R9 | 函数签名参数 | A0–A7 |
-| 浮点参数 | XMM0–XMM7 | 函数签名参数 | FA0–FA7 |
-| 返回值 | RAX,RDX / XMM0,XMM1 | 函数签名返回值 | A0,A1 / FA0,FA1 |
-| 聚合类型 | 8 字节内拆分进寄存器 | 通过内存指针 | 按字段分类，走寄存器或内存 |
-| 可变参数 | 寄存器保存区 | 不支持 | 寄存器保存区 + 栈 |
+| Integer parameters | RDI,RSI,RDX,RCX,R8,R9 | Function signature parameters | A0–A7 |
+| Floating-point parameters | XMM0–XMM7 | Function signature parameters | FA0–FA7 |
+| Return values | RAX,RDX / XMM0,XMM1 | Function signature return values | A0,A1 / FA0,FA1 |
+| Aggregate types | Split into registers if ≤8 bytes | Via memory pointer | Classified by field, uses registers or memory |
+| Variadic arguments | Register save area | Not supported | Register save area + stack |
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- rv64 后端目前没有差分参考验证（上游 C QBE 的 rv64 目标尚未纳入
-  `compare.py` 基线），行为以 IL 语义与 RISC-V 调用约定为准。
-- `spill`/`rega` 是目标无关的：`abi_rv64` 降级完成后，`pipeline.mbt` 调用
-  `@types.init_rv64_target()` 切换全局 `TargetCfg`，后续 `spill`/`rega`
-  按 RISC-V 寄存器编号分配。
+- The rv64 backend currently has no differential reference validation (upstream C QBE's rv64 target has not yet been added to the `compare.py` baseline); behavior is based on IL semantics and the RISC-V calling convention.
+- `spill`/`rega` are target-independent: after `abi_rv64` lowering completes, `pipeline.mbt` calls `@types.init_rv64_target()` to switch the global `TargetCfg`, and subsequent `spill`/`rega` allocates by RISC-V register numbers.

@@ -1,48 +1,50 @@
-# `types` 包接口介绍
+# `types` Package API Reference
 
-包路径: `azhzx/qbe/types`
+Package path: `azhzx/qbe/types`
 
-整个编译后端的核心数据结构层。定义了函数 (`Fn`)、基本块 (`Blk`)、临时变量 (`Tmp`)、指令 (`Ins`)、phi 节点 (`Phi`)、跳转 (`Jump`)、常量 (`Con`)、内存地址 (`Addr`)、聚合类型 (`Typ`)、数据段项 (`Dat`) 等所有 SSA 表示中需要用到的实体。其它所有阶段（parser、cfg、ssa、abi、isel、live、spill、rega、emit）都依赖本包。
+The core data structure layer for the entire compilation backend. Defines all entities needed in SSA representation: functions (`Fn`), basic blocks (`Blk`), temporary variables (`Tmp`), instructions (`Ins`), phi nodes (`Phi`), jumps (`Jump`), constants (`Con`), memory addresses (`Addr`), aggregate types (`Typ`), data segment items (`Dat`), etc. All other phases (parser, cfg, ssa, abi, isel, live, spill, rega, emit) depend on this package.
 
-## 顶层常量
+[中文版本 (Chinese Version)](zh/types.md)
 
-寄存器编号与硬件限制（amd64_sysv）：
+## Top-level Constants
 
-| 常量 | 含义 |
+Register numbers and hardware limits (amd64_sysv):
+
+| Constant | Meaning |
 | --- | --- |
-| `RAX..R15`、`XMM0..XMM15`、`RBP`, `RSP` | 寄存器编号 (1..32, 16, 0/15) |
-| `RXX` | "无寄存器" 哨兵 (0) |
-| `Tmp0` | 第一个用户临时变量编号 (64) |
-| `NGPR`/`NFPR`/`NGPS`/`NFPS`/`NCLR` | 通用/浮点/参数寄存器数 (16/15/9/15/5) |
-| `NRGLOB` | 全局保留寄存器数 (2) |
+| `RAX..R15`, `XMM0..XMM15`, `RBP`, `RSP` | Register numbers (1..32, 16, 0/15) |
+| `RXX` | "No register" sentinel (0) |
+| `Tmp0` | First user temporary variable number (64) |
+| `NGPR`/`NFPR`/`NGPS`/`NFPS`/`NCLR` | General/floating-point/parameter register counts (16/15/9/15/5) |
+| `NRGLOB` | Number of globally preserved registers (2) |
 
-`rsave : Array[Int]` 与 `rclob : Array[Int]` 是寄存器分配时使用的 callee-saved 与 caller-saved 列表。
+`rsave : Array[Int]` and `rclob : Array[Int]` are the callee-saved and caller-saved register lists used during register allocation.
 
-## 类与寄存器引用
+## Classes and Register References
 
 ```moonbit
-pub enum Class { Kx; Kw; Kl; Ks; Kd }   // 类型类: 任意/word(32)/long(64)/single/double
+pub enum Class { Kx; Kw; Kl; Ks; Kd }   // Type class: any/word(32)/long(64)/single/double
 pub enum Ref {
   RNone; RTmp(Int); RCon(Int); RType(Int); RSlot(Int); RCall(Int); RMem(Int)
 }
 ```
 
-`Ref` 是操作数引用：临时变量、常量、类型、栈槽、调用点、内存。配套方法：`is_tmp`/`is_con`/`is_slot`/`is_mem`/`is_none`、`tmp`/`con`/`slot`/`mem`/`typ`/`call`（构造）、`*_val`（取值）。
+`Ref` is an operand reference: temporary variable, constant, type, stack slot, call point, memory. Associated methods: `is_tmp`/`is_con`/`is_slot`/`is_mem`/`is_none`, `tmp`/`con`/`slot`/`mem`/`typ`/`call` (constructors), `*_val` (extract value).
 
-寄存器引用的查询：
+Register reference queries:
 
 ```moonbit
-pub fn req(Ref, Ref) -> Bool         // 相等（含寄存器掩码比较）
-pub fn rtype(Ref) -> Int            // 引用类型
-pub fn ref_none() -> Ref            // 空引用
-pub fn argregs(Ref) -> (UInt64, Int, Int)  // 参数寄存器掩码
-pub fn retregs(Ref) -> (UInt64, Int, Int)  // 返回寄存器掩码
+pub fn req(Ref, Ref) -> Bool         // equality (including register mask comparison)
+pub fn rtype(Ref) -> Int            // reference type
+pub fn ref_none() -> Ref            // null reference
+pub fn argregs(Ref) -> (UInt64, Int, Int)  // parameter register mask
+pub fn retregs(Ref) -> (UInt64, Int, Int)  // return register mask
 pub fn is_callersave(Int) -> Bool
 pub fn rglob_mask() -> UInt64
-pub fn regname(Int) -> String       // 寄存器名 (rax, xmm0, ...)
+pub fn regname(Int) -> String       // register name (rax, xmm0, ...)
 ```
 
-## `Fn` - 函数实体
+## `Fn` - Function Entity
 
 ```moonbit
 pub(all) struct Fn {
@@ -53,36 +55,36 @@ pub(all) struct Fn {
   tmps : Array[Tmp]
   cons : Array[Con]
   mems : Array[Addr]
-  rpo : Array[Int]            // 反向后序
-  def_order : Array[Int]      // 定义序
-  mut ret_ty : Int            // 返回聚合类型索引 (-1 表示无)
-  mut retr : Ref              // 返回引用
-  mut reg : UInt64            // 已用寄存器掩码
-  mut slot : Int              // 栈槽数
+  rpo : Array[Int]            // reverse postorder
+  def_order : Array[Int]      // definition order
+  mut ret_ty : Int            // return aggregate type index (-1 if none)
+  mut retr : Ref              // return reference
+  mut reg : UInt64            // used register mask
+  mut slot : Int              // stack slot count
   mut is_export : Bool
   mut is_vararg : Bool
   mut has_dynalloc : Bool
 }
 ```
 
-主要方法：
+Key methods:
 
-| 方法 | 用途 |
+| Method | Purpose |
 | --- | --- |
-| `Fn::new(String)` | 创建空函数 |
-| `add_blk(String) -> Int` | 添加基本块，返回 id |
-| `find_blk(String) -> Int` | 按名查找块 (-1 表示未找到) |
-| `blk(Int) -> Blk` / `nblk() -> Int` | 按索引取块 / 块数 |
-| `add_tmp(String, Class) -> Int` | 添加临时变量，返回 id |
-| `new_tmp(String, Class) -> Int` | 同上（用于未命名生成） |
-| `tmp(Int) -> Tmp` / `ntmp() -> Int` | 取临时变量 / 计数 |
-| `add_con(Con) -> Int` | 添加常量，返回 id |
-| `get_con(Int64) -> Int` | 取/创建整数常量 id |
-| `get_con_by(Con) -> Int` | 取/创建常量 id (按值匹配) |
-| `con(Int) -> Con` / `ncon() -> Int` | 取常量 / 计数 |
-| `init_regs()` | 初始化寄存器分配相关字段 |
+| `Fn::new(String)` | Create empty function |
+| `add_blk(String) -> Int` | Add basic block, return id |
+| `find_blk(String) -> Int` | Find block by name (-1 if not found) |
+| `blk(Int) -> Blk` / `nblk() -> Int` | Get block by index / block count |
+| `add_tmp(String, Class) -> Int` | Add temporary variable, return id |
+| `new_tmp(String, Class) -> Int` | Same (for unnamed generation) |
+| `tmp(Int) -> Tmp` / `ntmp() -> Int` | Get temporary variable / count |
+| `add_con(Con) -> Int` | Add constant, return id |
+| `get_con(Int64) -> Int` | Get/create integer constant id |
+| `get_con_by(Con) -> Int` | Get/create constant id (by value match) |
+| `con(Int) -> Con` / `ncon() -> Int` | Get constant / count |
+| `init_regs()` | Initialize register allocation related fields |
 
-## `Blk` - 基本块
+## `Blk` - Basic Block
 
 ```moonbit
 pub(all) struct Blk {
@@ -101,15 +103,15 @@ pub(all) struct Blk {
 }
 ```
 
-字段语义：
-- `phi`/`ins`/`jmp`：块内 phi、指令、跳转
-- `pred`/`npred`：前驱列表
-- `idom`/`dom_link`/`dom_next`：支配树（直接支配者、长子、兄弟）
-- `fron`：支配边界
-- `rpo_id`：反向后序编号；`loop_depth`：循环深度
-- `nlive_w`/`nlive_d`：块边界处 word/double 活跃数
-- `in_set`/`out_set`/`gen_set`：活跃变量集合
-- `link`/`visit`：链表与遍历辅助
+Field semantics:
+- `phi`/`ins`/`jmp`: Block phi nodes, instructions, jump
+- `pred`/`npred`: Predecessor list
+- `idom`/`dom_link`/`dom_next`: Dominator tree (immediate dominator, first child, sibling)
+- `fron`: Dominance frontier
+- `rpo_id`: Reverse postorder number; `loop_depth`: Loop depth
+- `nlive_w`/`nlive_d`: Word/double liveness count at block boundary
+- `in_set`/`out_set`/`gen_set`: Liveness variable sets
+- `link`/`visit`: Linked list and traversal helpers
 
 ## `Ins` / `Phi` / `Jump`
 
@@ -131,24 +133,24 @@ pub(all) struct Jump {
 }
 ```
 
-`JumpKind` 包含所有 QBE 的跳转形式：`Jjmp`, `Jjnz`, `Jret*`（5 种返回）, `Jjfi*`（8 种整数条件跳转）, `Jjff*`（8 种浮点条件跳转）。
+`JumpKind` includes all QBE jump forms: `Jjmp`, `Jjnz`, `Jret*` (5 returns), `Jjfi*` (8 integer conditional jumps), `Jjff*` (8 floating-point conditional jumps).
 
-## `Op` - 指令操作码
+## `Op` - Instruction Opcodes
 
-涵盖 QBE 全部 100+ 指令：算术 (`Add`/`Sub`/`Mul`/`Div`/`Rem`/`Udiv`/`Urem`)、位运算 (`And`/`Or`/`Xor`)、移位 (`Sar`/`Shr`/`Shl`)、比较 (`Ceqw`..`Cuod`)、load/store (`Loadsb`..`Stored`)、扩展/转换 (`Extsb`..`Sltof`)、内存分配 (`Alloc4`/`Alloc8`/`Alloc16`)、变长参数 (`Vaarg`/`Vastart`)、调用相关 (`Par`/`Arg`/`Call`/`Vacall`/`Flag*`)。
+Covers all 100+ QBE instructions: arithmetic (`Add`/`Sub`/`Mul`/`Div`/`Rem`/`Udiv`/`Urem`), bitwise (`And`/`Or`/`Xor`), shifts (`Sar`/`Shr`/`Shl`), comparisons (`Ceqw`..`Cuod`), load/store (`Loadsb`..`Stored`), extensions/conversions (`Extsb`..`Sltof`), memory allocation (`Alloc4`/`Alloc8`/`Alloc16`), variadic arguments (`Vaarg`/`Vastart`), call-related (`Par`/`Arg`/`Call`/`Vacall`/`Flag*`).
 
-查询函数：
+Query functions:
 
 ```moonbit
 pub fn op_from_string(String) -> Op
 pub fn op_from_index(Int) -> Op
 pub fn op_index(Op) -> Int
-pub fn op_info(Op) -> OpInfo          // 元数据 (操作数属性、可折叠等)
+pub fn op_info(Op) -> OpInfo          // metadata (operand properties, foldable, etc.)
 pub fn is_load(Op) / is_store(Op) / is_ext(Op) / is_arg(Op) / is_par(Op) -> Bool
 pub fn load_width_idx(Op) / ext_width_idx(Op) / store_width_idx / loadsz / storesz -> Int
 ```
 
-## `Con` - 常量
+## `Con` - Constants
 
 ```moonbit
 pub enum ConType { CUndef; CBits; CAddr }
@@ -158,17 +160,17 @@ pub(all) struct Con {
   is_local : Bool
 }
 pub fn Con::new() -> Con
-pub fn Con::int(Int64) -> Con          // 整数常量
-pub fn Con::single(Float) -> Con       // 单精度浮点
-pub fn Con::double(Double) -> Con      // 双精度浮点
-pub fn Con::addr(Int) -> Con           // 地址 (label 引用)
+pub fn Con::int(Int64) -> Con          // integer constant
+pub fn Con::single(Float) -> Con       // single-precision float
+pub fn Con::double(Double) -> Con      // double-precision float
+pub fn Con::addr(Int) -> Con           // address (label reference)
 pub fn Con::is_zero(Self, Bool) -> Bool
 pub fn con_eq(Con, Con) -> Bool
 pub fn con_raw_bits(Con) -> Int64
-pub fn addcon(Con, Con) -> Con         // 常量加法（地址偏移合并）
+pub fn addcon(Con, Con) -> Con         // constant addition (address offset merging)
 ```
 
-## `Addr` - 内存地址
+## `Addr` - Memory Address
 
 ```moonbit
 pub(all) struct Addr {
@@ -177,9 +179,9 @@ pub(all) struct Addr {
 pub fn Addr::new() -> Addr
 ```
 
-amd64 风格寻址：`offset + base + index * scale`。
+amd64-style addressing: `offset + base + index * scale`.
 
-## `Typ` / `Field` - 聚合类型
+## `Typ` / `Field` - Aggregate Types
 
 ```moonbit
 pub(all) struct Typ {
@@ -190,9 +192,9 @@ pub(all) struct Field { kind : FieldType; len : Int }
 pub enum FieldType { FEnd; Fb; Fh; Fw; Fl; Fs; Fd; FPad; FTyp }
 ```
 
-`Typ::new(String)` 创建空类型；`Field::new(FieldType, Int)` / `Field::end()` 创建字段。
+`Typ::new(String)` creates empty type; `Field::new(FieldType, Int)` / `Field::end()` create fields.
 
-## `Dat` - 数据段项
+## `Dat` - Data Segment Items
 
 ```moonbit
 pub enum DatKind { DStart; DEnd; DName; DAlign; DB; DH; DW; DL; DZ }
@@ -205,69 +207,62 @@ pub fn Dat::start() / end() / name(String, Bool) / align(Int64) / byte(Int64) /
        zero(Int64) / string(String) / ref_to(String, Int64) -> Dat
 ```
 
-`Dat` 是流水线中数据段 (`data $x = { ... }`) 的中间表示；`DatRef` (name + offset) 用于跨段引用。
+`Dat` is the intermediate representation of data segments (`data $x = { ... }`) in the pipeline; `DatRef` (name + offset) is used for cross-segment references.
 
-## `BSet` - 位集
+## `BSet` - Bit Set
 
-紧凑位集，用于活跃变量、寄存器掩码等：
+Compact bit set for liveness variables, register masks, etc.:
 
 ```moonbit
 pub(all) struct BSet { nt : Int; bits : Array[UInt64] }
 pub fn BSet::new(Int) -> BSet
 pub fn BSet::set/clr/has/count/equal/copy_from/zero/union/inter/diff
-pub fn BSet::iter(Self, Int) -> Int       // 迭代器，返回下一个 set 的位
+pub fn BSet::iter(Self, Int) -> Int       // iterator, returns next set bit
 ```
 
-辅助函数 `dumpts(BSet, Array[Tmp]) -> String` 把位集渲染成 `%name` 列表。
+Helper function `dumpts(BSet, Array[Tmp]) -> String` renders the bit set as a `%name` list.
 
-## 其它结构
+## Other Structures
 
-- `Tmp`：临时变量元数据（name/uses/ndef/nuse/cost/slot/cls/hint/width/alias_info/visit）
-- `Use` / `UseKind`：使用位置（在 phi/ins/jmp 中）
-- `AliasInfo` / `AliasType`：别名分析结果 (`ABot`/`ALoc`/`ACon`/`AEsc`/`ASym`/`AUnk`)
-- `RegHint`：寄存器分配提示 (r/w/m)
-- `TmpWidth`：临时变量的位宽变体 (`WFull`/`Wsb`/`Wub`/`Wsh`/`Wuh`/`Wsw`/`Wuw`)
-- `FpBits` + `fp_stash_at/fp_stash_len`：浮点常数缓冲
-- `gasstash(Int64, Int64, Int) -> Int`：数据段位置管理
+- `Tmp`: Temporary variable metadata (name/uses/ndef/nuse/cost/slot/cls/hint/width/alias_info/visit)
+- `Use` / `UseKind`: Use locations (in phi/ins/jmp)
+- `AliasInfo` / `AliasType`: Alias analysis results (`ABot`/`ALoc`/`ACon`/`AEsc`/`ASym`/`AUnk`)
+- `RegHint`: Register allocation hints (r/w/m)
+- `TmpWidth`: Temporary variable bit-width variants (`WFull`/`Wsb`/`Wub`/`Wsh`/`Wuh`/`Wsw`/`Wuw`)
+- `FpBits` + `fp_stash_at/fp_stash_len`: Floating-point constant buffer
+- `gasstash(Int64, Int64, Int) -> Int`: Data segment position management
 
-## 目标抽象 `TargetCfg`
+## Target Abstraction `TargetCfg`
 
-`spill`/`rega` 是目标无关的 pass，它们通过全局 `target_cfg` 读取当前目标的
-寄存器布局——对应 C QBE 的 `struct Target T`（`all.h`）：
+`spill`/`rega` are target-independent passes that read the current target's register layout through the global `target_cfg` — corresponding to C QBE's `struct Target T` (`all.h`):
 
 ```moonbit
 pub struct TargetCfg {
-  mut gpr_base : Int          // rega 扫描的首个 GPR 编号
-  mut fpr_base : Int          // rega 扫描的首个 FPR 编号
-  mut ngpr : Int              // GPR 数量（rega/spill 扫描宽度）
-  mut nfpr : Int              // FPR 数量
-  mut fpr_class_base : Int    // spill 按 id 分类浮点临时的起始编号
-  mut post_call_gpr : Int     // call 之后立即生效的 GPR 上限
-  mut post_call_fpr : Int     // call 之后立即生效的 FPR 上限
-  mut rglob_mask : UInt64     // 全局活跃寄存器位掩码（RBP|RSP 等）
-  mut rsave : Array[Int]      // 调用者保存寄存器列表
-  mut retregs : (Ref) -> (UInt64, Int, Int)   // 调用返回寄存器映射
-  mut argregs : (Ref) -> (UInt64, Int, Int)   // 调用参数寄存器映射
+  mut gpr_base : Int          // first GPR number for rega scan
+  mut fpr_base : Int          // first FPR number for rega scan
+  mut ngpr : Int              // GPR count (rega/spill scan width)
+  mut nfpr : Int              // FPR count
+  mut fpr_class_base : Int    // spill floating-point temporary classification start id
+  mut post_call_gpr : Int     // GPR limit effective immediately after call
+  mut post_call_fpr : Int     // FPR limit effective immediately after call
+  mut rglob_mask : UInt64     // globally live register bitmask (RBP|RSP etc.)
+  mut rsave : Array[Int]      // caller-saved register list
+  mut retregs : (Ref) -> (UInt64, Int, Int)   // call return register mapping
+  mut argregs : (Ref) -> (UInt64, Int, Int)   // call parameter register mapping
 }
 
-pub let target_cfg : TargetCfg          // 当前目标，默认 amd64_sysv
-pub fn init_amd64_target() -> Unit      // 选择 amd64_sysv
-pub fn init_rv64_target() -> Unit       // 选择 rv64
+pub let target_cfg : TargetCfg          // current target, default amd64_sysv
+pub fn init_amd64_target() -> Unit      // select amd64_sysv
+pub fn init_rv64_target() -> Unit       // select rv64
 pub fn target_retregs(Ref) -> (UInt64, Int, Int)
 pub fn target_argregs(Ref) -> (UInt64, Int, Int)
 ```
 
-- `pipeline.mbt` 在 amd64 与 rv64 流水线的 post-isel 阶段分别调用
-  `init_amd64_target()` / `init_rv64_target()` 完成切换；wasm 流水线跳过
-  spill/rega，不依赖该配置。
-- amd64 寄存器编号在 `target.mbt`：`RAX=1..RSP=16`、`XMM0=17..XMM15=32`、
-  `Tmp0=64`；rv64 编号在 `target_rv64.mbt`：`T0=1..A7=14`、`S1..S11=15..25`、
-  `FP/SP/GP/TP/RA=26..30`、`FT0..FA7=31..49`、`FS0..FS11=50..61`、
-  `Rv64Tmp0=64`。
-- `abi`/`isel`/`emit`（amd64 专属）与 `abi_rv64`/`isel_rv64`/`emit_rv64`
-  仍直接使用各自 `target*.mbt` 中的常量，不经 `TargetCfg`。
+- `pipeline.mbt` calls `init_amd64_target()` / `init_rv64_target()` at the post-isel stage of the amd64 and rv64 pipelines respectively to complete the switch; the wasm pipeline skips spill/rega and does not depend on this configuration.
+- amd64 register numbers are in `target.mbt`: `RAX=1..RSP=16`, `XMM0=17..XMM15=32`, `Tmp0=64`; rv64 numbers are in `target_rv64.mbt`: `T0=1..A7=14`, `S1..S11=15..25`, `FP/SP/GP/TP/RA=26..30`, `FT0..FA7=31..49`, `FS0..FS11=50..61`, `Rv64Tmp0=64`.
+- `abi`/`isel`/`emit` (amd64-specific) and `abi_rv64`/`isel_rv64`/`emit_rv64` still use constants directly from their respective `target*.mbt` files, not through `TargetCfg`.
 
-## 类型别名
+## Type Aliases
 
 ```moonbit
 pub type BlkId = Int

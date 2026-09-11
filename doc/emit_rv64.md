@@ -1,27 +1,27 @@
-# `emit_rv64` 包接口介绍
+# `emit_rv64` Package API Reference
 
-包路径: `azhzx/qbe/emit_rv64`
+Package path: `azhzx/qbe/emit_rv64`
 
-RISC-V 64 GAS 汇编输出。在 `isel_rv64` 与 `spill`/`rega` 完成后运行，把已分配
-物理寄存器的函数渲染成 RISC-V 汇编文本，对应上游 QBE 的 `rv64/emit.c`。
+RISC-V 64 GAS assembly output. Runs after `isel_rv64` and `spill`/`rega` completion, rendering functions with assigned physical registers into RISC-V assembly text. Corresponds to upstream QBE's `rv64/emit.c`.
 
-## 入口
+[中文版本 (Chinese Version)](zh/emit_rv64.md)
+
+## Entry Point
 
 ```moonbit
 pub fn emit_rv64(
-  @types.Fn,          // 已完成寄存器分配的函数
-  @util.Interner,     // 字符串驻留器
-  Bool,               // 调试开关
-  Array[@types.Typ],  // 全局类型表
+  @types.Fn,          // function with completed register allocation
+  @util.Interner,     // string interner
+  Bool,               // debug switch
+  Array[@types.Typ],  // global type table
 ) -> String
 ```
 
-返回该函数的 RISC-V 汇编文本。模块级的发射（函数按输入顺序拼接）封装在
-`pipeline.mbt` 的 `emit_rv64_module`，对库用户由 `@qbe.compile_rv64` 调用。
+Returns the function's RISC-V assembly text. Module-level emission (functions concatenated in input order) is encapsulated in `pipeline.mbt`'s `emit_rv64_module`, called by `@qbe.compile_rv64` for library users.
 
-## 输出形态
+## Output Form
 
-对一个 `export function w $add(w %a, w %b)` 生成：
+For `export function w $add(w %a, w %b)` generates:
 
 ```asm
 	.globl add
@@ -43,34 +43,28 @@ add:
 	.size add, .-add
 ```
 
-要点：
+Key points:
 
-- **帧链布局**：帧指针 `fp`（= `s0`）与返回地址 `ra` 保存在调用者帧顶
-  （`-16(sp)` / `-8(sp)`），`fp`/`ra` 恢复经由帧指针寻址。
-- **栈对齐**：按 16 字节对齐分配栈帧，被调用者保存寄存器
-  （`s1..`/`fs0..`）在序言压栈、尾声弹出。
-- **符号**：`export` 函数输出 `.globl` + `.type`/`.size`；局部标签使用
-  `.L` 前缀。
-- **寄存器名**：由 `types/target_rv64.mbt` 的寄存器名表渲染
-  （`t0..t6`、`a0..a7`、`s0..s11`、`fa0..fa7`、`fs0..fs11`）。
+- **Frame chain layout**: Frame pointer `fp` (= `s0`) and return address `ra` are saved at caller frame top (`-16(sp)` / `-8(sp)`), `fp`/`ra` restoration addressed via frame pointer.
+- **Stack alignment**: Stack frames allocated with 16-byte alignment; callee-saved registers (`s1..`/`fs0..`) pushed in prologue, popped in epilogue.
+- **Symbols**: `export` functions output `.globl` + `.type`/`.size`; local labels use `.L` prefix.
+- **Register names**: Rendered from `types/target_rv64.mbt`'s register name table (`t0..t6`, `a0..a7`, `s0..s11`, `fa0..fa7`, `fs0..fs11`).
 
-## 与其它输出后端的关系
+## Relationship with Other Output Backends
 
 | | `emit` (amd64) | `emit_wasm` | `emit_rv64` |
 | --- | --- | --- | --- |
-| 输出格式 | x86-64 GAS | WAT 文本 | RISC-V GAS |
-| 栈帧 | `pushq %rbp`/`leave` | 无（栈机） | `sd fp`/`ld fp` 帧链 |
-| 数据段 | `gasemitdat` | 模块内 memory/data | 暂未输出（待完善） |
-| 浮点常量 | `.LfpN` rodata 暂存 | 常量指令 | 暂未输出（待完善） |
+| Output format | x86-64 GAS | WAT text | RISC-V GAS |
+| Stack frame | `pushq %rbp`/`leave` | None (stack machine) | `sd fp`/`ld fp` frame chain |
+| Data segment | `gasemitdat` | Module-internal memory/data | Not yet output (pending) |
+| Floating-point constants | `.LfpN` rodata stash | Constant instructions | Not yet output (pending) |
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- rv64 后端目前没有差分参考验证（上游 C QBE 的 rv64 目标尚未纳入
-  `compare.py` 基线），输出格式以 RISC-V psABI 与 GAS 语法为准。
-- `data` 段与浮点字面量的 rodata 输出尚未实现，`emit_rv64_module`
-  当前只发射函数部分。
+- The rv64 backend currently has no differential reference validation (upstream C QBE's rv64 target has not yet been added to the `compare.py` baseline); output format follows RISC-V psABI and GAS syntax.
+- `data` segment and floating-point literal rodata output are not yet implemented; `emit_rv64_module` currently only emits function parts.

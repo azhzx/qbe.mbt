@@ -1,8 +1,10 @@
-# `parser` 包接口介绍
+# `parser` Package API Reference
 
-包路径: `azhzx/qbe/parser`
+Package path: `azhzx/qbe/parser`
 
-将 `lexer` 产出的 token 序列解析为 `types` 包中的 `Fn` / `Dat` / `Typ` 结构。对应 QBE 原项目的 `parse.c`。是编译前端的最后一站，解析后即可交给后端阶段处理。
+Parses the token sequence produced by `lexer` into `Fn`/`Dat`/`Typ` structures from the `types` package. Corresponds to `parse.c` in the original QBE project. This is the last stage of the compilation frontend; after parsing, the result can be handed off to backend phases.
+
+[中文版本 (Chinese Version)](zh/parser.md)
 
 ## `Parser`
 
@@ -15,7 +17,7 @@ pub struct Parser {
   funcs : Array[@types.Fn]
   datas : Array[@types.Dat]
   typs : Array[@types.Typ]
-  order : Array[String]      // 顶层定义顺序 ("f" 函数 / "d" 数据)
+  order : Array[String]      // top-level definition order ("f" function / "d" data)
   interner : @util.Interner
   mut curfn : @types.Fn?
   mut curblk : Int
@@ -24,15 +26,15 @@ pub struct Parser {
 }
 ```
 
-构造与入口：
+Construction and entry:
 
 ```moonbit
 pub fn Parser::new(Array[@lexer.Token], String) -> Self
-pub fn Parser::from_lexer(@lexer.Lexer) -> Self   // 一步到位
-pub fn Parser::parse(Self) -> Unit raise          // 解析整个文件
+pub fn Parser::from_lexer(@lexer.Lexer) -> Self   // one-step convenience
+pub fn Parser::parse(Self) -> Unit raise          // parse entire file
 ```
 
-解析结果取出：
+Extracting parse results:
 
 ```moonbit
 pub fn Parser::get_funcs(Self) -> Array[@types.Fn]
@@ -42,7 +44,7 @@ pub fn Parser::get_order(Self) -> Array[String]
 pub fn Parser::interner_ref(Self) -> @util.Interner
 ```
 
-典型用法（参考 [cmd/main/main.mbt](../cmd/main/main.mbt)）：
+Typical usage (see [cmd/main/main.mbt](../cmd/main/main.mbt)):
 
 ```moonbit
 let lexer = @lexer.Lexer::new(source, file)
@@ -56,48 +58,48 @@ let typs = parser.get_typs()
 let interner = parser.interner_ref()
 ```
 
-## token 游标
+## Token Cursor
 
-| 方法 | 用途 |
+| Method | Purpose |
 | --- | --- |
-| `peek(Self) -> @lexer.Token` | 看下一个但不消费 |
-| `peek_kind(Self) -> @lexer.TokenKind` | 仅看类型 |
-| `next(Self) -> @lexer.Token` | 消费并返回下一个 |
-| `next_kind(Self) -> @lexer.TokenKind` | 消费并返回类型 |
-| `next_nl(Self) -> @lexer.TokenKind` | 跨过换行消费 |
-| `next_nl_tok(Self) -> @lexer.Token` | 同上但返回 token |
-| `cur_raw(Self) -> String` | 当前 token 原始文本 |
-| `expect(Self, @lexer.TokenKind) -> Unit raise` | 期望某类型，否则报错 |
-| `expect_nl(Self, @lexer.TokenKind) -> Unit raise` | 期望并允许换行 |
+| `peek(Self) -> @lexer.Token` | Look at next without consuming |
+| `peek_kind(Self) -> @lexer.TokenKind` | Look at kind only |
+| `next(Self) -> @lexer.Token` | Consume and return next |
+| `next_kind(Self) -> @lexer.TokenKind` | Consume and return kind |
+| `next_nl(Self) -> @lexer.TokenKind` | Consume across newline |
+| `next_nl_tok(Self) -> @lexer.Token` | Same but return token |
+| `cur_raw(Self) -> String` | Current token raw text |
+| `expect(Self, @lexer.TokenKind) -> Unit raise` | Expect kind, otherwise error |
+| `expect_nl(Self, @lexer.TokenKind) -> Unit raise` | Expect with newline allowed |
 
-## 上下文访问
+## Context Access
 
 ```moonbit
-pub fn Parser::curfn(Self) -> @types.Fn            // 当前正在解析的函数（不可变）
-pub fn Parser::curfn_mut(Self) -> @types.Fn       // 当前函数（可变）
-pub fn Parser::findblk(Self, String) -> Int       // 当前函数中按名查块
-pub fn Parser::findtyp(Self, String) -> Int raise  // 按名查类型，未找到则 raise
-pub fn Parser::tmpref(Self, String) -> @types.Ref  // 取/创建临时变量引用
+pub fn Parser::curfn(Self) -> @types.Fn            // current function being parsed (immutable)
+pub fn Parser::curfn_mut(Self) -> @types.Fn       // current function (mutable)
+pub fn Parser::findblk(Self, String) -> Int       // find block by name in current function
+pub fn Parser::findtyp(Self, String) -> Int raise  // find type by name, raise if not found
+pub fn Parser::tmpref(Self, String) -> @types.Ref  // get/create temporary variable reference
 pub fn Parser::error(Self, String) -> @util.QbeError
 ```
 
-## 子解析器
+## Sub-parsers
 
 ```moonbit
-pub fn Parser::parse(Self) -> Unit raise                              // 顶层
-pub fn Parser::parsefn(Self, Bool) -> Unit raise                     // 函数
-pub fn Parser::parsedat(Self, Bool) -> Unit raise                    // 数据段
-pub fn Parser::parsetyp(Self) -> Unit raise                          // 类型定义
-pub fn Parser::parseline(Self, PState) -> PState raise                // 函数体一行
-pub fn Parser::parsecls(Self) -> (@types.Class, Int) raise           // 类型类
+pub fn Parser::parse(Self) -> Unit raise                              // top-level
+pub fn Parser::parsefn(Self, Bool) -> Unit raise                     // function
+pub fn Parser::parsedat(Self, Bool) -> Unit raise                    // data segment
+pub fn Parser::parsetyp(Self) -> Unit raise                          // type definition
+pub fn Parser::parseline(Self, PState) -> PState raise                // function body line
+pub fn Parser::parsecls(Self) -> (@types.Class, Int) raise           // type class
 pub fn Parser::parsefields(Self, @types.Typ, @lexer.TokenKind) -> Unit raise
-pub fn Parser::parseref(Self) -> @types.Ref raise                    // 操作数引用
-pub fn Parser::parserefl(Self, Bool) -> Bool raise                   // 带括号的引用列表
+pub fn Parser::parseref(Self) -> @types.Ref raise                    // operand reference
+pub fn Parser::parserefl(Self, Bool) -> Bool raise                   // parenthesized reference list
 ```
 
-`PState` 是包私有枚举，用于在 `parseline` 间传递状态（在指令行与 phi 行之间切换）。
+`PState` is a package-private enum used to pass state between `parseline` calls (switching between instruction lines and phi lines).
 
-## IL 打印（回写）
+## IL Printing (Re-serialization)
 
 ```moonbit
 pub fn printfn(@types.Fn, @util.Interner, Array[@types.Typ]) -> String
@@ -105,9 +107,9 @@ pub fn printref(@types.Ref, @types.Fn, @util.Interner, StringBuilder, Array[@typ
 pub fn jtoa(@types.JumpKind) -> String
 ```
 
-`printfn` 把 `Fn` 重新渲染为 QBE IL 文本，用于 `-dP`/`-dM`/`-dN`/`-dC` 等调试 dump。
+`printfn` re-renders a `Fn` back to QBE IL text, used for `-dP`/`-dM`/`-dN`/`-dC` debug dumps.
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/lexer`
 - `azhzx/qbe/types`

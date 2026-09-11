@@ -1,55 +1,57 @@
-# `fold` 包接口介绍
+# `fold` Package API Reference
 
-包路径: `azhzx/qbe/fold`
+Package path: `azhzx/qbe/fold`
 
-常量折叠。识别操作数均为常量的指令，直接计算出结果并替换为对该常量的引用。对应 QBE 原项目的 `fold.c`。
+Constant folding. Identifies instructions whose operands are all constants, directly computes the result and replaces it with a reference to that constant. Corresponds to `fold.c` in the original QBE project.
 
-## 入口
+[中文版本 (Chinese Version)](zh/fold.md)
+
+## Entry Point
 
 ```moonbit
 pub fn fold(
   @types.Fn,
-  Bool,                  // -dF 调试开关
-  @util.Interner,        // 用于生成浮点常数标签
+  Bool,                  // -dF debug switch
+  @util.Interner,        // used for generating floating-point constant labels
   Array[@types.Typ],
 ) -> String
 ```
 
-`fold()` 在 SSA 构造之后、ABI 之前调用：
+`fold()` is called after SSA construction and before ABI processing:
 
 ```moonbit
 @ssa.copy(fn_, dbg.c, interner, typs)
 @ssa.filluse(fn_)
-@util.eprint(@fold.fold(fn_, dbg.f, interner, typs))   // <- 折叠
+@util.eprint(@fold.fold(fn_, dbg.f, interner, typs))   // <- fold
 @util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
 ```
 
-## 折叠范围
+## Folding Scope
 
-支持的折叠规则（部分列举）：
+Supported folding rules (partial list):
 
-| 操作 | 折叠规则 |
+| Operation | Folding Rule |
 | --- | --- |
-| `Add`/`Sub`/`Mul`/`Div`/`Rem`/`Udiv`/`Urem` | 整数算术，结果取 `Int64` 后包装为 `Con::int` |
-| `And`/`Or`/`Xor` | 位运算，按 64 位宽度计算 |
-| `Sar`/`Shr`/`Shl` | 移位 |
-| `Ceq*`/`Cslt*`/`Cugt*`/... | 比较折叠为 `0`/`1` |
-| `Cast` | 整数 ↔ 浮点位重新解释 |
-| `Copy` | 直接传播常量 |
-| `Extsb`/`Extub`/`Extsh`/... | 符号/零扩展 |
+| `Add`/`Sub`/`Mul`/`Div`/`Rem`/`Udiv`/`Urem` | Integer arithmetic, result truncated to `Int64` then wrapped as `Con::int` |
+| `And`/`Or`/`Xor` | Bitwise operations, computed at 64-bit width |
+| `Sar`/`Shr`/`Shl` | Shifts |
+| `Ceq*`/`Cslt*`/`Cugt*`/... | Comparisons folded to `0`/`1` |
+| `Cast` | Integer ↔ float bit reinterpretation |
+| `Copy` | Direct constant propagation |
+| `Extsb`/`Extub`/`Extsh`/... | Sign/zero extension |
 
-`OpInfo` 中带 `canfold = true` 的操作均会进入折叠路径。
+Any operation with `canfold = true` in `OpInfo` enters the folding path.
 
-## 调试输出
+## Debug Output
 
-`Bool = true` 时返回 `-dF` 调试 dump 文本，列出每条被折叠的指令及其替换结果；非调试模式返回空串。
+When `Bool = true`, returns `-dF` debug dump text listing each folded instruction and its replacement result; non-debug mode returns an empty string.
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- 折叠是**保守**的：只要任一操作数不是 `Ref::RCon`，指令保持不变。
-- 折叠产生的浮点常量通过 `Interner` 驻留符号名，最终在 emit 阶段以 `.rodata` 段输出。
+- Folding is **conservative**: if any operand is not `Ref::RCon`, the instruction remains unchanged.
+- Floating-point constants produced by folding are interned via `Interner` and ultimately output in the `.rodata` segment during the emit phase.

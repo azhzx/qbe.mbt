@@ -1,13 +1,14 @@
-# `cmd/main` 包接口介绍
+# `cmd/main` Package API Reference
 
-包路径: `azhzx/qbe/cmd/main`
+Package path: `azhzx/qbe/cmd/main`
 
-CLI 入口。读取命令行参数，调度各阶段，输出汇编或调试 dump。对应 QBE 原项目的 `main.c`。
+CLI entry point. Reads command-line arguments, orchestrates pipeline stages, outputs assembly or debug dumps. Corresponds to `main.c` in the original QBE project.
 
-CLI 支持三个目标：`amd64_sysv`（默认）、`wasm`、`rv64`，通过 `-t` 选择；
-分别调用库入口 `@qbe.compile` / `@qbe.compile_wasm` / `@qbe.compile_rv64`。
+[中文版本 (Chinese Version)](zh/cmd_main.md)
 
-## 命令行接口
+The CLI supports three targets: `amd64_sysv` (default), `wasm`, `rv64`, selected via `-t`; calls library entry points `@qbe.compile` / `@qbe.compile_wasm` / `@qbe.compile_rv64` respectively.
+
+## Command-Line Interface
 
 ```
 Usage: qbe [OPTIONS] {file.ssa, -}
@@ -19,15 +20,15 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     -d <flags>  dump debug information
 ```
 
-### `-t` 目标选择
+### `-t` Target Selection
 
-| 目标 | 输出 | 说明 |
+| Target | Output | Description |
 | --- | --- | --- |
-| `amd64_sysv` | x86-64 GAS 汇编 | 默认；`-G e`（Linux `.L` 标签）/ `-G m`（macOS `L` + `_` 前缀）选择 GAS 风格 |
-| `wasm` | WAT 文本 | WebAssembly 文本格式；跳过寄存器分配 |
-| `rv64` | RISC-V 64 GAS 汇编 | `-G` 不生效 |
+| `amd64_sysv` | x86-64 GAS assembly | Default; `-G e` (Linux `.L` labels) / `-G m` (macOS `L` + `_` prefix) selects GAS style |
+| `wasm` | WAT text | WebAssembly text format; skips register allocation |
+| `rv64` | RISC-V 64 GAS assembly | `-G` has no effect |
 
-示例：
+Examples:
 
 ```
 moon run cmd/main -- -t rv64 demo/01_arith.ssa
@@ -35,26 +36,26 @@ moon run cmd/main -- -t wasm demo/05_float.ssa
 moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 ```
 
-### `-d` 调试标志
+### `-d` Debug Flags
 
-| 标志 | 阶段 | 输出内容 |
+| Flag | Phase | Output Content |
 | --- | --- | --- |
-| `-dP` | parse | 解析后的函数 IL |
-| `-dM` | memopt + loadopt | 内存优化后状态 |
-| `-dN` | SSA 构造 | 支配者链 + SSA 形式 |
-| `-dC` | copy | copy 传播结果 |
-| `-dF` | fold | 常量折叠结果 |
-| `-dA` | abi | ABI 处理后状态 |
-| `-dI` | isel | 指令选择结果 |
-| `-dL` | live | 活跃变量集合 |
-| `-dS` | spill | 溢出代价 + 实际溢出 |
-| `-dR` | rega | 寄存器分配结果 |
+| `-dP` | parse | Parsed function IL |
+| `-dM` | memopt + loadopt | State after memory optimization |
+| `-dN` | SSA construction | Dominator chain + SSA form |
+| `-dC` | copy | Copy propagation result |
+| `-dF` | fold | Constant folding result |
+| `-dA` | abi | State after ABI processing |
+| `-dI` | isel | Instruction selection result |
+| `-dL` | live | Liveness variable sets |
+| `-dS` | spill | Spilling cost + actual spilling |
+| `-dR` | rega | Register allocation result |
 
-可组合，如 `-dMN` 同时 dump memopt 和 SSA。
+Combinable, e.g., `-dMN` dumps both memopt and SSA simultaneously.
 
-## 编译流水线
+## Compilation Pipeline
 
-参考 [cmd/main/main.mbt](../cmd/main/main.mbt) 中的 `run_passes`：
+See `run_passes` in [cmd/main/main.mbt](../cmd/main/main.mbt):
 
 ```
 parse → fillrpo → fillpreds → filluse → memopt
@@ -68,16 +69,16 @@ parse → fillrpo → fillpreds → filluse → memopt
       → emitfn
 ```
 
-每个 `-d*` 标志触发对应阶段的 dump（输出到 stderr）。当任一调试标志开启时，**不输出汇编**（仅 dump 调试信息）；否则输出汇编到 stdout 或 `-o` 指定文件。
+Each `-d*` flag triggers a dump for the corresponding phase (output to stderr). When any debug flag is enabled, **no assembly is output** (only debug dumps); otherwise assembly is output to stdout or the `-o` specified file.
 
-## 主要函数
+## Main Functions
 
-- `process_file(file, flags, gas, target) -> String` - 处理单个输入文件
-  - `file == "-"` 表示从 stdin 读取
-  - 按 `target` 分发到 `@qbe.compile*` / `@qbe.compile_*_debug`
-  - 返回生成的汇编字符串（调试模式返回 `""`，dump 输出到 stderr）
+- `process_file(file, flags, gas, target) -> String` - Process a single input file
+  - `file == "-"` reads from stdin
+  - Dispatches to `@qbe.compile*` / `@qbe.compile_*_debug` based on `target`
+  - Returns generated assembly string (debug mode returns `""`, dump output goes to stderr)
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/lexer`
 - `azhzx/qbe/parser`
@@ -94,4 +95,4 @@ parse → fillrpo → fillpreds → filluse → memopt
 - `azhzx/qbe/emit`
 - `azhzx/qbe/abi_wasm` / `azhzx/qbe/isel_wasm` / `azhzx/qbe/emit_wasm`
 - `azhzx/qbe/abi_rv64` / `azhzx/qbe/isel_rv64` / `azhzx/qbe/emit_rv64`
-- `moonbitlang/x` (`@fs`)、`moonbitlang/async` (`@stdio`)、`moonbitlang/core/argparse`
+- `moonbitlang/x` (`@fs`), `moonbitlang/async` (`@stdio`), `moonbitlang/core/argparse`

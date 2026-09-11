@@ -1,51 +1,53 @@
-# `isel` 包接口介绍
+# `isel` Package API Reference
 
-包路径: `azhzx/qbe/isel`
+Package path: `azhzx/qbe/isel`
 
-指令选择 (Instruction Selection)。在 ABI 处理之后，把抽象的 SSA 指令模式替换为 amd64 上更高效的具体指令。对应 QBE 原项目的 `amd64/isel.c`、`amd64/addr.c`、`amd64/cmp.c`、`amd64/sel.c`。
+Instruction Selection. After ABI processing, replaces abstract SSA instruction patterns with more efficient concrete instructions on amd64. Corresponds to `amd64/isel.c`, `amd64/addr.c`, `amd64/cmp.c`, `amd64/sel.c` in the original QBE project.
 
-## 入口
+[中文版本 (Chinese Version)](zh/isel.md)
+
+## Entry Point
 
 ```moonbit
 pub fn isel(
   @types.Fn,
   @util.Interner,
-  Bool,                  // -dI 调试开关
-  Array[@types.Typ],     // 全局类型表
+  Bool,                  // -dI debug switch
+  Array[@types.Typ],     // global type table
 ) -> String
 ```
 
-`isel()` 完成以下工作（仅列举主要项）：
+`isel()` performs the following work (major items only):
 
-1. **立即数优化**：把形如 `%r = add %x, c`（c 为常量）的指令转为 amd64 的立即数形式（避免占用一个寄存器）。对应 `_test/isel/001_imm_add_*.ssa` 等回归测试。
-2. **地址模式**：把 `add` 链组合为 `[base + index*scale + offset]` 寻址，直接喂给 load/store。对应 `addr.mbt`。
-3. **除法常量魔法数**：把 `div`/`rem`（特别是常量除数）转换为乘以魔法数 + 移位的形式，避免除法指令。对应 `001_div_c_w_7` 等用例。
-4. **比较模式**：把 `ceq`/`cslt` 等比较 + `jnz` 模式转为 amd64 条件跳转（`je`/`jl`/...）。对应 `cmp.mbt`。
-5. **比较结果归一**：把比较指令的输出宽度规整为 1 字节。
-6. **`alloc*` 处理**：栈分配转换为对 `slot` 的引用。
+1. **Immediate optimization**: Converts instructions like `%r = add %x, c` (c is constant) to amd64 immediate form (avoiding occupying a register). Corresponds to regression tests like `_test/isel/001_imm_add_*.ssa`.
+2. **Address mode**: Combines `add` chains into `[base + index*scale + offset]` addressing, directly feeding load/store. Implemented in `addr.mbt`.
+3. **Division constant magic numbers**: Converts `div`/`rem` (especially constant divisors) to magic number multiply + shift form, avoiding division instructions. Corresponds to `001_div_c_w_7` test cases.
+4. **Comparison patterns**: Converts `ceq`/`cslt` etc. comparison + `jnz` patterns to amd64 conditional jumps (`je`/`jl`/...). Implemented in `cmp.mbt`.
+5. **Comparison result normalization**: Normalizes comparison instruction output width to 1 byte.
+6. **`alloc*` handling**: Stack allocation converted to `slot` references.
 
-返回值约定同 `ssa.copy`/`abi.abi`：调试模式 (`Bool = true`) 返回 dump 文本，非调试模式返回空串。
+Return value follows `ssa.copy`/`abi.abi` convention: debug mode (`Bool = true`) returns dump text, non-debug mode returns empty string.
 
-## 内部模块
+## Internal Modules
 
-文件 [isel/addr.mbt](../isel/addr.mbt) 实现地址模式识别；
-文件 [isel/cmp.mbt](../isel/cmp.mbt) 实现比较 + 跳转模式识别；
-文件 [isel/sel.mbt](../isel/sel.mbt) 实现主要选择逻辑；
-文件 [isel/isel.mbt](../isel/isel.mbt) 为入口。
+File [isel/addr.mbt](../isel/addr.mbt) implements address mode recognition;
+File [isel/cmp.mbt](../isel/cmp.mbt) implements compare + jump pattern recognition;
+File [isel/sel.mbt](../isel/sel.mbt) implements main selection logic;
+File [isel/isel.mbt](../isel/isel.mbt) is the entry point.
 
-## 典型调用
+## Typical Calls
 
 ```moonbit
 @util.eprint(@isel.isel(fn_, interner, dbg.i, typs))
-@cfg.fillrpo(fn_)       // 指令选择后基本块结构可能变化
+@cfg.fillrpo(fn_)       // basic block structure may change after instruction selection
 ```
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- `isel` 只做"语义保持的强度提升"，不改变指令的控制流结构。控制流的进一步简化由后续 `cfg.simpljmp` 完成。
-- 目前仅支持 amd64_sysv。其它目标的 isel 应放在 `isel/<target>/` 下。
+- `isel` only does "strength reduction that preserves semantics", not changing the control flow structure of instructions. Further control flow simplification is done by the subsequent `cfg.simpljmp`.
+- Currently only supports amd64_sysv. Other targets' isel should be placed under `isel/<target>/`.

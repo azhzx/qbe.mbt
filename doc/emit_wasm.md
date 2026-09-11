@@ -1,16 +1,18 @@
-# `emit_wasm` 包接口介绍
+# `emit_wasm` Package API Reference
 
-包路径: `azhzx/qbe/emit_wasm`
+Package path: `azhzx/qbe/emit_wasm`
 
-Wasm 汇编输出。将经过指令选择的 SSA 函数转换为 WAT (WebAssembly Text) 格式文本。
+Wasm assembly output. Converts SSA functions after instruction selection into WAT (WebAssembly Text) format text.
 
-## 入口
+[中文版本 (Chinese Version)](zh/emit_wasm.md)
+
+## Entry Point
 
 ```moonbit
 pub fn emit_fn(
   @types.Fn,
-  Array[@types.Typ],     // 全局类型表
-  @util.Interner,        // 字符串驻留器
+  Array[@types.Typ],     // global type table
+  @util.Interner,        // string interner
 ) -> String
 
 pub fn emit_wat_module(
@@ -20,85 +22,85 @@ pub fn emit_wat_module(
 ) -> String
 ```
 
-`emit_fn()` 输出单个函数的 WAT 文本；`emit_wat_module()` 输出完整模块。
+`emit_fn()` outputs a single function's WAT text; `emit_wat_module()` outputs a complete module.
 
-## 输出格式
+## Output Format
 
-### 函数签名
+### Function Signature
 
 ```wasm
 (func $add (param $a i32) (param $b i32) (result i32)
-  ;; 函数体
+  ;; function body
 )
 ```
 
-### 局部变量
+### Local Variables
 
 ```wasm
 (local $s i32)
 (local $tmp i32)
 ```
 
-### 操作码映射
+### Opcode Mapping
 
-| SSA Op | WAT 指令 | 说明 |
+| SSA Op | WAT Instruction | Description |
 |--------|----------|------|
-| `add` | `i32.add` | 整数加法 |
-| `sub` | `i32.sub` | 整数减法 |
-| `mul` | `i32.mul` | 整数乘法 |
-| `div` | `i32.div_s`/`i32.div_u` | 有符号/无符号除法 |
-| `rem` | `i32.rem_s`/`i32.rem_u` | 取余 |
-| `and`/`or`/`xor` | `i32.and`/`i32.or`/`i32.xor` | 位运算 |
-| `shl`/`shr`/`sar` | `i32.shl`/`i32.shr_u`/`i32.shr_s` | 移位 |
-| `eq`/`ne`/`lt`/`gt`/`le`/`ge` | `i32.eq`/`i32.ne`/`i32.lt_s`/... | 比较（有符号） |
-| `load` | `i32.load` | 加载 32 位 |
-| `store` | `i32.store` | 存储 32 位 |
-| `load8` | `i32.load8_s`/`i32.load8_u` | 加载字节 |
-| `load16` | `i32.load16_s`/`i32.load16_u` | 加载半字 |
-| `store8` | `i32.store8` | 存储字节 |
-| `store16` | `i32.store16` | 存储半字 |
-| `call` | `call $fn` | 函数调用 |
-| `jmp` | `br $label` | 无条件跳转 |
-| `jnz` | `br_if $label` | 条件跳转 |
-| `ret` | `return`/`end` | 返回 |
+| `add` | `i32.add` | Integer addition |
+| `sub` | `i32.sub` | Integer subtraction |
+| `mul` | `i32.mul` | Integer multiplication |
+| `div` | `i32.div_s`/`i32.div_u` | Signed/unsigned division |
+| `rem` | `i32.rem_s`/`i32.rem_u` | Remainder |
+| `and`/`or`/`xor` | `i32.and`/`i32.or`/`i32.xor` | Bitwise operations |
+| `shl`/`shr`/`sar` | `i32.shl`/`i32.shr_u`/`i32.shr_s` | Shifts |
+| `eq`/`ne`/`lt`/`gt`/`le`/`ge` | `i32.eq`/`i32.ne`/`i32.lt_s`/... | Comparison (signed) |
+| `load` | `i32.load` | Load 32-bit |
+| `store` | `i32.store` | Store 32-bit |
+| `load8` | `i32.load8_s`/`i32.load8_u` | Load byte |
+| `load16` | `i32.load16_s`/`i32.load16_u` | Load halfword |
+| `store8` | `i32.store8` | Store byte |
+| `store16` | `i32.store16` | Store halfword |
+| `call` | `call $fn` | Function call |
+| `jmp` | `br $label` | Unconditional jump |
+| `jnz` | `br_if $label` | Conditional jump |
+| `ret` | `return`/`end` | Return |
 
-### 控制流
+### Control Flow
 
 ```wasm
-;; 循环
+;; loop
 (loop $continue
-  ;; 循环体
-  br_if $continue  ;; 继续循环
+  ;; loop body
+  br_if $continue  ;; continue loop
 )
 
-;; 条件分支
+;; conditional branch
 (if (result i32)
   (i32.eqz (local.get $cond))
   (then
-    ;; true 分支
+    ;; true branch
   )
   (else
-    ;; false 分支
+    ;; false branch
   )
 )
 ```
 
-## 调试输出
+## Debug Output
 
-`emit_wat_module()` 返回完整的 WAT 模块文本，包含：
-- 模块头 `(module ...)`
-- 函数定义 `(func ...)`
-- 导出声明 `(export ...)`
+`emit_wat_module()` returns complete WAT module text, including:
+- Module header `(module ...)`
+- Function definitions `(func ...)`
+- Export declarations `(export ...)`
 
-## 依赖
+## Dependencies
 
 - `azhzx/qbe/types`
 - `azhzx/qbe/util`
 
-## 备注
+## Notes
 
-- WAT 是 WebAssembly 的文本表示，可直接被 `wasm-tools` 等工具解析。
-- wasm32 使用 32 位指针，所有 `i32` 操作对应 wasm 的 `i32` 类型。
-- 当前不支持浮点操作（wasm 的 `f32`/`f64` 类型）。
-- 不支持内存增长 (`memory.grow`)——需要配合线性内存使用。
-- 输出的 WAT 格式符合 WebAssembly 规范 1.0。
+- WAT is WebAssembly's text representation, directly parseable by tools like `wasm-tools`.
+- wasm32 uses 32-bit pointers, all `i32` operations correspond to wasm's `i32` type.
+- Currently does not support floating-point operations (wasm's `f32`/`f64` types).
+- Does not support memory growth (`memory.grow`) — requires linear memory usage.
+- Output WAT format conforms to WebAssembly specification 1.0.

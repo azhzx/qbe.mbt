@@ -1,24 +1,26 @@
-# `util` 包接口介绍
+# `util` Package API Reference
 
-包路径: `azhzx/qbe/util`
+Package path: `azhzx/qbe/util`
 
-通用工具包，提供错误类型、字符串驻留、格式化与终端输出原语。被几乎所有其他包依赖。
+General-purpose utility package providing error types, string interning, formatting, and terminal output primitives. Depended upon by almost all other packages.
 
-## 错误类型
+[中文版本 (Chinese Version)](zh/util.md)
+
+## Error Types
 
 ```moonbit
 pub(all) suberror QbeError {
   ParseError(String, Int, String)  // (file, line, msg)
   CompileError(String)              // (msg)
-  Ice(String)                       // (msg) - 内部编译器错误
+  Ice(String)                       // (msg) - internal compiler error
 }
 ```
 
-所有编译阶段通过 `raise` 抛出此错误。`ParseError::parse_error` 构造器使用命名参数 `file~`, `line~`, `msg~`。
+All compilation stages throw this error via `raise`. The `ParseError::parse_error` constructor uses named parameters `file~`, `line~`, `msg~`.
 
-## 字符串驻留 - `Interner`
+## String Interning - `Interner`
 
-把符号字符串映射为唯一整数 id，便于后续阶段快速比较：
+Maps symbol strings to unique integer IDs for fast comparison in later stages:
 
 ```moonbit
 pub struct Interner {
@@ -27,44 +29,44 @@ pub struct Interner {
 }
 
 pub fn Interner::new() -> Interner
-pub fn Interner::intern(Self, String) -> Int   // 驻留字符串，返回 id
-pub fn Interner::get(Self, Int) -> String      // 由 id 反查字符串
-pub fn Interner::lookup(Self, String) -> Int   // 查询，未驻留返回 -1
+pub fn Interner::intern(Self, String) -> Int   // intern string, return id
+pub fn Interner::get(Self, Int) -> String      // reverse lookup by id
+pub fn Interner::lookup(Self, String) -> Int   // query, returns -1 if not interned
 ```
 
-另有一个**模块级**全局驻留器：
+There is also a **module-level** global interner:
 
 ```moonbit
 pub fn intern(s : String) -> Int
 ```
 
-用于生成符号标签（例如浮点常数标签）。
+Used for generating symbol labels (e.g., floating-point constant labels).
 
-## 输出原语
+## Output Primitives
 
 ```moonbit
-pub async fn iprint(String) -> Unit  // 输出到 stdout（最终汇编）
-pub async fn eprint(String) -> Unit  // 输出到 stderr（调试 dump 与错误）
+pub async fn iprint(String) -> Unit  // output to stdout (final assembly)
+pub async fn eprint(String) -> Unit  // output to stderr (debug dump and errors)
 ```
 
-这两个函数是 `async` 的，对应 QBE 的 `printf`/`fprintf(stderr, ...)`。
+These functions are `async`, corresponding to QBE's `printf`/`fprintf(stderr, ...)`.
 
-## 格式化辅助
+## Formatting Helpers
 
-| 函数 | 用途 |
+| Function | Purpose |
 | --- | --- |
-| `fmt_fixed(Double, Int) -> String` | 定点小数格式化（用于浮点常量输出） |
-| `lpad(String, Int) -> String` | 左侧填充至指定宽度 |
-| `rpad(Int, Int) -> String` | 数字右侧填充 |
+| `fmt_fixed(Double, Int) -> String` | Fixed-point decimal formatting (for floating-point constant output) |
+| `lpad(String, Int) -> String` | Left-pad to specified width |
+| `rpad(Int, Int) -> String` | Right-pad numbers |
 
-## 排序
+## Sorting
 
 ```moonbit
 pub fn qsort_int(Array[Int], Int, Int, (Int, Int) -> Int) -> Unit
 ```
 
-快速排序，用于按 id 排序临时变量等场景。
+Quick sort, used for sorting temporary variables by ID and similar scenarios.
 
-## 依赖
+## Dependencies
 
-- `moonbitlang/core/debug`：用于 `QbeError` 的 `Debug` 实现。
+- `moonbitlang/core/debug`: Used for `QbeError`'s `Debug` implementation.
