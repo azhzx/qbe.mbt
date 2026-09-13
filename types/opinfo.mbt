@@ -639,7 +639,7 @@ let optab : Array[OpInfo] = [
     (0, 0, 1),
   ),
   mk(
-    "addr",
+    "slotaddr",
     cls(["m", "m", "e", "e"]),
     cls(["x", "x", "e", "e"]),
     false,
@@ -900,6 +900,13 @@ let optab : Array[OpInfo] = [
     false,
     (0, 0, 1),
   ),
+  mk(
+    "slotaddr",
+    cls(["e", "l", "e", "e"]),
+    cls(["x", "x", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
 ]
 
 ///|
@@ -1043,6 +1050,7 @@ pub fn Op::from_index(i : Int) -> Op {
     117 => Flagfne
     118 => Flagfo
     119 => Flagfuo
+    120 => Slotaddr
     _ => Oxxx
   }
 }
@@ -1172,5 +1180,6 @@ pub fn Op::index(self : Op) -> Int {
     Flagfne => 117
     Flagfo => 118
     Flagfuo => 119
+    Slotaddr => 120
   }
 }

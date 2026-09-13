@@ -21,6 +21,7 @@ import {
   "azhzx/qbe/abi_la64",
   "azhzx/qbe/isel_la64",
   "azhzx/qbe/emit_la64",
+  "azhzx/qbe/abi_arm64",
   "azhzx/qbe/interp",
 }
 

@@ -272,6 +272,7 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
 
   match i.op {
     // LoongArch has native divide/remainder instructions
+    @types.Slotaddr => () // never produced on la64
     @types.Div | @types.Rem | @types.Udiv | @types.Urem => sel_emit(st, i)
     // LoongArch has flexible shift instructions
     @types.Sar | @types.Shr | @types.Shl => sel_emit(st, i)
