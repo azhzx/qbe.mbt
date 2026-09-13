@@ -13,11 +13,14 @@ Options:
   --cat <dir>   only run tests under test/<dir>/
   --jobs <n>    parallel workers (default 4)
   -G <flavor>   with --asm, compare the given gas flavor (e, m)
+  --target <t>  compare a non-default backend target (e.g. arm64); both
+                binaries are invoked with -t <target>
 
 Usage:
     python compare.py [--asm] [-dP] [-dM] ... [test_file.ssa ...]
     python compare.py --asm [-G m]
     python compare.py --cat abi
+    python compare.py --target arm64 --asm
 """
 import subprocess, glob, os, sys, difflib
 from concurrent.futures import ProcessPoolExecutor
@@ -127,6 +130,11 @@ def main():
         i = rest.index("--jobs")
         jobs = int(rest[i + 1])
         rest = rest[:i] + rest[i + 2:]
+    target = None
+    if "--target" in rest:
+        i = rest.index("--target")
+        target = rest[i + 1]
+        rest = rest[:i] + rest[i + 2:]
 
     subprocess.run(["moon", "build", "--target", "native"], cwd=ROOT, check=True)
 
@@ -154,10 +162,15 @@ def main():
             flagsets = [flags]
         else:
             flagsets = [["-G", "e"]]
+        if target:
+            # non-default backend target: -t goes to both binaries
+            flagsets = [["-t", target, *fs] for fs in flagsets]
     else:
         if not flags:
             flags = DEFAULT_FLAGS
         flagsets = [[fl] for fl in flags]
+        if target:
+            flagsets = [["-t", target, *fs] for fs in flagsets]
 
     # Some reference builds (e.g. ripe-lang/qbe) have no -G option and select
     # the flavor via -t targets instead. Translate the flagset for the
