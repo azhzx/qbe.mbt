@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/interp"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn run_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, String, Array[InterpValue], max_steps? : Int, max_depth? : Int, hook? : ((String, Array[InterpValue]) -> InterpValue?)?) -> Result[(InterpValue, String), @util.QbeError]
+
+// Errors
+
+// Types and methods
+pub(all) enum InterpValue {
+  VVoid
+  VInt(Int64)
+  VFloat(Float)
+  VDouble(Double)
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

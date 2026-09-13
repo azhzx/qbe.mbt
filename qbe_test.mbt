@@ -253,3 +253,60 @@ test "type re-exports are usable" {
   )
   assert_true(i.op == @qbe.Op::Add)
 }
+
+///|
+test "compile_la64 emits LoongArch assembly" {
+  let src =
+    #|export
+    #|function w $inc(w %x) {
+    #|@start
+    #|  %r =w add %x, 1
+    #|  ret %r
+    #|}
+    #|
+  let assembly = match @qbe.compile_la64(src) {
+    Ok(s) => s
+    Err(_) => fail("la64 compile failed")
+  }
+  assert_true(assembly.contains("inc:"))
+  assert_true(assembly.contains("add.w $a0, $a0, $t0"))
+  assert_true(assembly.contains("ret"))
+  // the gas flavor swaps local labels and the symbol prefix
+  let macho = match @qbe.compile_la64(src, gas="m") {
+    Ok(s) => s
+    Err(_) => fail("la64 compile failed")
+  }
+  assert_true(macho.contains("_inc:"))
+}
+
+///|
+test "compile_la64_debug stages dumps" {
+  let src = "export function w $one() {\n@start\n  ret 1\n}\n"
+  let dump = match @qbe.compile_la64_debug(src, "PN") {
+    Ok(d) => d
+    Err(_) => fail("la64 compile failed")
+  }
+  assert_true(dump.contains("> After parsing:"))
+  assert_true(dump.contains("Dominators"))
+}
+
+///|
+test "compile_la64 emits data sections" {
+  let src =
+    #|data $buf = { b 1, b 2 }
+    #|
+    #|export function w $first() {
+    #|@start
+    #|  %r =w loadub $buf
+    #|  ret %r
+    #|}
+    #|
+  let assembly = match @qbe.compile_la64(src) {
+    Ok(s) => s
+    Err(_) => fail("la64 compile failed")
+  }
+  assert_true(assembly.contains(".data"))
+  assert_true(assembly.contains("buf:"))
+  assert_true(assembly.contains(".byte 1"))
+  assert_true(assembly.contains("la.local $t8, buf"))
+}

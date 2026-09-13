@@ -2,24 +2,59 @@
 // QBE compiler backend - MoonBit implementation
 // Entry point for the CLI. A thin wrapper over the `@qbe` library API: it
 // handles argument parsing and file I/O, and delegates the pipeline to the
-// selected target backend (amd64_sysv, wasm, or rv64).
+// selected target backend (amd64_sysv, wasm, rv64, or la64).
 
 ///|
 // CLI command specification. @argparse auto-generates -h/--help from this.
 let cmd : @argparse.Command = @argparse.Command(
   "qbe",
-  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64",
+  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64, la64; --run FUNC[,ARG]... interprets the SSA directly",
   options=[
     @argparse.OptionArg("output", short='o'),
     @argparse.OptionArg("target", short='t'),
     @argparse.OptionArg("gas", short='G'),
     @argparse.OptionArg("debug", short='d'),
+    @argparse.OptionArg("run"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
   ],
   arg_required_else_help=true,
 )
+
+///|
+// Parse one `--run` value: "func" or "func,arg1,arg2..." where each arg is
+// an integer (a1, -2) or a float literal (1.5, d_2.5, s_0.5).
+fn parse_run_spec(spec : String) -> (String, Array[@interp.InterpValue]) {
+  let parts : Array[String] = []
+  for piece in spec.split(",") {
+    parts.push(piece.to_string())
+  }
+  let name = parts[0]
+  let args : Array[@interp.InterpValue] = Array::new()
+  for i in 1..<parts.length() {
+    let raw = parts[i]
+    if raw == "" {
+      continue
+    }
+    if raw.has_prefix("s_") {
+      // QBE single literal
+      let d = @string.parse_double(raw.substring(start=2)) catch { _ => 0.0 }
+      args.push(@interp.VFloat(d.to_float()))
+    } else if raw.has_prefix("d_") {
+      // QBE double literal
+      let d = @string.parse_double(raw.substring(start=2)) catch { _ => 0.0 }
+      args.push(@interp.VDouble(d))
+    } else if raw.contains(".") {
+      let d = @string.parse_double(raw) catch { _ => 0.0 }
+      args.push(@interp.VDouble(d))
+    } else {
+      let v = @string.parse_int64(raw) catch { _ => 0L }
+      args.push(@interp.VInt(v))
+    }
+  }
+  (name, args)
+}
 
 ///|
 // Format a compile error the way the reference CLI does.
@@ -99,6 +134,27 @@ async fn process_file(
           }
         }
       }
+    "la64" =>
+      if flags != "" {
+        match @qbe.compile_la64_debug(source, flags) {
+          Ok(dump) => {
+            @util.eprint(dump)
+            ""
+          }
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      } else {
+        match @qbe.compile_la64(source, gas~) {
+          Ok(assembly) => assembly
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      }
     _ =>
       // amd64_sysv (default)
       if flags != "" {
@@ -153,7 +209,7 @@ async fn main {
   match parsed.values.get("target") {
     Some(arr) if arr.length() > 0 =>
       match arr[0] {
-        "amd64_sysv" | "wasm" | "rv64" => target = arr[0]
+        "amd64_sysv" | "wasm" | "rv64" | "la64" => target = arr[0]
         t => {
           @util.eprint("unknown target '\{t}'\n")
           return
@@ -168,6 +224,36 @@ async fn main {
   if files.length() == 0 {
     @util.eprint("qbe: no input files\n")
     return
+  }
+  // --run mode: interpret the SSA directly instead of emitting assembly
+  match parsed.values.get("run") {
+    Some(runs) if runs.length() > 0 => {
+      let (entry, run_args) = parse_run_spec(runs[0])
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        match @qbe.interpret(source, entry~, args=run_args) {
+          Ok((value, output)) => {
+            if output != "" {
+              @util.iprint(output)
+            }
+            match value {
+              @interp.VVoid => ()
+              @interp.VInt(v) => @util.iprint("\{v}\n")
+              @interp.VFloat(f) => @util.iprint("\{f}\n")
+              @interp.VDouble(d) => @util.iprint("\{d}\n")
+            }
+          }
+          Err(e) => @util.eprint(format_qbe_error(e) + "\n")
+        }
+      }
+      return
+    }
+    _ => ()
   }
   // Process each file, accumulating the output.
   let out = StringBuilder::new()

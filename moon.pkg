@@ -18,4 +18,18 @@ import {
   "azhzx/qbe/abi_rv64",
   "azhzx/qbe/isel_rv64",
   "azhzx/qbe/emit_rv64",
+  "azhzx/qbe/abi_la64",
+  "azhzx/qbe/isel_la64",
+  "azhzx/qbe/emit_la64",
+  "azhzx/qbe/interp",
 }
+
+import {
+  "moonbitlang/async",
+  "azhzx/qbe/interp",
+} for "test"
+
+import {
+  "moonbitlang/async",
+  "azhzx/qbe/interp",
+} for "wbtest"

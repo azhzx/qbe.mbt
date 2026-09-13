@@ -25,7 +25,7 @@ Supports amd64 (System V, GAS output, Linux/macOS two styles)
 
 Supports WebAssembly (wasm32, WAT text output)
 
-Supports RISC-V 64 (rv64, GAS output)
+Supports RISC-V 64 (rv64) and LoongArch 64 (la64, LP64D) GAS output, plus direct SSA interpretation
 
 Supports basic backend pipeline
 
@@ -38,6 +38,8 @@ Provides unified compilation entry point `@qbe.compile` / `@qbe.compile_debug`, 
 Provides WebAssembly compilation entry point `@qbe.compile_wasm` / `@qbe.compile_wasm_debug`, covering IL parsing, SSA construction, and WAT text output;
 
 Provides RISC-V compilation entry point `@qbe.compile_rv64` / `@qbe.compile_rv64_debug`, covering IL parsing, SSA construction, RISC-V register allocation, and assembly output;
+Provides LoongArch64 compilation entry point `@qbe.compile_la64` / `@qbe.compile_la64_debug` (LP64D ABI, data sections and float constant pool emitted);
+Provides the SSA interpreter entry `@qbe.interpret` (async) - executes pre-isel IR directly with a built-in portable runtime (`putchar`/`puts`/`printf`/`malloc`/`free`/`exit`) and an injectable external-symbol hook;
 
 Provides MoonBit unit/blackbox/whitebox tests, maintaining core regression tests (`.ssa` differential regression + `moon test`);
 
@@ -115,6 +117,50 @@ test {
 }
 ```
 
+`@qbe.compile_la64` compiles an IL text to LoongArch64 GAS assembly:
+
+```mbt check
+///|
+test {
+  let src =
+    #|export function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|
+    #|}
+  match @qbe.compile_la64(src) {
+    Ok(assembly) => {
+      assert_true(assembly.contains("add:"))
+      assert_true(assembly.contains("add.w"))
+    }
+    Err(_) => fail("la64 compile failed")
+  }
+}
+```
+
+`@qbe.interpret` executes the SSA directly (async, like `lli` for LLVM IR):
+
+```mbt check
+///|
+async test {
+  let src =
+    #|export function l $square(l %x) {
+    #|@start
+    #|  %r =l mul %x, %x
+    #|  ret %r
+    #|
+    #|}
+  match @qbe.interpret(src, entry="square", args=[@interp.VInt(7)]) {
+    Ok((@interp.VInt(v), _out)) => assert_eq(v, 49L)
+    Ok(_) => fail("unexpected result kind")
+    Err(@util.QbeError::CompileError(m)) => fail("ce: \{m}")
+    Err(@util.QbeError::Ice(m)) => fail("ice: \{m}")
+    Err(@util.QbeError::ParseError(_, _, m)) => fail("parse: \{m}")
+  }
+}
+```
+
 # Technical Details
 
 ## Package Structure and Compilation Pipeline
@@ -142,6 +188,10 @@ MoonBit packages organized by compilation pipeline stages (see [doc/](doc/README
 | RISC-V ABI | `abi_rv64` | rv64 calling convention: A0–A7 / FA0–FA7 parameters and returns, aggregate type splitting |
 | RISC-V Instruction Selection | `isel_rv64` | rv64 instruction mapping, compare+branch merging |
 | RISC-V Assembly Output | `emit_rv64` | RISC-V GAS text output |
+| LoongArch ABI | `abi_la64` | la64 (LP64D) calling convention: A0-A7 / FA0-FA7 parameters and returns |
+| LoongArch Instruction Selection | `isel_la64` | la64 instruction mapping, comparisons lowered to slt/sltu |
+| LoongArch Assembly Output | `emit_la64` | LoongArch GAS text output (data + float pool) |
+| SSA Interpreter | `interp` | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | Argument parsing and file I/O (thin shell, calls `@qbe` facade, `-t` selects target) |
 | Library Entry | `.` | Unified compilation API `compile` / `compile_debug` and IR type re-exports |
 
@@ -185,6 +235,26 @@ parse → fillrpo → fillpreds → filluse → memopt
       → fillrpo → filllive → fillcost → spill → rega
       → fillrpo → simpljmp → fillrpo → fillpreds
       → emit_rv64
+
+LoongArch pipeline (`run_passes_la64`, encapsulated for library users in `@qbe.compile_la64`):
+
+```
+  parse → cfg/ssa/live/fold passes
+      → abi_la64 → fillpreds → filluse
+      → isel_la64
+      → init_la64_target()   ← switch TargetCfg (register layout)
+      → fillrpo → filllive → fillcost → spill → rega
+      → simpljmp
+      → emit_la64 (+ data sections + float constant pool)
+```
+
+Interpreter path (`@qbe.interpret`):
+
+```
+  parse → lay out data segment → bind args
+      → interpret pre-isel IR (phi, calls, memory, builtins)
+      → Result[InterpValue, QbeError]
+```
 ```
 
 ## Intermediate Representation Design
@@ -205,27 +275,29 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 ## ABI and Target Support
 
-Supports three targets, selected with `-t` on command line (`amd64_sysv` default), with independent library API entry points:
+Provides four targets, selected with `-t` on command line (`amd64_sysv` default), with independent library API entry points (plus `--run` for direct interpretation):
 
 - **amd64_sysv**: `abi` phase replaces abstract `Arg`/`Par`/`Ret*` with concrete register/stack slot references; aggregate types follow System V rules for register vs memory; outputs two GAS styles (Linux `.L` / macOS `L` + `_` prefix, selected with `-G`). Has complete 406-case differential regression.
 - **wasm**: `abi_wasm` phase replaces `Par`/`Arg` instructions with `Nop` (parameters passed directly via local variables), simplifies `Call` references; `isel_wasm` does instruction mapping then skips register allocation (wasm is stack machine, no physical registers), `emit_wasm` outputs WAT text format. wasm32 pointer width is 32 bits (`Km = Kw`), no `Kl` type.
 - **rv64**: `abi_rv64` lowers parameters to `A0–A7` / `FA0–FA7` per RISC-V calling convention, returns via `A0`/`A1` / `FA0`/`FA1`; `isel_rv64` maps IL instructions to RISC-V instructions (compare + branch merged directly, no flags, no magic number division, no complex addressing); then runs `spill`/`rega` same as amd64 — target differences switched at runtime via `types.TargetCfg` (`init_amd64_target()` / `init_rv64_target()`), `emit_rv64` outputs RISC-V GAS assembly (`fp`/`ra` frame chain, 16-byte stack alignment).
+- **la64**: `abi_la64` lowers parameters to `A0-A7` / `FA0-FA7` per the LoongArch LP64D psABI; `isel_la64` lowers comparisons to `slt`/`sltu` sequences (no flags) and materializes constants; `emit_la64` outputs LoongArch GAS assembly with data sections and the floating-point constant pool. Reuses `spill`/`rega` via `init_la64_target()`.
+- **interp**: `@qbe.interpret` executes pre-isel IR directly - flat little-endian memory, data-segment layout with symbol refs, function pointers, recursion, a pure-MoonBit builtin runtime, and an injectable external hook (the analogue of LLVM ORC's symbol resolution).
 
 Three targets compared:
 
-| | amd64_sysv | wasm | rv64 |
-| --- | --- | --- | --- |
-| Library entry | `compile` / `compile_debug` | `compile_wasm` / `compile_wasm_debug` | `compile_rv64` / `compile_rv64_debug` |
-| CLI | `-t amd64_sysv` (default) | `-t wasm` | `-t rv64` |
-| Output | x86-64 GAS | WAT | RISC-V GAS |
-| Register allocation | spill + rega | skipped (stack machine) | spill + rega (`TargetCfg` switch) |
-| Validation strength | Differential regression byte-by-byte | Unit tests + snapshots | Unit tests only (no reference baseline) |
+| | amd64_sysv | wasm | rv64 | la64 | interp |
+| --- | --- | --- | --- | --- | --- |
+| Library entry | `compile` / `compile_debug` | `compile_wasm` / `compile_wasm_debug` | `compile_rv64` / `compile_rv64_debug` | `compile_la64` / `compile_la64_debug` | `interpret` (async) |
+| CLI | `-t amd64_sysv` (default) | `-t wasm` | `-t rv64` | `-t la64` | `--run FUNC[,ARG]...` |
+| Output | x86-64 GAS | WAT | RISC-V GAS | LoongArch GAS | interpreted result |
+| Register allocation | spill + rega | skipped (stack machine) | spill + rega (`TargetCfg` switch) | spill + rega (`TargetCfg` switch) | none (direct execution) |
+| Validation strength | Differential regression byte-by-byte | Unit tests + snapshots | Unit tests + e2e snapshots (no reference baseline) | Unit tests + e2e snapshots (psABI-verified) | Unit tests + e2e tests |
 
 ## Debugging and Testing
 
 - Command-line `-d <flags>` provides per-stage dumps (`-dP` parse, `-dM` memopt, `-dN` SSA, `-dC` copy, `-dF` fold, `-dA` abi, `-dI` isel, `-dL` live, `-dS` spill, `-dR` rega), combinable; when debug is enabled, assembly is not output. Library entry `compile_debug(text, flags)` returns the same dump text.
 - Tests in three layers:
-  - **Unit/whitebox tests** `*_wbtest.mbt`: Cover all compilation pipeline packages — `types` (BSet/Con/Ref/Op/Class/Jump etc.), `util` (Interner/formatting), `lexer`, `parser`, `cfg` (dominator tree/loop/jump simplification), `ssa` (phi insertion/copy/memopt), `fold`, `live`, `abi`/`abi_wasm`/`abi_rv64`, `isel`/`isel_wasm`/`isel_rv64`, `spill`, `rega`, `emit`/`emit_wasm`/`emit_rv64`, `cmd/main`;
+  - **Unit/whitebox tests** `*_wbtest.mbt`: Cover all compilation pipeline packages — `types` (BSet/Con/Ref/Op/Class/Jump etc.), `util` (Interner/formatting), `lexer`, `parser`, `cfg` (dominator tree/loop/jump simplification), `ssa` (phi insertion/copy/memopt), `fold`, `live`, `abi`/`abi_wasm`/`abi_rv64`/`abi_la64`, `isel`/`isel_wasm`/`isel_rv64`/`isel_la64`, `spill`, `rega`, `emit`/`emit_wasm`/`emit_rv64`/`emit_la64`, `interp`, `cmd/main`;
   - **Blackbox tests** `qbe_test.mbt` + `qbe_snapshot_test.mbt`: Directly call `@qbe.compile` / `@qbe.compile_debug`, covering end-to-end compilation (arithmetic, floating-point, memory, recursion, loop phi) and error paths; `qbe_snapshot_test.mbt` generated by `python tools/gen_snapshot_mbt.py` from `test/` categories, anchored with `inspect` snapshots;
   - **Differential regression**: `test/*.ssa` (406 cases) compared byte-by-byte with reference qbe binary (`tools/qbe-ref` pinned snapshot, built with `make -C tools/qbe-ref`) (`python compare.py`, can specify other binary with `QBE_REF`).
 - Run: `moon test`; update snapshots: `moon test --update`; coverage: `moon coverage analyze`.
@@ -274,6 +346,7 @@ Rewrites manual memory management from C code to MoonBit's safe data structures 
 # Future Plans
 - ✅ WebAssembly (wasm32) code generation support (WAT text output)
 - ✅ RISC-V 64 (rv64) code generation (GAS output, reusing spill/rega)
+- ✅ LoongArch 64 (la64) code generation (LP64D ABI, data + float pool, reusing spill/rega)
+- ✅ SSA interpreter (`interp` package, `--run` CLI flag, builtin runtime + external symbol hook)
 - rv64 backend improvements: `data` segment and floating-point constant rodata output, differential reference verification
-- Add convenient JIT-related interfaces
 - Interface with mbtcc to verify full end-to-end feasibility

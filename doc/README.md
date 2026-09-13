@@ -29,6 +29,10 @@ Packages are listed in compilation pipeline order:
 | RISC-V ABI | `abi_rv64` | [abi_rv64.md](abi_rv64.md) | rv64 calling convention: A0-A7/FA0-FA7 parameters and returns |
 | RISC-V Instruction Selection | `isel_rv64` | [isel_rv64.md](isel_rv64.md) | rv64 instruction mapping, compare+branch merging |
 | RISC-V Assembly Output | `emit_rv64` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS text output |
+| LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64 (LP64D) calling convention: A0-A7/FA0-FA7 parameters and returns |
+| LoongArch Instruction Selection | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 instruction mapping, comparison lowering to slt/sltu |
+| LoongArch Assembly Output | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS text output (data + float pool) |
+| SSA Interpreter | `interp` | [interp.md](interp.md) | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | [cmd_main.md](cmd_main.md) | Command-line arguments and pipeline orchestration |
 
 ## Pipeline Overview
@@ -136,3 +140,29 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 rv64 shares the same `spill`/`rega` with amd64: target differences are switched at runtime via `types.target_cfg` (see [types.md](types.md) TargetCfg section).
 The rv64 backend currently has no differential reference validation; `data` segment and floating-point constant rodata output are pending.
+
+```
+la64 (LoongArch64, LP64D):
+  parse → cfg/ssa/live/fold passes
+      → abi_la64 → fillpreds → filluse
+      → isel_la64
+      → init_la64_target()   ← switch TargetCfg (register layout)
+      → fillrpo → filllive → fillcost → spill → rega
+      → simpljmp
+      → emit_la64 (+ data sections + float constant pool)
+```
+
+la64 shares the same `spill`/`rega` with amd64 and rv64 via `types.target_cfg`.
+Like rv64, it has no differential reference baseline; its snapshots are
+hand-verified against the LoongArch ELF psABI. It emits data sections and the
+floating-point constant pool (which rv64 still lacks).
+
+```
+interp (direct SSA execution):
+  parse → lay out data segment → bind args
+      → interpret pre-isel IR (phi, calls, memory, builtins)
+      → Result[InterpValue, QbeError]
+```
+
+The interpreter bypasses ABI/isel/regalloc entirely and executes the
+source-semantics IR; see [interp.md](interp.md).

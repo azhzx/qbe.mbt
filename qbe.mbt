@@ -286,6 +286,96 @@ fn compile_rv64_debug_raise(text : String, flags : String) -> String raise {
 }
 
 ///|
+// Compile IL source text to LoongArch64 GAS assembly (target: la64, LP64D
+// ABI).
+//
+// `gas` selects the GAS flavor: "e" for ELF (Linux, `.L` labels) and "m" for
+// Mach-O (macOS, `L` labels and `_` symbol prefix).
+//
+// Returns the generated assembly, or a `@util.QbeError` describing a lexing,
+// parsing, or internal compiler error.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let assembly = match compile_la64(src) {
+//     Ok(assembly) => assembly
+//     Err(_) => fail("la64 compile failed")
+//   }
+//   assert_true(assembly.contains("one:"))
+//   assert_true(assembly.contains("li.d $a0, 1"))
+// }
+// ```
+pub fn compile_la64(
+  text : String,
+  gas? : String = "e",
+) -> Result[String, @util.QbeError] {
+  try compile_la64_raise(text, gas) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// Compile IL source text to LoongArch assembly and return staged debug dumps.
+//
+// # Example
+// ```mbt check
+// test {
+//   let src = "export function w $one() { @start ret 1 }\n"
+//   let dump = match compile_la64_debug(src, "PN") {
+//     Ok(dump) => dump
+//     Err(_) => fail("la64 compile failed")
+//   }
+//   assert_true(dump.contains("> After parsing:"))
+// }
+// ```
+pub fn compile_la64_debug(
+  text : String,
+  flags : String,
+) -> Result[String, @util.QbeError] {
+  try compile_la64_debug_raise(text, flags) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// LoongArch compile, raising `@util.QbeError` on failure.
+fn compile_la64_raise(text : String, gas : String) -> String raise {
+  let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
+  let (gasloc, gassym) = gas_setting(gas)
+  let sb = StringBuilder::new()
+  emit_la64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
+  sb.to_string()
+}
+
+///|
+// LoongArch debug-dump compile, raising `@util.QbeError` on failure.
+fn compile_la64_debug_raise(text : String, flags : String) -> String raise {
+  let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
+  let dbg = dbg_from_flags(flags)
+  let out = StringBuilder::new()
+  for fn_ in funcs {
+    out.write_string("**** Function \{fn_.name} ****")
+    run_passes_la64(fn_, interner, typs, dbg, out)
+    out.write_string("\n")
+  }
+  out.to_string()
+}
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".
@@ -324,3 +414,73 @@ pub type BSet = @types.BSet
 
 ///|
 pub type Class = @types.Class
+
+///|
+// Re-export the interpreter value type: `@qbe.VInt`, `@qbe.VFloat`,
+// `@qbe.VDouble`, `@qbe.VVoid`.
+pub using @interp {type InterpValue}
+
+///|
+// Interpret the IL source text directly: parse the module, lay out the data
+// segment, and execute the function named `entry` (like `lli` for LLVM IR).
+//
+// Arguments are passed positionally; `w`/`l` parameters take `VInt`, `s`
+// takes `VFloat` and `d` takes `VDouble`. External calls are resolved
+// against the built-in runtime (`putchar`, `puts`, `printf`, `malloc`,
+// `free`, `exit`) and, when provided, the `hook` callback first. `exit(n)`
+// inside the program ends interpretation with `VInt(n)`.
+//
+// # Example
+// ```mbt check
+// async test "interpret factorial" {
+//   let src =
+//     #|export function l $fact(l %n) {
+//     #|@start
+//     #|  %c =w cslel %n, 1
+//     #|  jnz %c, @base, @rec
+//     #|
+//     #|@base
+//     #|  ret %n
+//     #|
+//     #|@rec
+//     #|  %m =l sub %n, 1
+//     #|  %r =l call $fact(l %m)
+//     #|  %p =l mul %n, %r
+//     #|  ret %p
+//     #|}
+//     #|
+//   match interpret(src, args=[@interp.VInt(10)]) {
+//     Ok(@interp.VInt(v)) => assert_eq(v, 3628800L)
+//     Ok(_) => fail("unexpected result kind")
+//     Err(_) => fail("interpret failed")
+//   }
+// }
+// ```
+pub fn interpret(
+  src : String,
+  entry? : String = "main",
+  args? : Array[@interp.InterpValue] = [],
+  max_steps? : Int = 10000000,
+  max_depth? : Int = 10000,
+  hook? : ((String, Array[@interp.InterpValue]) -> @interp.InterpValue?)? = None,
+) -> Result[(@interp.InterpValue, String), @util.QbeError] {
+  try {
+    let (funcs, datas, _order, _typs, interner) = parse_module(src, "<input>")
+    @interp.run_module(
+      funcs,
+      datas,
+      interner,
+      entry,
+      args,
+      max_steps~,
+      max_depth~,
+      hook~,
+    )
+  } catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  }
+}

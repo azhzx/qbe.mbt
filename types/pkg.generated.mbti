@@ -90,6 +90,148 @@ pub const FT9 : Int = 40
 
 pub const GP : Int = 28
 
+pub const LA_A0 : Int = 9
+
+pub const LA_A1 : Int = 10
+
+pub const LA_A2 : Int = 11
+
+pub const LA_A3 : Int = 12
+
+pub const LA_A4 : Int = 13
+
+pub const LA_A5 : Int = 14
+
+pub const LA_A6 : Int = 15
+
+pub const LA_A7 : Int = 16
+
+pub const LA_FA0 : Int = 48
+
+pub const LA_FA1 : Int = 49
+
+pub const LA_FA2 : Int = 50
+
+pub const LA_FA3 : Int = 51
+
+pub const LA_FA4 : Int = 52
+
+pub const LA_FA5 : Int = 53
+
+pub const LA_FA6 : Int = 54
+
+pub const LA_FA7 : Int = 55
+
+pub const LA_FP : Int = 26
+
+pub const LA_FS0 : Int = 56
+
+pub const LA_FS1 : Int = 57
+
+pub const LA_FS2 : Int = 58
+
+pub const LA_FS3 : Int = 59
+
+pub const LA_FS4 : Int = 60
+
+pub const LA_FS5 : Int = 61
+
+pub const LA_FS6 : Int = 62
+
+pub const LA_FS7 : Int = 63
+
+pub const LA_FT0 : Int = 32
+
+pub const LA_FT1 : Int = 33
+
+pub const LA_FT10 : Int = 42
+
+pub const LA_FT11 : Int = 43
+
+pub const LA_FT12 : Int = 44
+
+pub const LA_FT13 : Int = 45
+
+pub const LA_FT14 : Int = 46
+
+pub const LA_FT15 : Int = 47
+
+pub const LA_FT2 : Int = 34
+
+pub const LA_FT3 : Int = 35
+
+pub const LA_FT4 : Int = 36
+
+pub const LA_FT5 : Int = 37
+
+pub const LA_FT6 : Int = 38
+
+pub const LA_FT7 : Int = 39
+
+pub const LA_FT8 : Int = 40
+
+pub const LA_FT9 : Int = 41
+
+pub const LA_RA : Int = 29
+
+pub const LA_S0 : Int = 17
+
+pub const LA_S1 : Int = 18
+
+pub const LA_S2 : Int = 19
+
+pub const LA_S3 : Int = 20
+
+pub const LA_S4 : Int = 21
+
+pub const LA_S5 : Int = 22
+
+pub const LA_S6 : Int = 23
+
+pub const LA_S7 : Int = 24
+
+pub const LA_S8 : Int = 25
+
+pub const LA_SP : Int = 27
+
+pub const LA_T0 : Int = 1
+
+pub const LA_T1 : Int = 2
+
+pub const LA_T2 : Int = 3
+
+pub const LA_T3 : Int = 4
+
+pub const LA_T4 : Int = 5
+
+pub const LA_T5 : Int = 6
+
+pub const LA_T6 : Int = 7
+
+pub const LA_T7 : Int = 8
+
+pub const LA_T8 : Int = 30
+
+pub const LA_TP : Int = 28
+
+pub const LA_ZERO : Int = 0
+
+pub const La64KmIsWide : Int = 1
+
+pub const La64NCLR : Int = 17
+
+pub const La64NFPR : Int = 32
+
+pub const La64NFPS : Int = 24
+
+pub const La64NGPR : Int = 29
+
+pub const La64NGPS : Int = 16
+
+pub const La64NRGLOB : Int = 4
+
+pub const La64Tmp0 : Int = 64
+
 pub const NCLR : Int = 5
 
 pub const NFPR : Int = 15
@@ -266,7 +408,17 @@ pub fn gasstash(Int64, Int64, Int) -> Int
 
 pub fn init_amd64_target() -> Unit
 
+pub fn init_la64_target() -> Unit
+
 pub fn init_rv64_target() -> Unit
+
+pub let la64_rclob : Array[Int]
+
+pub fn la64_reg_name(Int) -> String
+
+pub fn la64_rglob_mask() -> UInt64
+
+pub let la64_rsave : Array[Int]
 
 pub fn op_info(Op) -> OpInfo
 
@@ -760,6 +912,8 @@ pub fn Ref::is_mem(Self) -> Bool
 pub fn Ref::is_none(Self) -> Bool
 pub fn Ref::is_slot(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
+pub fn Ref::la64_argregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::la64_retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::mem(Int) -> Self
 pub fn Ref::mem_val(Self) -> Int
 #as_free_fn(ref_none, deprecated)

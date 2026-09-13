@@ -302,6 +302,173 @@ fn rv64_emitf(st : Rv64EmitState, fmt : String, i : @types.Ins) -> Unit {
 }
 
 ///|
+// Load/store instruction names by (op, result class).
+fn rv64_load_name(op : @types.Op, k : @types.Class) -> String {
+  match op {
+    @types.Loadsb => "lb"
+    @types.Loadub => "lbu"
+    @types.Loadsh => "lh"
+    @types.Loaduh => "lhu"
+    @types.Loadsw => "lw"
+    @types.Loaduw => if k == @types.Kl { "lwu" } else { "lw" }
+    @types.Load =>
+      match k {
+        @types.Kw => "lw"
+        @types.Ks => "flw"
+        @types.Kd => "fld"
+        _ => "ld"
+      }
+    _ => "ld"
+  }
+}
+
+///|
+fn rv64_store_name(op : @types.Op) -> String {
+  match op {
+    @types.Storeb => "sb"
+    @types.Storeh => "sh"
+    @types.Storew => "sw"
+    @types.Storel => "sd"
+    @types.Stores => "fsw"
+    @types.Stored => "fsd"
+    _ => "sd"
+  }
+}
+
+///|
+// Emit `li t6, off` + `add t6, fp, t6` for slots beyond a 12-bit offset.
+fn rv64_far_slot(
+  st : Rv64EmitState,
+  ldname : String,
+  dst : String,
+  off : Int,
+) -> Unit {
+  st.sb.write_string("\tli t6, ")
+  st.sb.write_string(off.to_string())
+  st.sb.write_char('\n')
+  st.sb.write_string("\tadd t6, fp, t6\n")
+  st.sb.write_string("\t")
+  st.sb.write_string(ldname)
+  st.sb.write_string(" ")
+  st.sb.write_string(dst)
+  st.sb.write_string(", 0(t6)\n")
+}
+
+///|
+// Emit a load instruction from various address forms (C mem-operand cases).
+fn rv64_emit_load(
+  st : Rv64EmitState,
+  ldname : String,
+  dst : String,
+  addr : @types.Ref,
+) -> Unit {
+  if addr.is_tmp() {
+    st.sb.write_string("\t")
+    st.sb.write_string(ldname)
+    st.sb.write_string(" ")
+    st.sb.write_string(dst)
+    st.sb.write_string(", 0(")
+    st.sb.write_string(@types.rv64_reg_name(addr.tmp_val()))
+    st.sb.write_string(")\n")
+  } else if addr.is_slot() {
+    let off = rv64_slot(st, addr.slot_val())
+    if off >= -2048 && off <= 2047 {
+      st.sb.write_string("\t")
+      st.sb.write_string(ldname)
+      st.sb.write_string(" ")
+      st.sb.write_string(dst)
+      st.sb.write_string(", ")
+      st.sb.write_string(off.to_string())
+      st.sb.write_string("(fp)\n")
+    } else {
+      rv64_far_slot(st, ldname, dst, off)
+    }
+  } else if addr.is_con() {
+    let con = st.fn_.cons[addr.con_val()]
+    match con.kind {
+      @types.CAddr => {
+        st.sb.write_string("\tlla t6, ")
+        rv64_emitaddr(st, con)
+        st.sb.write_char('\n')
+        st.sb.write_string("\t")
+        st.sb.write_string(ldname)
+        st.sb.write_string(" ")
+        st.sb.write_string(dst)
+        st.sb.write_string(", 0(t6)\n")
+      }
+      _ => abort("invalid load address")
+    }
+  } else if addr.is_mem() {
+    // Float-constant stash reference: `lla t6, fpN` + load
+    let m = st.fn_.mems[addr.mem_val()]
+    match m.offset.kind {
+      @types.CAddr => {
+        st.sb.write_string("\tlla t6, ")
+        rv64_emitaddr(st, m.offset)
+        st.sb.write_char('\n')
+        st.sb.write_string("\t")
+        st.sb.write_string(ldname)
+        st.sb.write_string(" ")
+        st.sb.write_string(dst)
+        st.sb.write_string(", 0(t6)\n")
+      }
+      _ => abort("invalid stash address")
+    }
+  } else {
+    abort("invalid load address operand")
+  }
+}
+
+///|
+// Emit a store instruction to various address forms.
+fn rv64_emit_store(
+  st : Rv64EmitState,
+  stname : String,
+  val : String,
+  addr : @types.Ref,
+) -> Unit {
+  if addr.is_tmp() {
+    st.sb.write_string("\t")
+    st.sb.write_string(stname)
+    st.sb.write_string(" ")
+    st.sb.write_string(val)
+    st.sb.write_string(", 0(")
+    st.sb.write_string(@types.rv64_reg_name(addr.tmp_val()))
+    st.sb.write_string(")\n")
+  } else if addr.is_slot() {
+    let off = rv64_slot(st, addr.slot_val())
+    if off >= -2048 && off <= 2047 {
+      st.sb.write_string("\t")
+      st.sb.write_string(stname)
+      st.sb.write_string(" ")
+      st.sb.write_string(val)
+      st.sb.write_string(", ")
+      st.sb.write_string(off.to_string())
+      st.sb.write_string("(fp)\n")
+    } else {
+      rv64_far_slot(st, stname, val, off)
+    }
+  } else if addr.is_con() {
+    let con = st.fn_.cons[addr.con_val()]
+    match con.kind {
+      @types.CAddr => {
+        st.sb.write_string("\tlla t6, ")
+        rv64_emitaddr(st, con)
+        st.sb.write_char('\n')
+        st.sb.write_string("\t")
+        st.sb.write_string(stname)
+        st.sb.write_string(" ")
+        st.sb.write_string(val)
+        st.sb.write_string(", 0(t6)\n")
+      }
+      _ => abort("invalid store address")
+    }
+  } else {
+    abort("invalid store address operand")
+  }
+}
+
+///|
 // Emit a single instruction (C emitins).
 fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
   match i.op {
@@ -335,7 +502,13 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
       } else if i.arg1.is_tmp() {
         let rn = @types.rv64_reg_name(i.to.tmp_val())
         let rm = @types.rv64_reg_name(i.arg1.tmp_val())
-        st.sb.write_string("\tmv ")
+        if i.cls.base() == 0 {
+          st.sb.write_string("\tmv ")
+        } else {
+          st.sb.write_string("\tfmv.")
+          st.sb.write_string(clschr[i.cls.code()])
+          st.sb.write_string(" ")
+        }
         st.sb.write_string(rn)
         st.sb.write_string(", ")
         st.sb.write_string(rm)
@@ -364,6 +537,19 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
           st.sb.write_string(rn)
           st.sb.write_char('\n')
         }
+      } else if i.arg1.is_con() {
+        let con = st.fn_.cons[i.arg1.con_val()]
+        match con.kind {
+          @types.CAddr => {
+            let rn = @types.rv64_reg_name(i.to.tmp_val())
+            st.sb.write_string("\tlla ")
+            st.sb.write_string(rn)
+            st.sb.write_string(", ")
+            rv64_emitaddr(st, con)
+            st.sb.write_char('\n')
+          }
+          _ => abort("invalid address")
+        }
       }
     @types.Salloc =>
       if i.arg1.is_con() {
@@ -378,6 +564,39 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
           st.sb.write_string(rn)
           st.sb.write_string(", sp\n")
         }
+      } else if i.arg1.is_tmp() {
+        // dynamic stack allocation: the size lives in a register
+        let rm = @types.rv64_reg_name(i.arg1.tmp_val())
+        st.sb.write_string("\tsub sp, sp, ")
+        st.sb.write_string(rm)
+        st.sb.write_char('\n')
+        if !i.to.is_none() {
+          let rn = @types.rv64_reg_name(i.to.tmp_val())
+          st.sb.write_string("\tmv ")
+          st.sb.write_string(rn)
+          st.sb.write_string(", sp\n")
+        }
+      }
+    @types.Load
+    | @types.Loadsb
+    | @types.Loadub
+    | @types.Loadsh
+    | @types.Loaduh
+    | @types.Loadsw
+    | @types.Loaduw =>
+      if i.to.is_tmp() {
+        let rn = @types.rv64_reg_name(i.to.tmp_val())
+        rv64_emit_load(st, rv64_load_name(i.op, i.cls), rn, i.arg1)
+      }
+    @types.Stored
+    | @types.Stores
+    | @types.Storel
+    | @types.Storew
+    | @types.Storeh
+    | @types.Storeb =>
+      if i.arg1.is_tmp() {
+        let vn = @types.rv64_reg_name(i.arg1.tmp_val())
+        rv64_emit_store(st, rv64_store_name(i.op), vn, i.arg2)
       }
     @types.Call =>
       if i.arg1.is_con() {
@@ -539,24 +758,31 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
         } else {
           lbl = false
         }
-      @types.Jjnz => {
-        if b.jmp.s2 >= 0 && b.jmp.s2 == bid + 1 {
-          let tmp = b.jmp.s1
-          b.jmp.s1 = b.jmp.s2
-          b.jmp.s2 = tmp
-        }
+      @types.Jjnz =>
         if b.jmp.arg.is_tmp() {
           let rn = @types.rv64_reg_name(b.jmp.arg.tmp_val())
-          st.sb.write_string("\tbeqz ")
-          st.sb.write_string(rn)
-          st.sb.write_string(", .L")
-          st.sb.write_string(b.jmp.s2.to_string())
-          st.sb.write_char('\n')
-          st.sb.write_string("\tj .L")
-          st.sb.write_string(b.jmp.s1.to_string())
-          st.sb.write_char('\n')
+          if b.jmp.s2 >= 0 && b.jmp.s2 == bid + 1 {
+            // the false target is the next block: branch on true and
+            // fall through
+            st.sb.write_string("\tbnez ")
+            st.sb.write_string(rn)
+            st.sb.write_string(", .L")
+            st.sb.write_string(b.jmp.s1.to_string())
+            st.sb.write_char('\n')
+          } else {
+            st.sb.write_string("\tbeqz ")
+            st.sb.write_string(rn)
+            st.sb.write_string(", .L")
+            st.sb.write_string(b.jmp.s2.to_string())
+            st.sb.write_char('\n')
+            if !(b.jmp.s1 >= 0 && b.jmp.s1 == bid + 1) {
+              // the true target is not the next block: jump to it
+              st.sb.write_string("\tj .L")
+              st.sb.write_string(b.jmp.s1.to_string())
+              st.sb.write_char('\n')
+            }
+          }
         }
-      }
       _ => ()
     }
   }

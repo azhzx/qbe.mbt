@@ -1,7 +1,9 @@
 import {
   "azhzx/qbe",
   "azhzx/qbe/util",
+  "azhzx/qbe/interp",
   "moonbitlang/core/argparse",
+  "moonbitlang/core/string",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
   "moonbitlang/async",

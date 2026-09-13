@@ -1,0 +1,14 @@
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+  "azhzx/qbe/parser",
+}
+
+import {
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/cfg",
+  "azhzx/qbe/ssa",
+  "azhzx/qbe/live",
+  "azhzx/qbe/fold",
+  "azhzx/qbe/abi_la64",
+} for "wbtest"

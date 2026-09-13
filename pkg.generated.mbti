@@ -2,6 +2,7 @@
 package "azhzx/qbe"
 
 import {
+  "azhzx/qbe/interp",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }
@@ -11,6 +12,10 @@ pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 
+pub fn compile_la64(String, gas? : String) -> Result[String, @util.QbeError]
+
+pub fn compile_la64_debug(String, String) -> Result[String, @util.QbeError]
+
 pub fn compile_rv64(String) -> Result[String, @util.QbeError]
 
 pub fn compile_rv64_debug(String, String) -> Result[String, @util.QbeError]
@@ -18,6 +23,8 @@ pub fn compile_rv64_debug(String, String) -> Result[String, @util.QbeError]
 pub fn compile_wasm(String) -> Result[String, @util.QbeError]
 
 pub fn compile_wasm_debug(String, String) -> Result[String, @util.QbeError]
+
+pub fn interpret(String, entry? : String, args? : Array[@interp.InterpValue], max_steps? : Int, max_depth? : Int, hook? : ((String, Array[@interp.InterpValue]) -> @interp.InterpValue?)?) -> Result[(@interp.InterpValue, String), @util.QbeError]
 
 // Errors
 
@@ -37,6 +44,8 @@ pub using @types {type Dat}
 pub using @types {type Fn}
 
 pub using @types {type Ins}
+
+pub using @interp {type InterpValue}
 
 pub using @types {type Jump}
 

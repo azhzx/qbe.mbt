@@ -27,6 +27,10 @@
 | RISC-V ABI | `abi_rv64` | [abi_rv64.md](abi_rv64.md) | rv64 调用约定：A0-A7/FA0-FA7 参数与返回 |
 | RISC-V 指令选择 | `isel_rv64` | [isel_rv64.md](isel_rv64.md) | rv64 指令映射、比较+分支合并 |
 | RISC-V 汇编输出 | `emit_rv64` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS 文本输出 |
+| LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64（LP64D）调用约定：A0-A7/FA0-FA7 参数与返回 |
+| LoongArch 指令选择 | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 指令映射、比较指令降低为 slt/sltu |
+| LoongArch 汇编输出 | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS 文本输出（含数据段与浮点常量池） |
+| SSA 解释器 | `interp` | [interp.md](interp.md) | 直接执行 pre-isel IR，内置可移植运行时 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
 
 ## 流水线一览
@@ -135,3 +139,28 @@ parse → fillrpo → fillpreds → filluse → memopt
 rv64 与 amd64 共享同一套 `spill`/`rega`：目标差异通过 `types.target_cfg`
 （见 [types.md](types.md) 的 TargetCfg 章节）在运行时切换。
 rv64 后端目前没有差分参考验证，`data` 段与浮点常量 rodata 输出待完善。
+
+```
+la64（LoongArch64，LP64D）：
+  parse → cfg/ssa/live/fold 各 pass
+      → abi_la64 → fillpreds → filluse
+      → isel_la64
+      → init_la64_target()   ← 切换 TargetCfg（寄存器布局）
+      → fillrpo → filllive → fillcost → spill → rega
+      → simpljmp
+      → emit_la64（含数据段与浮点常量池）
+```
+
+la64 通过 `types.target_cfg` 与 amd64/rv64 共享同一套 `spill`/`rega`。
+与 rv64 一样没有差分参考基线，快照逐条对照 LoongArch ELF psABI 手工核验；
+数据段与浮点常量池为完整输出（rv64 尚缺）。
+
+```
+interp（SSA 直接解释执行）：
+  parse → 布局数据段 → 绑定实参
+      → 解释 pre-isel IR（phi、调用、内存、内置运行时）
+      → Result[InterpValue, QbeError]
+```
+
+解释器完全绕开 ABI/指令选择/寄存器分配，直接执行源语义层 IR；
+详见 [interp.md](interp.md)。

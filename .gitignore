@@ -6,3 +6,6 @@ target
 .moonagent/tools/qbe-ref/obj/
 tools/qbe-ref/obj/
 tools/qbe-ref/config.h
+.clice/
+.zcode/
+skill/

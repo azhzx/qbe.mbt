@@ -1,0 +1,10 @@
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+import {
+  "moonbitlang/async",
+  "azhzx/qbe/lexer",
+  "azhzx/qbe/parser",
+} for "wbtest"
