@@ -26,12 +26,8 @@ test "e2e la64: return constant word" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	li a0, 1
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -66,14 +62,10 @@ test "e2e la64: word arithmetic" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	addw t0, a0, a1
           #|	li t1, 3
           #|	mulw a0, t0, t1
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -115,9 +107,7 @@ test "e2e la64: call and branch" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	li t0, 0
           #|	li t1, 1
           #|	slt t0, t0, a0
@@ -125,8 +115,6 @@ test "e2e la64: call and branch" {
           #|	beqz t0, .L2
           #|.L1:
           #|	li a0, 0
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -135,8 +123,6 @@ test "e2e la64: call and branch" {
           #|	li t0, 1
           #|	subw a0, a0, t0
           #|	call rec
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -178,32 +164,28 @@ test "e2e la64: loop with phi" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	j .L3
           #|.L1:
-          #|	mv t3, t2
           #|	mv t2, t1
-          #|	li t1, 1
+          #|	mv t1, t0
+          #|	li t0, 1
+          #|	addw t0, t1, t0
           #|	addw t1, t2, t1
-          #|	addw t2, t3, t2
-          #|	slt t3, t1, a0
-          #|	beqz t3, .L4
+          #|	slt t2, t0, a0
+          #|	beqz t2, .L4
           #|	j .L1
           #|.L2:
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
           #|	ret
           #|.L4:
-          #|	mv a0, t2
+          #|	mv a0, t1
           #|	j .L2
           #|.L3:
-          #|	li t2, 0
           #|	li t1, 0
+          #|	li t0, 0
           #|	j .L1
           #|	.size sum, .-sum
           #|
@@ -236,11 +218,7 @@ test "e2e la64: memory and alloc" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
+          #|	add sp, sp, -16
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -274,12 +252,8 @@ test "e2e la64: double arithmetic" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	fmul.d fa0, fa0, fa1
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -313,14 +287,10 @@ test "e2e la64: float constant stash" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	lla t6, fp0
           #|	fld ft0, 0(t6)
           #|	fadd.d fa0, fa0, ft0
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -355,13 +325,9 @@ test "e2e la64: data section" {
           #|	sd fp, -16(sp)
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
-          #|	add sp, sp, -32
-          #|	sd s1, 0(sp)
-          #|	sd s2, 8(sp)
+          #|	add sp, sp, -16
           #|	lla t6, buf
           #|	lbu a0, 0(t6)
-          #|	ld s1, 0(sp)
-          #|	ld s2, 8(sp)
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)

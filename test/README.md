@@ -3,7 +3,8 @@
 This directory holds the `.ssa` inputs used by `compare.py` to verify the
 MoonBit QBE implementation against the reference C QBE built from the pinned
 snapshot in `tools/qbe-ref` (see below).
-All 422 files must compile identically on both implementations.
+All 406 non-underscore files must compile identically on both implementations
+for the default `amd64_sysv` target.
 
 ## Reference binary
 
@@ -18,6 +19,21 @@ The snapshot in `tools/qbe-ref` is the exact upstream version the port was
 validated against byte-for-byte; the `vendor/qbe` submodule is a fork whose
 emitted assembly intentionally differs, so do not use it for `--asm`
 comparisons.
+
+## ARM64 target
+
+The pinned snapshot also supports `arm64` (`tools/qbe-ref/obj/qbe -t arm64`),
+which is the byte-level oracle for the arm64 backend. Run:
+
+    python compare.py --target arm64              # IR/debug dumps, 5684/5684
+    python compare.py --target arm64 --asm         # assembly, 406/406
+    python compare.py --target arm64 --asm -G m    # Mach-O labels, 406/406
+
+The port matches the reference for every corpus file, including the handful
+where the reference itself aborts (e.g. `dynalloc.ssa`); those fail
+identically on both sides (empty stdout). An independent assembly gate is
+available via `python tools/check_arm64_asm.py`, which runs clang's
+aarch64 integrated assembler over the emitted output.
 
 ## Layout
 

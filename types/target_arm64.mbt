@@ -1,8 +1,9 @@
 ///|
 // ARM64 (AArch64) target constants, AAPCS64 ABI.
-// Ported 1:1 from vendor/qbe/arm64/{all.h, targ.c}.
-// Register tmp ids are renumbered (QBE-style) instead of using the raw
-// machine numbers so that the allocatable ranges stay contiguous.
+// Ported 1:1 from tools/qbe-ref/arm64/{all.h, targ.c} (the byte-level
+// differential oracle). Register tmp ids are renumbered (QBE-style) instead
+// of using the raw machine numbers so that the allocatable ranges stay
+// contiguous.
 
 ///|
 // ARM64 register numbers (as virtual tmp ids; matches C enum Arm64Reg where
@@ -221,8 +222,8 @@ pub const Arm64NGPR : Int = 32
 pub const Arm64NFPR : Int = 31
 
 ///|
-// Number of caller-save GPRs (x0-x18 plus LR, matches C NGPS).
-pub const Arm64NGPS : Int = 20
+// Number of caller-save GPRs (x0-x18, matches C NGPS).
+pub const Arm64NGPS : Int = 19
 
 ///|
 // Number of caller-save FPRs (v0-v7 and v16-v30, matches C NFPS).
@@ -233,8 +234,8 @@ pub const Arm64NFPS : Int = 23
 pub const Arm64NCLR : Int = 18
 
 ///|
-// Number of globally live registers (FP, SP, IP1, R18).
-pub const Arm64NRGLOB : Int = 4
+// Number of globally live registers (FP, SP, R18).
+pub const Arm64NRGLOB : Int = 3
 
 ///|
 // ARM64 caller-save register list (C arm64_rsave in targ.c).
@@ -258,7 +259,6 @@ pub let arm64_rsave : Array[Int] = [
   ARM64_IP0,
   ARM64_IP1,
   ARM64_R18,
-  ARM64_LR,
   ARM64_V0,
   ARM64_V1,
   ARM64_V2,
@@ -308,11 +308,11 @@ pub let arm64_rclob : Array[Int] = [
 ]
 
 ///|
-// ARM64 globally live registers bitmask (C RGLOB: FP | SP | IP1 | R18).
+// ARM64 globally live registers bitmask (C RGLOB: FP | SP | R18).
 // These overlap no argument register (C MAKESURE globals_are_not_arguments).
 pub fn arm64_rglob_mask() -> UInt64 {
   let one : UInt64 = 1
-  (one << ARM64_FP) | (one << ARM64_SP) | (one << ARM64_IP1) | (one << ARM64_R18)
+  (one << ARM64_FP) | (one << ARM64_SP) | (one << ARM64_R18)
 }
 
 ///|
@@ -337,14 +337,13 @@ pub fn Ref::arm64_retregs(self : Ref) -> (UInt64, Int, Int) {
 ///|
 // The registers used to pass arguments, given an RCall ref
 // (C arm64_argregs in abi.c). x8 carries the aggregate-return hidden pointer
-// (bit 13) and x9 the env pointer (bit 14).
+// (bit 13).
 pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int, Int) {
   let mut b : UInt64 = 0
   let v = self.call_val()
   let mut ngp = (v >> 5) & 15
   let mut nfp = (v >> 9) & 15
   let x8 = (v >> 13) & 1
-  let x9 = (v >> 14) & 1
   while ngp > 0 {
     ngp = ngp - 1
     b = b | (1UL << (ARM64_R0 + ngp))
@@ -356,10 +355,7 @@ pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int, Int) {
   if x8 != 0 {
     b = b | (1UL << ARM64_R8)
   }
-  if x9 != 0 {
-    b = b | (1UL << ARM64_R9)
-  }
-  (b, ((v >> 5) & 15) + x8 + x9, (v >> 9) & 15)
+  (b, ((v >> 5) & 15) + x8, (v >> 9) & 15)
 }
 
 ///|

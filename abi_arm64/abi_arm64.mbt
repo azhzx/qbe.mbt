@@ -1,13 +1,13 @@
 ///|
 // ARM64 (AArch64) ABI lowering - AAPCS64, ELF flavor.
-// Ported 1:1 from vendor/qbe/arm64/abi.c (C arm64_abi): argsclass/typclass/
-// selpar/selcall/selret/selvaarg/selvastart keep the same structure and logic
-// as the C functions so the two can be reviewed side by side.
+// Ported 1:1 from tools/qbe-ref/arm64/abi.c (C arm64_abi): argsclass/
+// typclass/selpar/selcall/selret/selvaarg/selvastart keep the same structure
+// and logic as the C functions so the two can be reviewed side by side.
 //
-// Deviations from the C, all mirroring the old reference snapshot:
-// - C Oblit0/Oblit1 aggregate copies are expanded here into explicit
-//   "blt."-prefixed 8-byte load/store chunks (the reference emits the same
-//   shape).
+// Deviations from the C:
+// - C Oblit0/Oblit1 aggregate copies do not exist here; the reference
+//   snapshot's blit() (util.c) is expanded into explicit "blt."-prefixed
+//   load/store chunks.
 // - C Oparsb..Oparuh narrow-parameter ops do not exist in this port.
 
 ///|
@@ -27,7 +27,6 @@ priv struct Arm64Class {
   mut hfa_base : @types.Class
   mut hfa_size : Int
   mut size : Int
-  mut align_ : Int
   mut typ : @types.Typ?
   reg : Array[Int] // 4 slots
   cls : Array[@types.Class] // 4 slots
@@ -44,7 +43,6 @@ fn Arm64Class::new() -> Arm64Class {
     hfa_base: @types.Kx,
     hfa_size: 0,
     size: 0,
-    align_: 0,
     typ: None,
     reg: [0, 0, 0, 0],
     cls: [@types.Kx, @types.Kx, @types.Kx, @types.Kx],
@@ -59,7 +57,7 @@ fn Arm64Class::new() -> Arm64Class {
 priv struct Arm64Params {
   mut ngp : Int
   mut nfp : Int
-  mut stk : Int
+  mut nstk : Int
 }
 
 ///|
@@ -79,7 +77,7 @@ fn arm64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> Arm64AbiState {
     fn_,
     typs,
     buf: Array::new(),
-    params: Arm64Params::{ ngp: 0, nfp: 0, stk: 0, },
+    params: Arm64Params::{ ngp: 0, nfp: 0, nstk: 0, },
   }
 }
 
@@ -131,7 +129,9 @@ fn arm64_call_ref(ca : Int) -> @types.Ref {
 }
 
 ///|
-// The integer/float argument register sequences (C gpreg/fpreg).
+// The integer/float argument register sequences (C gpreg/fpreg). C sizes
+// these arrays at 12 with the tail zero-initialized; typclass may index past
+// the 8 real registers before argsclass decides to pass on the stack.
 let arm64_gpreg : Array[Int] = [
   @types.ARM64_R0,
   @types.ARM64_R1,
@@ -141,6 +141,10 @@ let arm64_gpreg : Array[Int] = [
   @types.ARM64_R5,
   @types.ARM64_R6,
   @types.ARM64_R7,
+  0,
+  0,
+  0,
+  0,
 ]
 
 ///|
@@ -153,6 +157,10 @@ let arm64_fpreg : Array[Int] = [
   @types.ARM64_V5,
   @types.ARM64_V6,
   @types.ARM64_V7,
+  0,
+  0,
+  0,
+  0,
 ]
 
 ///|
@@ -178,36 +186,31 @@ fn arm64_typclass(
   c.class_ = 0
   c.ngp = 0
   c.nfp = 0
-  c.align_ = 8
-  if t.align > 3 {
-    raise @util.QbeError::Ice("alignments larger than 8 are not supported")
+  if t.align > 4 {
+    raise @util.QbeError::Ice("alignments larger than 16 are not supported")
+  }
+  if t.dark != 0 || sz > 16 || sz == 0 {
+    // large structs are replaced by a pointer to some
+    // caller-allocated memory
+    c.class_ = c.class_ | Arm64Cptr
+    c.size = 8
+    return
   }
   c.size = sz
   let (homog, base) = arm64_isfloatv(st, t, @types.Kx)
-  c.ishfa = homog
   c.hfa_base = base
+  c.ishfa = homog
   let wide = if base == @types.Kd { 8 } else { 4 }
-  let hfasz = t.size.to_int() / wide
-  c.ishfa = c.ishfa && t.dark == 0 && hfasz <= 4
-  c.hfa_size = hfasz
+  c.hfa_size = t.size.to_int() / wide
   if c.ishfa {
     let mut n = 0
-    while n < hfasz {
+    while n < c.hfa_size {
       c.reg[n] = arm64_fpreg[fpi + n]
       c.cls[n] = c.hfa_base
       c.nfp = c.nfp + 1
       n = n + 1
     }
     c.nreg = n
-  } else if t.dark != 0 || sz > 16 || sz == 0 {
-    // large structs are replaced by a pointer to some
-    // caller-allocated memory
-    c.class_ = c.class_ | Arm64Cptr
-    c.size = 8
-    c.ngp = 1
-    c.reg[0] = arm64_gpreg[gpi]
-    c.cls[0] = @types.Kl
-    c.nreg = 1
   } else {
     let mut n = 0
     while n < sz / 8 {
@@ -272,20 +275,21 @@ fn arm64_isfloatv(
 fn arm64_sttmps(
   st : Arm64AbiState,
   tmp : Array[@types.Ref],
+  base : Int,
   c : Arm64Class,
   nreg : Int,
   mem : @types.Ref,
 ) -> Unit {
   let mut off = 0
   for n in 0..<nreg {
-    tmp[n] = arm64_newtmp(st, c.cls[n])
+    tmp[base + n] = arm64_newtmp(st, c.cls[n])
     let r = arm64_newtmp(st, @types.Kl)
     arm64_emit(
       st,
       arm64_store_op(c.cls[n]),
       @types.Kw,
       @types.Ref::none(),
-      tmp[n],
+      tmp[base + n],
       r,
     )
     arm64_emit(
@@ -332,35 +336,53 @@ fn arm64_ldregs(
 }
 
 ///|
-// Copy sz bytes from src to dst in 8-byte chunks (the old reference ABI
-// expands blit into explicit blt.-prefixed loads/stores; chunk offsets are
-// emitted high-to-low so the program order is low-to-high).
+// Copy sz bytes from src to dst+doff (C blit in util.c). Chunks are emitted
+// in reverse program order, matching C's prepending emit().
 fn arm64_blit(
   st : Arm64AbiState,
   dst : @types.Ref,
+  doff : Int,
   src : @types.Ref,
   sz : Int,
 ) -> Unit {
-  let n = sz / 8
-  let mut k = n
-  while k > 0 {
-    k = k - 1
-    let off = (k * 8).to_int64()
-    let r1 = arm64_newblt(st, @types.Kl)
-    let r2 = arm64_newblt(st, @types.Kl)
-    arm64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r2, r1)
-    arm64_emit(st, @types.Add, @types.Kl, r1, dst, arm64_getcon(st, off))
-    let r3 = arm64_newblt(st, @types.Kl)
-    let r4 = arm64_newblt(st, @types.Kl)
-    arm64_emit(st, @types.Load, @types.Kl, r3, r4, @types.Ref::none())
-    arm64_emit(st, @types.Add, @types.Kl, r4, src, arm64_getcon(st, off))
+  let st_ops = [@types.Storel, @types.Storew, @types.Storeh, @types.Storeb]
+  let ld_ops = [@types.Load, @types.Load, @types.Loaduh, @types.Loadub]
+  let clss = [@types.Kl, @types.Kw, @types.Kw, @types.Kw]
+  let sizes = [8, 8, 2, 1]
+  let mut sz_ = sz
+  let mut doff_ = doff
+  let mut boff = 0
+  let mut p = 0
+  while sz_ > 0 {
+    let s = sizes[p]
+    while sz_ >= s {
+      let r = arm64_newblt(st, @types.Kl)
+      let r1 = arm64_newblt(st, @types.Kl)
+      arm64_emit(st, st_ops[p], @types.Kw, @types.Ref::none(), r, r1)
+      arm64_emit(
+        st,
+        @types.Add,
+        @types.Kl,
+        r1,
+        dst,
+        arm64_getcon(st, doff_.to_int64()),
+      )
+      let r1b = arm64_newblt(st, @types.Kl)
+      arm64_emit(st, ld_ops[p], clss[p], r, r1b, @types.Ref::none())
+      arm64_emit(
+        st,
+        @types.Add,
+        @types.Kl,
+        r1b,
+        src,
+        arm64_getcon(st, boff.to_int64()),
+      )
+      sz_ = sz_ - s
+      doff_ = doff_ + s
+      boff = boff + s
+    }
+    p = p + 1
   }
-}
-
-///|
-// Align x up to al (C align in arm64/abi.c).
-fn arm64_align(x : Int, al : Int) -> Int {
-  (x + al - 1) & -al
 }
 
 ///|
@@ -377,12 +399,11 @@ fn arm64_selret(st : Arm64AbiState, bid : Int) -> Unit raise {
   if j == @types.Jretc {
     let cr = Arm64Class::new()
     arm64_typclass(st, cr, st.typs[st.fn_.ret_ty], 0, 0)
+    cty = (cr.nfp << 2) | cr.ngp
     if (cr.class_ & Arm64Cptr) != 0 {
-      arm64_blit(st, st.fn_.retr, r, cr.typ.unwrap().size.to_int())
-      cty = 0
+      arm64_blit(st, st.fn_.retr, 0, r, cr.typ.unwrap().size.to_int())
     } else {
       arm64_ldregs(st, cr, cr.nreg, r)
-      cty = (cr.nfp << 2) | cr.ngp
     }
   } else {
     let k = match j {
@@ -419,29 +440,27 @@ fn arm64_selret(st : Arm64AbiState, bid : Int) -> Unit raise {
 
 ///|
 // Classify call arguments (C argsclass in arm64/abi.c).
-// Returns the RCall encoding: envc<<14 | gpi<<5 | fpi<<9.
+// Returns the RCall encoding gpi<<5 | fpi<<9 and the env ref (R when none).
 fn arm64_argsclass(
   st : Arm64AbiState,
   orig : Array[@types.Ins],
   i0 : Int,
   i1 : Int,
   carg : Array[Arm64Class],
-) -> Int raise {
-  let mut envc = 0
+) -> (Int, @types.Ref) raise {
   let mut gpi = 0
   let mut fpi = 0
   let mut ngp = 8
   let mut nfp = 8
+  let mut env = @types.Ref::none()
   let mut a = 0
-  for i in i0..<i1 {
-    let ins = orig[i]
+  for idx in i0..<i1 {
+    let ins = orig[idx]
     let c = carg[a]
     match ins.op {
       @types.Par | @types.Arg => {
-        // Scalar (C: size = 8; apple narrows non-wide scalars, ELF only)
-        c.size = 8
-        c.align_ = c.size
         c.cls[0] = ins.cls
+        c.size = 8
         if ins.cls.base() == 0 && ngp > 0 {
           ngp = ngp - 1
           c.reg[0] = arm64_gpreg[gpi]
@@ -456,31 +475,39 @@ fn arm64_argsclass(
       }
       @types.Parc | @types.Argc => {
         arm64_typclass(st, c, st.typs[ins.arg1.typ_val()], gpi, fpi)
-        if c.ngp <= ngp {
+        let mut stacked = true
+        if (c.class_ & Arm64Cptr) != 0 {
+          if ngp > 0 {
+            ngp = ngp - 1
+            c.reg[0] = arm64_gpreg[gpi]
+            gpi = gpi + 1
+            c.cls[0] = @types.Kl
+            stacked = false
+          }
+        } else if c.ngp <= ngp {
           if c.nfp <= nfp {
             ngp = ngp - c.ngp
             nfp = nfp - c.nfp
             gpi = gpi + c.ngp
             fpi = fpi + c.nfp
+            stacked = false
           } else {
             nfp = 0
-            c.class_ = c.class_ | Arm64Cstk
           }
         } else {
           ngp = 0
+        }
+        if stacked {
           c.class_ = c.class_ | Arm64Cstk
         }
       }
-      @types.Pare | @types.Arge => {
-        c.reg[0] = @types.ARM64_R9
-        c.cls[0] = @types.Kl
-        envc = 1
-      }
+      @types.Pare => env = ins.to
+      @types.Arge => env = ins.arg1
       _ => abort("unreachable")
     }
     a = a + 1
   }
-  (envc << 14) | (gpi << 5) | (fpi << 9)
+  ((gpi << 5) | (fpi << 9), env)
 }
 
 ///|
@@ -490,11 +517,7 @@ fn arm64_stkblob(st : Arm64AbiState, r : @types.Ref, c : Arm64Class) -> Unit {
   if al < 0 {
     al = 0
   }
-  let sz = if (c.class_ & Arm64Cptr) != 0 {
-    c.typ.unwrap().size
-  } else {
-    c.size.to_int64()
-  }
+  let sz = c.typ.unwrap().size
   let op = @types.Op::from_index(@types.Alloc4.index() + al)
   arm64_emit(st, op, @types.Kl, r, arm64_getcon(st, sz), @types.Ref::none())
 }
@@ -516,7 +539,8 @@ fn arm64_selcall(
     ca.push(Arm64Class::new())
   }
   let callins = orig[i1]
-  let mut cty = arm64_argsclass(st, orig, i0, i1, ca)
+  let (cty0, env) = arm64_argsclass(st, orig, i0, i1, ca)
+  let mut cty = cty0
   let has_retty = !callins.arg2.is_none()
   // rewrite pass (C 379-393): blobs for Cptr args, stack size accounting
   let mut stk = 0
@@ -532,11 +556,10 @@ fn arm64_selcall(
       i.op = @types.Arg
     }
     if (c.class_ & Arm64Cstk) != 0 {
-      stk = arm64_align(stk, c.align_)
       stk = stk + c.size
     }
   }
-  stk = arm64_align(stk, 16)
+  stk = stk + (stk & 15)
   let rstk = arm64_getcon(st, stk.to_int64())
   if stk != 0 {
     arm64_emit(
@@ -560,7 +583,7 @@ fn arm64_selcall(
     if (cr.class_ & Arm64Cptr) != 0 {
       // spill & rega expect calls to be followed by copies from regs,
       // so we emit a dummy
-      cty = cty | (1 << 13) | 1
+      cty = cty | (1 << 13)
       arm64_emit(
         st,
         @types.Copy,
@@ -571,7 +594,7 @@ fn arm64_selcall(
       )
     } else {
       let tmp : Array[@types.Ref] = Array::make(4, @types.Ref::none())
-      arm64_sttmps(st, tmp, cr, cr.nreg, callins.to)
+      arm64_sttmps(st, tmp, 0, cr, cr.nreg, callins.to)
       for n in 0..<cr.nreg {
         let r = @types.Ref::tmp(cr.reg[n])
         arm64_emit(st, @types.Copy, cr.cls[n], tmp[n], r, @types.Ref::none())
@@ -597,6 +620,9 @@ fn arm64_selcall(
       @types.Ref::none(),
     )
     cty = cty | (1 << 2)
+  }
+  if !env.is_none() {
+    raise @util.QbeError::Ice("todo (arm abi): env calls")
   }
   arm64_emit(
     st,
@@ -646,27 +672,20 @@ fn arm64_selcall(
     if (c.class_ & Arm64Cstk) == 0 {
       continue
     }
-    off = arm64_align(off, c.align_)
-    let r = arm64_newtmp(st, @types.Kl)
-    if i.op == @types.Arg {
-      let op = match c.size {
-        1 => @types.Storeb
-        2 => @types.Storeh
-        4 | 8 => arm64_store_op(c.cls[0])
-        _ => abort("unreachable")
-      }
-      arm64_emit(st, op, @types.Kw, @types.Ref::none(), i.arg1, r)
+    if i.op != @types.Argc {
+      let r = arm64_newtmp(st, @types.Kl)
+      arm64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), i.arg1, r)
+      arm64_emit(
+        st,
+        @types.Add,
+        @types.Kl,
+        r,
+        @types.Ref::tmp(@types.ARM64_SP),
+        arm64_getcon(st, off.to_int64()),
+      )
     } else {
-      arm64_blit(st, r, i.arg2, c.size)
+      arm64_blit(st, @types.Ref::tmp(@types.ARM64_SP), off, i.arg2, c.size)
     }
-    arm64_emit(
-      st,
-      @types.Add,
-      @types.Kl,
-      r,
-      @types.Ref::tmp(@types.ARM64_SP),
-      arm64_getcon(st, off.to_int64()),
-    )
     off = off + c.size
   }
   if stk != 0 {
@@ -684,7 +703,7 @@ fn arm64_selcall(
     let i = orig[i0 + a]
     let c = ca[a]
     if (c.class_ & Arm64Cptr) != 0 {
-      arm64_blit(st, i.arg1, i.arg2, c.typ.unwrap().size.to_int())
+      arm64_blit(st, i.arg1, 0, i.arg2, c.typ.unwrap().size.to_int())
     }
   }
 }
@@ -699,10 +718,10 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
     ca.push(Arm64Class::new())
   }
   st.buf.clear()
-  let cty = arm64_argsclass(st, ins, 0, npar, ca)
-  st.fn_.reg = arm64_call_ref(cty).arm64_argregs().0
+  let (cty, env) = arm64_argsclass(st, ins, 0, npar, ca)
   let tmp : Array[@types.Ref] = Array::make(16, @types.Ref::none())
   let mut t = 0
+  let il : Array[@types.Ins] = Array::new()
   // register-classified aggregates get stores into a stack blob (C 489-498)
   for a in 0..<npar {
     let i = ins[a]
@@ -710,9 +729,15 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
     if i.op != @types.Parc || (c.class_ & (Arm64Cptr | Arm64Cstk)) != 0 {
       continue
     }
-    arm64_sttmps(st, tmp, c, c.nreg, i.to)
+    arm64_sttmps(st, tmp, t, c, c.nreg, i.to)
     t = t + c.nreg
     arm64_stkblob(st, i.to, c)
+    let blob = st.buf[st.buf.length() - 1]
+    ignore(st.buf.remove(st.buf.length() - 1))
+    il.push(blob)
+  }
+  for k in (il.length() - 1)>=..0 {
+    arm64_emiti(st, il[k])
   }
   if st.fn_.ret_ty >= 0 {
     let cr = Arm64Class::new()
@@ -727,37 +752,43 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
         @types.Ref::tmp(@types.ARM64_R8),
         @types.Ref::none(),
       )
-      st.fn_.reg = st.fn_.reg | (1UL << @types.ARM64_R8)
     }
   }
   // materialize parameters (C 509-532)
-  let mut off = 0
+  t = 0
+  let mut s = 2
   for a in 0..<npar {
     let i = ins[a]
     let c = ca[a]
     if i.op == @types.Parc && (c.class_ & Arm64Cptr) == 0 {
       if (c.class_ & Arm64Cstk) != 0 {
-        off = arm64_align(off, c.align_)
-        st.fn_.tmps[i.to.tmp_val()].slot = -(off + 2)
-        off = off + c.size
+        st.fn_.tmps[i.to.tmp_val()].slot = -s
+        s = s + c.size / 8
       } else {
         for n in 0..<c.nreg {
-          let r = @types.Ref::tmp(c.reg[n])
-          arm64_emit(st, @types.Copy, c.cls[n], tmp[t], r, @types.Ref::none())
+          arm64_emit(
+            st,
+            @types.Copy,
+            c.cls[n],
+            tmp[t],
+            @types.Ref::tmp(c.reg[n]),
+            @types.Ref::none(),
+          )
           t = t + 1
         }
       }
     } else if (c.class_ & Arm64Cstk) != 0 {
-      off = arm64_align(off, c.align_)
+      let r = arm64_newtmp(st, @types.Kl)
+      arm64_emit(st, @types.Load, c.cls[0], i.to, r, @types.Ref::none())
       arm64_emit(
         st,
-        @types.Load,
-        c.cls[0],
-        i.to,
-        @types.Ref::slot(-(off + 2)),
+        @types.Addr,
+        @types.Kl,
+        r,
+        @types.Ref::slot(-s),
         @types.Ref::none(),
       )
-      off = off + c.size
+      s = s + 1
     } else {
       arm64_emit(
         st,
@@ -769,9 +800,12 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
       )
     }
   }
+  if !env.is_none() {
+    raise @util.QbeError::Ice("todo (arm abi): env calls")
+  }
   st.params.ngp = (cty >> 5) & 15
   st.params.nfp = (cty >> 9) & 15
-  st.params.stk = arm64_align(off, 8)
+  st.params.nstk = s - 2
 }
 
 ///|
@@ -908,7 +942,6 @@ fn arm64_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
   let p = st.params
   let rsave = arm64_newtmp(st, @types.Kl)
   let r0 = arm64_newtmp(st, @types.Kl)
-  let r1 = arm64_newtmp(st, @types.Kl)
   arm64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, ap)
   arm64_emit(
     st,
@@ -916,7 +949,7 @@ fn arm64_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
     @types.Kl,
     r0,
     rsave,
-    arm64_getcon(st, (p.stk + 192).to_int64()),
+    arm64_getcon(st, (p.nstk * 8 + 192).to_int64()),
   )
   let r0b = arm64_newtmp(st, @types.Kl)
   let r1b = arm64_newtmp(st, @types.Kl)
@@ -929,7 +962,7 @@ fn arm64_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
   arm64_emit(st, @types.Add, @types.Kl, r1c, rsave, arm64_getcon(st, 192L))
   arm64_emit(
     st,
-    @types.Slotaddr,
+    @types.Addr,
     @types.Kl,
     rsave,
     @types.Ref::slot(-1),
@@ -942,7 +975,10 @@ fn arm64_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
     @types.Storew,
     @types.Kw,
     @types.Ref::none(),
-    arm64_getcon(st, ((p.ngp - 8) * 8).to_int64()),
+    arm64_getcon(
+      st,
+      (((p.ngp - 8).to_int64() & 0xFFFFFFFFL) * 8L) & 0xFFFFFFFFL,
+    ),
     r0d,
   )
   arm64_emit(st, @types.Add, @types.Kl, r0d, ap, arm64_getcon(st, 24L))
@@ -952,7 +988,10 @@ fn arm64_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
     @types.Storew,
     @types.Kw,
     @types.Ref::none(),
-    arm64_getcon(st, ((p.nfp - 8) * 16).to_int64()),
+    arm64_getcon(
+      st,
+      (((p.nfp - 8).to_int64() & 0xFFFFFFFFL) * 16L) & 0xFFFFFFFFL,
+    ),
     r0e,
   )
   arm64_emit(st, @types.Add, @types.Kl, r0e, ap, arm64_getcon(st, 28L))
@@ -1010,7 +1049,7 @@ pub fn abi_arm64(
   arm64_process_block(st, fn_.start_id, il)
   if print_dbg {
     let sb = StringBuilder()
-    sb.write_string("\n> After ARM64 ABI lowering:\n")
+    sb.write_string("\n> After ABI lowering:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")
     sb.to_string()

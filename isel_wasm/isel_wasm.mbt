@@ -23,7 +23,6 @@ fn wasm_isel_emit(st : WasmIselState, i : @types.Ins) -> Unit {
 // Select a single instruction: map QBE op to wasm equivalent.
 fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit {
   match i.op {
-    @types.Slotaddr => () // never produced on wasm
     // Arithmetic — direct passthrough
     @types.Add
     | @types.Sub

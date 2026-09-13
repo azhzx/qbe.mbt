@@ -18,3 +18,10 @@
     add SSA interpreter (interp package) with builtin runtime and CLI --run
     fix rv64 port: isel write-back, comparison lowering, call cty return
     register encoding, conditional-branch fall-through semantics
+
+2026.9.13: v0.7.0
+    finish arm64 (AArch64, AAPCS64 ELF) backend: target constants, ABI
+    lowering, instruction selection and GAS emission (emit_arm64)
+    byte-exact vs tools/qbe-ref -t arm64: IR 5684/5684, asm 406/406
+    add CLI -t arm64, compile_arm64/compile_arm64_debug API, snapshots and
+    docs; make live/spill/rega target-aware (rglob, nrsave, retregs/argregs)

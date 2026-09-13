@@ -173,13 +173,13 @@ test "e2e la64: loop with phi" {
           #|	addi.d $sp, $sp, -16
           #|	b .L3
           #|.L1:
-          #|	or $t3, $t2, $zero
           #|	or $t2, $t1, $zero
-          #|	li.d $t1, 1
+          #|	or $t1, $t0, $zero
+          #|	li.d $t0, 1
+          #|	add.w $t0, $t1, $t0
           #|	add.w $t1, $t2, $t1
-          #|	add.w $t2, $t3, $t2
-          #|	slt $t3, $t1, $a0
-          #|	beqz $t3, .L4
+          #|	slt $t2, $t0, $a0
+          #|	beqz $t2, .L4
           #|	b .L1
           #|.L2:
           #|	addi.d $sp, $fp, 16
@@ -187,11 +187,11 @@ test "e2e la64: loop with phi" {
           #|	ld.d $fp, $fp, 0
           #|	ret
           #|.L4:
-          #|	or $a0, $t2, $zero
+          #|	or $a0, $t1, $zero
           #|	b .L2
           #|.L3:
-          #|	li.d $t2, 0
           #|	li.d $t1, 0
+          #|	li.d $t0, 0
           #|	b .L1
           #|	.size sum, .-sum
           #|/* end function sum */

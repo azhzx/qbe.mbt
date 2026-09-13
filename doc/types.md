@@ -254,13 +254,15 @@ pub struct TargetCfg {
 pub let target_cfg : TargetCfg          // current target, default amd64_sysv
 pub fn init_amd64_target() -> Unit      // select amd64_sysv
 pub fn init_rv64_target() -> Unit       // select rv64
+pub fn init_la64_target() -> Unit       // select la64
+pub fn init_arm64_target() -> Unit      // select arm64 (AAPCS64)
 pub fn target_retregs(Ref) -> (UInt64, Int, Int)
 pub fn target_argregs(Ref) -> (UInt64, Int, Int)
 ```
 
-- `pipeline.mbt` calls `init_amd64_target()` / `init_rv64_target()` at the post-isel stage of the amd64 and rv64 pipelines respectively to complete the switch; the wasm pipeline skips spill/rega and does not depend on this configuration.
-- amd64 register numbers are in `target.mbt`: `RAX=1..RSP=16`, `XMM0=17..XMM15=32`, `Tmp0=64`; rv64 numbers are in `target_rv64.mbt`: `T0=1..A7=14`, `S1..S11=15..25`, `FP/SP/GP/TP/RA=26..30`, `FT0..FA7=31..49`, `FS0..FS11=50..61`, `Rv64Tmp0=64`.
-- `abi`/`isel`/`emit` (amd64-specific) and `abi_rv64`/`isel_rv64`/`emit_rv64` still use constants directly from their respective `target*.mbt` files, not through `TargetCfg`.
+- `pipeline.mbt` calls the matching `init_*_target()` at the start of each `run_passes*` (before the first `filllive`) and again at the post-isel stage to complete the switch; `live` reads `rglob_mask`/`retregs`/`argregs` through `target_cfg`, while `spill`/`rega` read the register layout. The wasm pipeline skips spill/rega and does not depend on this configuration.
+- amd64 register numbers are in `target.mbt`: `RAX=1..RSP=16`, `XMM0=17..XMM15=32`, `Tmp0=64`; rv64 numbers are in `target_rv64.mbt`: `T0=1..A7=14`, `S1..S11=15..25`, `FP/SP/GP/TP/RA=26..30`, `FT0..FA7=31..49`, `FS0..FS11=50..61`, `Rv64Tmp0=64`; arm64 numbers are in `target_arm64.mbt`: `R0=1..IP1=18 R18=19..SP=32`, `V0=33..V30=63`, `Arm64Tmp0=64`.
+- `abi`/`isel`/`emit` (amd64-specific) and the `*_rv64`/`*_la64`/`*_arm64` packages still use constants directly from their respective `target*.mbt` files, not through `TargetCfg`.
 
 ## Type Aliases
 

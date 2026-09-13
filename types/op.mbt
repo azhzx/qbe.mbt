@@ -150,9 +150,6 @@ pub(all) enum Op {
   Flagfne
   Flagfo
   Flagfuo
-
-  // === Address materialization ===
-  Slotaddr
 } derive(Eq, Debug)
 
 ///|

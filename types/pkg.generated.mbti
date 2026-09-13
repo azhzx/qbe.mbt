@@ -22,6 +22,148 @@ pub const A6 : Int = 13
 
 pub const A7 : Int = 14
 
+pub const ARM64_FP : Int = 30
+
+pub const ARM64_IP0 : Int = 17
+
+pub const ARM64_IP1 : Int = 18
+
+pub const ARM64_LR : Int = 31
+
+pub const ARM64_R0 : Int = 1
+
+pub const ARM64_R1 : Int = 2
+
+pub const ARM64_R10 : Int = 11
+
+pub const ARM64_R11 : Int = 12
+
+pub const ARM64_R12 : Int = 13
+
+pub const ARM64_R13 : Int = 14
+
+pub const ARM64_R14 : Int = 15
+
+pub const ARM64_R15 : Int = 16
+
+pub const ARM64_R18 : Int = 19
+
+pub const ARM64_R19 : Int = 20
+
+pub const ARM64_R2 : Int = 3
+
+pub const ARM64_R20 : Int = 21
+
+pub const ARM64_R21 : Int = 22
+
+pub const ARM64_R22 : Int = 23
+
+pub const ARM64_R23 : Int = 24
+
+pub const ARM64_R24 : Int = 25
+
+pub const ARM64_R25 : Int = 26
+
+pub const ARM64_R26 : Int = 27
+
+pub const ARM64_R27 : Int = 28
+
+pub const ARM64_R28 : Int = 29
+
+pub const ARM64_R3 : Int = 4
+
+pub const ARM64_R4 : Int = 5
+
+pub const ARM64_R5 : Int = 6
+
+pub const ARM64_R6 : Int = 7
+
+pub const ARM64_R7 : Int = 8
+
+pub const ARM64_R8 : Int = 9
+
+pub const ARM64_R9 : Int = 10
+
+pub const ARM64_SP : Int = 32
+
+pub const ARM64_V0 : Int = 33
+
+pub const ARM64_V1 : Int = 34
+
+pub const ARM64_V10 : Int = 43
+
+pub const ARM64_V11 : Int = 44
+
+pub const ARM64_V12 : Int = 45
+
+pub const ARM64_V13 : Int = 46
+
+pub const ARM64_V14 : Int = 47
+
+pub const ARM64_V15 : Int = 48
+
+pub const ARM64_V16 : Int = 49
+
+pub const ARM64_V17 : Int = 50
+
+pub const ARM64_V18 : Int = 51
+
+pub const ARM64_V19 : Int = 52
+
+pub const ARM64_V2 : Int = 35
+
+pub const ARM64_V20 : Int = 53
+
+pub const ARM64_V21 : Int = 54
+
+pub const ARM64_V22 : Int = 55
+
+pub const ARM64_V23 : Int = 56
+
+pub const ARM64_V24 : Int = 57
+
+pub const ARM64_V25 : Int = 58
+
+pub const ARM64_V26 : Int = 59
+
+pub const ARM64_V27 : Int = 60
+
+pub const ARM64_V28 : Int = 61
+
+pub const ARM64_V29 : Int = 62
+
+pub const ARM64_V3 : Int = 36
+
+pub const ARM64_V30 : Int = 63
+
+pub const ARM64_V4 : Int = 37
+
+pub const ARM64_V5 : Int = 38
+
+pub const ARM64_V6 : Int = 39
+
+pub const ARM64_V7 : Int = 40
+
+pub const ARM64_V8 : Int = 41
+
+pub const ARM64_V9 : Int = 42
+
+pub const Arm64KmIsWide : Int = 1
+
+pub const Arm64NCLR : Int = 18
+
+pub const Arm64NFPR : Int = 31
+
+pub const Arm64NFPS : Int = 23
+
+pub const Arm64NGPR : Int = 32
+
+pub const Arm64NGPS : Int = 19
+
+pub const Arm64NRGLOB : Int = 3
+
+pub const Arm64Tmp0 : Int = 64
+
 pub const FA0 : Int = 42
 
 pub const FA1 : Int = 43
@@ -392,6 +534,14 @@ pub const XMM8 : Int = 25
 
 pub const XMM9 : Int = 26
 
+pub let arm64_rclob : Array[Int]
+
+pub fn arm64_reg_name(Int) -> String
+
+pub fn arm64_rglob_mask() -> UInt64
+
+pub let arm64_rsave : Array[Int]
+
 pub fn class_to_wasm_type(Class) -> WasmType
 
 pub fn cmpneg(Int) -> Int
@@ -407,6 +557,8 @@ pub fn fp_stash_reset() -> Unit
 pub fn gasstash(Int64, Int64, Int) -> Int
 
 pub fn init_amd64_target() -> Unit
+
+pub fn init_arm64_target() -> Unit
 
 pub fn init_la64_target() -> Unit
 
@@ -901,6 +1053,8 @@ pub(all) enum Ref {
 } derive(Eq, @debug.Debug)
 #as_free_fn(argregs, deprecated)
 pub fn Ref::argregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::arm64_argregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::arm64_retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::call(Int) -> Self
 pub fn Ref::call_val(Self) -> Int
 pub fn Ref::con(Int) -> Self

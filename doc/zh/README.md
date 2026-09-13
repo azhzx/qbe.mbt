@@ -30,6 +30,9 @@
 | LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64（LP64D）调用约定：A0-A7/FA0-FA7 参数与返回 |
 | LoongArch 指令选择 | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 指令映射、比较指令降低为 slt/sltu |
 | LoongArch 汇编输出 | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS 文本输出（含数据段与浮点常量池） |
+| ARM64 ABI | `abi_arm64` | [abi_arm64.md](abi_arm64.md) | AAPCS64：x0-x7/v0-v7 参数、x8 隐藏结果指针、HFA、栈参数 |
+| ARM64 指令选择 | `isel_arm64` | [isel_arm64.md](isel_arm64.md) | arm64 指令映射、立即数折叠、比较+分支合并 |
+| ARM64 汇编输出 | `emit_arm64` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS 文本输出（参考快照语法） |
 | SSA 解释器 | `interp` | [interp.md](interp.md) | 直接执行 pre-isel IR，内置可移植运行时 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
 
@@ -154,6 +157,22 @@ la64（LoongArch64，LP64D）：
 la64 通过 `types.target_cfg` 与 amd64/rv64 共享同一套 `spill`/`rega`。
 与 rv64 一样没有差分参考基线，快照逐条对照 LoongArch ELF psABI 手工核验；
 数据段与浮点常量池为完整输出（rv64 尚缺）。
+
+```
+arm64（AArch64，AAPCS64 ELF）：
+  parse → cfg/ssa/live/fold 各 pass
+      → abi_arm64 → fillpreds → filluse
+      → isel_arm64
+      → init_arm64_target()  ← 切换 TargetCfg（寄存器布局）
+      → fillrpo → filllive → fillcost → spill → rega
+      → simpljmp
+      → emit_arm64（含数据段与浮点常量池）
+```
+
+arm64 通过 `types.target_cfg` 与其它目标共享 `spill`/`rega`，并对照
+`tools/qbe-ref -t arm64` 逐字节验证：IR dump 5684/5684、汇编 406/406
+（`-G e` 与 `-G m`）。与 rv64/la64 一样仅支持 ELF；参考快照未实现的功能
+（动态 `alloc`、`truncd` 等）在两端同样失败。
 
 ```
 interp（SSA 直接解释执行）：

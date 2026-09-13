@@ -11,6 +11,8 @@
 #   python compare.py          -> 5684/5684
 #   python compare.py --asm    -> 406/406  (-G e)
 #   python compare.py --asm -G m -> 406/406
+#   python compare.py --target arm64        -> 5684/5684
+#   python compare.py --target arm64 --asm  -> 406/406
 
 name: CI
 
@@ -107,3 +109,15 @@ jobs:
 
       - name: "Differential: assembly (-G m)"
         run: python compare.py --asm -G m
+
+      - name: "Differential: arm64 IR dumps"
+        run: python compare.py --target arm64
+
+      - name: "Differential: arm64 assembly (-G e)"
+        run: python compare.py --target arm64 --asm
+
+      - name: "Differential: arm64 assembly (-G m)"
+        run: python compare.py --target arm64 --asm -G m
+
+      - name: "ARM64 assemblability (clang)"
+        run: python tools/check_arm64_asm.py

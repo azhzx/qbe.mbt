@@ -8,7 +8,7 @@
 // CLI command specification. @argparse auto-generates -h/--help from this.
 let cmd : @argparse.Command = @argparse.Command(
   "qbe",
-  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64, la64; --run FUNC[,ARG]... interprets the SSA directly",
+  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64, la64, arm64; --run FUNC[,ARG]... interprets the SSA directly",
   options=[
     @argparse.OptionArg("output", short='o'),
     @argparse.OptionArg("target", short='t'),
@@ -155,6 +155,27 @@ async fn process_file(
           }
         }
       }
+    "arm64" =>
+      if flags != "" {
+        match @qbe.compile_arm64_debug(source, flags) {
+          Ok(dump) => {
+            @util.eprint(dump)
+            ""
+          }
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      } else {
+        match @qbe.compile_arm64(source, gas~) {
+          Ok(assembly) => assembly
+          Err(e) => {
+            @util.eprint(format_qbe_error(e) + "\n")
+            ""
+          }
+        }
+      }
     _ =>
       // amd64_sysv (default)
       if flags != "" {
@@ -209,7 +230,7 @@ async fn main {
   match parsed.values.get("target") {
     Some(arr) if arr.length() > 0 =>
       match arr[0] {
-        "amd64_sysv" | "wasm" | "rv64" | "la64" => target = arr[0]
+        "amd64_sysv" | "wasm" | "rv64" | "la64" | "arm64" => target = arr[0]
         t => {
           @util.eprint("unknown target '\{t}'\n")
           return

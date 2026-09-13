@@ -6,7 +6,8 @@
 - IR optimizer
 - RISC-V 64 backend
 - amd64(x86-64) backend
-- (TODO) arm64 backend
+- arm64(AArch64) backend — byte-exact vs `tools/qbe-ref -t arm64`
+  (IR: 5684/5684, assembly: 406/406)
 
 
 # We Extend More Feature

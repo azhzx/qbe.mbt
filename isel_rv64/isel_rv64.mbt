@@ -270,7 +270,6 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
   }
 
   match i.op {
-    @types.Slotaddr => () // never produced on rv64
     // RISC-V has native divide/remainder instructions
     @types.Div | @types.Rem | @types.Udiv | @types.Urem => sel_emit(st, i)
     // RISC-V has flexible shift instructions

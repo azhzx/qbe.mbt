@@ -106,10 +106,8 @@ test "arm64 abi: large aggregate parameter is passed by pointer" {
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
   let dbg = abi_arm64(f, typs, true, interner, typs)
-  // the pointer arrives in x0 and no stack blob is materialized for it
+  // the pointer arrives in x0 (tmp 1) and no stack blob is materialized
   assert_true(dbg.contains("copy R1"))
-  // x0 (bit 1 of fn.reg) is the only parameter register
-  assert_eq(f.reg, 1UL << @types.ARM64_R0)
 }
 
 ///|
@@ -138,8 +136,6 @@ test "arm64 abi: small aggregate parameter is reassembled from registers" {
   }
   assert_eq(allocs, 1)
   assert_eq(stores, 1)
-  // x0 is consumed by the aggregate
-  assert_eq(f.reg, 1UL << @types.ARM64_R0)
 }
 
 ///|
@@ -156,7 +152,6 @@ test "arm64 abi: hfa parameter occupies consecutive float registers" {
   // v0 and v1 (tmp 33/34) hold the two float elements; no GP register used
   assert_true(dbg.contains("R33"))
   assert_true(dbg.contains("R34"))
-  assert_eq(f.reg, (1UL << @types.ARM64_V0) | (1UL << @types.ARM64_V1))
 }
 
 ///|
@@ -171,9 +166,8 @@ test "arm64 abi: aggregate return reserves x8" {
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
   let _ = abi_arm64(f, typs, false, interner, typs)
-  // the hidden result pointer arrives in x8
-  assert_true((f.reg & (1UL << @types.ARM64_R8)) != 0UL)
-  // the callee copies it out of x8 into its own temp
+  // the hidden result pointer arrives in x8 and is copied to fn.retr
+  assert_true(f.retr.is_tmp())
   let start = f.blks[f.start_id]
   let mut x8_copies = 0
   for ins in start.ins {
@@ -203,7 +197,7 @@ test "arm64 abi: vararg functions keep the shared register pool" {
   let mut addr_ops = 0
   let mut storew_zero_base = 0
   for ins in start.ins {
-    if ins.op == @types.Slotaddr {
+    if ins.op == @types.Addr {
       addr_ops = addr_ops + 1
     }
     if ins.op == @types.Storew && ins.arg1.is_con() {

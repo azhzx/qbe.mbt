@@ -78,8 +78,8 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       if !out.equal(old) {
         chg = true
       }
-      // globally live registers (RBP | RSP)
-      out.bits[0] = out.bits[0] | @types.rglob_mask()
+      // globally live registers (target-specific, C T.rglob)
+      out.bits[0] = out.bits[0] | @types.target_cfg.rglob_mask
       let in_ = b.in_set.unwrap()
       in_.copy_from(out)
       let nlv : Array[Int] = Array::make(2, 0)
@@ -87,7 +87,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
         nlv[fn_.tmps[t].cls.base()] = nlv[fn_.tmps[t].cls.base()] + 1
       })
       if b.jmp.arg.call_val() >= 0 {
-        let rr = b.jmp.arg.retregs()
+        let rr = @types.target_retregs(b.jmp.arg)
         in_.bits[0] = in_.bits[0] | rr.0
         nlv[0] = rr.1
         nlv[1] = rr.2
@@ -100,20 +100,20 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       for ii in (b.ins.length() - 1)>=..0 {
         let ins = b.ins[ii]
         if ins.op == @types.Call && ins.arg2.call_val() >= 0 {
-          let rr = ins.arg2.retregs()
+          let rr = @types.target_retregs(ins.arg2)
           in_.bits[0] = in_.bits[0] & rr.0.lnot()
-          nlv[0] = nlv[0] - rr.1 + 9
-          nlv[1] = nlv[1] - rr.2 + 15
+          nlv[0] = nlv[0] - rr.1 + @types.target_cfg.post_call_gpr
+          nlv[1] = nlv[1] - rr.2 + @types.target_cfg.post_call_fpr
           if nlv[0] > b.nlive_w {
             b.nlive_w = nlv[0]
           }
           if nlv[1] > b.nlive_d {
             b.nlive_d = nlv[1]
           }
-          let ar = ins.arg2.argregs()
+          let ar = @types.target_argregs(ins.arg2)
           in_.bits[0] = in_.bits[0] | ar.0
-          nlv[0] = nlv[0] - 9 + ar.1
-          nlv[1] = nlv[1] - 15 + ar.2
+          nlv[0] = nlv[0] - @types.target_cfg.post_call_gpr + ar.1
+          nlv[1] = nlv[1] - @types.target_cfg.post_call_fpr + ar.2
         }
         if !ins.to.is_none() {
           let t = ins.to.tmp_val()

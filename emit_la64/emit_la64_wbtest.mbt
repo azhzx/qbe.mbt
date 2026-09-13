@@ -113,11 +113,11 @@ test "la64 emit: conditional branch and loop labels" {
       #|	addi.d $sp, $sp, -16
       #|	beqz $a0, .L2
       #|.L1:
-      #|	li.d $t1, 1
-      #|	sub.w $a0, $a0, $t1
-      #|	li.d $t1, 0
-      #|	slt $t1, $t1, $a0
-      #|	bnez $t1, .L1
+      #|	li.d $t0, 1
+      #|	sub.w $a0, $a0, $t0
+      #|	li.d $t0, 0
+      #|	slt $t0, $t0, $a0
+      #|	bnez $t0, .L1
       #|.L2:
       #|	li.d $a0, 0
       #|	addi.d $sp, $fp, 16

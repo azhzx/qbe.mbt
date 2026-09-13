@@ -310,3 +310,55 @@ test "compile_la64 emits data sections" {
   assert_true(assembly.contains(".byte 1"))
   assert_true(assembly.contains("la.local $t8, buf"))
 }
+
+///|
+test "compile_arm64 emits AArch64 assembly" {
+  let src =
+    #|export function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  let assembly = match @qbe.compile_arm64(src) {
+    Ok(s) => s
+    Err(_) => fail("arm64 compile failed")
+  }
+  assert_true(assembly.contains(".text"))
+  assert_true(assembly.contains(".globl add"))
+  assert_true(assembly.contains("add:"))
+  assert_true(assembly.contains("add\tw0, w0, w1"))
+  assert_true(assembly.contains("\tret\n"))
+}
+
+///|
+test "compile_arm64_debug stages dumps" {
+  let src = "export function w $one() {\n@start\n  ret 1\n}\n"
+  let dump = match @qbe.compile_arm64_debug(src, "PN") {
+    Ok(d) => d
+    Err(_) => fail("arm64 compile failed")
+  }
+  assert_true(dump.contains("> After parsing:"))
+  assert_true(dump.contains("Dominators"))
+}
+
+///|
+test "compile_arm64 emits data sections" {
+  let src =
+    #|data $buf = { b 1, b 2 }
+    #|
+    #|export function w $first() {
+    #|@start
+    #|  %r =w loadub $buf
+    #|  ret %r
+    #|}
+    #|
+  let assembly = match @qbe.compile_arm64(src) {
+    Ok(s) => s
+    Err(_) => fail("arm64 compile failed")
+  }
+  assert_true(assembly.contains(".data"))
+  assert_true(assembly.contains("buf:"))
+  assert_true(assembly.contains(".byte 1"))
+  assert_true(assembly.contains("adrp\tx"))
+}

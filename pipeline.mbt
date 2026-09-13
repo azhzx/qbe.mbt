@@ -116,6 +116,7 @@ fn run_passes(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
+  @types.init_amd64_target()
   if dbg.p {
     out.write_string("\n> After parsing:\n")
     dbg_function(fn_, interner, typs, out)
@@ -334,6 +335,7 @@ fn run_passes_rv64(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
+  @types.init_rv64_target()
   if dbg.p {
     out.write_string("\n> After parsing:\n")
     dbg_function(fn_, interner, typs, out)
@@ -416,6 +418,7 @@ fn run_passes_la64(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
+  @types.init_la64_target()
   if dbg.p {
     out.write_string("\n> After parsing:\n")
     dbg_function(fn_, interner, typs, out)
@@ -506,4 +509,109 @@ fn emit_la64_module(
     }
   }
   @emit_la64.gasemitfin_la64(gasloc, sb)
+}
+
+///|
+// Run ARM64 (AArch64, AAPCS64 ELF) compilation pipeline on a function.
+// Reuses the target-agnostic SSA passes, runs the ARM64 ABI + isel, then the
+// shared spill/rega passes with the arm64 machine configuration.
+fn run_passes_arm64(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  typs : Array[@types.Typ],
+  dbg : DbFlags,
+  out : StringBuilder,
+) -> Unit raise {
+  @types.init_arm64_target()
+  if dbg.p {
+    out.write_string("\n> After parsing:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillrpo(fn_)
+  @cfg.fillpreds(fn_)
+  @ssa.filluse(fn_)
+  @ssa.memopt(fn_)
+  if dbg.m {
+    out.write_string("\n> After memory optimization:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.filldom(fn_)
+  if dbg.n {
+    out.write_string("\n> Dominators:\n")
+    dbg_dominators(fn_, out)
+  }
+  @cfg.fillfron(fn_)
+  out.write_string(@live.filllive(fn_, false))
+  @ssa.phiins(fn_)
+  @ssa.renblk(fn_)
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  if dbg.n {
+    out.write_string("\n> After SSA construction:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillloop(fn_)
+  @cfg.fillalias(fn_)
+  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
+  @ssa.filluse(fn_)
+  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  // ARM64 ABI lowering
+  out.write_string(@abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, typs))
+  @cfg.fillpreds(fn_)
+  @ssa.filluse(fn_)
+  // ARM64 instruction selection
+  out.write_string(@isel_arm64.isel_arm64(fn_, interner, dbg.i, typs))
+  // Post-isel: fillrpo, filllive, fillcost, spill, rega.
+  @types.init_arm64_target()
+  @cfg.fillrpo(fn_)
+  out.write_string(@live.filllive(fn_, dbg.l))
+  out.write_string(@spill.fillcost(fn_, dbg.s))
+  out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
+  out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
+  @cfg.fillrpo(fn_)
+  @cfg.simpljmp(fn_)
+  @cfg.fillrpo(fn_)
+  @cfg.fillpreds(fn_)
+}
+
+///|
+// Emit ARM64 assembly for the whole module in input order (data and functions
+// interleaved as parsed, followed by the float constant pool).
+fn emit_arm64_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  order : Array[String],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+  gasloc : String,
+  gassym : String,
+  sb : StringBuilder,
+) -> Unit raise {
+  @types.fp_stash_reset()
+  @emit_arm64.arm64_emit_reset()
+  let mut fi = 0
+  let mut di = 0
+  for item in order {
+    if item == "f" {
+      let fn_ = funcs[fi]
+      fi = fi + 1
+      run_passes_arm64(fn_, interner, typs, DbFlags::new(), sb)
+      sb.write_string(@emit_arm64.emit_arm64(fn_, interner, typs))
+      sb.write_string("/* end function \{fn_.name} */\n\n")
+    } else {
+      while di < datas.length() {
+        let d = datas[di]
+        di = di + 1
+        @emit.gasemitdat(d, gasloc, gassym, sb)
+        if d.kind == @types.DEnd {
+          sb.write_string("/* end data */\n\n")
+          break
+        }
+      }
+    }
+  }
+  @emit.gasemitfin(gasloc, sb)
 }

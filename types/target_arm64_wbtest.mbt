@@ -164,7 +164,7 @@ test "arm64: init target configures spill/rega" {
   assert_eq(rr2.0, (1UL << ARM64_V0) | (1UL << ARM64_V1))
   assert_eq(rr2.2, 2)
   // argregs: two int args + one float arg (C bit layout: gp in bits 5-8,
-  // fp in bits 9-12, x8 in bit 13, env x9 in bit 14)
+  // fp in bits 9-12, x8 in bit 13)
   let a = Ref::call((2 << 5) | (1 << 9))
   let aa = a.arm64_argregs()
   assert_eq(aa.0, (1UL << ARM64_R0) | (1UL << ARM64_R1) | (1UL << ARM64_V0))

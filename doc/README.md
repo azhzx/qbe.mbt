@@ -34,6 +34,9 @@ Packages are listed in compilation pipeline order:
 | LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64 (LP64D) calling convention: A0-A7/FA0-FA7 parameters and returns |
 | LoongArch Instruction Selection | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 instruction mapping, comparison lowering to slt/sltu |
 | LoongArch Assembly Output | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS text output (data + float pool) |
+| ARM64 ABI | `abi_arm64` | [abi_arm64.md](abi_arm64.md) | AAPCS64: x0-x7/v0-v7 parameters, x8 hidden result pointer, HFA, stack args |
+| ARM64 Instruction Selection | `isel_arm64` | [isel_arm64.md](isel_arm64.md) | arm64 instruction mapping, immediate folding, compare+branch merging |
+| ARM64 Assembly Output | `emit_arm64` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS text output (reference snapshot syntax) |
 | SSA Interpreter | `interp` | [interp.md](interp.md) | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | [cmd_main.md](cmd_main.md) | Command-line arguments and pipeline orchestration |
 
@@ -165,6 +168,23 @@ interp (direct SSA execution):
       → interpret pre-isel IR (phi, calls, memory, builtins)
       → Result[InterpValue, QbeError]
 ```
+
+```
+arm64 (AArch64, AAPCS64 ELF):
+  parse → cfg/ssa/live/fold passes
+      → abi_arm64 → fillpreds → filluse
+      → isel_arm64
+      → init_arm64_target()  ← switch TargetCfg (register layout)
+      → fillrpo → filllive → fillcost → spill → rega
+      → simpljmp
+      → emit_arm64 (+ data sections + float constant pool)
+```
+
+arm64 shares `spill`/`rega` with the other targets via `types.target_cfg`.
+It is validated byte-for-byte against `tools/qbe-ref -t arm64`: 5684/5684 IR
+dumps and 406/406 assembly (`-G e` and `-G m`). Like rv64/la64 it has no
+Apple-specific support (ELF only); the pinned reference's unsupported
+features (dynamic `alloc`, `truncd`, ...) fail identically on both sides.
 
 The interpreter bypasses ABI/isel/regalloc entirely and executes the
 source-semantics IR; see [interp.md](interp.md).
