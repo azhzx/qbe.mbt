@@ -1,31 +1,27 @@
 # Qbe.mbt
+> Rewrite Qbe in MoonBit with additional features
 
-> rewrite qbe in moonbit but add more feature
-
-# We Impl What Qbe has
+## What we implement (same as upstream Qbe)
 - IR optimizer
 - RISC-V 64 backend
-- amd64(x86-64) backend
-- arm64(AArch64) backend — byte-exact vs `vendor/qbe/qbe -t arm64`
+- amd64 (x86-64) backend
+- arm64 (AArch64) backend — byte-exact output compared against `vendor/qbe/qbe -t arm64`
   (IR: 5684/5684, assembly: 406/406)
 
-
-# We Extend More Feature
-- loong-arch64 backend
-- wasm backend
+## Extended features
+- LoongArch64 backend
+- WASM backend
 - IR Interpreter
 
-# Plan
-- (TODO) Add JIT Interface(maybe use copy-and patch)
-- (TODO) Add IR Debuger
-- (FIX) For rv64 backend: `data` segment and floating-point constant rodata output, differential reference verification
- 
-# Contributor
+## Plan
+- (TODO) Add JIT interface (copy-and-patch approach)
+- (TODO) Add IR Debugger
+- (FIX) rv64 backend: `data` segment and floating-point constant rodata output, reference differential verification
 
+## Contributors
 <a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=azhzx/qbe.mbt" />
 </a>
-
 Made with [contrib.rocks](https://contrib.rocks).
 
 ## Quick start
@@ -38,14 +34,13 @@ cd qbe.mbt
 ./scripts/bootstrap.sh
 ```
 
-If MoonBit is already installed, `--skip-install` prevents any installation
-attempt while still running all smoke checks:
+If MoonBit is already installed, use `--skip-install` to avoid installation attempts while still running smoke checks:
 
 ```sh
 ./scripts/bootstrap.sh --skip-install
 ```
 
-To allow the script to attempt a MoonBit installation when `moon` is missing:
+To allow automatic MoonBit installation when `moon` is missing:
 
 ```sh
 ./scripts/bootstrap.sh --install-moon
