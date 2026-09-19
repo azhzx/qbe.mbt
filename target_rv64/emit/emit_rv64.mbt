@@ -183,7 +183,10 @@ fn rv64_slot(st : Rv64EmitState, s : Int) -> Int {
 fn rv64_emitaddr(st : Rv64EmitState, con : @types.Con) -> Unit {
   match con.kind {
     @types.CAddr => {
+      // Local (fp-constant) symbols are printed quoted, e.g. ".Lfp0".
       let p = if con.is_local { st.gasloc } else { st.gassym }
+      let q = if con.is_local { "\"" } else { "" }
+      st.sb.write_string(q)
       st.sb.write_string(p)
       st.sb.write_string(st.interner.get(con.label))
       if con.bits.i != 0L {
@@ -194,6 +197,7 @@ fn rv64_emitaddr(st : Rv64EmitState, con : @types.Con) -> Unit {
           st.sb.write_string(con.bits.i.to_string())
         }
       }
+      st.sb.write_string(q)
     }
     _ => abort("invalid address constant")
   }
