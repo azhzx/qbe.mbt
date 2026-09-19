@@ -20,8 +20,9 @@
 - (TODO) Add IR Debuger
 - (FIX) For rv64 backend: `data` segment and floating-point constant rodata output, differential reference verification
  
- # Contributor
- <a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">
+# Contributor
+
+<a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=azhzx/qbe.mbt" />
 </a>
 
