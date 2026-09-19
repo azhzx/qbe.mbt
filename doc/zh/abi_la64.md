@@ -1,6 +1,6 @@
 # `abi_la64` 包接口介绍
 
-包路径: `azhzx/qbe/abi_la64`
+包路径: `azhzx/qbe/target_la64/abi`
 
 LoongArch 64 (la64) LP64D ABI 处理。在指令选择前把抽象的函数参数/返回值引
 用替换为 LoongArch 调用约定的具体寄存器引用。与 `abi_rv64` 平级，结构完全

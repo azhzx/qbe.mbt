@@ -1,6 +1,6 @@
 # `emit_arm64` 包接口介绍
 
-包路径: `azhzx/qbe/emit_arm64`
+包路径: `azhzx/qbe/target_arm64/emit`
 
 ARM64 (AArch64) GAS 汇编写出。逐行移植自 `vendor/qbe/arm64/emit.c`；输出
 裸 `xN`/`vN`/`sp` 寄存器名、`[base, offset]` 内存操作数、间接 `blr` 调用

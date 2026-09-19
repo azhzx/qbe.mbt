@@ -1,6 +1,6 @@
 # `abi_la64` Package API Reference
 
-Package path: `azhzx/qbe/abi_la64`
+Package path: `azhzx/qbe/target_la64/abi`
 
 [中文版本 (Chinese Version)](zh/abi_la64.md)
 

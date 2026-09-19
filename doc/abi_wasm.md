@@ -1,6 +1,6 @@
 # `abi_wasm` Package API Reference
 
-Package path: `azhzx/qbe/abi_wasm`
+Package path: `azhzx/qbe/target_wasm/abi`
 
 Wasm ABI processing. Before instruction selection, replaces abstract function parameter/return value references with wasm local variable references. Unlike amd64, wasm is a stack machine architecture with no registers; parameters are passed directly through the function signature's parameter list.
 

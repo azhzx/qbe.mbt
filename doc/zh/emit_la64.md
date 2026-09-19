@@ -1,6 +1,6 @@
 # `emit_la64` 包接口介绍
 
-包路径: `azhzx/qbe/emit_la64`
+包路径: `azhzx/qbe/target_la64/emit`
 
 LoongArch 64 (la64) GAS 汇编发射。GNU as LoongArch 语法：目的操作数在前、
 寄存器用 `$` 前缀的 ABI 名（`$a0`、`$ft15`…）、内存操作数为 `$base, si12`。

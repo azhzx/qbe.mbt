@@ -1,6 +1,6 @@
 # `abi_wasm` 包接口介绍
 
-包路径: `azhzx/qbe/abi_wasm`
+包路径: `azhzx/qbe/target_wasm/abi`
 
 Wasm ABI 处理。在指令选择前把抽象的函数参数/返回值引用替换为 wasm 的局部变量引用。与 amd64 不同，wasm 是栈机架构，没有寄存器，参数通过函数签名的参数列表直接传递。
 

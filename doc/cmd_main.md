@@ -95,13 +95,13 @@ Each `-d*` flag triggers a dump for the corresponding phase (output to stderr). 
 - `azhzx/qbe/util`
 - `azhzx/qbe/cfg`
 - `azhzx/qbe/ssa`
-- `azhzx/qbe/abi_amd64`
-- `azhzx/qbe/isel`
+- `azhzx/qbe/target_amd64/abi`
+- `azhzx/qbe/target_amd64/isel`
 - `azhzx/qbe/fold`
 - `azhzx/qbe/live`
 - `azhzx/qbe/spill`
 - `azhzx/qbe/rega`
-- `azhzx/qbe/emit_amd64`
-- `azhzx/qbe/abi_wasm` / `azhzx/qbe/isel_wasm` / `azhzx/qbe/emit_wasm`
-- `azhzx/qbe/abi_rv64` / `azhzx/qbe/isel_rv64` / `azhzx/qbe/emit_rv64`
+- `azhzx/qbe/target_amd64/emit`
+- `azhzx/qbe/target_wasm/abi` / `azhzx/qbe/target_wasm/isel` / `azhzx/qbe/target_wasm/emit`
+- `azhzx/qbe/target_rv64/abi` / `azhzx/qbe/target_rv64/isel` / `azhzx/qbe/target_rv64/emit`
 - `moonbitlang/x` (`@fs`), `moonbitlang/async` (`@stdio`), `moonbitlang/core/argparse`

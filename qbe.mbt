@@ -2,8 +2,9 @@
 // azhzx/qbe — a lightweight QBE-style compiler backend in MoonBit.
 //
 // This package exposes a unified compilation entry point on top of the
-// per-stage packages (`lexer`, `parser`, `cfg`, `ssa`, `fold`, `abi_amd64`,
-// `isel`, `live`, `spill`, `rega`, `emit_amd64`).
+// per-stage packages (`lexer`, `parser`, `cfg`, `ssa`, `fold`,
+// `target_amd64/abi`, `target_amd64/isel`, `live`, `spill`, `rega`,
+// `target_amd64/emit`).
 //
 // # Example
 // ```mbt check

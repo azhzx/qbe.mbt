@@ -1,6 +1,6 @@
 # `emit_rv64` Package API Reference
 
-Package path: `azhzx/qbe/emit_rv64`
+Package path: `azhzx/qbe/target_rv64/emit`
 
 RISC-V 64 GAS assembly output. Runs after `isel_rv64` and `spill`/`rega` completion, rendering functions with assigned physical registers into RISC-V assembly text. Corresponds to upstream QBE's `rv64/emit.c`.
 

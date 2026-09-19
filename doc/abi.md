@@ -1,6 +1,6 @@
 # `abi` Package API Reference
 
-Package path: `azhzx/qbe/abi_amd64`
+Package path: `azhzx/qbe/target_amd64/abi`
 
 ABI (Application Binary Interface) processing. Before instruction selection, replaces abstract function parameter/return value references with concrete platform register/stack slot references. The current implementation targets the **amd64_sysv** ABI (System V AMD64 calling convention). Corresponds to `abi.c` + target-specific `amd64/sysv.c` in the original QBE project.
 

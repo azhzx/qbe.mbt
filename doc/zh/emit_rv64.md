@@ -1,6 +1,6 @@
 # `emit_rv64` 包接口介绍
 
-包路径: `azhzx/qbe/emit_rv64`
+包路径: `azhzx/qbe/target_rv64/emit`
 
 RISC-V 64 GAS 汇编输出。在 `isel_rv64` 与 `spill`/`rega` 完成后运行，把已分配
 物理寄存器的函数渲染成 RISC-V 汇编文本，对应上游 QBE 的 `rv64/emit.c`。

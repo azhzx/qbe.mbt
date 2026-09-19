@@ -1,6 +1,6 @@
 # `isel_wasm` Package API Reference
 
-Package path: `azhzx/qbe/isel_wasm`
+Package path: `azhzx/qbe/target_wasm/isel`
 
 Wasm instruction selection. Maps QBE's generic SSA opcodes to wasm's equivalent operations, while handling address mode decomposition and CFG-to-structured control flow conversion.
 

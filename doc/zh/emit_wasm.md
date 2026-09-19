@@ -1,6 +1,6 @@
 # `emit_wasm` 包接口介绍
 
-包路径: `azhzx/qbe/emit_wasm`
+包路径: `azhzx/qbe/target_wasm/emit`
 
 Wasm 汇编输出。将经过指令选择的 SSA 函数转换为 WAT (WebAssembly Text) 格式文本。
 

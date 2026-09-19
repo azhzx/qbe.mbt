@@ -1,6 +1,6 @@
 # `isel_la64` Package API Reference
 
-Package path: `azhzx/qbe/isel_la64`
+Package path: `azhzx/qbe/target_la64/isel`
 
 [中文版本 (Chinese Version)](zh/isel_la64.md)
 

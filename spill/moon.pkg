@@ -10,6 +10,6 @@ import {
   "azhzx/qbe/lexer",
   "azhzx/qbe/ssa",
   "azhzx/qbe/fold",
-  "azhzx/qbe/abi_amd64",
-  "azhzx/qbe/isel",
+  "azhzx/qbe/target_amd64/abi" @abi_amd64,
+  "azhzx/qbe/target_amd64/isel",
 } for "wbtest"
