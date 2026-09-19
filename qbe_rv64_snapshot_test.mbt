@@ -323,8 +323,7 @@ test "e2e rv64: float constant stash" {
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
           #|	add sp, sp, -16
-          #|	lla t6, .Lfp0
-          #|	fld ft0, 0(t6)
+          #|	fld ft0, .Lfp0, t6
           #|	fadd.d fa0, fa0, ft0
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
@@ -342,6 +341,7 @@ test "e2e rv64: float constant stash" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
         ),
       )

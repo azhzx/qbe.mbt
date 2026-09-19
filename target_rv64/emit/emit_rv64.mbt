@@ -384,6 +384,7 @@ fn rv64_emit_load(
   ldname : String,
   dst : String,
   addr : @types.Ref,
+  is_float : Bool,
 ) -> Unit {
   if addr.is_tmp() {
     st.sb.write_string("\t")
@@ -410,14 +411,25 @@ fn rv64_emit_load(
     let con = st.fn_.cons[addr.con_val()]
     match con.kind {
       @types.CAddr => {
-        st.sb.write_string("\tlla t6, ")
-        rv64_emitaddr(st, con)
-        st.sb.write_char('\n')
-        st.sb.write_string("\t")
-        st.sb.write_string(ldname)
-        st.sb.write_string(" ")
-        st.sb.write_string(dst)
-        st.sb.write_string(", 0(t6)\n")
+        if is_float {
+          // C rv64/emit.c %M: float loads from a symbol need a scratch reg.
+          st.sb.write_string("\t")
+          st.sb.write_string(ldname)
+          st.sb.write_string(" ")
+          st.sb.write_string(dst)
+          st.sb.write_string(", ")
+          rv64_emitaddr(st, con)
+          st.sb.write_string(", t6\n")
+        } else {
+          st.sb.write_string("\tlla t6, ")
+          rv64_emitaddr(st, con)
+          st.sb.write_char('\n')
+          st.sb.write_string("\t")
+          st.sb.write_string(ldname)
+          st.sb.write_string(" ")
+          st.sb.write_string(dst)
+          st.sb.write_string(", 0(t6)\n")
+        }
       }
       _ => abort("invalid load address")
     }
@@ -608,7 +620,13 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
     | @types.Loaduw =>
       if i.to.is_tmp() {
         let rn = @types.rv64_reg_name(i.to.tmp_val())
-        rv64_emit_load(st, rv64_load_name(i.op, i.cls), rn, i.arg1)
+        rv64_emit_load(
+          st,
+          rv64_load_name(i.op, i.cls),
+          rn,
+          i.arg1,
+          i.cls.base() == 1,
+        )
       }
     @types.Stored
     | @types.Stores
