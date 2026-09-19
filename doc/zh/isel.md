@@ -31,7 +31,7 @@ pub fn isel(
 文件 [isel/addr.mbt](../isel/addr.mbt) 实现地址模式识别；
 文件 [isel/cmp.mbt](../isel/cmp.mbt) 实现比较 + 跳转模式识别；
 文件 [isel/sel.mbt](../isel/sel.mbt) 实现主要选择逻辑；
-文件 [isel/isel.mbt](../isel/isel.mbt) 为入口。
+文件 [target_amd64/isel](../target_amd64/isel) 为入口。
 
 ## 典型调用
 

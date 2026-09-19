@@ -176,24 +176,24 @@ MoonBit packages organized by compilation pipeline stages (see [doc/](README.md)
 | CFG Analysis | `cfg` | Reverse postorder, predecessors, dominator tree, dominance frontiers, loop depth, alias analysis, jump simplification |
 | SSA Construction | `ssa` | Use chains, memopt, phi insertion, block renaming, loadopt, copy propagation, validity checking |
 | Constant Folding | `fold` | Directly evaluates instructions whose operands are all constants and replaces with references |
-| Wasm ABI | `abi_wasm` | Wasm calling convention: Par/Arg→Nop, Call simplification |
-| Wasm Instruction Selection | `isel_wasm` | Wasm op mapping, address mode decomposition, CFG→structured control flow |
-| Wasm Assembly Output | `emit_wasm` | WAT text format output |
+| Wasm ABI | `target_wasm/abi` | Wasm calling convention: Par/Arg→Nop, Call simplification |
+| Wasm Instruction Selection | `target_wasm/isel` | Wasm op mapping, address mode decomposition, CFG→structured control flow |
+| Wasm Assembly Output | `target_wasm/emit` | WAT text format output |
 | ABI Processing | `abi` | System V AMD64 calling convention: parameter/return registers, stack spilling, vararg |
 | Instruction Selection | `isel` | amd64 instruction patterns: immediates, address modes, division magic numbers, conditional jumps |
 | Liveness Analysis | `live` | Backward data flow to compute in/out, block boundary statistics `nlive_w`/`nlive_d` |
 | Register Spilling | `spill` | Cost-based and loop-weighted spilling point selection, iterates to convergence |
 | Register Allocation | `rega` | Builds interference graph from live sets, greedy coloring |
 | Assembly Output | `emit` | Renders GAS assembly (Linux `.L`/macOS `L`, `_` prefix) |
-| RISC-V ABI | `abi_rv64` | rv64 calling convention: A0–A7 / FA0–FA7 parameters and returns, aggregate type splitting |
-| RISC-V Instruction Selection | `isel_rv64` | rv64 instruction mapping, compare+branch merging |
-| RISC-V Assembly Output | `emit_rv64` | RISC-V GAS text output |
-| LoongArch ABI | `abi_la64` | la64 (LP64D) calling convention: A0-A7 / FA0-FA7 parameters and returns |
-| LoongArch Instruction Selection | `isel_la64` | la64 instruction mapping, comparisons lowered to slt/sltu |
-| LoongArch Assembly Output | `emit_la64` | LoongArch GAS text output (data + float pool) |
-| ARM64 ABI | `abi_arm64` | AAPCS64 calling convention: x0-x7 / v0-v7 parameters, x8 hidden result pointer, HFA, stack args |
-| ARM64 Instruction Selection | `isel_arm64` | arm64 instruction mapping, immediate folding, compare+branch merging |
-| ARM64 Assembly Output | `emit_arm64` | AArch64 GAS text output (reference snapshot syntax) |
+| RISC-V ABI | `target_rv64/abi` | rv64 calling convention: A0–A7 / FA0–FA7 parameters and returns, aggregate type splitting |
+| RISC-V Instruction Selection | `target_rv64/isel` | rv64 instruction mapping, compare+branch merging |
+| RISC-V Assembly Output | `target_rv64/emit` | RISC-V GAS text output |
+| LoongArch ABI | `target_la64/abi` | la64 (LP64D) calling convention: A0-A7 / FA0-FA7 parameters and returns |
+| LoongArch Instruction Selection | `target_la64/isel` | la64 instruction mapping, comparisons lowered to slt/sltu |
+| LoongArch Assembly Output | `target_la64/emit` | LoongArch GAS text output (data + float pool) |
+| ARM64 ABI | `target_arm64/abi` | AAPCS64 calling convention: x0-x7 / v0-v7 parameters, x8 hidden result pointer, HFA, stack args |
+| ARM64 Instruction Selection | `target_arm64/isel` | arm64 instruction mapping, immediate folding, compare+branch merging |
+| ARM64 Assembly Output | `target_arm64/emit` | AArch64 GAS text output (reference snapshot syntax) |
 | SSA Interpreter | `interp` | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | Argument parsing and file I/O (thin shell, calls `@qbe` facade, `-t` selects target) |
 | Library Entry | `.` | Unified compilation API `compile` / `compile_debug` and IR type re-exports |
@@ -293,10 +293,10 @@ Interpreter path (`@qbe.interpret`):
 Provides five targets, selected with `-t` on command line (`amd64_sysv` default), with independent library API entry points (plus `--run` for direct interpretation):
 
 - **amd64_sysv**: `abi` phase replaces abstract `Arg`/`Par`/`Ret*` with concrete register/stack slot references; aggregate types follow System V rules for register vs memory; outputs two GAS styles (Linux `.L` / macOS `L` + `_` prefix, selected with `-G`). Has complete 406-case differential regression.
-- **wasm**: `abi_wasm` phase replaces `Par`/`Arg` instructions with `Nop` (parameters passed directly via local variables), simplifies `Call` references; `isel_wasm` does instruction mapping then skips register allocation (wasm is stack machine, no physical registers), `emit_wasm` outputs WAT text format. wasm32 pointer width is 32 bits (`Km = Kw`), no `Kl` type.
-- **rv64**: `abi_rv64` lowers parameters to `A0–A7` / `FA0–FA7` per RISC-V calling convention, returns via `A0`/`A1` / `FA0`/`FA1`; `isel_rv64` maps IL instructions to RISC-V instructions (compare + branch merged directly, no flags, no magic number division, no complex addressing); then runs `spill`/`rega` same as amd64 — target differences switched at runtime via `types.TargetCfg` (`init_amd64_target()` / `init_rv64_target()`), `emit_rv64` outputs RISC-V GAS assembly (`fp`/`ra` frame chain, 16-byte stack alignment).
-- **la64**: `abi_la64` lowers parameters to `A0-A7` / `FA0-FA7` per the LoongArch LP64D psABI; `isel_la64` lowers comparisons to `slt`/`sltu` sequences (no flags) and materializes constants; `emit_la64` outputs LoongArch GAS assembly with data sections and the floating-point constant pool. Reuses `spill`/`rega` via `init_la64_target()`.
-- **arm64**: `abi_arm64` lowers parameters to `x0-x7` / `v0-v7` per AAPCS64 (ELF), returns via `x0`/`x1` / `v0-v3`, and passes aggregates through HFAs, GP blocks or an `x8` hidden pointer; `isel_arm64` folds immediates and merges comparisons into flags branches; `emit_arm64` outputs AArch64 GAS (reference snapshot syntax: indirect `blr`, `.L` labels, `mov`/`movk` constants). Reuses `spill`/`rega` via `init_arm64_target()`. Validated byte-for-byte against `vendor/qbe/qbe -t arm64` (5684/5684 IR dumps, 406/406 assembly).
+- **wasm**: `target_wasm/abi` phase replaces `Par`/`Arg` instructions with `Nop` (parameters passed directly via local variables), simplifies `Call` references; `target_wasm/isel` does instruction mapping then skips register allocation (wasm is stack machine, no physical registers), `target_wasm/emit` outputs WAT text format. wasm32 pointer width is 32 bits (`Km = Kw`), no `Kl` type.
+- **rv64**: `target_rv64/abi` lowers parameters to `A0–A7` / `FA0–FA7` per RISC-V calling convention, returns via `A0`/`A1` / `FA0`/`FA1`; `target_rv64/isel` maps IL instructions to RISC-V instructions (compare + branch merged directly, no flags, no magic number division, no complex addressing); then runs `spill`/`rega` same as amd64 — target differences switched at runtime via `types.TargetCfg` (`init_amd64_target()` / `init_rv64_target()`), `target_rv64/emit` outputs RISC-V GAS assembly (`fp`/`ra` frame chain, 16-byte stack alignment).
+- **la64**: `target_la64/abi` lowers parameters to `A0-A7` / `FA0-FA7` per the LoongArch LP64D psABI; `target_la64/isel` lowers comparisons to `slt`/`sltu` sequences (no flags) and materializes constants; `target_la64/emit` outputs LoongArch GAS assembly with data sections and the floating-point constant pool. Reuses `spill`/`rega` via `init_la64_target()`.
+- **arm64**: `target_arm64/abi` lowers parameters to `x0-x7` / `v0-v7` per AAPCS64 (ELF), returns via `x0`/`x1` / `v0-v3`, and passes aggregates through HFAs, GP blocks or an `x8` hidden pointer; `target_arm64/isel` folds immediates and merges comparisons into flags branches; `target_arm64/emit` outputs AArch64 GAS (reference snapshot syntax: indirect `blr`, `.L` labels, `mov`/`movk` constants). Reuses `spill`/`rega` via `init_arm64_target()`. Validated byte-for-byte against `vendor/qbe/qbe -t arm64` (5684/5684 IR dumps, 406/406 assembly).
 - **interp**: `@qbe.interpret` executes pre-isel IR directly - flat little-endian memory, data-segment layout with symbol refs, function pointers, recursion, a pure-MoonBit builtin runtime, and an injectable external hook (the analogue of LLVM ORC's symbol resolution).
 
 Targets compared:
@@ -313,7 +313,7 @@ Targets compared:
 
 - Command-line `-d <flags>` provides per-stage dumps (`-dP` parse, `-dM` memopt, `-dN` SSA, `-dC` copy, `-dF` fold, `-dA` abi, `-dI` isel, `-dL` live, `-dS` spill, `-dR` rega), combinable; when debug is enabled, assembly is not output. Library entry `compile_debug(text, flags)` returns the same dump text.
 - Tests in three layers:
-  - **Unit/whitebox tests** `*_wbtest.mbt`: Cover all compilation pipeline packages — `types` (BSet/Con/Ref/Op/Class/Jump etc.), `util` (Interner/formatting), `lexer`, `parser`, `cfg` (dominator tree/loop/jump simplification), `ssa` (phi insertion/copy/memopt), `fold`, `live`, `abi`/`abi_wasm`/`abi_rv64`/`abi_la64`/`abi_arm64`, `isel`/`isel_wasm`/`isel_rv64`/`isel_la64`/`isel_arm64`, `spill`, `rega`, `emit`/`emit_wasm`/`emit_rv64`/`emit_la64`/`emit_arm64`, `interp`, `cmd/main`;
+  - **Unit/whitebox tests** `*_wbtest.mbt`: Cover all compilation pipeline packages — `types` (BSet/Con/Ref/Op/Class/Jump etc.), `util` (Interner/formatting), `lexer`, `parser`, `cfg` (dominator tree/loop/jump simplification), `ssa` (phi insertion/copy/memopt), `fold`, `live`, `abi`/`target_wasm/abi`/`target_rv64/abi`/`target_la64/abi`/`target_arm64/abi`, `isel`/`target_wasm/isel`/`target_rv64/isel`/`target_la64/isel`/`target_arm64/isel`, `spill`, `rega`, `emit`/`target_wasm/emit`/`target_rv64/emit`/`target_la64/emit`/`target_arm64/emit`, `interp`, `cmd/main`;
   - **Blackbox tests** `qbe_test.mbt` + `qbe_snapshot_test.mbt` (+ `qbe_rv64_snapshot_test.mbt` / `qbe_la64_snapshot_test.mbt` / `qbe_arm64_snapshot_test.mbt`): Directly call `@qbe.compile*` / `@qbe.compile*_debug`, covering end-to-end compilation (arithmetic, floating-point, memory, recursion, loop phi) and error paths; `qbe_snapshot_test.mbt` generated by `python tools/gen_snapshot_mbt.py` from `test/` categories, anchored with `inspect` snapshots;
   - **Differential regression**: `test/*.ssa` (406 cases) compared byte-by-byte with reference qbe binary (`vendor/qbe` pinned snapshot, built with `make -C vendor/qbe`) (`python compare.py`, can specify other binary with `QBE_REF`). arm64: `python compare.py --target arm64` (5684/5684) and `--target arm64 --asm` (406/406), plus `python tools/check_arm64_asm.py` (clang aarch64 assemblability gate).
 - Run: `moon test`; update snapshots: `moon test --update`; coverage: `moon coverage analyze`.

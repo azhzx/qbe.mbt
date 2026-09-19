@@ -148,6 +148,43 @@ fn Interp::eval_op(
   b : Int64,
 ) -> Int64 raise {
   let is_word = k == @types.Kw
+  // Conversions are dispatched by their result class, not the source
+  // floating-point class.
+  match op {
+    @types.Stosi => {
+      let v = bits_to_single(a).to_double().to_int64()
+      return if is_word { sext32(v) } else { v }
+    }
+    @types.Dtosi => {
+      let v = bits_to_double(a).to_int().to_int64()
+      return if is_word { sext32(v) } else { v }
+    }
+    @types.Exts => return bits_to_single(a).to_double().reinterpret_as_int64()
+    @types.Truncd =>
+      return Float::from_double(bits_to_double(a))
+        .reinterpret_as_uint()
+        .to_int64()
+    _ => ()
+  }
+  match op {
+    @types.Ceqs
+    | @types.Cnes
+    | @types.Cles
+    | @types.Clts
+    | @types.Cges
+    | @types.Cgts
+    | @types.Cos
+    | @types.Cuos => return self.eval_float_op(op, @types.Ks, a, b)
+    @types.Ceqd
+    | @types.Cned
+    | @types.Cled
+    | @types.Cltd
+    | @types.Cged
+    | @types.Cgtd
+    | @types.Cod
+    | @types.Cuod => return self.eval_float_op(op, @types.Kd, a, b)
+    _ => ()
+  }
   if k.base() == 1 {
     return self.eval_float_op(op, k, a, b)
   }
@@ -300,27 +337,6 @@ fn Interp::eval_op(
     | @types.Cod
     | @types.Cuod => self.eval_float_op(op, k, a, b)
     // conversions
-    @types.Stosi =>
-      if is_word {
-        sext32(bits_to_single(a).to_double().to_int().to_int64())
-      } else {
-        bits_to_single(a).to_double().to_int64()
-      }
-    @types.Dtosi =>
-      if is_word {
-        sext32(bits_to_double(a).to_int().to_int64())
-      } else {
-        bits_to_double(a).to_int64()
-      }
-    // Swtof/Sltof and the float comparisons are handled by eval_float_op,
-    // which is reached through the float-class dispatch above.
-    @types.Exts =>
-      // single -> double: reinterpret the low 32 bits as a float, then
-      // widen (the raw double bits become the result)
-      bits_to_single(a).to_double().reinterpret_as_int64()
-    @types.Truncd =>
-      // double -> single: keep the low 32 bits of the float bit pattern
-      Float::from_double(bits_to_double(a)).reinterpret_as_uint().to_int64()
     @types.Cast => a
     _ =>
       raise @util.QbeError::CompileError(

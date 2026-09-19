@@ -33,7 +33,7 @@ Return value follows `ssa.copy`/`abi.abi` convention: debug mode (`Bool = true`)
 File [isel/addr.mbt](../isel/addr.mbt) implements address mode recognition;
 File [isel/cmp.mbt](../isel/cmp.mbt) implements compare + jump pattern recognition;
 File [isel/sel.mbt](../isel/sel.mbt) implements main selection logic;
-File [isel/isel.mbt](../isel/isel.mbt) is the entry point.
+File [target_amd64/isel](../target_amd64/isel) is the entry point.
 
 ## Typical Calls
 

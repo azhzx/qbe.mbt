@@ -15,24 +15,24 @@
 | CFG 分析 | `cfg` | [cfg.md](cfg.md) | 前驱、支配者、支配边界、循环、别名 |
 | SSA 构造 | `ssa` | [ssa.md](ssa.md) | 使用链、phi 插入、memopt/loadopt/copy |
 | 常量折叠 | `fold` | [fold.md](fold.md) | 常量指令求值 |
-| Wasm ABI | `abi_wasm` | [abi_wasm.md](abi_wasm.md) | wasm 调用约定：Par/Arg→Nop，Call 简化 |
-| Wasm 指令选择 | `isel_wasm` | [isel_wasm.md](isel_wasm.md) | wasm op 映射、地址模式分解、CFG→结构化控制流 |
-| Wasm 汇编输出 | `emit_wasm` | [emit_wasm.md](emit_wasm.md) | WAT 文本格式输出 |
-| ABI 处理 | `abi` | [abi.md](abi.md) | 参数/返回值的平台 ABI |
-| 指令选择 | `isel` | [isel.md](isel.md) | amd64 指令模式选择 |
+| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | wasm 调用约定：Par/Arg→Nop，Call 简化 |
+| Wasm 指令选择 | `target_wasm/isel` | [isel_wasm.md](isel_wasm.md) | wasm op 映射、地址模式分解、CFG→结构化控制流 |
+| Wasm 汇编输出 | `target_wasm/emit` | [emit_wasm.md](emit_wasm.md) | WAT 文本格式输出 |
+| ABI 处理 | `target_amd64/abi` | [abi.md](abi.md) | 参数/返回值的平台 ABI |
+| 指令选择 | `target_amd64/isel` | [isel.md](isel.md) | amd64 指令模式选择 |
 | 活跃分析 | `live` | [live.md](live.md) | in/out 活跃集合 |
 | 寄存器溢出 | `spill` | [spill.md](spill.md) | 寄存器压力下的栈溢出 |
 | 寄存器分配 | `rega` | [rega.md](rega.md) | 虚拟 → 物理寄存器 |
-| 汇编输出 | `emit` | [emit.md](emit.md) | 渲染 GAS 汇编 |
-| RISC-V ABI | `abi_rv64` | [abi_rv64.md](abi_rv64.md) | rv64 调用约定：A0-A7/FA0-FA7 参数与返回 |
-| RISC-V 指令选择 | `isel_rv64` | [isel_rv64.md](isel_rv64.md) | rv64 指令映射、比较+分支合并 |
-| RISC-V 汇编输出 | `emit_rv64` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS 文本输出 |
-| LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64（LP64D）调用约定：A0-A7/FA0-FA7 参数与返回 |
-| LoongArch 指令选择 | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 指令映射、比较指令降低为 slt/sltu |
-| LoongArch 汇编输出 | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS 文本输出（含数据段与浮点常量池） |
-| ARM64 ABI | `abi_arm64` | [abi_arm64.md](abi_arm64.md) | AAPCS64：x0-x7/v0-v7 参数、x8 隐藏结果指针、HFA、栈参数 |
-| ARM64 指令选择 | `isel_arm64` | [isel_arm64.md](isel_arm64.md) | arm64 指令映射、立即数折叠、比较+分支合并 |
-| ARM64 汇编输出 | `emit_arm64` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS 文本输出（参考快照语法） |
+| 汇编输出 | `target_amd64/emit` | [emit.md](emit.md) | 渲染 GAS 汇编 |
+| RISC-V ABI | `target_rv64/abi` | [abi_rv64.md](abi_rv64.md) | rv64 调用约定：A0-A7/FA0-FA7 参数与返回 |
+| RISC-V 指令选择 | `target_rv64/isel` | [isel_rv64.md](isel_rv64.md) | rv64 指令映射、比较+分支合并 |
+| RISC-V 汇编输出 | `target_rv64/emit` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS 文本输出 |
+| LoongArch ABI | `target_la64/abi` | [abi_la64.md](abi_la64.md) | la64（LP64D）调用约定：A0-A7/FA0-FA7 参数与返回 |
+| LoongArch 指令选择 | `target_la64/isel` | [isel_la64.md](isel_la64.md) | la64 指令映射、比较指令降低为 slt/sltu |
+| LoongArch 汇编输出 | `target_la64/emit` | [emit_la64.md](emit_la64.md) | LoongArch GAS 文本输出（含数据段与浮点常量池） |
+| ARM64 ABI | `target_arm64/abi` | [abi_arm64.md](abi_arm64.md) | AAPCS64：x0-x7/v0-v7 参数、x8 隐藏结果指针、HFA、栈参数 |
+| ARM64 指令选择 | `target_arm64/isel` | [isel_arm64.md](isel_arm64.md) | arm64 指令映射、立即数折叠、比较+分支合并 |
+| ARM64 汇编输出 | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS 文本输出（参考快照语法） |
 | SSA 解释器 | `interp` | [interp.md](interp.md) | 直接执行 pre-isel IR，内置可移植运行时 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
 

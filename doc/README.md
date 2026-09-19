@@ -19,24 +19,24 @@ Packages are listed in compilation pipeline order:
 | CFG Analysis | `cfg` | [cfg.md](cfg.md) | Predecessors, dominators, dominance frontiers, loops, aliasing |
 | SSA Construction | `ssa` | [ssa.md](ssa.md) | Use chains, phi insertion, memopt/loadopt/copy |
 | Constant Folding | `fold` | [fold.md](fold.md) | Constant instruction evaluation |
-| Wasm ABI | `abi_wasm` | [abi_wasm.md](abi_wasm.md) | Wasm calling convention: Par/Arg→Nop, Call simplification |
-| Wasm Instruction Selection | `isel_wasm` | [isel_wasm.md](isel_wasm.md) | Wasm op mapping, address mode decomposition, CFG→structured control flow |
-| Wasm Assembly Output | `emit_wasm` | [emit_wasm.md](emit_wasm.md) | WAT text format output |
-| ABI Processing | `abi` | [abi.md](abi.md) | Platform-specific ABI for parameters/return values |
-| Instruction Selection | `isel` | [isel.md](isel.md) | amd64 instruction pattern selection |
+| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | Wasm calling convention: Par/Arg→Nop, Call simplification |
+| Wasm Instruction Selection | `target_wasm/isel` | [isel_wasm.md](isel_wasm.md) | Wasm op mapping, address mode decomposition, CFG→structured control flow |
+| Wasm Assembly Output | `target_wasm/emit` | [emit_wasm.md](emit_wasm.md) | WAT text format output |
+| ABI Processing | `target_amd64/abi` | [abi.md](abi.md) | Platform-specific ABI for parameters/return values |
+| Instruction Selection | `target_amd64/isel` | [isel.md](isel.md) | amd64 instruction pattern selection |
 | Liveness Analysis | `live` | [live.md](live.md) | in/out live sets |
 | Register Spilling | `spill` | [spill.md](spill.md) | Stack spilling under register pressure |
 | Register Allocation | `rega` | [rega.md](rega.md) | Virtual → physical registers |
-| Assembly Output | `emit` | [emit.md](emit.md) | Render GAS assembly |
-| RISC-V ABI | `abi_rv64` | [abi_rv64.md](abi_rv64.md) | rv64 calling convention: A0-A7/FA0-FA7 parameters and returns |
-| RISC-V Instruction Selection | `isel_rv64` | [isel_rv64.md](isel_rv64.md) | rv64 instruction mapping, compare+branch merging |
-| RISC-V Assembly Output | `emit_rv64` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS text output |
-| LoongArch ABI | `abi_la64` | [abi_la64.md](abi_la64.md) | la64 (LP64D) calling convention: A0-A7/FA0-FA7 parameters and returns |
-| LoongArch Instruction Selection | `isel_la64` | [isel_la64.md](isel_la64.md) | la64 instruction mapping, comparison lowering to slt/sltu |
-| LoongArch Assembly Output | `emit_la64` | [emit_la64.md](emit_la64.md) | LoongArch GAS text output (data + float pool) |
-| ARM64 ABI | `abi_arm64` | [abi_arm64.md](abi_arm64.md) | AAPCS64: x0-x7/v0-v7 parameters, x8 hidden result pointer, HFA, stack args |
-| ARM64 Instruction Selection | `isel_arm64` | [isel_arm64.md](isel_arm64.md) | arm64 instruction mapping, immediate folding, compare+branch merging |
-| ARM64 Assembly Output | `emit_arm64` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS text output (reference snapshot syntax) |
+| Assembly Output | `target_amd64/emit` | [emit.md](emit.md) | Render GAS assembly |
+| RISC-V ABI | `target_rv64/abi` | [abi_rv64.md](abi_rv64.md) | rv64 calling convention: A0-A7/FA0-FA7 parameters and returns |
+| RISC-V Instruction Selection | `target_rv64/isel` | [isel_rv64.md](isel_rv64.md) | rv64 instruction mapping, compare+branch merging |
+| RISC-V Assembly Output | `target_rv64/emit` | [emit_rv64.md](emit_rv64.md) | RISC-V GAS text output |
+| LoongArch ABI | `target_la64/abi` | [abi_la64.md](abi_la64.md) | la64 (LP64D) calling convention: A0-A7/FA0-FA7 parameters and returns |
+| LoongArch Instruction Selection | `target_la64/isel` | [isel_la64.md](isel_la64.md) | la64 instruction mapping, comparison lowering to slt/sltu |
+| LoongArch Assembly Output | `target_la64/emit` | [emit_la64.md](emit_la64.md) | LoongArch GAS text output (data + float pool) |
+| ARM64 ABI | `target_arm64/abi` | [abi_arm64.md](abi_arm64.md) | AAPCS64: x0-x7/v0-v7 parameters, x8 hidden result pointer, HFA, stack args |
+| ARM64 Instruction Selection | `target_arm64/isel` | [isel_arm64.md](isel_arm64.md) | arm64 instruction mapping, immediate folding, compare+branch merging |
+| ARM64 Assembly Output | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS text output (reference snapshot syntax) |
 | SSA Interpreter | `interp` | [interp.md](interp.md) | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | [cmd_main.md](cmd_main.md) | Command-line arguments and pipeline orchestration |
 
