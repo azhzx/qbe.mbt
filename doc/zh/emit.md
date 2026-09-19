@@ -1,6 +1,6 @@
 # `emit` 包接口介绍
 
-包路径: `azhzx/qbe/emit`
+包路径: `azhzx/qbe/emit_amd64`
 
 汇编输出。在寄存器分配之后，把 `Fn` 渲染为目标平台的 GAS 汇编（GNU Assembler 语法）。对应 QBE 原项目的 `amd64/emit.c` + `gas.c`。
 

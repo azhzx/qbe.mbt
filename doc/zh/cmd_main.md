@@ -4,7 +4,8 @@
 
 CLI 入口。读取命令行参数，调度各阶段，输出汇编或调试 dump。对应 QBE 原项目的 `main.c`。
 
-CLI 支持三个目标：`amd64_sysv`（默认）、`wasm`、`rv64`，通过 `-t` 选择；
+CLI 支持 `amd64_sysv`（默认）、`wasm`、`rv64`、`la64` 和 `arm64`，通过 `-t` 选择；
+编译统一通过 `@qbe.compile_target` 和 `@qbe.compile_target_debug` 分发。
 分别调用库入口 `@qbe.compile` / `@qbe.compile_wasm` / `@qbe.compile_rv64`。
 
 ## 命令行接口
@@ -14,7 +15,7 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     -h          prints this help
     -o file     output to file
     -t <target> generate for a target among:
-                amd64_sysv (default), wasm, rv64
+                amd64_sysv (default), wasm, rv64, la64, arm64
     -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
 ```
@@ -85,13 +86,13 @@ parse → fillrpo → fillpreds → filluse → memopt
 - `azhzx/qbe/util`
 - `azhzx/qbe/cfg`
 - `azhzx/qbe/ssa`
-- `azhzx/qbe/abi`
+- `azhzx/qbe/abi_amd64`
 - `azhzx/qbe/isel`
 - `azhzx/qbe/fold`
 - `azhzx/qbe/live`
 - `azhzx/qbe/spill`
 - `azhzx/qbe/rega`
-- `azhzx/qbe/emit`
+- `azhzx/qbe/emit_amd64`
 - `azhzx/qbe/abi_wasm` / `azhzx/qbe/isel_wasm` / `azhzx/qbe/emit_wasm`
 - `azhzx/qbe/abi_rv64` / `azhzx/qbe/isel_rv64` / `azhzx/qbe/emit_rv64`
 - `moonbitlang/x` (`@fs`)、`moonbitlang/async` (`@stdio`)、`moonbitlang/core/argparse`

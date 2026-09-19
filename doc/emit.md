@@ -1,6 +1,6 @@
 # `emit` Package API Reference
 
-Package path: `azhzx/qbe/emit`
+Package path: `azhzx/qbe/emit_amd64`
 
 Assembly Output. After register allocation, renders `Fn` to the target platform's GAS assembly (GNU Assembler syntax). Corresponds to `amd64/emit.c` + `gas.c` in the original QBE project.
 

@@ -49,7 +49,7 @@ pub fn abi_rv64(
 
 ## 与其它后端 ABI 的区别
 
-| 特性 | amd64_sysv (`abi`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
+| 特性 | amd64_sysv (`abi_amd64`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
 |------|--------------------|--------------------|-------------------|
 | 整数参数 | RDI,RSI,RDX,RCX,R8,R9 | 函数签名参数 | A0–A7 |
 | 浮点参数 | XMM0–XMM7 | 函数签名参数 | FA0–FA7 |

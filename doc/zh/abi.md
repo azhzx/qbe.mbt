@@ -1,6 +1,6 @@
 # `abi` 包接口介绍
 
-包路径: `azhzx/qbe/abi`
+包路径: `azhzx/qbe/abi_amd64`
 
 ABI (Application Binary Interface) 处理。在指令选择前把抽象的函数参数/返回值引用替换为具体平台的寄存器/栈槽引用。当前实现针对 **amd64_sysv** ABI（System V AMD64 调用约定）。对应 QBE 原项目的 `abi.c` + 目标特定 `amd64/sysv.c`。
 

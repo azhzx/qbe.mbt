@@ -2,7 +2,7 @@
 // QBE compiler backend - MoonBit implementation
 // Entry point for the CLI. A thin wrapper over the `@qbe` library API: it
 // handles argument parsing and file I/O, and delegates the pipeline to the
-// selected target backend (amd64_sysv, wasm, rv64, or la64).
+// selected target backend (amd64_sysv, wasm, rv64, la64, or arm64).
 
 ///|
 // CLI command specification. @argparse auto-generates -h/--help from this.
@@ -104,113 +104,32 @@ async fn process_file(
       return ""
     }
   }
-  match target {
-    "wasm" =>
-      if flags != "" {
-        match @qbe.compile_wasm_debug(source, flags) {
-          Ok(dump) => {
-            @util.eprint(dump)
-            ""
-          }
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      } else {
-        match @qbe.compile_wasm(source) {
-          Ok(wat) => wat
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
+  let backend = match target {
+    "wasm" => @qbe.Target::Wasm32
+    "rv64" => @qbe.Target::Rv64
+    "la64" => @qbe.Target::La64
+    "arm64" => @qbe.Target::Arm64
+    _ => @qbe.Target::Amd64Sysv
+  }
+  if flags != "" {
+    match @qbe.compile_target_debug(source, backend, flags) {
+      Ok(dump) => {
+        @util.eprint(dump)
+        ""
       }
-    "rv64" =>
-      if flags != "" {
-        match @qbe.compile_rv64_debug(source, flags) {
-          Ok(dump) => {
-            @util.eprint(dump)
-            ""
-          }
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      } else {
-        match @qbe.compile_rv64(source) {
-          Ok(assembly) => assembly
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
+      Err(e) => {
+        @util.eprint(format_qbe_error(e) + "\n")
+        ""
       }
-    "la64" =>
-      if flags != "" {
-        match @qbe.compile_la64_debug(source, flags) {
-          Ok(dump) => {
-            @util.eprint(dump)
-            ""
-          }
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      } else {
-        match @qbe.compile_la64(source, gas~) {
-          Ok(assembly) => assembly
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
+    }
+  } else {
+    match @qbe.compile_target(source, backend, gas~) {
+      Ok(assembly) => assembly
+      Err(e) => {
+        @util.eprint(format_qbe_error(e) + "\n")
+        ""
       }
-    "arm64" =>
-      if flags != "" {
-        match @qbe.compile_arm64_debug(source, flags) {
-          Ok(dump) => {
-            @util.eprint(dump)
-            ""
-          }
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      } else {
-        match @qbe.compile_arm64(source, gas~) {
-          Ok(assembly) => assembly
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      }
-    _ =>
-      // amd64_sysv (default)
-      if flags != "" {
-        match @qbe.compile_debug(source, flags) {
-          Ok(dump) => {
-            @util.eprint(dump)
-            ""
-          }
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      } else {
-        match @qbe.compile(source, gas~) {
-          Ok(assembly) => assembly
-          Err(e) => {
-            @util.eprint(format_qbe_error(e) + "\n")
-            ""
-          }
-        }
-      }
+    }
   }
 }
 
