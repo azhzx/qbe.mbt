@@ -145,7 +145,7 @@ test "arm64 emit: vararg prologue saves the argument registers" {
   let (f, interner, typs) = arm64_emit_parse_pipeline(src)
   let asm = emit_arm64(f, interner, typs)
   assert_true(asm.contains("\tstr\tq7, [sp, -16]!\n"))
-  assert_true(asm.contains("\tstr\tx0, [sp, -8]!\n"))
+  assert_true(asm.contains("\tstp\tx0, x1, [sp, -16]!\n"))
   assert_true(asm.contains("\tmov\tx29, sp\n"))
   assert_true(asm.contains("\tret\n"))
 }

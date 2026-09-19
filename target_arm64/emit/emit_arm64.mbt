@@ -360,6 +360,11 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
             sb.write_string("[")
             sb.write_string(arm64_rname(r.tmp_val(), @types.Kl))
             sb.write_string("]")
+          } else if r.is_slot() {
+            // C arm64/emit.c %M RSlot: [x29, slot]
+            sb.write_string("[x29, ")
+            sb.write_string(arm64_slot(st, r.slot_val()).to_string())
+            sb.write_string("]")
           } else {
             raise @util.QbeError::Ice("todo (arm emit): unhandled ref")
           }
@@ -479,10 +484,15 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
       sb.write_string(n.to_string())
       sb.write_string(", [sp, -16]!\n")
     }
-    for n in 7>=..0 {
-      sb.write_string("\tstr\tx")
-      sb.write_string(n.to_string())
-      sb.write_string(", [sp, -8]!\n")
+    let mut gp = 7
+    while gp >= 0 {
+      // C: stp x(n-1), xn, [sp, -16]! for n = 7,5,3,1
+      sb.write_string("\tstp\tx")
+      sb.write_string((gp - 1).to_string())
+      sb.write_string(", x")
+      sb.write_string(gp.to_string())
+      sb.write_string(", [sp, -16]!\n")
+      gp = gp - 2
     }
   }
 
