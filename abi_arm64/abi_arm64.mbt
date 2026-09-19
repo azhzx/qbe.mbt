@@ -1,6 +1,6 @@
 ///|
 // ARM64 (AArch64) ABI lowering - AAPCS64, ELF flavor.
-// Ported 1:1 from tools/qbe-ref/arm64/abi.c (C arm64_abi): argsclass/
+// Ported 1:1 from vendor/qbe/arm64/abi.c (C arm64_abi): argsclass/
 // typclass/selpar/selcall/selret/selvaarg/selvastart keep the same structure
 // and logic as the C functions so the two can be reviewed side by side.
 //

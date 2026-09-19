@@ -1,6 +1,6 @@
 ///|
 // ARM64 (AArch64) GAS assembly emission - ported 1:1 from
-// tools/qbe-ref/arm64/emit.c. Emits the reference snapshot's syntax: bare
+// vendor/qbe/arm64/emit.c. Emits the reference snapshot's syntax: bare
 // `xN`/`vN`/`sp` register names, `[base, offset]` memory operands, indirect
 // `blr` calls and `.L<id>` local labels.
 

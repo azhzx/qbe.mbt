@@ -25,7 +25,10 @@ test "format_qbe_error: internal errors are marked as ICE" {
 
 ///|
 test "parse_run_spec: integers, floats and entry name" {
-  let (name, args) = parse_run_spec("fact,10,-2,1.5,s_0.25")
+  let (name, args) = match parse_run_spec("fact,10,-2,1.5,s_0.25") {
+    Ok(spec) => spec
+    Err(msg) => fail(msg)
+  }
   assert_eq(name, "fact")
   assert_eq(args.length(), 4)
   match args[0] {
@@ -48,7 +51,26 @@ test "parse_run_spec: integers, floats and entry name" {
 
 ///|
 test "parse_run_spec: bare entry name has no args" {
-  let (name, args) = parse_run_spec("main")
+  let (name, args) = match parse_run_spec("main") {
+    Ok(spec) => spec
+    Err(msg) => fail(msg)
+  }
   assert_eq(name, "main")
   assert_eq(args.length(), 0)
+}
+
+///|
+test "parse_run_spec: invalid numbers are rejected" {
+  match parse_run_spec("main,not-a-number") {
+    Err(msg) => assert_true(msg.contains("invalid") || msg.contains("argument"))
+    Ok(_) => fail("expected invalid number to be rejected")
+  }
+}
+
+///|
+test "parse_run_spec: empty arguments are rejected" {
+  match parse_run_spec("main,") {
+    Err(msg) => assert_true(msg.contains("empty argument"))
+    Ok(_) => fail("expected empty argument to be rejected")
+  }
 }

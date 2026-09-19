@@ -1,6 +1,6 @@
 // End-to-end snapshot tests for the LoongArch64 (la64, LP64D) backend.
 //
-// The reference C QBE (tools/qbe-ref) has no loongarch64 target, so these
+// The reference C QBE (vendor/qbe) has no loongarch64 target, so these
 // snapshots are generated with `moon test --update` and verified by hand
 // against the LoongArch64 ELF psABI and the GNU assembler syntax. Do not
 // edit the `content=` snapshots casually: every change must be justified by

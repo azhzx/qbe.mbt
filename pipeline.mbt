@@ -106,6 +106,54 @@ fn dbg_function(
 }
 
 ///|
+// Run the target-independent frontend and SSA pipeline shared by every
+// backend. Target-specific ABI lowering and instruction selection follow this
+// helper in each backend driver.
+fn run_frontend_passes(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  typs : Array[@types.Typ],
+  dbg : DbFlags,
+  out : StringBuilder,
+) -> Unit raise {
+  if dbg.p {
+    out.write_string("\n> After parsing:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillrpo(fn_)
+  @cfg.fillpreds(fn_)
+  @ssa.filluse(fn_)
+  @ssa.memopt(fn_)
+  if dbg.m {
+    out.write_string("\n> After memory optimization:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.filldom(fn_)
+  if dbg.n {
+    out.write_string("\n> Dominators:\n")
+    dbg_dominators(fn_, out)
+  }
+  @cfg.fillfron(fn_)
+  out.write_string(@live.filllive(fn_, false))
+  @ssa.phiins(fn_)
+  @ssa.renblk(fn_)
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  if dbg.n {
+    out.write_string("\n> After SSA construction:\n")
+    dbg_function(fn_, interner, typs, out)
+  }
+  @cfg.fillloop(fn_)
+  @cfg.fillalias(fn_)
+  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
+  @ssa.filluse(fn_)
+  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+}
+
+///|
 // Run the full compilation pipeline on a function (C func() in main.c).
 // Debug output is appended to `out` according to the flags; in non-debug mode
 // all debug strings are empty so this is silent.
@@ -117,51 +165,9 @@ fn run_passes(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_amd64_target()
-  if dbg.p {
-    out.write_string("\n> After parsing:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  // mem.c: -dM section.
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  // ssa(): filldom + -dN dominators.
-  @cfg.filldom(fn_)
-  if dbg.n {
-    out.write_string("\n> Dominators:\n")
-    dbg_dominators(fn_, out)
-  }
-  @cfg.fillfron(fn_)
-  // C ssa() sets debug['L'] = 0 during ssa, so the pre-abi liveness
-  // analysis is never dumped.
-  out.write_string(@live.filllive(fn_, false))
-  @ssa.phiins(fn_)
-  @ssa.renblk(fn_)
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  // ssa.c: -dN After SSA construction.
-  if dbg.n {
-    out.write_string("\n> After SSA construction:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillloop(fn_)
-  @cfg.fillalias(fn_)
-  // load.c: -dM After load elimination.
-  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  // copy.c: -dC.
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
-  @ssa.filluse(fn_)
-  // fold.c: -dF.
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  run_frontend_passes(fn_, interner, typs, dbg, out)
   // T.abi (sysv.c): -dA.
-  out.write_string(@abi.abi(fn_, typs, dbg.a, interner, typs))
+  out.write_string(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // T.isel (amd64/isel.c): -dI.
@@ -235,13 +241,13 @@ fn emit_module(
       let fn_ = funcs[fi]
       fi = fi + 1
       run_passes(fn_, interner, typs, DbFlags::new(), sb)
-      @emit.emitfn(fn_, interner, gasloc, gassym, sb)
+      @emit_amd64.emitfn(fn_, interner, gasloc, gassym, sb)
       sb.write_string("/* end function \{fn_.name} */\n\n")
     } else {
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit.gasemitdat(d, gasloc, gassym, sb)
+        @emit_amd64.gasemitdat(d, gasloc, gassym, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break
@@ -249,7 +255,7 @@ fn emit_module(
       }
     }
   }
-  @emit.gasemitfin(gasloc, sb)
+  @emit_amd64.gasemitfin(gasloc, sb)
 }
 
 ///|
@@ -263,41 +269,7 @@ fn run_passes_wasm(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
-  if dbg.p {
-    out.write_string("\n> After parsing:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.filldom(fn_)
-  if dbg.n {
-    out.write_string("\n> Dominators:\n")
-    dbg_dominators(fn_, out)
-  }
-  @cfg.fillfron(fn_)
-  out.write_string(@live.filllive(fn_, false))
-  @ssa.phiins(fn_)
-  @ssa.renblk(fn_)
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  if dbg.n {
-    out.write_string("\n> After SSA construction:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillloop(fn_)
-  @cfg.fillalias(fn_)
-  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
-  @ssa.filluse(fn_)
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  run_frontend_passes(fn_, interner, typs, dbg, out)
   // Wasm ABI lowering
   out.write_string(@abi_wasm.abi_wasm(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -336,41 +308,7 @@ fn run_passes_rv64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_rv64_target()
-  if dbg.p {
-    out.write_string("\n> After parsing:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.filldom(fn_)
-  if dbg.n {
-    out.write_string("\n> Dominators:\n")
-    dbg_dominators(fn_, out)
-  }
-  @cfg.fillfron(fn_)
-  out.write_string(@live.filllive(fn_, false))
-  @ssa.phiins(fn_)
-  @ssa.renblk(fn_)
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  if dbg.n {
-    out.write_string("\n> After SSA construction:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillloop(fn_)
-  @cfg.fillalias(fn_)
-  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
-  @ssa.filluse(fn_)
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  run_frontend_passes(fn_, interner, typs, dbg, out)
   // RISC-V ABI lowering
   out.write_string(@abi_rv64.abi_rv64(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -419,41 +357,7 @@ fn run_passes_la64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_la64_target()
-  if dbg.p {
-    out.write_string("\n> After parsing:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.filldom(fn_)
-  if dbg.n {
-    out.write_string("\n> Dominators:\n")
-    dbg_dominators(fn_, out)
-  }
-  @cfg.fillfron(fn_)
-  out.write_string(@live.filllive(fn_, false))
-  @ssa.phiins(fn_)
-  @ssa.renblk(fn_)
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  if dbg.n {
-    out.write_string("\n> After SSA construction:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillloop(fn_)
-  @cfg.fillalias(fn_)
-  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
-  @ssa.filluse(fn_)
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  run_frontend_passes(fn_, interner, typs, dbg, out)
   // LoongArch ABI lowering
   out.write_string(@abi_la64.abi_la64(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -523,41 +427,7 @@ fn run_passes_arm64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_arm64_target()
-  if dbg.p {
-    out.write_string("\n> After parsing:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.filldom(fn_)
-  if dbg.n {
-    out.write_string("\n> Dominators:\n")
-    dbg_dominators(fn_, out)
-  }
-  @cfg.fillfron(fn_)
-  out.write_string(@live.filllive(fn_, false))
-  @ssa.phiins(fn_)
-  @ssa.renblk(fn_)
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  if dbg.n {
-    out.write_string("\n> After SSA construction:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
-  @cfg.fillloop(fn_)
-  @cfg.fillalias(fn_)
-  out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
-  @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
-  @ssa.filluse(fn_)
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  run_frontend_passes(fn_, interner, typs, dbg, out)
   // ARM64 ABI lowering
   out.write_string(@abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -605,7 +475,7 @@ fn emit_arm64_module(
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit.gasemitdat(d, gasloc, gassym, sb)
+        @emit_amd64.gasemitdat(d, gasloc, gassym, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break
@@ -613,5 +483,5 @@ fn emit_arm64_module(
       }
     }
   }
-  @emit.gasemitfin(gasloc, sb)
+  @emit_amd64.gasemitfin(gasloc, sb)
 }

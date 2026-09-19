@@ -2,7 +2,7 @@
 
 包路径: `azhzx/qbe/emit_arm64`
 
-ARM64 (AArch64) GAS 汇编写出。逐行移植自 `tools/qbe-ref/arm64/emit.c`；输出
+ARM64 (AArch64) GAS 汇编写出。逐行移植自 `vendor/qbe/arm64/emit.c`；输出
 裸 `xN`/`vN`/`sp` 寄存器名、`[base, offset]` 内存操作数、间接 `blr` 调用
 以及 `.L<id>` 本地标签。
 
@@ -35,7 +35,7 @@ pub fn arm64_emit_reset() -> Unit
 
 ## 说明
 
-- 通过 `tools/qbe-ref -t arm64` 对 `-G e` 与 `-G m` 均逐字节验证
+- 通过 `vendor/qbe/qbe -t arm64` 对 `-G e` 与 `-G m` 均逐字节验证
   （406/406）。
 - 独立的可汇编性校验脚本：`tools/check_arm64_asm.py`（clang aarch64 集成
   汇编器）。

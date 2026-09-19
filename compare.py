@@ -4,9 +4,12 @@
 For every test file under `test/` (recursively, skipping files starting with
 `_`) and every debug flag set given on the command line (defaults to the
 implemented stages), the debug output (stderr) is diffed line by line against
-`qbe-master/obj_qbe.exe`.
+`vendor/qbe/qbe`.
 
-With `--asm`, the generated assembly (stdout, no debug flags) is compared.
+With `--asm`, the generated assembly (stdout, no debug flags) is compared
+when the reference uses the same target-emission revision. The vendored
+reference currently has different prologue and label policies, so CI uses the
+debug differential suite and the backend-specific assembler gates instead.
 Positional arguments are treated as specific test files in both modes.
 
 Options:
@@ -22,18 +25,19 @@ Usage:
     python compare.py --cat abi
     python compare.py --target arm64 --asm
 """
-import subprocess, glob, os, sys, difflib
+import subprocess, glob, os, sys, difflib, shutil
 from concurrent.futures import ProcessPoolExecutor
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 TESTDIR = os.path.join(ROOT, "test")
 MINE = os.path.join(ROOT, "_build", "native", "debug", "build", "cmd", "main", "main.exe")
+MOON = shutil.which("moon") or os.path.expanduser("~/.moon/bin/moon")
 
 
 def find_qbe_ref():
     """Locate the reference C QBE binary.
 
-    Priority: $QBE_REF -> vendor/qbe build output -> legacy qbe-master binary.
+    Priority: $QBE_REF -> vendor/qbe build output.
     """
     env = os.environ.get("QBE_REF")
     if env:
@@ -42,11 +46,7 @@ def find_qbe_ref():
         sys.exit(f"error: QBE_REF={env} does not exist")
     suffix = ".exe" if os.name == "nt" else ""
     candidates = [
-        # the pinned reference snapshot shipped in tools/qbe-ref (build with
-        # `make -C tools/qbe-ref`, output goes to obj/qbe)
-        os.path.join(ROOT, "tools", "qbe-ref", "obj", "qbe" + suffix),
         os.path.join(ROOT, "vendor", "qbe", "qbe" + suffix),
-        os.path.join(ROOT, "qbe-master", "obj_qbe.exe"),  # legacy local build
     ]
     for c in candidates:
         if os.path.exists(c):
@@ -135,8 +135,15 @@ def main():
         i = rest.index("--target")
         target = rest[i + 1]
         rest = rest[:i] + rest[i + 2:]
+    # The vendored binary defaults to the host target (arm64 on Apple
+    # Silicon), while the MoonBit facade defaults to amd64_sysv. Make the
+    # default explicit so differential tests are host-independent.
+    if target is None:
+        target = "amd64_sysv"
 
-    subprocess.run(["moon", "build", "--target", "native"], cwd=ROOT, check=True)
+    if not os.path.exists(MOON):
+        sys.exit("error: MoonBit CLI not found; install moon or set PATH")
+    subprocess.run([MOON, "build", "--target", "native"], cwd=ROOT, check=True)
 
     # Positional arguments that look like test files are a test subset.
     subset = [a for a in rest if a.endswith(".ssa")]

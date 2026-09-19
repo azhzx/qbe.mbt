@@ -1,6 +1,6 @@
 # `abi` 包接口介绍
 
-包路径: `azhzx/qbe/abi`
+包路径: `azhzx/qbe/abi_amd64`
 
 ABI (Application Binary Interface) 处理。在指令选择前把抽象的函数参数/返回值引用替换为具体平台的寄存器/栈槽引用。当前实现针对 **amd64_sysv** ABI（System V AMD64 调用约定）。对应 QBE 原项目的 `abi.c` + 目标特定 `amd64/sysv.c`。
 
@@ -46,7 +46,7 @@ pub let rclob : Array[Int]    // caller-saved (被调用方可能破坏的) 寄�
 ## 典型调用
 
 ```moonbit
-@util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+@util.eprint(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
 @cfg.fillpreds(fn_)      // ABI 改写了 CFG，需重算
 @ssa.filluse(fn_)        // 也需重算使用链
 ```

@@ -42,7 +42,7 @@ Registers are numbered by tmp id (see `types/target_rv64.mbt`): `T0=1..A7=14`, `
 
 ## Differences from Other Backend ABIs
 
-| Feature | amd64_sysv (`abi`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
+| Feature | amd64_sysv (`abi_amd64`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
 |------|--------------------|--------------------|-------------------|
 | Integer parameters | RDI,RSI,RDX,RCX,R8,R9 | Function signature parameters | A0–A7 |
 | Floating-point parameters | XMM0–XMM7 | Function signature parameters | FA0–FA7 |

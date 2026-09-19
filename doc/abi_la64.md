@@ -45,7 +45,7 @@ convention; alignment above 16 bytes passes by reference (`Cptr`).
 
 ## Notes
 
-- LoongArch64 has no upstream C QBE reference (`tools/qbe-ref` only has
+- LoongArch64 has no upstream C QBE reference (`vendor/qbe` only has
   amd64/arm64), hence no differential baseline; correctness rests on unit
   tests and e2e snapshots (`qbe_la64_snapshot_test.mbt`) hand-verified
   against the LoongArch ELF psABI and the GNU assembler syntax.

@@ -1,6 +1,6 @@
 # `abi` Package API Reference
 
-Package path: `azhzx/qbe/abi`
+Package path: `azhzx/qbe/abi_amd64`
 
 ABI (Application Binary Interface) processing. Before instruction selection, replaces abstract function parameter/return value references with concrete platform register/stack slot references. The current implementation targets the **amd64_sysv** ABI (System V AMD64 calling convention). Corresponds to `abi.c` + target-specific `amd64/sysv.c` in the original QBE project.
 
@@ -48,7 +48,7 @@ These lists share the same data as the identically-named fields in the `types` p
 ## Typical Calls
 
 ```moonbit
-@util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+@util.eprint(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
 @cfg.fillpreds(fn_)      // ABI rewrites CFG, must recompute
 @ssa.filluse(fn_)        // also must recompute use chains
 ```

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "azhzx/qbe/emit"
+package "azhzx/qbe/emit_amd64"
 
 import {
   "azhzx/qbe/types",

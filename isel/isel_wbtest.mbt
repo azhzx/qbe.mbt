@@ -32,7 +32,7 @@ fn isel_parse_frontend(
   let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
-  let _ = @abi.abi(f, typs, false, interner, typs)
+  let _ = @abi_amd64.abi(f, typs, false, interner, typs)
   @cfg.fillpreds(f)
   @ssa.filluse(f)
   (f, interner, typs)

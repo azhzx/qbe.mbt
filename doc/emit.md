@@ -1,6 +1,6 @@
 # `emit` Package API Reference
 
-Package path: `azhzx/qbe/emit`
+Package path: `azhzx/qbe/emit_amd64`
 
 Assembly Output. After register allocation, renders `Fn` to the target platform's GAS assembly (GNU Assembler syntax). Corresponds to `amd64/emit.c` + `gas.c` in the original QBE project.
 
@@ -61,13 +61,13 @@ let sb = StringBuilder::new()
 for item in order {
   if item == "f" {
     run_passes(fn_, interner, typs, dbg)
-    @emit.emitfn(fn_, interner, gasloc, gassym, sb)
+    @emit_amd64.emitfn(fn_, interner, gasloc, gassym, sb)
     sb.write_string("/* end function \{fn_.name} */\n\n")
   } else {
     while di < datas.length() {
       let d = datas[di]
       di = di + 1
-      @emit.gasemitdat(d, gasloc, gassym, sb)
+      @emit_amd64.gasemitdat(d, gasloc, gassym, sb)
       if d.kind == @types.DEnd {
         sb.write_string("/* end data */\n\n")
         break
@@ -75,7 +75,7 @@ for item in order {
     }
   }
 }
-@emit.gasemitfin(gasloc, sb)
+@emit_amd64.gasemitfin(gasloc, sb)
 let asm = sb.to_string()
 ```
 

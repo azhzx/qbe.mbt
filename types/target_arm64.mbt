@@ -1,6 +1,6 @@
 ///|
 // ARM64 (AArch64) target constants, AAPCS64 ABI.
-// Ported 1:1 from tools/qbe-ref/arm64/{all.h, targ.c} (the byte-level
+// Ported 1:1 from vendor/qbe/arm64/{all.h, targ.c} (the byte-level
 // differential oracle). Register tmp ids are renumbered (QBE-style) instead
 // of using the raw machine numbers so that the allocatable ranges stay
 // contiguous.

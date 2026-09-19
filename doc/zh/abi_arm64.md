@@ -4,7 +4,7 @@
 
 ARM64 (AArch64) AAPCS64 ABI 降级（ELF 风格）。在指令选择之前，把抽象的
 参数/返回值引用替换为具体的调用约定寄存器。逐行移植自
-`tools/qbe-ref/arm64/abi.c`。
+`vendor/qbe/arm64/abi.c`。
 
 ## 入口
 
@@ -41,7 +41,7 @@ pub fn abi_arm64(
 
 ## 说明
 
-- 字节级裁判为 `tools/qbe-ref/obj/qbe -t arm64`；IR dump（5684/5684）与汇编
+- 字节级裁判为 `vendor/qbe/qbe -t arm64`；IR dump（5684/5684）与汇编
   （406/406，含 `-G e` 与 `-G m`）均逐字节一致。
 - 仅支持 ELF：参考快照没有 Apple `arm64_apple` 变体，本移植也没有窄参数
   `parsb..paruh`/`argsb..arguh` 形式。

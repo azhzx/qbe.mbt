@@ -5,7 +5,7 @@ Package path: `azhzx/qbe/emit_arm64`
 [中文版本 (Chinese Version)](zh/emit_arm64.md)
 
 ARM64 (AArch64) GAS assembly emission. Ported 1:1 from
-`tools/qbe-ref/arm64/emit.c`; emits bare `xN`/`vN`/`sp` register names,
+`vendor/qbe/arm64/emit.c`; emits bare `xN`/`vN`/`sp` register names,
 `[base, offset]` memory operands, indirect `blr` calls and `.L<id>` local
 labels.
 
@@ -43,7 +43,7 @@ with functions.
 
 ## Notes
 
-- Validated byte-for-byte against `tools/qbe-ref -t arm64` for both
+- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for both
   `-G e` and `-G m` (406/406).
 - An independent assemblability gate is available at
   `tools/check_arm64_asm.py` (clang aarch64 integrated assembler).

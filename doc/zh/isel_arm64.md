@@ -2,7 +2,7 @@
 
 包路径: `azhzx/qbe/isel_arm64`
 
-ARM64 (AArch64) 指令选择。逐行移植自 `tools/qbe-ref/arm64/isel.c`。把抽象
+ARM64 (AArch64) 指令选择。逐行移植自 `vendor/qbe/arm64/isel.c`。把抽象
 操作转换为 arm64 机器操作，并为快速分配分配栈槽。
 
 ## 入口
@@ -33,4 +33,4 @@ pub fn isel_arm64(
 
 - 参考快照的 `Iplo24`/`Inlo24` 分类不影响结果（24 位立即数走物化路径），
   移植保持一致。
-- 通过 `tools/qbe-ref -t arm64`（`-dI` dump）逐字节验证。
+- 通过 `vendor/qbe/qbe -t arm64`（`-dI` dump）逐字节验证。

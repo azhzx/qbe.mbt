@@ -23,7 +23,7 @@ pub fn fold(
 @ssa.copy(fn_, dbg.c, interner, typs)
 @ssa.filluse(fn_)
 @util.eprint(@fold.fold(fn_, dbg.f, interner, typs))   // <- fold
-@util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+@util.eprint(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
 ```
 
 ## Folding Scope
