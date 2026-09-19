@@ -475,14 +475,13 @@ fn rv64_emit_store(
     let con = st.fn_.cons[addr.con_val()]
     match con.kind {
       @types.CAddr => {
-        st.sb.write_string("\tlla t6, ")
-        rv64_emitaddr(st, con)
-        st.sb.write_char('\n')
         st.sb.write_string("\t")
         st.sb.write_string(stname)
         st.sb.write_string(" ")
         st.sb.write_string(val)
-        st.sb.write_string(", 0(t6)\n")
+        st.sb.write_string(", ")
+        rv64_emitaddr(st, con)
+        st.sb.write_string(", t6\n")
       }
       _ => abort("invalid store address")
     }
