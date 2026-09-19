@@ -25,6 +25,9 @@ fn selcmp_swap(
     let r = isel_newtmp(st, k)
     st.buf[idx].arg2 = r
     emit(st, @types.Copy, k, r, arg0, @types.Ref::none())
+    // C: fixarg(&curi->arg[0], k, curi) -- stashes float constants.
+    let cidx = st.buf.length() - 1
+    st.buf[cidx].arg1 = fixarg(st, st.buf[cidx].arg1, k, Some(@types.Copy))
   }
   st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xcmp))
   st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(@types.Xcmp))
@@ -36,8 +39,11 @@ fn selcmp(
   a0 : @types.Ref,
   a1 : @types.Ref,
   k : @types.Class,
+  x : Int,
 ) -> Bool {
-  let swap = a0.is_con()
+  // C cmpswap: float predicates fix the operand order, otherwise swap when
+  // the first operand is a constant.
+  let swap = cmpswap(a0, x)
   selcmp_swap(st, a0, a1, k, swap)
   swap
 }
@@ -230,7 +236,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
         if is_cmp {
           emit(st, flag_op(x), k, i.to, @types.Ref::none(), @types.Ref::none())
           let idx = st.buf.length() - 1
-          if selcmp(st, i.arg1, i.arg2, kc) {
+          if selcmp(st, i.arg1, i.arg2, kc, x) {
             st.buf[idx].op = flag_op(cmpop(x))
           }
         } else {
@@ -374,13 +380,13 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
   let fi = flagi(b.ins, b.ins.length())
   if fi < 0 || !b.ins[fi].to.eq(r) {
     let c0 = @types.Ref::con(st.fn_.get_con(0L))
-    ignore(selcmp(st, r, c0, @types.Kw))
+    ignore(selcmp(st, r, c0, @types.Kw, -1))
     b.jmp.kind = jjf_op(1)
   } else {
     let (is_cmp, k, c) = iscmp(b.ins[fi].op)
     if is_cmp {
       if t >= 0 && st.fn_.tmps[t].nuse == 1 {
-        let c1 = if selcmp(st, b.ins[fi].arg1, b.ins[fi].arg2, k) {
+        let c1 = if selcmp(st, b.ins[fi].arg1, b.ins[fi].arg2, k, c) {
           cmpop(c)
         } else {
           c
