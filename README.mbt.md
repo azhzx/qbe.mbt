@@ -23,3 +23,33 @@
   <img src="https://contrib.rocks/image?repo=azhzx/qbe.mbt" />
 </a>
 Made with [contrib.rocks](https://contrib.rocks).
+
+## Quick start
+
+Clone and bootstrap on macOS or Linux:
+
+```sh
+git clone https://github.com/azhzx/qbe.mbt.git
+cd qbe.mbt
+./scripts/bootstrap.sh
+```
+
+If MoonBit is already installed, use `--skip-install` to avoid installation attempts while still running smoke checks:
+
+```sh
+./scripts/bootstrap.sh --skip-install
+```
+
+To allow automatic MoonBit installation when `moon` is missing:
+
+```sh
+./scripts/bootstrap.sh --install-moon
+```
+
+Documentation:
+
+- [API documentation](doc/README.md)
+- [Developer guide](doc/guide.mbt.md)
+- [Command-line reference](doc/cmd_main.md)
+- [Demos](demo/README.md)
+- [Tests](test/README.md)

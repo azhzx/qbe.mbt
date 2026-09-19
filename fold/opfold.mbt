@@ -180,15 +180,15 @@ fn foldint(
       @types.Extuw => l & 0xFFFFFFFF
       @types.Stosi =>
         if w {
-          con_single(cl).to_double().to_int64()
-        } else {
           sext32(con_single(cl).to_double().to_int().to_int64())
+        } else {
+          con_single(cl).to_double().to_int64()
         }
       @types.Dtosi =>
         if w {
-          con_double(cl).to_int64()
-        } else {
           sext32(con_double(cl).to_int().to_int64())
+        } else {
+          con_double(cl).to_int64()
         }
       @types.Cast => {
         if cl.kind == @types.CAddr {
