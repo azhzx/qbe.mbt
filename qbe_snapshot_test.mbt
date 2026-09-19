@@ -428,7 +428,7 @@ test "e2e emit: 008_data_zero" {
         assembly,
         content=(
           #|.data
-          #|.align 8
+          #|.balign 8
           #|z:
           #|	.byte 1
           #|	.fill 64,1,0
@@ -448,6 +448,7 @@ test "e2e emit: 008_data_zero" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
         ),
       )
@@ -473,14 +474,14 @@ test "e2e emit: 005_data_str" {
         assembly,
         content=(
           #|.data
-          #|.align 8
+          #|.balign 8
           #|s:
           #|	.ascii "hello\n"
           #|	.byte 0
           #|/* end data */
           #|
           #|.data
-          #|.align 8
+          #|.balign 8
           #|s2:
           #|	.ascii "tab\there"
           #|	.byte 0
@@ -499,6 +500,7 @@ test "e2e emit: 005_data_str" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
         ),
       )

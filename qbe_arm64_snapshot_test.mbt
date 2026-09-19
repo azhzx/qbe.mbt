@@ -346,7 +346,7 @@ test "e2e arm64: data section" {
         assembly,
         content=(
           #|.data
-          #|.align 8
+          #|.balign 8
           #|buf:
           #|	.byte 1
           #|	.byte 2
@@ -372,6 +372,7 @@ test "e2e arm64: data section" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
 
         ),

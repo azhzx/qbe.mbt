@@ -733,7 +733,8 @@ pub fn gasemitdat(
     @types.DEnd => ()
     @types.DName => {
       if gasdat_align[0] == 0 {
-        sb.write_string(".align 8\n")
+        // C emitlnk/emitdat use .balign for data alignment.
+        sb.write_string(".balign 8\n")
       }
       if d.is_export {
         sb.write_string(".globl \{gassym}\{d.str}\n")
