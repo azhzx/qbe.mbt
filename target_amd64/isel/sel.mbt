@@ -20,8 +20,10 @@ fn selcmp_swap(
   emit(st, @types.Xcmp, k, @types.Ref::none(), arg1, arg0)
   let idx = st.buf.length() - 1
   if arg0.is_con() {
+    // C selcmp materialises arg[0] and writes it back to the emitted
+    // instruction's second operand (icmp->arg[1]).
     let r = isel_newtmp(st, k)
-    st.buf[idx].arg1 = r
+    st.buf[idx].arg2 = r
     emit(st, @types.Copy, k, r, arg0, @types.Ref::none())
   }
   st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xcmp))
