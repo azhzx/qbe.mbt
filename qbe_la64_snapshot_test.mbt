@@ -119,14 +119,12 @@ test "e2e la64: call and branch" {
           #|	beqz $t0, .L2
           #|.L1:
           #|	li.d $a0, 0
-          #|	addi.d $sp, $fp, 16
-          #|	ld.d $ra, $fp, 8
-          #|	ld.d $fp, $fp, 0
-          #|	ret
+          #|	b .L3
           #|.L2:
           #|	li.d $t0, 1
           #|	sub.w $a0, $a0, $t0
           #|	bl rec
+          #|.L3:
           #|	addi.d $sp, $fp, 16
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
@@ -135,6 +133,7 @@ test "e2e la64: call and branch" {
           #|/* end function rec */
           #|
           #|
+
         ),
       )
     Err(_) => fail("compile_la64 failed")
@@ -182,18 +181,21 @@ test "e2e la64: loop with phi" {
           #|	bnez $t4, .L1
           #|.L2:
           #|	add.w $a0, $t0, $t2
-          #|	addi.d $sp, $fp, 16
-          #|	ld.d $ra, $fp, 8
-          #|	ld.d $fp, $fp, 0
-          #|	ret
+          #|	b .L4
           #|.L3:
           #|	li.d $t3, 0
           #|	li.d $t1, 0
           #|	b .L1
+          #|.L4:
+          #|	addi.d $sp, $fp, 16
+          #|	ld.d $ra, $fp, 8
+          #|	ld.d $fp, $fp, 0
+          #|	ret
           #|	.size sum, .-sum
           #|/* end function sum */
           #|
           #|
+
         ),
       )
     Err(_) => fail("compile_la64 failed")

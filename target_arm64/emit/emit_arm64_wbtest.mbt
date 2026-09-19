@@ -113,19 +113,23 @@ test "arm64 emit: conditional branch and loop labels" {
       #|	stp	x29, x30, [sp, -16]!
       #|	mov	x29, sp
       #|	cmp	w0, #0
-      #|	beq	.L3
-      #|.L2:
+      #|	beq	.L2
+      #|.L1:
       #|	mov	w1, #1
       #|	sub	w0, w0, w1
       #|	cmp	w0, #0
-      #|	bgt	.L2
-      #|.L3:
+      #|	bgt	.L1
+      #|.L2:
       #|	mov	w0, #0
       #|	ldp	x29, x30, [sp], 16
       #|	ret
       #|.type count, @function
       #|.size count, .-count
       #|
+
+
+
+
 
     ),
   )

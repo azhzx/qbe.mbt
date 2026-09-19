@@ -131,12 +131,12 @@ test "e2e arm64: call and branch" {
           #|	stp	x29, x30, [sp, -16]!
           #|	mov	x29, sp
           #|	cmp	w0, #0
-          #|	bgt	.L3
+          #|	bgt	.L4
           #|	mov	w0, #0
-          #|	ldp	x29, x30, [sp], 16
-          #|	ret
-          #|.L3:
+          #|	b	.L5
+          #|.L4:
           #|	bl	callee
+          #|.L5:
           #|	ldp	x29, x30, [sp], 16
           #|	ret
           #|.type caller, @function
@@ -145,6 +145,7 @@ test "e2e arm64: call and branch" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
 
         ),

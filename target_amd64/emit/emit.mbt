@@ -634,7 +634,7 @@ pub fn emitfn(
       // C: align loop headers (a predecessor with id >= this block's id).
       let mut p = 0
       while p < b.npred {
-        if b.pred[p] >= b.id {
+        if fn_.blks[b.pred[p]].rpo_id >= b.rpo_id {
           break
         }
         p = p + 1

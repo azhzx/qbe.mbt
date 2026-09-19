@@ -128,12 +128,10 @@ test "e2e rv64: call and branch" {
           #|	li t0, 1
           #|	subw a0, a0, t0
           #|	call rec
-          #|	add sp, fp, 16
-          #|	ld ra, 8(fp)
-          #|	ld fp, 0(fp)
-          #|	ret
+          #|	j .L3
           #|.L2:
           #|	li a0, 0
+          #|.L3:
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -144,6 +142,7 @@ test "e2e rv64: call and branch" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
 
 
