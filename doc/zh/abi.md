@@ -46,7 +46,7 @@ pub let rclob : Array[Int]    // caller-saved (被调用方可能破坏的) 寄�
 ## 典型调用
 
 ```moonbit
-@util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+@util.eprint(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
 @cfg.fillpreds(fn_)      // ABI 改写了 CFG，需重算
 @ssa.filluse(fn_)        // 也需重算使用链
 ```

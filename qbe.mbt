@@ -2,8 +2,8 @@
 // azhzx/qbe — a lightweight QBE-style compiler backend in MoonBit.
 //
 // This package exposes a unified compilation entry point on top of the
-// per-stage packages (`lexer`, `parser`, `cfg`, `ssa`, `fold`, `abi`, `isel`,
-// `live`, `spill`, `rega`, `emit`).
+// per-stage packages (`lexer`, `parser`, `cfg`, `ssa`, `fold`, `abi_amd64`,
+// `isel`, `live`, `spill`, `rega`, `emit_amd64`).
 //
 // # Example
 // ```mbt check
@@ -408,6 +408,50 @@ pub fn compile_arm64(
     e => Err(@util.QbeError::Ice("\{e}"))
   } noraise {
     r => Ok(r)
+  }
+}
+
+///|
+// Supported machine targets. Keeping target selection in the library prevents
+// callers such as the CLI from duplicating the backend dispatch policy.
+pub(all) enum Target {
+  Amd64Sysv
+  Wasm32
+  Rv64
+  La64
+  Arm64
+}
+
+///|
+// Compile using a selected backend. `gas` is ignored by wasm and is accepted
+// for all targets so callers can share one output path.
+pub fn compile_target(
+  text : String,
+  target : Target,
+  gas? : String = "e",
+) -> Result[String, @util.QbeError] {
+  match target {
+    Target::Amd64Sysv => compile(text, gas~)
+    Target::Wasm32 => compile_wasm(text)
+    Target::Rv64 => compile_rv64(text)
+    Target::La64 => compile_la64(text, gas~)
+    Target::Arm64 => compile_arm64(text, gas~)
+  }
+}
+
+///|
+// Compile debug dumps using a selected backend.
+pub fn compile_target_debug(
+  text : String,
+  target : Target,
+  flags : String,
+) -> Result[String, @util.QbeError] {
+  match target {
+    Target::Amd64Sysv => compile_debug(text, flags)
+    Target::Wasm32 => compile_wasm_debug(text, flags)
+    Target::Rv64 => compile_rv64_debug(text, flags)
+    Target::La64 => compile_la64_debug(text, flags)
+    Target::Arm64 => compile_arm64_debug(text, flags)
   }
 }
 

@@ -48,7 +48,7 @@ These lists share the same data as the identically-named fields in the `types` p
 ## Typical Calls
 
 ```moonbit
-@util.eprint(@abi.abi(fn_, typs, dbg.a, interner, typs))
+@util.eprint(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
 @cfg.fillpreds(fn_)      // ABI rewrites CFG, must recompute
 @ssa.filluse(fn_)        // also must recompute use chains
 ```

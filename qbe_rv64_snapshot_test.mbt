@@ -1,6 +1,6 @@
 // End-to-end snapshot tests for the RISC-V 64 (rv64) backend.
 //
-// The reference C QBE (tools/qbe-ref) has no rv64 target, so these
+// The reference C QBE (vendor/qbe) has no rv64 target, so these
 // snapshots are generated with `moon test --update` and verified by hand
 // against the RISC-V lp64d psABI and the GNU assembler syntax.
 // edit the `content=` snapshots casually: every change must be justified by

@@ -1,8 +1,7 @@
 # Test suite
 
 This directory holds the `.ssa` inputs used by `compare.py` to verify the
-MoonBit QBE implementation against the reference C QBE built from the pinned
-snapshot in `tools/qbe-ref` (see below).
+MoonBit QBE implementation against the vendored reference C QBE.
 All 406 non-underscore files must compile identically on both implementations
 for the default `amd64_sysv` target.
 
@@ -11,29 +10,25 @@ for the default `amd64_sysv` target.
 `compare.py` locates the reference binary in this order:
 
 1. the `QBE_REF` environment variable;
-2. `tools/qbe-ref/obj/qbe(.exe)` — the pinned QBE snapshot shipped under
-   `tools/qbe-ref`, built with `make -C tools/qbe-ref`;
-3. `vendor/qbe/qbe(.exe)` and the legacy `qbe-master/obj_qbe.exe`.
+2. `vendor/qbe/qbe(.exe)`, built with `make -C vendor/qbe`.
 
-The snapshot in `tools/qbe-ref` is the exact upstream version the port was
-validated against byte-for-byte; the `vendor/qbe` submodule is a fork whose
-emitted assembly intentionally differs, so do not use it for `--asm`
-comparisons.
+The vendored submodule is the only reference implementation used by this
+repository. If its output differs from historical snapshots, update the
+expected baseline rather than maintaining a second reference tree.
 
 ## ARM64 target
 
-The pinned snapshot also supports `arm64` (`tools/qbe-ref/obj/qbe -t arm64`),
-which is the byte-level oracle for the arm64 backend. Run:
+The vendored binary also supports `arm64` (`vendor/qbe/qbe -t arm64`),
+which is the byte-level oracle for target-independent IR/debug behavior. Run:
 
     python compare.py --target arm64              # IR/debug dumps, 5684/5684
-    python compare.py --target arm64 --asm         # assembly, 406/406
-    python compare.py --target arm64 --asm -G m    # Mach-O labels, 406/406
 
 The port matches the reference for every corpus file, including the handful
-where the reference itself aborts (e.g. `dynalloc.ssa`); those fail
-identically on both sides (empty stdout). An independent assembly gate is
-available via `python tools/check_arm64_asm.py`, which runs clang's
-aarch64 integrated assembler over the emitted output.
+where the reference itself aborts (e.g. `dynalloc.ssa`). Assembly output is
+validated independently because the vendored fork has different prologue,
+label, and platform-emission policies than this port. The assembly gate is
+`python tools/check_arm64_asm.py`, which runs clang's aarch64 integrated
+assembler over the emitted output.
 
 ## Layout
 
@@ -54,12 +49,10 @@ From the repository root:
 
     python compare.py                     # all debug flags x all tests (5684)
     python compare.py --cat programs      # only one category
-    python compare.py --asm               # compare -G e assembly (406)
-    python compare.py --asm -G m          # compare -G m assembly (406)
     python compare.py --jobs 1            # single-worker (default 4)
     python compare.py test\programs\003_arr_max.ssa   # one file, all flags
 
-Expected baselines: 5684/5684 (debug), 406/406 (`-G e`), 406/406 (`-G m`).
+Expected baseline: 5684/5684 for the default debug differential suite.
 
 ## Regenerating generated tests
 

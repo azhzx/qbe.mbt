@@ -6,7 +6,7 @@ Package path: `azhzx/qbe/abi_arm64`
 
 ARM64 (AArch64) AAPCS64 ABI lowering, ELF flavor. Replaces abstract
 parameter/return references with concrete calling-convention registers before
-instruction selection. Ported 1:1 from `tools/qbe-ref/arm64/abi.c`.
+instruction selection. Ported 1:1 from `vendor/qbe/arm64/abi.c`.
 
 ## Entry Point
 
@@ -45,7 +45,7 @@ replaced by a pointer (`Cptr`) and copied through a stack blob
 
 ## Notes
 
-- The byte-level oracle is `tools/qbe-ref/obj/qbe -t arm64`; the backend
+- The byte-level oracle is `vendor/qbe/qbe -t arm64`; the backend
   matches it for both IR dumps (5684/5684) and assembly (406/406, `-G e` and
   `-G m`).
 - ELF only: the reference snapshot has no Apple `arm64_apple` variant, and

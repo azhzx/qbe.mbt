@@ -235,7 +235,7 @@ pub const La64NRGLOB : Int = 4
 
 ///|
 // LoongArch caller-save register list (C la64_rsave in a hypothetical
-// upstream targ.c; not present in tools/qbe-ref).
+// upstream targ.c; not present in vendor/qbe).
 pub let la64_rsave : Array[Int] = [
   LA_T0,
   LA_T1,

@@ -1,6 +1,6 @@
 ///|
 // ARM64 (AArch64) instruction selection.
-// Ported 1:1 from tools/qbe-ref/arm64/isel.c (the reference snapshot): the
+// Ported 1:1 from vendor/qbe/arm64/isel.c (the reference snapshot): the
 // comparison lowering folds 12-bit immediates into cmp/cmn, everything else
 // is emitted verbatim with operands fixed by fixarg.
 

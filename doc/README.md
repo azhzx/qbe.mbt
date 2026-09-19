@@ -181,7 +181,7 @@ arm64 (AArch64, AAPCS64 ELF):
 ```
 
 arm64 shares `spill`/`rega` with the other targets via `types.target_cfg`.
-It is validated byte-for-byte against `tools/qbe-ref -t arm64`: 5684/5684 IR
+It is validated byte-for-byte against `vendor/qbe/qbe -t arm64`: 5684/5684 IR
 dumps and 406/406 assembly (`-G e` and `-G m`). Like rv64/la64 it has no
 Apple-specific support (ELF only); the pinned reference's unsupported
 features (dynamic `alloc`, `truncd`, ...) fail identically on both sides.

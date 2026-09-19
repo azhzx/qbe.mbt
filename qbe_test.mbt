@@ -332,6 +332,27 @@ test "compile_arm64 emits AArch64 assembly" {
 }
 
 ///|
+test "compile_target dispatches through the selected backend" {
+  let src =
+    #|export
+    #|function w $one() {
+    #|@start
+    #|  ret 1
+    #|}
+    #|
+  let assembly = match @qbe.compile_target(src, @qbe.Target::Amd64Sysv) {
+    Ok(s) => s
+    Err(_) => fail("target compile failed")
+  }
+  assert_true(assembly.contains("one:"))
+  let wat = match @qbe.compile_target(src, @qbe.Target::Wasm32) {
+    Ok(s) => s
+    Err(_) => fail("wasm target compile failed")
+  }
+  assert_true(wat.contains("(func $one"))
+}
+
+///|
 test "compile_arm64_debug stages dumps" {
   let src = "export function w $one() {\n@start\n  ret 1\n}\n"
   let dump = match @qbe.compile_arm64_debug(src, "PN") {

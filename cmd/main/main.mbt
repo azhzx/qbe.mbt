@@ -25,35 +25,48 @@ let cmd : @argparse.Command = @argparse.Command(
 ///|
 // Parse one `--run` value: "func" or "func,arg1,arg2..." where each arg is
 // an integer (a1, -2) or a float literal (1.5, d_2.5, s_0.5).
-fn parse_run_spec(spec : String) -> (String, Array[@interp.InterpValue]) {
+fn parse_run_spec(
+  spec : String,
+) -> Result[(String, Array[@interp.InterpValue]), String] {
   let parts : Array[String] = []
   for piece in spec.split(",") {
     parts.push(piece.to_string())
+  }
+  if parts.length() == 0 || parts[0] == "" {
+    return Err("--run requires a function name")
   }
   let name = parts[0]
   let args : Array[@interp.InterpValue] = Array::new()
   for i in 1..<parts.length() {
     let raw = parts[i]
     if raw == "" {
-      continue
+      return Err("--run contains an empty argument")
     }
     if raw.has_prefix("s_") {
       // QBE single literal
-      let d = @string.parse_double(raw.substring(start=2)) catch { _ => 0.0 }
+      let d = @string.parse_double(raw.substring(start=2)) catch {
+        _ => return Err("invalid single argument '\{raw}'")
+      }
       args.push(@interp.VFloat(d.to_float()))
     } else if raw.has_prefix("d_") {
       // QBE double literal
-      let d = @string.parse_double(raw.substring(start=2)) catch { _ => 0.0 }
+      let d = @string.parse_double(raw.substring(start=2)) catch {
+        _ => return Err("invalid double argument '\{raw}'")
+      }
       args.push(@interp.VDouble(d))
-    } else if raw.contains(".") {
-      let d = @string.parse_double(raw) catch { _ => 0.0 }
+    } else if raw.contains(".") || raw.contains("e") || raw.contains("E") {
+      let d = @string.parse_double(raw) catch {
+        _ => return Err("invalid floating-point argument '\{raw}'")
+      }
       args.push(@interp.VDouble(d))
     } else {
-      let v = @string.parse_int64(raw) catch { _ => 0L }
+      let v = @string.parse_int64(raw) catch {
+        _ => return Err("invalid integer argument '\{raw}'")
+      }
       args.push(@interp.VInt(v))
     }
   }
-  (name, args)
+  Ok((name, args))
 }
 
 ///|
@@ -249,7 +262,13 @@ async fn main {
   // --run mode: interpret the SSA directly instead of emitting assembly
   match parsed.values.get("run") {
     Some(runs) if runs.length() > 0 => {
-      let (entry, run_args) = parse_run_spec(runs[0])
+      let (entry, run_args) = match parse_run_spec(runs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
       for file in files {
         let source = read_source(file) catch {
           e => {

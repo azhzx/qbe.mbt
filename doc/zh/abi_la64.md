@@ -40,7 +40,7 @@ pub fn abi_la64(
 
 ## Notes
 
-- LoongArch64 无上游 C QBE 参考实现（`tools/qbe-ref` 只有 amd64/arm64），
+- LoongArch64 无上游 C QBE 参考实现（`vendor/qbe` 只有 amd64/arm64），
   无差分基线；正确性由单测 + e2e 快照（`qbe_la64_snapshot_test.mbt`）保证，
   快照逐条对照 LoongArch ELF psABI 与 GNU as 语法手工核验。
 - `selcall` 在发射 `Call` 时把返回值寄存器计数编码进 cty 的低 4 位——

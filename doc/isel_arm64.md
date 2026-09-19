@@ -5,7 +5,7 @@ Package path: `azhzx/qbe/isel_arm64`
 [中文版本 (Chinese Version)](zh/isel_arm64.md)
 
 ARM64 (AArch64) instruction selection. Ported 1:1 from
-`tools/qbe-ref/arm64/isel.c`. Turns abstract operations into arm64 machine
+`vendor/qbe/arm64/isel.c`. Turns abstract operations into arm64 machine
 operations and assigns stack slots to fast allocations.
 
 ## Entry Point
@@ -38,4 +38,4 @@ pub fn isel_arm64(
 
 - The reference snapshot has no `Iplo24`/`Inlo24` classification impact
   (24-bit immediates fall through to the materialise path), matching the port.
-- Validated byte-for-byte against `tools/qbe-ref -t arm64` (`-dI` dumps).
+- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` (`-dI` dumps).

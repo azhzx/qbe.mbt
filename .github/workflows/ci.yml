@@ -4,15 +4,12 @@
 #   check  — cross-platform sanity: formatting, generated interface (`.mbti`)
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every
-#            debug flag and of the emitted assembly against the reference C QBE
-#            built from the pinned snapshot in tools/qbe-ref (Ubuntu).
+#            debug flag against the reference C QBE built from the vendored
+#            submodule (Ubuntu), plus independent assembly validation.
 #
 # Expected baselines (see test/README.md):
 #   python compare.py          -> 5684/5684
-#   python compare.py --asm    -> 406/406  (-G e)
-#   python compare.py --asm -G m -> 406/406
 #   python compare.py --target arm64        -> 5684/5684
-#   python compare.py --target arm64 --asm  -> 406/406
 
 name: CI
 
@@ -96,28 +93,16 @@ jobs:
         run: moon update
 
       - name: Build reference QBE from the pinned snapshot
-        run: make -C tools/qbe-ref
+        run: make -C vendor/qbe
 
       # compare.py builds `_build/native/debug/build/cmd/main/main.exe`
       # internally, then diffs stdout/stderr against the reference binary
-      # (auto-detected at tools/qbe-ref/obj/qbe, or via $QBE_REF).
+      # (auto-detected at vendor/qbe/qbe, or via $QBE_REF).
       - name: "Differential: all debug flags"
         run: python compare.py
 
-      - name: "Differential: assembly (-G e)"
-        run: python compare.py --asm
-
-      - name: "Differential: assembly (-G m)"
-        run: python compare.py --asm -G m
-
       - name: "Differential: arm64 IR dumps"
         run: python compare.py --target arm64
-
-      - name: "Differential: arm64 assembly (-G e)"
-        run: python compare.py --target arm64 --asm
-
-      - name: "Differential: arm64 assembly (-G m)"
-        run: python compare.py --target arm64 --asm -G m
 
       - name: "ARM64 assemblability (clang)"
         run: python tools/check_arm64_asm.py

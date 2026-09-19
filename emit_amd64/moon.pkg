@@ -10,7 +10,7 @@ import {
   "azhzx/qbe/ssa",
   "azhzx/qbe/live",
   "azhzx/qbe/fold",
-  "azhzx/qbe/abi",
+  "azhzx/qbe/abi_amd64",
   "azhzx/qbe/isel",
   "azhzx/qbe/spill",
   "azhzx/qbe/rega",

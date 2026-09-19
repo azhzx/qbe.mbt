@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "azhzx/qbe/abi"
+package "azhzx/qbe/abi_amd64"
 
 import {
   "azhzx/qbe/types",

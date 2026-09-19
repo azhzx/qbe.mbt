@@ -1,6 +1,6 @@
 // End-to-end snapshot tests for the ARM64 (AArch64, AAPCS64 ELF) backend.
 //
-// The byte-level reference is `tools/qbe-ref/obj/qbe -t arm64`; these
+// The byte-level reference is `vendor/qbe/qbe -t arm64`; these
 // snapshots are generated with `moon test --update` from outputs that already
 // match the reference assembly byte-for-byte (see `python compare.py
 // --target arm64 --asm`). Do not edit the `content=` snapshots casually:

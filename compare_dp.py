@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Legacy per-file -dP diff script; prefer `python compare.py`."""
-import subprocess, os, sys, difflib
+import subprocess, os, sys, difflib, shutil
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-QBE_REF = os.path.join(ROOT, "qbe-master", "obj_qbe.exe")
+QBE_REF = os.environ.get("QBE_REF", os.path.join(ROOT, "vendor", "qbe", "qbe"))
 MINE = os.path.join(ROOT, "_build", "native", "debug", "build", "cmd", "main", "main.exe")
+MOON = shutil.which("moon") or os.path.expanduser("~/.moon/bin/moon")
 
 
 def run(cmd):
@@ -16,7 +17,9 @@ def normalize(text):
 
 
 def main():
-    subprocess.run(["moon", "build", "--target", "native"], cwd=ROOT, check=True)
+    if not os.path.exists(MOON):
+        sys.exit("error: MoonBit CLI not found; install moon or set PATH")
+    subprocess.run([MOON, "build", "--target", "native"], cwd=ROOT, check=True)
     tests = sorted(f for f in os.listdir(os.path.join(ROOT, "test")) if f.endswith(".ssa") and not f.startswith("_"))
     fail = total = 0
     for f in tests:

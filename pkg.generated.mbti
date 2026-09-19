@@ -24,6 +24,10 @@ pub fn compile_rv64(String) -> Result[String, @util.QbeError]
 
 pub fn compile_rv64_debug(String, String) -> Result[String, @util.QbeError]
 
+pub fn compile_target(String, Target, gas? : String) -> Result[String, @util.QbeError]
+
+pub fn compile_target_debug(String, Target, String) -> Result[String, @util.QbeError]
+
 pub fn compile_wasm(String) -> Result[String, @util.QbeError]
 
 pub fn compile_wasm_debug(String, String) -> Result[String, @util.QbeError]
@@ -33,6 +37,13 @@ pub fn interpret(String, entry? : String, args? : Array[@interp.InterpValue], ma
 // Errors
 
 // Types and methods
+pub(all) enum Target {
+  Amd64Sysv
+  Wasm32
+  Rv64
+  La64
+  Arm64
+}
 
 // Type aliases
 pub using @types {type BSet}

@@ -15,6 +15,7 @@ Usage:
 import argparse
 import glob
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,7 @@ TESTDIR = os.path.join(ROOT, "test")
 MINE = os.path.join(
     ROOT, "_build", "native", "debug", "build", "cmd", "main", "main.exe"
 )
+MOON = shutil.which("moon") or os.path.expanduser("~/.moon/bin/moon")
 
 
 def find_target(path):
@@ -50,7 +52,9 @@ def main():
     clang = find_target(args.clang_aarch64)
     _ = args.jobs
 
-    subprocess.run(["moon", "build", "--target", "native"], cwd=ROOT, check=True)
+    if not os.path.exists(MOON):
+        sys.exit("error: MoonBit CLI not found; install moon or set PATH")
+    subprocess.run([MOON, "build", "--target", "native"], cwd=ROOT, check=True)
 
     tests = sorted(glob.glob(os.path.join(TESTDIR, "**", "*.ssa"), recursive=True))
     tests = [t for t in tests if not os.path.basename(t).startswith("_")]
