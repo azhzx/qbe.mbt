@@ -20,7 +20,7 @@ pub fn fmt_fixed(v : Double, prec : Int) -> String {
   }
   let int_part = ival / scale
   let frac_part = ival % scale
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   if neg {
     sb.write_char('-')
   }

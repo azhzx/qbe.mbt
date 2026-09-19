@@ -115,8 +115,8 @@ pub fn printref(
 ///|
 // Format an int as at least 4 lowercase hex digits (%04x in C).
 fn hex4(v : Int) -> String {
-  let sb = StringBuilder::new()
-  let chars : Array[Char] = Array::new()
+  let sb = StringBuilder::StringBuilder()
+  let chars : Array[Char] = []
   let mut x = v
   if x == 0 {
     chars.push('0')
@@ -182,7 +182,7 @@ pub fn printfn(
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   if fn_.is_export {
     sb.write_string("export ")
   }

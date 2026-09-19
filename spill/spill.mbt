@@ -35,7 +35,7 @@ fn s_emiti(st : SpillState, i : @types.Ins) -> Unit {
 ///|
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : SpillState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -109,7 +109,7 @@ fn limit(st : SpillState, b : @types.BSet, k : Int, f : @types.BSet?) -> Unit {
   if nt <= k {
     return
   }
-  let tarr : Array[Int] = Array::new()
+  let tarr : Array[Int] = []
   b.each(t => {
     b.clr(t)
     tarr.push(t)
@@ -247,13 +247,13 @@ pub fn spill(
 ) -> String {
   let st = SpillState::{
     fn_,
-    buf: Array::new(),
+    buf: [],
     fst: None,
     ntmp: fn_.ntmp(),
     locs: fn_.slot,
     slot4: 0,
     slot8: 0,
-    mask: Array::new(),
+    mask: [],
   }
   st.mask.push(@types.BSet::new(st.ntmp))
   st.mask.push(@types.BSet::new(st.ntmp))
@@ -447,7 +447,7 @@ pub fn spill(
   fn_.slot = fn_.slot + st.slot8
 
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> Block information:\n")
     for id in fn_.def_order {
       let b = fn_.blks[id]

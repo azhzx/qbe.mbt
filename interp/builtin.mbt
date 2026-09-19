@@ -76,7 +76,7 @@ fn Interp::exec_printf(self : Interp, args : Array[InterpValue]) -> Int64 raise 
   }
   let fmt_addr = self.arg_of(args, 0).reinterpret_as_uint64()
   let fmt = self.mem.load_cstr(fmt_addr)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   let mut ai = 1
   let mut i = 0
   while i < fmt.length() {
@@ -125,7 +125,7 @@ fn Interp::exec_printf(self : Interp, args : Array[InterpValue]) -> Int64 raise 
         ai = ai + 1
       }
       'c' => {
-        sb.write_char(Char::from_int(self.arg_of(args, ai).to_int()))
+        sb.write_char(self.arg_of(args, ai).to_int().unsafe_to_char())
         ai = ai + 1
       }
       's' => {
@@ -164,11 +164,11 @@ fn hex_string(v : UInt64) -> String {
     return "0"
   }
   let digits = "0123456789abcdef"
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   let mut x = v
-  let buf : Array[Char] = Array::new()
+  let buf : Array[Char] = []
   while x > 0UL {
-    buf.push(Char::from_int(char_code_at(digits, (x & 0xFUL).to_int())))
+    buf.push(char_code_at(digits, (x & 0xFUL).to_int()).unsafe_to_char())
     x = x >> 4
   }
   for i in (buf.length() - 1)>=..0 {

@@ -90,7 +90,7 @@ fn r_emiti(st : RState, i : @types.Ins) -> Unit {
 
 ///|
 fn emit_block(st : RState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -672,7 +672,7 @@ pub fn rega(
 ) -> String raise {
   let st = RState::{
     fn_,
-    buf: Array::new(),
+    buf: [],
     regu: 0,
     pm: Array::make(64, PmEntry::{
       src: @types.Ref::none(),
@@ -685,8 +685,8 @@ pub fn rega(
     stblk: 0,
   }
   let nblk = fn_.rpo.length()
-  let end : Array[RMap] = Array::new()
-  let beg : Array[RMap] = Array::new()
+  let end : Array[RMap] = []
+  let beg : Array[RMap] = []
   for _ in 0..<nblk {
     end.push(rmap_new(fn_.ntmp()))
     beg.push(rmap_new(fn_.ntmp()))
@@ -700,7 +700,7 @@ pub fn rega(
     fn_.tmps[t].visit = -1
   }
   // sort blocks by loop nesting (C carve)
-  let blk : Array[Int] = Array::new()
+  let blk : Array[Int] = []
   for id in fn_.def_order {
     blk.push(id)
   }
@@ -825,7 +825,7 @@ pub fn rega(
       continue
     }
     st.stmov = st.stmov + nb.length()
-    let new_ins : Array[@types.Ins] = Array::new()
+    let new_ins : Array[@types.Ins] = []
     for xi in nb {
       new_ins.push(xi)
     }
@@ -839,7 +839,7 @@ pub fn rega(
   }
 
   // 4. emit remaining copies in new blocks
-  let blist : Array[Int] = Array::new()
+  let blist : Array[Int] = []
   let nblocks0 = fn_.def_order.length()
   for bi in 0..<nblocks0 {
     let b_id = fn_.def_order[bi]
@@ -913,7 +913,7 @@ pub fn rega(
   fn_.reg = st.regu
 
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> Register mappings:\n")
     for n in 0..<nblk {
       let b = fn_.rpo[n]
@@ -944,7 +944,7 @@ pub fn rega(
 ///|
 // Dump the register mapping of a block (C mdump).
 fn mdump(st : RState, m : RMap) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   for i in 0..<m.n {
     if m.t[i] >= @types.Tmp0 {
       sb.write_string(" (")

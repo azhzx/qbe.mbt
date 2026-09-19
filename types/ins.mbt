@@ -4,7 +4,7 @@
 pub(all) struct Ins {
   mut op : Op
   mut cls : Class
-  mut to : Ref // Destination, ref_none() if none
+  mut to : Ref // Destination, Ref::none() if none
   mut arg1 : Ref
   mut arg2 : Ref
 } derive(Debug, Eq)
@@ -37,5 +37,5 @@ pub(all) struct Phi {
 
 ///|
 pub fn Phi::new(to : Ref, cls : Class) -> Phi {
-  Phi::{ to, cls, args: Array::new(), }
+  Phi::{ to, cls, args: [], }
 }

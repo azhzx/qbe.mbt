@@ -49,7 +49,7 @@ test "emit_fn: wasm function body snapshot" {
     #|}
     #|
   let (f, interner, typs) = wat_parse_pipeline(src)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_fn(f, interner, sb)
   inspect(
     sb.to_string(),
@@ -80,7 +80,7 @@ test "emit_wat_module: module opens and closes with memory" {
   let parser = @parser.Parser::new(lexer.tokenize(), "<test>")
   parser.parse()
   let funcs = parser.get_funcs()
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_wat_module(funcs, [], [], parser.interner_ref(), sb)
   let wat = sb.to_string()
   assert_true(wat.contains("(module"))
@@ -98,7 +98,7 @@ test "emit_fn: float computation emits f32 arithmetic" {
     #|}
     #|
   let (f, interner, typs) = wat_parse_pipeline(src)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_fn(f, interner, sb)
   let wat = sb.to_string()
   assert_true(wat.contains("f32"))

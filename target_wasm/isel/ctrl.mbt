@@ -47,7 +47,7 @@ fn ctrl_state_new(fn_ : @types.Fn, interner : @util.Interner) -> CtrlState {
     interner,
     label_map: Map([], capacity=16),
     depth: 0,
-    ctrl: Array::make(nblk, Array::new()),
+    ctrl: Array::make(nblk, []),
     loop_headers: Array::make(nblk, false),
     block_level: Array::make(nblk, 0),
   }
@@ -109,7 +109,7 @@ fn build_label_map(st : CtrlState) -> Unit {
 ///|
 // Step 4: Generate wasm control flow for a block's jump.
 fn gen_jump_ctrl(st : CtrlState, blk : @types.Blk) -> Array[WasmCtrl] {
-  let ctrl = Array::new()
+  let ctrl = []
   let jmp = blk.jmp
 
   match jmp.kind {

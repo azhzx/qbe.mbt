@@ -8,18 +8,6 @@ fn kx() -> Int {
 }
 
 ///|
-// Convert Class to int code (C: Kx=-1, Kw=0, Kl=1, Ks=2, Kd=3)
-fn kcode(k : @types.Class) -> Int {
-  match k {
-    @types.Kx => -1
-    @types.Kw => 0
-    @types.Kl => 1
-    @types.Ks => 2
-    @types.Kd => 3
-  }
-}
-
-///|
 // Merge a class into a running class. Returns true if incompatible.
 fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
   let k1 = pk.val
@@ -112,10 +100,10 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
           raise @util.QbeError::Ice("ins to not a tmp")
         }
         let mut w = @types.WFull
-        if is_load(ins.op) && ins.op != @types.Load {
+        if ins.op.is_load() && ins.op != @types.Load {
           w = @types.TmpWidth::from_code(ins.op.load_width_idx())
         }
-        if is_ext(ins.op) {
+        if ins.op.is_ext() {
           w = @types.TmpWidth::from_code(ins.op.ext_width_idx())
         }
         if (w == @types.Wsw || w == @types.Wuw) && ins.cls == @types.Kw {
@@ -153,14 +141,4 @@ fn adduse(
   let tmp = fn_.tmps[t]
   tmp.nuse = tmp.nuse + 1
   tmp.uses.push(@types.Use::{ kind, blk_id, ins_idx, arg_num, })
-}
-
-///|
-fn is_load(o : @types.Op) -> Bool {
-  o.is_load()
-}
-
-///|
-fn is_ext(o : @types.Op) -> Bool {
-  o.is_ext()
 }

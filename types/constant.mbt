@@ -94,7 +94,6 @@ pub fn Con::is_zero(self : Con, wide : Bool) -> Bool {
 
 ///|
 // Add two constants (for address arithmetic), matching C addcon in util.c
-#as_free_fn(addcon, deprecated="use `Con::add` instead")
 pub fn Con::add(self : Con, other : Con) -> Con {
   if self.kind == CUndef {
     other
@@ -117,7 +116,6 @@ pub fn Con::add(self : Con, other : Con) -> Con {
 
 ///|
 // Raw bit representation of a constant (for interning, like C's union)
-#as_free_fn(con_raw_bits, deprecated="use `Con::raw_bits` instead")
 pub fn Con::raw_bits(self : Con) -> Int64 {
   if self.kind == CBits && self.flt == 1 {
     self.bits.s.reinterpret_as_uint().to_int64()

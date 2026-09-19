@@ -18,7 +18,7 @@ priv struct Rv64IselState {
 
 ///|
 fn rv64_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> Rv64IselState {
-  Rv64IselState::{ fn_, buf: Array::new(), interner, }
+  Rv64IselState::{ fn_, buf: [], interner, }
 }
 
 ///|
@@ -42,7 +42,7 @@ fn emiti(st : Rv64IselState, i : @types.Ins) -> Unit {
 ///|
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : Rv64IselState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -520,7 +520,7 @@ pub fn isel_rv64(
   }
 
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("> After RISC-V instruction selection:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")

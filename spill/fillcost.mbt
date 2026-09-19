@@ -33,7 +33,7 @@ fn tmpuse(fn_ : @types.Fn, r : @types.Ref, use_ : Int, loopv : Int) -> Unit {
 // Returns the -dS debug text (empty when print_dbg is false).
 pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
   @cfg.loopiter(fn_, fn(hd, b) { aggreg(fn_, hd, b) })
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   if print_dbg {
     sb.write_string("\n> Loop information:\n")
     for id in fn_.def_order {

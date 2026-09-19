@@ -57,7 +57,7 @@ fn emiti(st : AbiState, i : @types.Ins) -> Unit {
 
 ///|
 fn emit_block(st : AbiState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -161,7 +161,7 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
   let mut ca = 0
   let mut n = 0
   while n * 8 < aret.size {
-    let k = kbase(aret.cls[n])
+    let k = aret.cls[n].base()
     if k == 0 {
       // int return regs: RAX then RDX
       reg[n] = @types.Ref::tmp(if nr0 == 0 { @types.RAX } else { @types.RDX })
@@ -174,11 +174,6 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
     n = n + 1
   }
   ca
-}
-
-///|
-fn kbase(k : @types.Class) -> Int {
-  k.base()
 }
 
 ///|
@@ -242,7 +237,7 @@ fn selret(st : AbiState, bid : Int) -> Unit {
     }
   } else {
     let k = @types.Class::from_code(ret_class(j))
-    if kbase(k) == 0 {
+    if k.base() == 0 {
       emit(
         st,
         @types.Copy,
@@ -296,7 +291,7 @@ fn argsclass(
   for i in i0..<i1 {
     let cur = orig[i]
     if cur.op == @types.Arg || cur.op == @types.Par {
-      let pn = kbase(cur.cls)
+      let pn = cur.cls.base()
       if pn == 0 {
         if nint > 0 {
           nint = nint - 1
@@ -321,7 +316,7 @@ fn argsclass(
         let mut ns = 0
         let mut nn = 0
         while nn * 8 < ac[a].size {
-          if kbase(ac[a].cls[nn]) == 0 {
+          if ac[a].cls[nn].base() == 0 {
             ni = ni + 1
           } else {
             ns = ns + 1
@@ -354,7 +349,7 @@ fn rarg(
   ni : @ref.Ref[Int],
   ns : @ref.Ref[Int],
 ) -> @types.Ref {
-  if kbase(ty) == 0 {
+  if ty.base() == 0 {
     let r = @types.Ref::tmp(@types.rsave[ni.val])
     ni.val = ni.val + 1
     r

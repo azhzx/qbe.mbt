@@ -19,7 +19,7 @@ priv struct La64IselState {
 
 ///|
 fn la64_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> La64IselState {
-  La64IselState::{ fn_, buf: Array::new(), interner, }
+  La64IselState::{ fn_, buf: [], interner, }
 }
 
 ///|
@@ -43,7 +43,7 @@ fn emiti(st : La64IselState, i : @types.Ins) -> Unit {
 ///|
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : La64IselState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -521,7 +521,7 @@ pub fn isel_la64(
   }
 
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("> After LoongArch instruction selection:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")

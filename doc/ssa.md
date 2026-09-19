@@ -68,7 +68,7 @@ pub fn storesz(@types.Ins) -> Int   // byte count written by this store instruct
 ## Helpers
 
 ```moonbit
-pub fn kcode(@types.Class) -> Int   // class -> hardware encoding
+pub fn Class::code() -> Int          // class -> hardware encoding
 pub fn kx() -> Int                  // Kx class encoding
 pub fn phicls(Int, Array[@types.Tmp]) -> Int   // determine phi's class
 pub fn clsmerge(@ref.Ref[Int], Int) -> Bool     // class merge helper

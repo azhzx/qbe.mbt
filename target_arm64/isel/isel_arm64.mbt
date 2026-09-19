@@ -30,7 +30,7 @@ priv struct Arm64IselState {
 
 ///|
 fn arm64_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> Arm64IselState {
-  Arm64IselState::{ fn_, buf: Array::new(), interner, }
+  Arm64IselState::{ fn_, buf: [], interner, }
 }
 
 ///|
@@ -41,7 +41,7 @@ fn arm64_isel_emit(st : Arm64IselState, i : @types.Ins) -> Unit {
 ///|
 fn arm64_isel_emit_block(st : Arm64IselState) -> Array[@types.Ins] {
   // the buffer is filled in C emit() order (reverse program order)
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }

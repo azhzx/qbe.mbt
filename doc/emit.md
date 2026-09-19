@@ -57,7 +57,7 @@ Called after all functions and data segments are output, outputs `.section .note
 ## Typical Calls
 
 ```moonbit
-let sb = StringBuilder::new()
+let sb = StringBuilder::StringBuilder()
 for item in order {
   if item == "f" {
     run_passes(fn_, interner, typs, dbg)

@@ -88,7 +88,7 @@ fn Interp::code_of(self : Interp, name : String) -> UInt64 {
   match self.code_addr.get(name) {
     Some(a) => a
     None => {
-      let a = CODE_BASE + self.code_addr.size().to_uint64() * 16UL
+      let a = CODE_BASE + self.code_addr.length().to_uint64() * 16UL
       self.code_addr[name] = a
       self.code_name[a] = name
       a
@@ -120,7 +120,7 @@ fn Interp::setup(
         // reserve an aligned slot for the upcoming label
         let align = 8UL
         let pad = (align - cur_addr % align) % align
-        let _ = self.mem.zero(cur_addr, pad.to_int64())
+        let _ = self.mem.zero(cur_addr, pad.reinterpret_as_int64())
         cur_addr = cur_addr + pad
         self.mem.symbols[d.str] = cur_addr
         cur_label = d.str
@@ -130,7 +130,7 @@ fn Interp::setup(
         let a = d.num.reinterpret_as_uint64()
         if a > 1UL {
           let pad = (a - cur_addr % a) % a
-          let _ = self.mem.zero(cur_addr, pad.to_int64())
+          let _ = self.mem.zero(cur_addr, pad.reinterpret_as_int64())
           cur_addr = cur_addr + pad
         }
       }
@@ -229,12 +229,7 @@ fn Interp::call_function(
       "interpreter: too many arguments for '\{name}'",
     )
   }
-  let frame : Frame = {
-    fn_: f,
-    locals,
-    frame_sp: self.sp,
-    call_args: Array::new(),
-  }
+  let frame : Frame = { fn_: f, locals, frame_sp: self.sp, call_args: [], }
   self.enter_block(frame, f.start_id, -1, depth)
 }
 
@@ -379,7 +374,7 @@ fn Interp::exec_call(
   depth : Int,
 ) -> Unit raise {
   let args = frame.call_args
-  frame.call_args = Array::new()
+  frame.call_args = []
   // resolve the callee
   let name : String = if ins.arg1.is_con() {
     let con = frame.fn_.cons[ins.arg1.con_val()]
@@ -469,18 +464,18 @@ pub fn run_module(
   hook? : ((String, Array[InterpValue]) -> InterpValue?)? = None,
 ) -> Result[(InterpValue, String), @util.QbeError] {
   let it = Interp::{
-    funcs: Map::new(),
+    funcs: Map([], capacity=0),
     interner,
     mem: Memory::new(),
-    code_addr: Map::new(),
-    code_name: Map::new(),
+    code_addr: Map([], capacity=0),
+    code_name: Map([], capacity=0),
     steps: 0,
     max_steps,
     max_depth,
     sp: STACK_TOP,
     heap: HEAP_BASE,
     extern_hook: hook,
-    out: StringBuilder::new(),
+    out: StringBuilder::StringBuilder(),
   }
   try {
     it.setup(funcs, datas)

@@ -42,7 +42,6 @@ pub(all) enum JumpKind {
 
 ///|
 // Check if jump is a return
-#as_free_fn(is_ret, deprecated="use `JumpKind::is_ret` instead")
 pub fn JumpKind::is_ret(self : JumpKind) -> Bool {
   match self {
     Jret0 | Jretw | Jretl | Jrets | Jretd | Jretc => true
@@ -52,7 +51,6 @@ pub fn JumpKind::is_ret(self : JumpKind) -> Bool {
 
 ///|
 // Index of a jump kind in the J enum.
-#as_free_fn(jump_index, deprecated="use `JumpKind::index` instead")
 pub fn JumpKind::index(self : JumpKind) -> Int {
   match self {
     Jxxx => 0
@@ -87,7 +85,6 @@ pub fn JumpKind::index(self : JumpKind) -> Int {
 
 ///|
 // Jump kind from its index in the J enum.
-#as_free_fn(jump_from_index, deprecated="use `JumpKind::from_index` instead")
 pub fn JumpKind::from_index(i : Int) -> JumpKind {
   match i {
     0 => Jxxx

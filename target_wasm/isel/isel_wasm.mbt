@@ -11,7 +11,7 @@ priv struct WasmIselState {
 
 ///|
 fn wasm_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> WasmIselState {
-  WasmIselState::{ fn_, buf: Array::new(), interner, }
+  WasmIselState::{ fn_, buf: [], interner, }
 }
 
 ///|
@@ -188,7 +188,7 @@ pub fn isel_wasm(
   }
 
   if print_dbg {
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     out.write_string("> After wasm instruction selection:\n")
     out.write_string(@parser.printfn(fn_, interner, all_typs))
     out.write_string("\n")

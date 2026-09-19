@@ -103,7 +103,7 @@ pub fn compile_debug(
 fn compile_raise(text : String, gas : String) -> String raise {
   let (gasloc, gassym) = gas_setting(gas)
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
 }
@@ -113,7 +113,7 @@ fn compile_raise(text : String, gas : String) -> String raise {
 fn compile_debug_raise(text : String, flags : String) -> String raise {
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
     run_passes(fn_, interner, typs, dbg, out)
@@ -185,7 +185,7 @@ pub fn compile_wasm_debug(
 // Wasm compile, raising `@util.QbeError` on failure.
 fn compile_wasm_raise(text : String) -> String raise {
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_wasm_module(funcs, datas, order, typs, interner, sb)
   sb.to_string()
 }
@@ -195,7 +195,7 @@ fn compile_wasm_raise(text : String) -> String raise {
 fn compile_wasm_debug_raise(text : String, flags : String) -> String raise {
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
     run_passes_wasm(fn_, interner, typs, dbg, out)
@@ -267,7 +267,7 @@ pub fn compile_rv64_debug(
 // RISC-V compile, raising `@util.QbeError` on failure.
 fn compile_rv64_raise(text : String) -> String raise {
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_rv64_module(funcs, datas, order, typs, interner, sb)
   sb.to_string()
 }
@@ -277,7 +277,7 @@ fn compile_rv64_raise(text : String) -> String raise {
 fn compile_rv64_debug_raise(text : String, flags : String) -> String raise {
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
     run_passes_rv64(fn_, interner, typs, dbg, out)
@@ -357,7 +357,7 @@ pub fn compile_la64_debug(
 fn compile_la64_raise(text : String, gas : String) -> String raise {
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let (gasloc, gassym) = gas_setting(gas)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_la64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
 }
@@ -367,7 +367,7 @@ fn compile_la64_raise(text : String, gas : String) -> String raise {
 fn compile_la64_debug_raise(text : String, flags : String) -> String raise {
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
     run_passes_la64(fn_, interner, typs, dbg, out)
@@ -490,7 +490,7 @@ pub fn compile_arm64_debug(
 fn compile_arm64_raise(text : String, gas : String) -> String raise {
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let (gasloc, gassym) = gas_setting(gas)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emit_arm64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
 }
@@ -500,7 +500,7 @@ fn compile_arm64_raise(text : String, gas : String) -> String raise {
 fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
     run_passes_arm64(fn_, interner, typs, dbg, out)

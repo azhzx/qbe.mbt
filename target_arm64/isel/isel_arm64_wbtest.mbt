@@ -39,7 +39,7 @@ fn arm64_isel_parse_frontend(
 ///|
 // Collect the op sequence of the whole function.
 fn arm64_sel_ops(f : @types.Fn) -> Array[@types.Op] {
-  let ops : Array[@types.Op] = Array::new()
+  let ops : Array[@types.Op] = []
   for id in f.def_order {
     for ins in f.blks[id].ins {
       ops.push(ins.op)

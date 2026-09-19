@@ -10,7 +10,7 @@ fn selcall(
   i1 : Int,
 ) -> Unit raise {
   let nargs = i1 - i0
-  let ac : Array[AClass] = Array::new()
+  let ac : Array[AClass] = []
   for _ in 0..<nargs {
     ac.push(AClass::new())
   }
@@ -126,7 +126,7 @@ fn selcall(
       }
       st.ral = Some(ra)
     }
-  } else if kbase(callins.cls) == 0 {
+  } else if callins.cls.base() == 0 {
     emit(
       st,
       @types.Copy,
@@ -251,7 +251,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
   // par_end: index of the first non-par instruction in the start block
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
-  let ac : Array[AClass] = Array::new()
+  let ac : Array[AClass] = []
   for _ in 0..<npar {
     ac.push(AClass::new())
   }
@@ -423,7 +423,7 @@ fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
   let c8 = getcon(st, 8L)
   let c16 = getcon(st, 16L)
   let ap = va.arg1
-  let isint = kbase(va.cls) == 0
+  let isint = va.cls.base() == 0
 
   let loc = abi_newtmp(st, @types.Kl)
   emit(st, @types.Load, va.cls, va.to, loc, @types.Ref::none())
@@ -559,7 +559,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
 // Lower a single block's calls/returns/vararg instructions (C abi inner loop).
 fn process_block(st : AbiState, bid : Int) -> Unit raise {
   let b = st.fn_.blks[bid]
-  let orig : Array[@types.Ins] = Array::new()
+  let orig : Array[@types.Ins] = []
   for x in b.ins {
     orig.push(x)
   }
@@ -613,7 +613,7 @@ pub fn abi(
   let st = AbiState::{
     fn_,
     typs,
-    buf: Array::new(),
+    buf: [],
     ral: None,
     env: @types.Ref::none(),
     fa: 0,
@@ -635,7 +635,7 @@ pub fn abi(
   // rebuild the start block: emitted par lowerings ++ remaining instructions
   let emitted = emit_block(st)
   st.buf.clear()
-  let new_ins : Array[@types.Ins] = Array::new()
+  let new_ins : Array[@types.Ins] = []
   for x in emitted {
     new_ins.push(x)
   }
@@ -658,7 +658,7 @@ pub fn abi(
   }
   process_block(st, fn_.start_id)
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> After ABI lowering:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")

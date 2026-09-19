@@ -136,7 +136,7 @@ test "la64 emit: data directive spellings" {
   let d0 = @types.Dat::start()
   let dn = @types.Dat::name("tbl", true)
   let db = @types.Dat::byte(7)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   gasemitdat_la64(d0, ".L", "", sb)
   gasemitdat_la64(dn, ".L", "", sb)
   gasemitdat_la64(db, ".L", "", sb)

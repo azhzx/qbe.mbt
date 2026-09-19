@@ -76,7 +76,7 @@ fn arm64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> Arm64AbiState {
   Arm64AbiState::{
     fn_,
     typs,
-    buf: Array::new(),
+    buf: [],
     params: Arm64Params::{ ngp: 0, nfp: 0, nstk: 0, },
   }
 }
@@ -101,7 +101,7 @@ fn arm64_emiti(st : Arm64AbiState, i : @types.Ins) -> Unit {
 ///|
 fn arm64_emit_block(st : Arm64AbiState) -> Array[@types.Ins] {
   // the buffer is filled in C emit() order (reverse program order)
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -534,7 +534,7 @@ fn arm64_selcall(
   il : Array[@types.Ins],
 ) -> Unit raise {
   let nargs = i1 - i0
-  let ca : Array[Arm64Class] = Array::new()
+  let ca : Array[Arm64Class] = []
   for _ in 0..<nargs {
     ca.push(Arm64Class::new())
   }
@@ -713,7 +713,7 @@ fn arm64_selcall(
 fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
-  let ca : Array[Arm64Class] = Array::new()
+  let ca : Array[Arm64Class] = []
   for _ in 0..<npar {
     ca.push(Arm64Class::new())
   }
@@ -721,7 +721,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
   let (cty, env) = arm64_argsclass(st, ins, 0, npar, ca)
   let tmp : Array[@types.Ref] = Array::make(16, @types.Ref::none())
   let mut t = 0
-  let il : Array[@types.Ins] = Array::new()
+  let il : Array[@types.Ins] = []
   // register-classified aggregates get stores into a stack blob (C 489-498)
   for a in 0..<npar {
     let i = ins[a]
@@ -1024,7 +1024,7 @@ pub fn abi_arm64(
   // rebuild the start block
   let emitted = arm64_emit_block(st)
   st.buf.clear()
-  let new_ins : Array[@types.Ins] = Array::new()
+  let new_ins : Array[@types.Ins] = []
   for x in emitted {
     new_ins.push(x)
   }
@@ -1036,7 +1036,7 @@ pub fn abi_arm64(
     start.ins.push(x)
   }
   // lower calls, returns, and vararg instructions (start processed last)
-  let il : Array[@types.Ins] = Array::new()
+  let il : Array[@types.Ins] = []
   let mut i = 1
   while i < fn_.def_order.length() {
     let bid = fn_.def_order[i]
@@ -1070,7 +1070,7 @@ fn arm64_process_block(
     return
   }
   let b = st.fn_.blks[bid]
-  let orig : Array[@types.Ins] = Array::new()
+  let orig : Array[@types.Ins] = []
   for x in b.ins {
     orig.push(x)
   }

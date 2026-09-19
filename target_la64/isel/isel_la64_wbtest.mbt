@@ -41,7 +41,7 @@ fn la64_isel_parse_pipeline(
 ///|
 // Collect the op of every instruction in the function, in block order.
 fn la64_sel_ops(f : @types.Fn) -> Array[@types.Op] {
-  let ops : Array[@types.Op] = Array::new()
+  let ops : Array[@types.Op] = []
   for id in f.def_order {
     for ins in f.blks[id].ins {
       ops.push(ins.op)

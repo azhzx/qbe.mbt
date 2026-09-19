@@ -324,13 +324,7 @@ pub fn isel(
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
 ) -> String raise {
-  let st = IselState::{
-    fn_,
-    buf: Array::new(),
-    an: Array::new(),
-    cur_ins: Array::new(),
-    interner,
-  }
+  let st = IselState::{ fn_, buf: [], an: [], cur_ins: [], interner, }
 
   // assign slots to fast allocs in the start block
   let start = fn_.blks[fn_.start_id]
@@ -401,7 +395,7 @@ pub fn isel(
   }
 
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> After instruction selection:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")
@@ -414,7 +408,7 @@ pub fn isel(
 ///|
 // The emitted instructions in block order (reverse of push order).
 fn emit_block(st : IselState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
