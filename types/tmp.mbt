@@ -12,7 +12,6 @@ pub(all) enum TmpWidth {
 
 ///|
 // Width index as int (C: WFull=0, Wsb=1, ... Wuw=6)
-#as_free_fn(width_code, deprecated="use `TmpWidth::code` instead")
 pub fn TmpWidth::code(self : TmpWidth) -> Int {
   match self {
     WFull => 0
@@ -27,7 +26,6 @@ pub fn TmpWidth::code(self : TmpWidth) -> Int {
 
 ///|
 // Construct TmpWidth from an int code (1..6 => Wsb..Wuw)
-#as_free_fn(width_from_code, deprecated="use `TmpWidth::from_code` instead")
 pub fn TmpWidth::from_code(c : Int) -> TmpWidth {
   match c {
     1 => Wsb
@@ -83,7 +81,6 @@ pub(all) enum AliasType {
 } derive(Eq, Debug)
 
 ///|
-#as_free_fn(astack, deprecated="use `AliasType::astack` instead")
 pub fn AliasType::astack(self : AliasType) -> Bool {
   match self {
     ALoc | AEsc => true
@@ -129,7 +126,7 @@ pub(all) struct Tmp {
 pub fn Tmp::new(name : String, cls : Class) -> Tmp {
   Tmp::{
     name,
-    uses: Array::new(),
+    uses: [],
     ndef: 0,
     nuse: 0,
     cost: 0,

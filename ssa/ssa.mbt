@@ -25,7 +25,7 @@ priv struct NamePool {
 
 ///|
 fn NamePool::new() -> NamePool {
-  NamePool::{ entries: Array::new(), free: Array::new(), }
+  NamePool::{ entries: [], free: [], }
 }
 
 ///|
@@ -54,7 +54,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
   let u = @types.BSet::new(nb)
   let defs = @types.BSet::new(nb)
   // LIFO worklist, mirroring cfg.c's `*--bp` / `*bp++` stack.
-  let work : Array[Int] = Array::new()
+  let work : Array[Int] = []
   for t in @types.Tmp0..<nt {
     fn_.tmps[t].visit = 0
     if fn_.tmps[t].is_phi != 0 {
@@ -92,7 +92,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
             }
             // C: if (clsmerge(&k, i->cls)) die("invalid input");
             let k_ref : Ref[Int] = Ref::{ val: k, }
-            if clsmerge(k_ref, kcode(i.cls)) {
+            if clsmerge(k_ref, i.cls.code()) {
               raise @util.QbeError::Ice("invalid input class")
             }
             k = k_ref.val
@@ -194,7 +194,7 @@ fn ren_dfs(
     }
   }
   // Fill phi arguments in successors
-  let succs : Array[Int] = Array::new()
+  let succs : Array[Int] = []
   if b.jmp.s1 >= 0 {
     succs.push(b.jmp.s1)
   }

@@ -9,7 +9,7 @@ pub struct Lexer {
 
 ///|
 pub fn Lexer::new(source : String, source_file : String) -> Lexer {
-  Lexer::{ source, source_file, tokens: Array::new(), err_msgs: Array::new(), }
+  Lexer::{ source, source_file, tokens: [], err_msgs: [], }
 }
 
 ///|
@@ -20,7 +20,7 @@ fn is_ident_char(c : Char) -> Bool {
 ///|
 // Read an identifier from a StringView, return (identifier, remaining)
 fn read_ident(s : StringView) -> (String, StringView) {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder::StringBuilder()
   let mut rest : StringView = s
   // Check if this is a float literal prefix (s_ or d_)
   // Float literals can contain '-' for negative numbers
@@ -57,7 +57,7 @@ fn read_ident(s : StringView) -> (String, StringView) {
 ///|
 // Read a number from a StringView, return (raw, is_float, remaining)
 fn read_number(s : StringView) -> (String, Bool, StringView) {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder::StringBuilder()
   let mut is_float = false
   let mut rest : StringView = s
   for cur = s {
@@ -87,7 +87,7 @@ fn read_number(s : StringView) -> (String, Bool, StringView) {
 // Escape sequences are kept raw, as the C lexer does (only an unescaped "
 // terminates the string).
 fn read_string(s : StringView) -> (String, StringView) {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder::StringBuilder()
   let mut esc = false
   let mut rest : StringView = s
   for cur = s {

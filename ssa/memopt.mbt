@@ -100,7 +100,7 @@ pub fn memopt(fn_ : @types.Fn) -> Unit raise {
             if (l.op == @types.Loadsw || l.op == @types.Loaduw) && k == 1 {
               // k == Kl: extend (loadsw -> extsw, loaduw -> extuw)
               ins.op = load_to_ext(l.op)
-            } else if k / 2 != kcode(l.cls) / 2 {
+            } else if k / 2 != l.cls.code() / 2 {
               ins.op = @types.Cast
             } else {
               ins.op = @types.Copy

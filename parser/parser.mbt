@@ -38,15 +38,15 @@ pub fn Parser::new(
     source_file,
     pos: 0,
     line: 1,
-    funcs: Array::new(),
-    datas: Array::new(),
-    typs: Array::new(),
-    order: Array::new(),
+    funcs: [],
+    datas: [],
+    typs: [],
+    order: [],
     interner: @util.Interner::new(),
     curfn: None,
     curblk: -1,
     rcls: 0,
-    par_ins: Array::new(),
+    par_ins: [],
   }
 }
 

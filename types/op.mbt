@@ -154,7 +154,6 @@ pub(all) enum Op {
 
 ///|
 // Check if op is a store
-#as_free_fn(is_store, deprecated="use `Op::is_store` instead")
 pub fn Op::is_store(self : Op) -> Bool {
   match self {
     Storeb | Storeh | Storew | Storel | Stores | Stored => true
@@ -164,7 +163,6 @@ pub fn Op::is_store(self : Op) -> Bool {
 
 ///|
 // Check if op is a load
-#as_free_fn(is_load, deprecated="use `Op::is_load` instead")
 pub fn Op::is_load(self : Op) -> Bool {
   match self {
     Loadsb | Loadub | Loadsh | Loaduh | Loadsw | Loaduw | Load => true
@@ -174,7 +172,6 @@ pub fn Op::is_load(self : Op) -> Bool {
 
 ///|
 // Check if op is an extension
-#as_free_fn(is_ext, deprecated="use `Op::is_ext` instead")
 pub fn Op::is_ext(self : Op) -> Bool {
   match self {
     Extsb | Extub | Extsh | Extuh | Extsw | Extuw => true
@@ -184,7 +181,6 @@ pub fn Op::is_ext(self : Op) -> Bool {
 
 ///|
 // Width index for a load op: Loadsb=Wsb, Loadub=Wub, ... Loaduw=Wuw
-#as_free_fn(load_width_idx, deprecated="use `Op::load_width_idx` instead")
 pub fn Op::load_width_idx(self : Op) -> Int {
   match self {
     Loadsb => 1
@@ -199,7 +195,6 @@ pub fn Op::load_width_idx(self : Op) -> Int {
 
 ///|
 // Width index for an extension op (C: Wsb + (op - Oextsb))
-#as_free_fn(ext_width_idx, deprecated="use `Op::ext_width_idx` instead")
 pub fn Op::ext_width_idx(self : Op) -> Int {
   match self {
     Extsb => 1
@@ -214,21 +209,18 @@ pub fn Op::ext_width_idx(self : Op) -> Int {
 
 ///|
 // Check if op is a parameter
-#as_free_fn(is_par, deprecated="use `Op::is_par` instead")
 pub fn Op::is_par(self : Op) -> Bool {
   self == Par || self == Parc || self == Pare
 }
 
 ///|
 // Check if op is an argument
-#as_free_fn(is_arg, deprecated="use `Op::is_arg` instead")
 pub fn Op::is_arg(self : Op) -> Bool {
   self == Arg || self == Argc || self == Arge
 }
 
 ///|
 // Parse op from string (the SSA opcode name)
-#as_free_fn(op_from_string, deprecated="use `Op::from_string` instead")
 pub fn Op::from_string(s : String) -> Op {
   match s {
     "add" => Add

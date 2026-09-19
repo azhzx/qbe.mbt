@@ -32,11 +32,11 @@ pub enum Ref {
 寄存器引用的查询：
 
 ```moonbit
-pub fn req(Ref, Ref) -> Bool         // 相等（含寄存器掩码比较）
+pub fn Ref::eq(Ref, Ref) -> Bool     // 相等（含寄存器掩码比较）
 pub fn rtype(Ref) -> Int            // 引用类型
-pub fn ref_none() -> Ref            // 空引用
-pub fn argregs(Ref) -> (UInt64, Int, Int)  // 参数寄存器掩码
-pub fn retregs(Ref) -> (UInt64, Int, Int)  // 返回寄存器掩码
+pub fn Ref::none() -> Ref            // 空引用
+pub fn Ref::argregs() -> (UInt64, Int, Int)  // 参数寄存器掩码
+pub fn Ref::retregs() -> (UInt64, Int, Int)  // 返回寄存器掩码
 pub fn is_callersave(Int) -> Bool
 pub fn rglob_mask() -> UInt64
 pub fn regname(Int) -> String       // 寄存器名 (rax, xmm0, ...)
@@ -140,12 +140,12 @@ pub(all) struct Jump {
 查询函数：
 
 ```moonbit
-pub fn op_from_string(String) -> Op
-pub fn op_from_index(Int) -> Op
-pub fn op_index(Op) -> Int
+pub fn Op::from_string(String) -> Op
+pub fn Op::from_index(Int) -> Op
+pub fn Op::index() -> Int
 pub fn op_info(Op) -> OpInfo          // 元数据 (操作数属性、可折叠等)
-pub fn is_load(Op) / is_store(Op) / is_ext(Op) / is_arg(Op) / is_par(Op) -> Bool
-pub fn load_width_idx(Op) / ext_width_idx(Op) / store_width_idx / loadsz / storesz -> Int
+pub fn Op::is_load() / Op::is_store() / Op::is_ext() / Op::is_arg() / Op::is_par() -> Bool
+pub fn Op::load_width_idx() / Op::ext_width_idx() / store_width_idx / loadsz / storesz -> Int
 ```
 
 ## `Con` - 常量
@@ -164,8 +164,8 @@ pub fn Con::double(Double) -> Con      // 双精度浮点
 pub fn Con::addr(Int) -> Con           // 地址 (label 引用)
 pub fn Con::is_zero(Self, Bool) -> Bool
 pub fn con_eq(Con, Con) -> Bool
-pub fn con_raw_bits(Con) -> Int64
-pub fn addcon(Con, Con) -> Con         // 常量加法（地址偏移合并）
+pub fn Con::raw_bits() -> Int64
+pub fn Con::add(Con) -> Con            // 常量加法（地址偏移合并）
 ```
 
 ## `Addr` - 内存地址

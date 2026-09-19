@@ -28,8 +28,8 @@ pub fn abi(
 ## 寄存器掩码辅助
 
 ```moonbit
-pub fn argregs(@types.Ref) -> (UInt64, Int, Int)   // 参数寄存器掩码
-pub fn retregs(@types.Ref) -> (UInt64, Int, Int)   // 返回寄存器掩码
+pub fn Ref::argregs() -> (UInt64, Int, Int)   // 参数寄存器掩码
+pub fn Ref::retregs() -> (UInt64, Int, Int)   // 返回寄存器掩码
 ```
 
 返回三元组 `(mask, n_int_regs, n_fp_regs)`，用于寄存器分配阶段计算活跃约束。

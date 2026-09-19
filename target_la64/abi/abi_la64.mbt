@@ -70,7 +70,7 @@ priv struct La64AbiState {
 
 ///|
 fn la64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> La64AbiState {
-  La64AbiState::{ fn_, typs, buf: Array::new(), }
+  La64AbiState::{ fn_, typs, buf: [], }
 }
 
 ///|
@@ -92,7 +92,7 @@ fn la64_emiti(st : La64AbiState, i : @types.Ins) -> Unit {
 
 ///|
 fn la64_emit_block(st : La64AbiState) -> Array[@types.Ins] {
-  let r : Array[@types.Ins] = Array::new()
+  let r : Array[@types.Ins] = []
   for k in (st.buf.length() - 1)>=..0 {
     r.push(st.buf[k])
   }
@@ -436,7 +436,7 @@ fn la64_selcall(
   i1 : Int,
 ) -> Unit {
   let nargs = i1 - i0
-  let ca : Array[La64Class] = Array::new()
+  let ca : Array[La64Class] = []
   for _ in 0..<nargs {
     ca.push(La64Class::new())
   }
@@ -642,7 +642,7 @@ fn la64_selcall(
 fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
-  let ca : Array[La64Class] = Array::new()
+  let ca : Array[La64Class] = []
   for _ in 0..<npar {
     ca.push(La64Class::new())
   }
@@ -760,7 +760,7 @@ pub fn abi_la64(
   // Rebuild the start block
   let emitted = la64_emit_block(st)
   st.buf.clear()
-  let new_ins : Array[@types.Ins] = Array::new()
+  let new_ins : Array[@types.Ins] = []
   for x in emitted {
     new_ins.push(x)
   }
@@ -781,7 +781,7 @@ pub fn abi_la64(
       continue
     }
     let b = fn_.blks[bid]
-    let orig : Array[@types.Ins] = Array::new()
+    let orig : Array[@types.Ins] = []
     for x in b.ins {
       orig.push(x)
     }
@@ -817,7 +817,7 @@ pub fn abi_la64(
   // Process start block for calls/returns (done last, matching C code)
   let start_bid = fn_.start_id
   let start_b = fn_.blks[start_bid]
-  let start_orig : Array[@types.Ins] = Array::new()
+  let start_orig : Array[@types.Ins] = []
   for x in start_b.ins {
     start_orig.push(x)
   }

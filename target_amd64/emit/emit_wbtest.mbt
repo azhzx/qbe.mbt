@@ -54,7 +54,7 @@ fn emit_parse_pipeline(
 ///|
 fn emit_gas(src : String, gasloc : String, gassym : String) -> String raise {
   let (f, interner, typs) = emit_parse_pipeline(src)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   emitfn(f, interner, gasloc, gassym, sb)
   sb.to_string()
 }
@@ -123,7 +123,7 @@ test "emit: gasemitdat writes data items and gasemitfin closes the file" {
   let parser = @parser.Parser::new(lexer.tokenize(), "<test>")
   parser.parse()
   let datas = parser.get_datas()
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   let mut i = 0
   while i < datas.length() {
     gasemitdat(datas[i], ".L", "", sb)

@@ -8,7 +8,7 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
   // The iteration order is the link chain (def_order); when it has not been
   // built yet (unit tests), fall back to all blocks.
   let chain : Array[Int] = if f.def_order.length() == 0 {
-    let a : Array[Int] = Array::new()
+    let a : Array[Int] = []
     for i in 0..<f.blks.length() {
       a.push(i)
     }
@@ -133,7 +133,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
     f.blks[i].rpo_id = -1
   }
   // DFS post-order from start block
-  let post_order : Array[Int] = Array::new()
+  let post_order : Array[Int] = []
   rpo_dfs(f, f.start_id, post_order)
   // Build RPO array (reverse of post-order)
   f.rpo.clear()
@@ -144,7 +144,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
   }
   // Drop unreachable blocks: they keep rpo_id == -1.  This mirrors cfg.c,
   // which deletes b->id == -1u blocks from the start link list.
-  let new_def : Array[Int] = Array::new()
+  let new_def : Array[Int] = []
   for id in f.def_order {
     if f.blks[id].rpo_id >= 0 {
       new_def.push(id)

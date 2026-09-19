@@ -12,7 +12,7 @@ priv struct Memory {
 
 ///|
 fn Memory::new() -> Memory {
-  Memory::{ bytes: Map::new(), symbols: Map::new(), }
+  Memory::{ bytes: Map([], capacity=0), symbols: Map([], capacity=0), }
 }
 
 ///|
@@ -70,7 +70,7 @@ fn Memory::load_uint(self : Memory, addr : UInt64, n : Int) -> UInt64 {
 ///|
 // Read a NUL-terminated string (for printf %s and puts).
 fn Memory::load_cstr(self : Memory, addr : UInt64) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   let mut p = addr
   for ;; {
     let c = self.load8(p)

@@ -144,7 +144,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
     }
   }
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> Liveness analysis:\n")
     for id in fn_.def_order {
       let b = fn_.blks[id]

@@ -48,7 +48,7 @@ pub fn loopiter(@types.Fn, (Int, Int) -> Unit) -> Unit
 ```moonbit
 pub fn getalias(@types.Ref, @types.Fn) -> @types.AliasInfo
 pub fn escapes(@types.Ref, @types.Fn) -> Bool
-pub fn astack(@types.AliasType) -> Bool
+pub fn AliasType::astack() -> Bool
 pub fn check_alias(@types.Ref, Int, @types.Ref, Int, @types.Fn) -> (AliasResult, Int64)
 ```
 

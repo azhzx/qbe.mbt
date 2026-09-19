@@ -9,7 +9,7 @@ priv struct WasmAbiState {
 
 ///|
 fn wasm_abi_new(fn_ : @types.Fn) -> WasmAbiState {
-  WasmAbiState::{ fn_, buf: Array::new(), }
+  WasmAbiState::{ fn_, buf: [], }
 }
 
 ///|
@@ -61,7 +61,7 @@ pub fn abi_wasm(
   }
 
   if print_dbg {
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     out.write_string("> After wasm ABI lowering:\n")
     out.to_string()
   } else {

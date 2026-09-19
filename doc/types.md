@@ -34,11 +34,11 @@ pub enum Ref {
 Register reference queries:
 
 ```moonbit
-pub fn req(Ref, Ref) -> Bool         // equality (including register mask comparison)
+pub fn Ref::eq(Ref, Ref) -> Bool     // equality (including register mask comparison)
 pub fn rtype(Ref) -> Int            // reference type
-pub fn ref_none() -> Ref            // null reference
-pub fn argregs(Ref) -> (UInt64, Int, Int)  // parameter register mask
-pub fn retregs(Ref) -> (UInt64, Int, Int)  // return register mask
+pub fn Ref::none() -> Ref            // null reference
+pub fn Ref::argregs() -> (UInt64, Int, Int)  // parameter register mask
+pub fn Ref::retregs() -> (UInt64, Int, Int)  // return register mask
 pub fn is_callersave(Int) -> Bool
 pub fn rglob_mask() -> UInt64
 pub fn regname(Int) -> String       // register name (rax, xmm0, ...)
@@ -142,12 +142,12 @@ Covers all 100+ QBE instructions: arithmetic (`Add`/`Sub`/`Mul`/`Div`/`Rem`/`Udi
 Query functions:
 
 ```moonbit
-pub fn op_from_string(String) -> Op
-pub fn op_from_index(Int) -> Op
-pub fn op_index(Op) -> Int
+pub fn Op::from_string(String) -> Op
+pub fn Op::from_index(Int) -> Op
+pub fn Op::index() -> Int
 pub fn op_info(Op) -> OpInfo          // metadata (operand properties, foldable, etc.)
-pub fn is_load(Op) / is_store(Op) / is_ext(Op) / is_arg(Op) / is_par(Op) -> Bool
-pub fn load_width_idx(Op) / ext_width_idx(Op) / store_width_idx / loadsz / storesz -> Int
+pub fn Op::is_load() / Op::is_store() / Op::is_ext() / Op::is_arg() / Op::is_par() -> Bool
+pub fn Op::load_width_idx() / Op::ext_width_idx() / store_width_idx / loadsz / storesz -> Int
 ```
 
 ## `Con` - Constants
@@ -166,8 +166,8 @@ pub fn Con::double(Double) -> Con      // double-precision float
 pub fn Con::addr(Int) -> Con           // address (label reference)
 pub fn Con::is_zero(Self, Bool) -> Bool
 pub fn con_eq(Con, Con) -> Bool
-pub fn con_raw_bits(Con) -> Int64
-pub fn addcon(Con, Con) -> Con         // constant addition (address offset merging)
+pub fn Con::raw_bits() -> Int64
+pub fn Con::add(Con) -> Con            // constant addition (address offset merging)
 ```
 
 ## `Addr` - Memory Address

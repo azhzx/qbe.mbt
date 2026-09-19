@@ -456,7 +456,7 @@ pub fn loadopt(
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
 ) -> String {
-  let st = LoadState::{ fn_, inum: 0, ilog: Array::new(), nlog: 0, }
+  let st = LoadState::{ fn_, inum: 0, ilog: [], nlog: 0, }
   // First pass: for each load, try to replace it
   for b_id in fn_.def_order {
     for ii in 0..<fn_.blks[b_id].ins.length() {
@@ -495,7 +495,7 @@ pub fn loadopt(
       ist = ist + 1
     }
     let mut ni = 0
-    let ib : Array[@types.Ins] = Array::new()
+    let ib : Array[@types.Ins] = []
     while true {
       if st.ilog[ist].bid == b_id && st.ilog[ist].off == ni {
         ib.push(st.ilog[ist].ins)
@@ -536,7 +536,7 @@ pub fn loadopt(
     }
   }
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> After load elimination:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")

@@ -320,7 +320,7 @@ fn Interp::eval_op(
       bits_to_single(a).to_double().reinterpret_as_int64()
     @types.Truncd =>
       // double -> single: keep the low 32 bits of the float bit pattern
-      bits_to_double(a).to_float().reinterpret_as_uint().to_int64()
+      Float::from_double(bits_to_double(a)).reinterpret_as_uint().to_int64()
     @types.Cast => a
     _ =>
       raise @util.QbeError::CompileError(
@@ -344,7 +344,7 @@ fn Interp::eval_float_op(
     @types.Swtof => {
       let i = sext32(a)
       let v = if single {
-        i.to_int().to_float().reinterpret_as_uint().to_int64()
+        Float::from_int(i.to_int()).reinterpret_as_uint().to_int64()
       } else {
         i.to_int().to_double().reinterpret_as_int64()
       }
@@ -352,7 +352,7 @@ fn Interp::eval_float_op(
     }
     @types.Sltof => {
       let v = if single {
-        a.to_int().to_float().reinterpret_as_uint().to_int64()
+        Float::from_int(a.to_int()).reinterpret_as_uint().to_int64()
       } else {
         a.to_int().to_double().reinterpret_as_int64()
       }

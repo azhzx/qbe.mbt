@@ -55,7 +55,7 @@ pub fn gasemitfin(
 ## 典型调用
 
 ```moonbit
-let sb = StringBuilder::new()
+let sb = StringBuilder::StringBuilder()
 for item in order {
   if item == "f" {
     run_passes(fn_, interner, typs, dbg)

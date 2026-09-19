@@ -26,7 +26,7 @@ fn mk(
 
 ///|
 fn cls(vals : Array[String]) -> Array[Int] {
-  let r : Array[Int] = Array::new()
+  let r : Array[Int] = []
   for v in vals {
     let c = match v {
       "w" => 0
@@ -920,7 +920,6 @@ pub fn Op::name(self : Op) -> String {
 
 ///|
 // Convert an optab index back to an Op
-#as_free_fn(op_from_index, deprecated="use `Op::from_index` instead")
 pub fn Op::from_index(i : Int) -> Op {
   match i {
     0 => Oxxx
@@ -1049,7 +1048,6 @@ pub fn Op::from_index(i : Int) -> Op {
 
 ///|
 // Get the zero-based index of an op in the optab
-#as_free_fn(op_index, deprecated="use `Op::index` instead")
 pub fn Op::index(self : Op) -> Int {
   match self {
     Oxxx => 0

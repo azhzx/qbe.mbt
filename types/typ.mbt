@@ -41,5 +41,5 @@ pub(all) struct Typ {
 
 ///|
 pub fn Typ::new(name : String) -> Typ {
-  Typ::{ name, dark: 0, align: 0, size: 0, nunion: 1, fields: Array::new(), }
+  Typ::{ name, dark: 0, align: 0, size: 0, nunion: 1, fields: [], }
 }

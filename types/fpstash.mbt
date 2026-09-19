@@ -31,7 +31,7 @@ fn fp_memcmp(a0 : Int64, a1 : Int64, b0 : Int64, b1 : Int64, n : Int) -> Bool {
 // Deduplicated stash of fp constants (C gasstash in gas.c). bits0/bits1 are
 // the 16-byte value, size is 4, 8, or 16. A smaller size matches the prefix
 // of a larger entry (size <= b->size).
-let fp_stash : Array[FpBits] = Array::new()
+let fp_stash : Array[FpBits] = []
 
 ///|
 pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int) -> Int {

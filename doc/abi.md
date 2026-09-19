@@ -30,8 +30,8 @@ Return value follows `ssa.copy`/`ssa.loadopt` convention: debug mode returns dum
 ## Register Mask Helpers
 
 ```moonbit
-pub fn argregs(@types.Ref) -> (UInt64, Int, Int)   // parameter register mask
-pub fn retregs(@types.Ref) -> (UInt64, Int, Int)   // return register mask
+pub fn Ref::argregs() -> (UInt64, Int, Int)   // parameter register mask
+pub fn Ref::retregs() -> (UInt64, Int, Int)   // return register mask
 ```
 
 Returns a triple `(mask, n_int_regs, n_fp_regs)` used by the register allocation phase to compute liveness constraints.

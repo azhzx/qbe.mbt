@@ -14,7 +14,6 @@ pub(all) enum Ref {
 
 ///|
 /// R - empty reference (corresponds to C macro R)
-#as_free_fn(ref_none, deprecated="use `Ref::none` instead")
 pub fn Ref::none() -> Ref {
   RNone
 }
@@ -56,8 +55,7 @@ pub fn Ref::mem(i : Int) -> Ref {
 }
 
 ///|
-/// req - reference equality (corresponds to C req())
-#as_free_fn(req, deprecated="use `Ref::eq` instead")
+/// Compare two references for equality (corresponds to C req()).
 pub fn Ref::eq(self : Ref, other : Ref) -> Bool {
   self == other
 }

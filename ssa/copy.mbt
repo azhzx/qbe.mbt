@@ -117,7 +117,7 @@ pub fn copy(
 ) -> String {
   let nt = fn_.ntmp()
   let cp : Array[@types.Ref] = Array::make(nt, @types.Ref::none())
-  let wl : Array[Int] = Array::new()
+  let wl : Array[Int] = []
   let visited : Array[Bool] = Array::make(nt, false)
   // Initial visit
   for id in fn_.def_order {
@@ -193,7 +193,7 @@ pub fn copy(
   }
   // Debug output (-dC)
   if print_dbg {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder::StringBuilder()
     sb.write_string("\n> Copy information:")
     for t in @types.Tmp0..<nt {
       if cp[t].eq(@types.Ref::none()) {

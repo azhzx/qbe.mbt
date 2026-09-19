@@ -30,13 +30,13 @@ fn parse_run_spec(
 ) -> Result[(String, Array[@interp.InterpValue]), String] {
   let parts : Array[String] = []
   for piece in spec.split(",") {
-    parts.push(piece.to_string())
+    parts.push(piece.to_owned())
   }
   if parts.length() == 0 || parts[0] == "" {
     return Err("--run requires a function name")
   }
   let name = parts[0]
-  let args : Array[@interp.InterpValue] = Array::new()
+  let args : Array[@interp.InterpValue] = []
   for i in 1..<parts.length() {
     let raw = parts[i]
     if raw == "" {
@@ -44,13 +44,13 @@ fn parse_run_spec(
     }
     if raw.has_prefix("s_") {
       // QBE single literal
-      let d = @string.parse_double(raw.substring(start=2)) catch {
+      let d = @string.parse_double(raw[2:]) catch {
         _ => return Err("invalid single argument '\{raw}'")
       }
-      args.push(@interp.VFloat(d.to_float()))
+      args.push(@interp.VFloat(Float::from_double(d)))
     } else if raw.has_prefix("d_") {
       // QBE double literal
-      let d = @string.parse_double(raw.substring(start=2)) catch {
+      let d = @string.parse_double(raw[2:]) catch {
         _ => return Err("invalid double argument '\{raw}'")
       }
       args.push(@interp.VDouble(d))
@@ -172,7 +172,7 @@ async fn main {
   }
   let files = match parsed.values.get("file") {
     Some(arr) => arr
-    None => Array::new()
+    None => []
   }
   if files.length() == 0 {
     @util.eprint("qbe: no input files\n")
@@ -215,7 +215,7 @@ async fn main {
     _ => ()
   }
   // Process each file, accumulating the output.
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for file in files {
     let s = process_file(file, flags, gas, target)
     out.write_string(s)

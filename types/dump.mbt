@@ -18,7 +18,7 @@ pub fn phicls(t : Int, tmps : Array[Tmp]) -> Int {
 ///|
 // Dump the temporaries of a set, as C dumpts: "[ %a %b ]\n".
 pub fn dumpts(bs : BSet, tmps : Array[Tmp]) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
   sb.write_char('[')
   bs.each_from(Tmp0, t => {
     sb.write_char(' ')

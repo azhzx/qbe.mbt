@@ -184,10 +184,10 @@ pub fn fold(
   let st = FoldState::{
     fn_,
     val: Array::make(nt, TOP),
-    edges: Array::new(),
-    usewrk: Array::new(),
+    edges: [],
+    usewrk: [],
     nuse: 0,
-    work: Array::new(),
+    work: [],
   }
   for n in 0..<nb {
     let b = fn_.blks[fn_.rpo[n]]
@@ -202,7 +202,7 @@ pub fn fold(
   // The start edge into rpo[0] (the start block).
   st.work.push(-1)
 
-  let sb = StringBuilder::new()
+  let sb = StringBuilder::StringBuilder()
 
   // 1. find out constants and dead cfg edges
   while true {
@@ -281,7 +281,7 @@ pub fn fold(
 
   // 2. trim dead code, replace constants
   let mut d = 0
-  let new_def : Array[Int] = Array::new()
+  let new_def : Array[Int] = []
   for id in fn_.def_order {
     let b = fn_.blks[id]
     if b.visit == 0 {

@@ -66,7 +66,7 @@ pub fn storesz(@types.Ins) -> Int   // 该 store 指令写入的字节数
 ## 辅助
 
 ```moonbit
-pub fn kcode(@types.Class) -> Int   // 类 -> 硬件编码
+pub fn Class::code() -> Int          // 类 -> 硬件编码
 pub fn kx() -> Int                  // Kx 类编码
 pub fn phicls(Int, Array[@types.Tmp]) -> Int   // 决定 phi 的类
 pub fn clsmerge(@ref.Ref[Int], Int) -> Bool     // 类合并辅助
