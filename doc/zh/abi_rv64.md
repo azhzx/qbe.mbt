@@ -64,8 +64,9 @@ pub fn abi_rv64(
 
 ## 备注
 
-- rv64 后端目前没有差分参考验证（上游 C QBE 的 rv64 目标尚未纳入
-  `compare.py` 基线），行为以 IL 语义与 RISC-V 调用约定为准。
+- rv64 后端通过 `python compare.py --target rv64`（IR/调试 dump）与
+  `tools/check_rv64_asm.py`（可编码性）对照 `vendor/qbe -t rv64` 验证，行为以
+  IL 语义与 RISC-V 调用约定为准。
 - `spill`/`rega` 是目标无关的：`abi_rv64` 降级完成后，`pipeline.mbt` 调用
   `@types.init_rv64_target()` 切换全局 `TargetCfg`，后续 `spill`/`rega`
   按 RISC-V 寄存器编号分配。

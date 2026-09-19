@@ -60,6 +60,18 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
     if fn_.tmps[t].is_phi != 0 {
       continue
     }
+    // C ssa.c: a single-definition temp whose uses all live in the defining
+    // block (or that is defined in the start block) needs no renaming.
+    if fn_.tmps[t].ndef == 1 {
+      let mut ok = true
+      let defb = fn_.tmps[t].bid
+      for use in fn_.tmps[t].uses {
+        ok = ok && use.blk_id == defb
+      }
+      if ok || defb == fn_.start_id {
+        continue
+      }
+    }
     u.zero()
     let mut k = -1
     // First pass: rename intra-block defs and find blocks that define t

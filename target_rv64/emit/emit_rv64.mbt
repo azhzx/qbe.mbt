@@ -59,9 +59,22 @@ fn sign_ext29(s : Int) -> Int {
 }
 
 ///|
+// Module-global base for block labels (C rv64/emit.c static id0); advances by
+// fn->nblk after each function so labels stay unique across the module.
+let rv64_id0 : Array[Int] = [0]
+
+///|
+// Reset the block-label base (called once per module).
+pub fn rv64_emit_reset() -> Unit {
+  rv64_id0[0] = 0
+}
+
+///|
 priv struct Rv64EmitState {
   fn_ : @types.Fn
   interner : @util.Interner
+  gasloc : String
+  gassym : String
   sb : StringBuilder
 }
 
@@ -69,9 +82,11 @@ priv struct Rv64EmitState {
 fn rv64_emit_new(
   fn_ : @types.Fn,
   interner : @util.Interner,
+  gasloc : String,
+  gassym : String,
   sb : StringBuilder,
 ) -> Rv64EmitState {
-  Rv64EmitState::{ fn_, interner, sb, }
+  Rv64EmitState::{ fn_, interner, gasloc, gassym, sb, }
 }
 
 ///|
@@ -148,6 +163,8 @@ let rv64_omap : Array[(Int, Int, String)] = [
   (@types.Swap.index(), KI, "mv %?, %0\n\tmv %0, %1\n\tmv %1, %?"),
   (@types.Swap.index(), KA, "fmv.%k %?, %0\n\tfmv.%k %0, %1\n\tfmv.%k %1, %?"),
   (@types.Call.index(), KW, "jalr %0"),
+  (@types.Reqz.index(), KI, "seqz %=, %0"),
+  (@types.Rnez.index(), KI, "snez %=, %0"),
 ]
 
 ///|
@@ -166,10 +183,16 @@ fn rv64_slot(st : Rv64EmitState, s : Int) -> Int {
 fn rv64_emitaddr(st : Rv64EmitState, con : @types.Con) -> Unit {
   match con.kind {
     @types.CAddr => {
+      let p = if con.is_local { st.gasloc } else { st.gassym }
+      st.sb.write_string(p)
       st.sb.write_string(st.interner.get(con.label))
       if con.bits.i != 0L {
-        st.sb.write_string("+")
-        st.sb.write_string(con.bits.i.to_string())
+        if con.bits.i > 0L {
+          st.sb.write_string("+")
+          st.sb.write_string(con.bits.i.to_string())
+        } else {
+          st.sb.write_string(con.bits.i.to_string())
+        }
       }
     }
     _ => abort("invalid address constant")
@@ -604,6 +627,7 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
         match con.kind {
           @types.CAddr => {
             st.sb.write_string("\tcall ")
+            st.sb.write_string(st.gassym)
             st.sb.write_string(st.interner.get(con.label))
             st.sb.write_char('\n')
           }
@@ -642,14 +666,12 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
 fn rv64_emitfn(st : Rv64EmitState) -> Unit {
   let fn_ = st.fn_
 
-  st.sb.write_string("\t.globl ")
-  st.sb.write_string(fn_.name)
-  st.sb.write_char('\n')
-  st.sb.write_string("\t.type ")
-  st.sb.write_string(fn_.name)
-  st.sb.write_string(", @function\n")
-  st.sb.write_string(fn_.name)
-  st.sb.write_string(":\n")
+  // C emitfnlnk: section, .balign (default 16), .globl, label.
+  st.sb.write_string(".text\n.balign 16\n")
+  if fn_.is_export {
+    st.sb.write_string(".globl \{st.gassym}\{fn_.name}\n")
+  }
+  st.sb.write_string("\{st.gassym}\{fn_.name}:\n")
 
   if fn_.is_vararg {
     st.sb.write_string("\tadd sp, sp, -64\n")
@@ -707,11 +729,14 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
   }
 
   let mut lbl = false
-  for bid in fn_.def_order {
+  // main.c rebuilds the link chain in RPO order after rega; emit in that order.
+  for idx in 0..<fn_.rpo.length() {
+    let bid = fn_.rpo[idx]
     let b = fn_.blks[bid]
+    let next = if idx + 1 < fn_.rpo.length() { fn_.rpo[idx + 1] } else { -1 }
     if lbl || b.npred > 1 {
-      st.sb.write_string(".L")
-      st.sb.write_string(bid.to_string())
+      st.sb.write_string(st.gasloc)
+      st.sb.write_string((rv64_id0[0] + b.rpo_id).to_string())
       st.sb.write_string(":\n")
     }
     for i in b.ins {
@@ -751,9 +776,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
         st.sb.write_string("\tret\n")
       }
       @types.Jjmp =>
-        if b.jmp.s1 >= 0 && b.jmp.s1 != bid + 1 {
-          st.sb.write_string("\tj .L")
-          st.sb.write_string(b.jmp.s1.to_string())
+        if b.jmp.s1 >= 0 && b.jmp.s1 != next {
+          st.sb.write_string("\tj \{st.gasloc}")
+          st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
           st.sb.write_char('\n')
         } else {
           lbl = false
@@ -761,24 +786,29 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
       @types.Jjnz =>
         if b.jmp.arg.is_tmp() {
           let rn = @types.rv64_reg_name(b.jmp.arg.tmp_val())
-          if b.jmp.s2 >= 0 && b.jmp.s2 == bid + 1 {
+          if b.jmp.s2 >= 0 && b.jmp.s2 == next {
             // the false target is the next block: branch on true and
             // fall through
             st.sb.write_string("\tbnez ")
             st.sb.write_string(rn)
-            st.sb.write_string(", .L")
-            st.sb.write_string(b.jmp.s1.to_string())
+            st.sb.write_string(", \{st.gasloc}")
+            st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
             st.sb.write_char('\n')
+            // C Jmp: b->s1 (now the fallthrough) == b->link -> no label next.
+            lbl = false
           } else {
             st.sb.write_string("\tbeqz ")
             st.sb.write_string(rn)
-            st.sb.write_string(", .L")
-            st.sb.write_string(b.jmp.s2.to_string())
+            st.sb.write_string(", \{st.gasloc}")
+            st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s2].rpo_id).to_string())
             st.sb.write_char('\n')
-            if !(b.jmp.s1 >= 0 && b.jmp.s1 == bid + 1) {
+            if b.jmp.s1 >= 0 && b.jmp.s1 == next {
+              // the true target is the next block: fall through
+              lbl = false
+            } else {
               // the true target is not the next block: jump to it
-              st.sb.write_string("\tj .L")
-              st.sb.write_string(b.jmp.s1.to_string())
+              st.sb.write_string("\tj \{st.gasloc}")
+              st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
               st.sb.write_char('\n')
             }
           }
@@ -787,11 +817,10 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
     }
   }
 
-  st.sb.write_string("\t.size ")
-  st.sb.write_string(fn_.name)
-  st.sb.write_string(", .-")
-  st.sb.write_string(fn_.name)
-  st.sb.write_char('\n')
+  // C elf_emitfnfin emits the function type/size after each function.
+  st.sb.write_string(".type \{st.gassym}\{fn_.name}, @function\n")
+  st.sb.write_string(".size \{st.gassym}\{fn_.name}, .-\{st.gassym}\{fn_.name}\n")
+  rv64_id0[0] = rv64_id0[0] + fn_.nblk()
 }
 
 ///|
@@ -799,11 +828,14 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
 pub fn emit_rv64(
   fn_ : @types.Fn,
   interner : @util.Interner,
+  gasloc : String,
+  gassym : String,
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
 ) -> String {
+  let _ = (gasloc, gassym)
   let sb = StringBuilder()
-  let st = rv64_emit_new(fn_, interner, sb)
+  let st = rv64_emit_new(fn_, interner, gasloc, gassym, sb)
 
   rv64_emitfn(st)
 

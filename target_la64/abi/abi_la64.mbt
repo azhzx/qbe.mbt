@@ -105,6 +105,11 @@ fn la64_newtmp(st : La64AbiState, k : @types.Class) -> @types.Ref {
 }
 
 ///|
+fn la64_newblt(st : La64AbiState, k : @types.Class) -> @types.Ref {
+  @types.Ref::tmp(st.fn_.new_tmp("blt", k))
+}
+
+///|
 fn la64_getcon(st : La64AbiState, v : Int64) -> @types.Ref {
   @types.Ref::con(st.fn_.get_con(v))
 }
@@ -115,23 +120,45 @@ fn la64_call_ref(ca : Int) -> @types.Ref {
 }
 
 ///|
-// Copy sz bytes from rsrc to rstk in 8-byte chunks.
+// Copy sz bytes between src and dst (C blit in simpl.c). A non-negative sz
+// copies backwards (the shared offset starts at sz and decreases), a negative
+// sz copies forwards; the load and the store of each chunk use the same
+// offset. Chunks are emitted in reverse program order by the prepending
+// emit(), and the chunk table is ordered 8/4/2/1 bytes.
 fn la64_blit(
   st : La64AbiState,
-  rstk : @types.Ref,
-  rsrc : @types.Ref,
+  dst : @types.Ref,
+  src : @types.Ref,
   sz : Int64,
 ) -> Unit {
-  let mut off = 0L
-  while off < sz {
-    let r = la64_newtmp(st, @types.Kl)
-    let r1 = la64_newtmp(st, @types.Kl)
-    la64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r, r1)
-    la64_emit(st, @types.Add, @types.Kl, r1, rstk, la64_getcon(st, off))
-    let r2 = la64_newtmp(st, @types.Kl)
-    la64_emit(st, @types.Load, @types.Kl, r, r2, @types.Ref::none())
-    la64_emit(st, @types.Add, @types.Kl, r2, rsrc, la64_getcon(st, off))
-    off = off + 8L
+  let st_ops = [@types.Storel, @types.Storew, @types.Storeh, @types.Storeb]
+  let ld_ops = [@types.Load, @types.Load, @types.Loaduh, @types.Loadub]
+  let clss = [@types.Kl, @types.Kw, @types.Kw, @types.Kw]
+  let sizes = [8, 4, 2, 1]
+  let fwd = sz >= 0
+  let mut sz_ = if fwd { sz } else { -sz }
+  let mut off = if fwd { sz_ } else { 0L }
+  let mut p = 0
+  while sz_ > 0 {
+    let s = sizes[p].to_int64()
+    while sz_ >= s {
+      if fwd {
+        off = off - s
+      }
+      let r = la64_newblt(st, @types.Kl)
+      let r1 = la64_newblt(st, @types.Kl)
+      let ro = la64_getcon(st, off)
+      la64_emit(st, st_ops[p], @types.Kw, @types.Ref::none(), r, r1)
+      la64_emit(st, @types.Add, @types.Kl, r1, dst, ro)
+      let r1b = la64_newblt(st, @types.Kl)
+      la64_emit(st, ld_ops[p], clss[p], r, r1b, @types.Ref::none())
+      la64_emit(st, @types.Add, @types.Kl, r1b, src, ro)
+      if !fwd {
+        off = off + s
+      }
+      sz_ = sz_ - s
+    }
+    p = p + 1
   }
 }
 
@@ -851,8 +878,11 @@ pub fn abi_la64(
   }
 
   if print_dbg {
+    // vendor/qbe la64 ABI (abi.c analogue): header then printfn.
     let sb = StringBuilder()
-    sb.write_string("\n> After LoongArch ABI lowering:\n")
+    sb.write_string("\n> After ABI lowering:\n")
+    sb.write_string(@parser.printfn(fn_, interner, all_typs))
+    sb.write_string("\n")
     sb.to_string()
   } else {
     ""

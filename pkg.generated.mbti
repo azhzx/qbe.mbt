@@ -20,7 +20,7 @@ pub fn compile_la64(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_la64_debug(String, String) -> Result[String, @util.QbeError]
 
-pub fn compile_rv64(String) -> Result[String, @util.QbeError]
+pub fn compile_rv64(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_rv64_debug(String, String) -> Result[String, @util.QbeError]
 

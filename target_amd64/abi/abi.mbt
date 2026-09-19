@@ -177,32 +177,6 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
 }
 
 ///|
-// Copy sz bytes from rsrc to rstk+soff in 8-byte chunks (C blit).
-fn blit(
-  st : AbiState,
-  rstk : @types.Ref,
-  soff : Int,
-  rsrc : @types.Ref,
-  sz : Int,
-) -> Unit {
-  let mut soff = soff
-  let mut sz = sz
-  let mut boff = 0
-  while sz > 0 {
-    let r = blt_newtmp(st, @types.Kl)
-    let r1 = blt_newtmp(st, @types.Kl)
-    emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r, r1)
-    emit(st, @types.Add, @types.Kl, r1, rstk, getcon(st, soff.to_int64()))
-    let r2 = blt_newtmp(st, @types.Kl)
-    emit(st, @types.Load, @types.Kl, r, r2, @types.Ref::none())
-    emit(st, @types.Add, @types.Kl, r2, rsrc, getcon(st, boff.to_int64()))
-    sz = sz - 8
-    soff = soff + 8
-    boff = boff + 8
-  }
-}
-
-///|
 fn selret(st : AbiState, bid : Int) -> Unit {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
@@ -223,7 +197,15 @@ fn selret(st : AbiState, bid : Int) -> Unit {
         st.fn_.retr,
         @types.Ref::none(),
       )
-      blit(st, st.fn_.retr, 0, r0, aret.size)
+      emit(
+        st,
+        @types.Blit1,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::rint(st.typs[st.fn_.ret_ty].size.to_int()),
+        @types.Ref::none(),
+      )
+      emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), r0, st.fn_.retr)
       ca = 1
     } else {
       let reg : Array[@types.Ref] = Array::make(2, @types.Ref::none())

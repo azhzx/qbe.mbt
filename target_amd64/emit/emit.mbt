@@ -8,6 +8,9 @@ priv struct EmitState {
   gasloc : String
   gassym : String
   sb : StringBuilder
+  mut fp : String // frame pointer: "%rbp" or "%rsp" (C E.fp)
+  mut fsz : Int // frame size (C E.fsz)
+  mut nclob : Int // number of pushed callee-saved registers (C E.nclob)
 }
 
 ///|
@@ -166,7 +169,13 @@ fn sign_ext29(s : Int) -> Int {
 fn slot(st : EmitState, s : Int) -> Int {
   let x = sign_ext29(s)
   if x < 0 {
-    -4 * x
+    if st.fp == "%rsp" {
+      4 * -x - 8 + st.fsz + st.nclob * 8
+    } else {
+      -4 * x
+    }
+  } else if st.fp == "%rsp" {
+    4 * x + st.nclob * 8
   } else if st.fn_.is_vararg {
     -176 + -4 * (st.fn_.slot - x)
   } else {
@@ -193,9 +202,18 @@ fn s64_plus(v : Int64) -> String {
 fn emitcon(st : EmitState, con : @types.Con) -> Unit {
   match con.kind {
     @types.CAddr => {
-      let p = if con.is_local { st.gasloc } else { st.gassym }
-      st.sb.write_string(p)
-      st.sb.write_string(st.interner.get(con.label))
+      // Local (fp-constant) symbols are interned by the isel without a
+      // prefix; the reference prints them quoted, e.g. ".Lfp0" (C emitcon
+      // checks l[0] == '"').
+      if con.is_local {
+        st.sb.write_string("\"")
+        st.sb.write_string(st.gasloc)
+        st.sb.write_string(st.interner.get(con.label))
+        st.sb.write_string("\"")
+      } else {
+        st.sb.write_string(st.gassym)
+        st.sb.write_string(st.interner.get(con.label))
+      }
       if con.bits.i != 0L {
         st.sb.write_string(s64_plus(con.bits.i))
       }
@@ -233,7 +251,10 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
   if m.base.is_slot() {
     let off = @types.Con::int(slot(st, m.base.slot_val()).to_int64())
     m.offset = m.offset.add(off)
-    m.base = @types.Ref::tmp(@types.RBP)
+    // C emit_mem uses TMP(e->fp), which is RSP for leaf functions.
+    m.base = @types.Ref::tmp(
+      if st.fp == "%rbp" { @types.RBP } else { @types.RSP },
+    )
   }
   if m.offset.kind != @types.CUndef {
     emitcon(st, m.offset)
@@ -261,7 +282,7 @@ fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int) -> Unit raise {
     st.sb.write_string("%")
     st.sb.write_string(regtoa(rf.tmp_val(), sz))
   } else if rf.is_slot() {
-    st.sb.write_string("\{slot(st, rf.slot_val())}(%rbp)")
+    st.sb.write_string("\{slot(st, rf.slot_val())}(\{st.fp})")
   } else if rf.is_mem() {
     emit_mem(st, rf)
   } else if rf.is_con() {
@@ -341,7 +362,7 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
         if rf.is_mem() {
           emit_mem(st, rf)
         } else if rf.is_slot() {
-          st.sb.write_string("\{slot(st, rf.slot_val())}(%rbp)")
+          st.sb.write_string("\{slot(st, rf.slot_val())}(\{st.fp})")
         } else if rf.is_con() {
           emitcon(st, st.fn_.cons[rf.con_val()])
           st.sb.write_string("(%rip)")
@@ -402,8 +423,42 @@ fn neg_mask(cls : @types.Class) -> Int64 {
 }
 
 ///|
+
+///|
+// cmov condition suffixes indexed by the ICmp code (C cmov[] in amd64/emit.c).
+let amd64_cmov_s0 : Array[String] = [
+  "z", "nz", "ge", "g", "le", "l", "ae", "a", "be", "b", "?", "ae", "a", "?", "?",
+  "?", "np", "p",
+]
+
+///|
+let amd64_cmov_s1 : Array[String] = [
+  "nz", "z", "l", "le", "g", "ge", "b", "be", "a", "ae", "?", "b", "be", "?", "?",
+  "?", "p", "np",
+]
+
+///|
+// Emit a conditional move (C case_Oxsel in amd64/emit.c).
+fn emit_xsel(st : EmitState, i : @types.Ins) -> Unit raise {
+  let c = i.op.index() - @types.Xselieq.index()
+  if i.to.eq(i.arg2) {
+    emitf(st, "cmov\{amd64_cmov_s0[c]} %0, %=", i)
+  } else {
+    if !i.to.eq(i.arg1) {
+      emitf(st, "mov%k %0, %=", i)
+    }
+    emitf(st, "cmov\{amd64_cmov_s1[c]} %1, %=", i)
+  }
+}
+
+///|
 fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
   let ins = i
+  let oi = ins.op.index()
+  if oi >= @types.Xselieq.index() && oi <= @types.Xselfuo.index() {
+    emit_xsel(st, ins)
+    return
+  }
   match ins.op {
     @types.Nop => ()
     @types.Mul => {
@@ -515,16 +570,34 @@ pub fn emitfn(
   gassym : String,
   sb : StringBuilder,
 ) -> Unit raise {
-  let st = EmitState::{ fn_, interner, gasloc, gassym, sb, }
-  st.sb.write_string(".text\n")
+  let st = EmitState::{
+    fn_,
+    interner,
+    gasloc,
+    gassym,
+    sb,
+    fp: "%rbp",
+    fsz: 0,
+    nclob: 0,
+  }
+  // C emitlnk: section, .balign (function alignment, default 16), .globl, label.
+  st.sb.write_string(".text\n.balign 16\n")
   if fn_.is_export {
     st.sb.write_string(".globl \{gassym}\{fn_.name}\n")
   }
   st.sb.write_string("\{gassym}\{fn_.name}:\n")
-  st.sb.write_string("\tpushq %rbp\n\tmovq %rsp, %rbp\n")
+  // CET landing pad (C amd64_sysv_emitfn always emits it).
+  st.sb.write_string("\tendbr64\n")
+  // Leaf functions without varargs/dynalloc address locals off %rsp (C).
+  let use_fp = !fn_.leaf || fn_.is_vararg || fn_.has_dynalloc
+  st.fp = if use_fp { "%rbp" } else { "%rsp" }
+  if use_fp {
+    st.sb.write_string("\tpushq %rbp\n\tmovq %rsp, %rbp\n")
+  }
   let mut fs = framesz(st)
+  st.fsz = fs
   if fs != 0 {
-    st.sb.write_string("\tsub $\{fs}, %rsp\n")
+    st.sb.write_string("\tsubq $\{fs}, %rsp\n")
   }
   if fn_.is_vararg {
     let mut o = -176
@@ -548,6 +621,7 @@ pub fn emitfn(
       )
       emitf(st, "pushq %L0", itmp)
       fs = fs + 8
+      st.nclob = st.nclob + 1
     }
   }
 
@@ -557,6 +631,17 @@ pub fn emitfn(
     let b = fn_.blks[bid]
     let next = if idx + 1 < fn_.rpo.length() { fn_.rpo[idx + 1] } else { -1 }
     if lbl || b.npred > 1 {
+      // C: align loop headers (a predecessor with id >= this block's id).
+      let mut p = 0
+      while p < b.npred {
+        if b.pred[p] >= b.id {
+          break
+        }
+        p = p + 1
+      }
+      if p != b.npred {
+        st.sb.write_string(".p2align 4\n")
+      }
       st.sb.write_string("\{gasloc}bb\{emit_id0[0] + b.rpo_id}:\n")
     }
     for ins in b.ins {
@@ -580,7 +665,12 @@ pub fn emitfn(
             emitf(st, "popq %L0", itmp)
           }
         }
-        st.sb.write_string("\tleave\n\tret\n")
+        if use_fp {
+          st.sb.write_string("\tleave\n")
+        } else if fs != 0 {
+          st.sb.write_string("\taddq $\{fs}, %rsp\n")
+        }
+        st.sb.write_string("\tret\n")
       }
       @types.Jjmp =>
         if b.jmp.s1 >= 0 && b.jmp.s1 != next {
@@ -619,6 +709,9 @@ pub fn emitfn(
     }
   }
   emit_id0[0] = emit_id0[0] + fn_.rpo.length()
+  // C elf_emitfnfin emits the function type/size after each function.
+  st.sb.write_string(".type \{gassym}\{fn_.name}, @function\n")
+  st.sb.write_string(".size \{gassym}\{fn_.name}, .-\{gassym}\{fn_.name}\n")
 }
 
 ///|
@@ -693,33 +786,31 @@ fn word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
 ///|
 // Emit the floating point constants table (C gasemitfin in gas.c).
 pub fn gasemitfin(gasloc : String, sb : StringBuilder) -> Unit {
-  if @types.fp_stash_len() == 0 {
-    return
-  }
-  sb.write_string("/* floating point constants */\n.data\n")
-  let sizes = [16, 8, 4]
-  for sz in sizes {
-    for i in 0..<@types.fp_stash_len() {
-      let b = @types.fp_stash_at(i)
-      if b.size == sz {
-        sb.write_string(".align \{sz}\n\{gasloc}fp\{i}:")
-        let mut p = 0
-        while p < sz {
-          sb.write_string("\n\t.int \{word_i32(b.b0, b.b1, p)}")
-          p = p + 4
-        }
-        if sz <= 8 {
-          let d = if sz == 4 {
-            let u = (b.b0 & 0xFFFFFFFF).to_int().reinterpret_as_uint()
-            Float::reinterpret_from_uint(u).to_double()
+  if @types.fp_stash_len() > 0 {
+    sb.write_string("/* floating point constants */\n")
+    // Sizes are emitted largest first (C emitfin: lg 4,3,2 = 16,8,4 bytes).
+    for lg in [4, 3, 2] {
+      for i in 0..<@types.fp_stash_len() {
+        let b = @types.fp_stash_at(i)
+        if b.size == (1 << lg) {
+          sb.write_string(".section .rodata\n.p2align \{lg}\n\{gasloc}fp\{i}:")
+          if lg == 4 {
+            sb.write_string("\n\t.quad \{b.b0}\n\t.quad 0\n\n")
+          } else if lg == 3 {
+            sb.write_string(
+              "\n\t.quad \{b.b0} /* \{@util.fmt_fixed(b.b0.reinterpret_as_double(), 6)} */\n\n",
+            )
           } else {
-            b.b0.reinterpret_as_double()
+            let u = (b.b0 & 0xFFFFFFFF).to_int().reinterpret_as_uint()
+            let d = Float::reinterpret_from_uint(u).to_double()
+            sb.write_string(
+              "\n\t.int \{u.reinterpret_as_int()} /* \{@util.fmt_fixed(d, 6)} */\n\n",
+            )
           }
-          sb.write_string(" /* \{@util.fmt_fixed(d, 6)} */\n")
-        } else {
-          sb.write_string("\n")
         }
       }
     }
   }
+  // C elf_emitfin always terminates with the GNU-stack note.
+  sb.write_string(".section .note.GNU-stack,\"\",@progbits\n")
 }

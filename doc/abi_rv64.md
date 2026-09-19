@@ -57,5 +57,5 @@ Registers are numbered by tmp id (see `types/target_rv64.mbt`): `T0=1..A7=14`, `
 
 ## Notes
 
-- The rv64 backend currently has no differential reference validation (upstream C QBE's rv64 target has not yet been added to the `compare.py` baseline); behavior is based on IL semantics and the RISC-V calling convention.
+- The rv64 backend is validated against `vendor/qbe -t rv64` through `python compare.py --target rv64` (IR/debug dumps) and `tools/check_rv64_asm.py` (encodability); behavior follows IL semantics and the RISC-V calling convention.
 - `spill`/`rega` are target-independent: after `abi_rv64` lowering completes, `pipeline.mbt` calls `@types.init_rv64_target()` to switch the global `TargetCfg`, and subsequent `spill`/`rega` allocates by RISC-V register numbers.

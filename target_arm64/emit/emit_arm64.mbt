@@ -227,21 +227,27 @@ fn arm64_loadcon(
     if con.bits.i != 0L {
       off = "+" + con.bits.i.to_string()
     }
+    // Local (fp-constant) symbols are printed quoted, e.g. ".Lfp0".
+    let q = if con.is_local { "\"" } else { "" }
     sb.write_string("\tadrp\t")
     sb.write_string(rn)
     sb.write_string(", ")
+    sb.write_string(q)
     sb.write_string(p)
     sb.write_string(l)
     sb.write_string(off)
+    sb.write_string(q)
     sb.write_char('\n')
     sb.write_string("\tadd\t")
     sb.write_string(rn)
     sb.write_string(", ")
     sb.write_string(rn)
     sb.write_string(", #:lo12:")
+    sb.write_string(q)
     sb.write_string(p)
     sb.write_string(l)
     sb.write_string(off)
+    sb.write_string(q)
     sb.write_char('\n')
     return
   }
@@ -418,6 +424,21 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       } else {
         raise @util.QbeError::Ice("invalid address")
       }
+    @types.Call =>
+      // Direct call to a global symbol (C arm64/emit.c case Ocall): emit
+      // `bl sym` when the target is an offset-zero address constant.
+      if i.arg1.is_con() {
+        let c = st.fn_.cons[i.arg1.con_val()]
+        if c.kind == @types.CAddr && c.bits.i == 0L && !c.is_local {
+          sb.write_string("\tbl\t")
+          sb.write_string(st.interner.get(c.label))
+          sb.write_char('\n')
+        } else {
+          arm64_emit_table(st, i)
+        }
+      } else {
+        arm64_emit_table(st, i)
+      }
     _ => arm64_emit_table(st, i)
   }
 }
@@ -441,7 +462,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   st.padding = 4 * (f - fn_.slot)
   st.frame = 4 * f + 8 * o
 
-  sb.write_string(".text\n")
+  sb.write_string(".text\n.balign 16\n")
   if fn_.is_export {
     sb.write_string(".globl ")
     sb.write_string(fn_.name)
@@ -449,6 +470,8 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   }
   sb.write_string(fn_.name)
   sb.write_string(":\n")
+  // BTI landing pad (C arm64_emitfn always emits it).
+  sb.write_string("\thint\t#34\n")
 
   if fn_.is_vararg {
     for n in 7>=..0 {
@@ -473,14 +496,14 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     sb.write_string((st.frame + 16).to_string())
     sb.write_string("]!\n")
   }
-  sb.write_string("\tadd\tx29, sp, 0\n")
+  sb.write_string("\tmov\tx29, sp\n")
   o = st.frame + 16
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       sb.write_string("\tstr\t")
       sb.write_string(arm64_rname(r, @types.Kx))
-      sb.write_string(", [sp, ")
+      sb.write_string(", [x29, ")
       sb.write_string(o.to_string())
       sb.write_string("]\n")
     }
@@ -508,7 +531,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
             o = o - 8
             sb.write_string("\tldr\t")
             sb.write_string(arm64_rname(r, @types.Kx))
-            sb.write_string(", [sp, ")
+            sb.write_string(", [x29, ")
             sb.write_string(o.to_string())
             sb.write_string("]\n")
           }
@@ -569,6 +592,14 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
   }
   arm64_emit_id0[0] = arm64_emit_id0[0] + fn_.rpo.length()
+  // C elf_emitfnfin emits the function type/size after each function.
+  sb.write_string(".type ")
+  sb.write_string(fn_.name)
+  sb.write_string(", @function\n.size ")
+  sb.write_string(fn_.name)
+  sb.write_string(", .-")
+  sb.write_string(fn_.name)
+  sb.write_char('\n')
 }
 
 ///|

@@ -222,8 +222,8 @@ pub const Arm64NGPR : Int = 32
 pub const Arm64NFPR : Int = 31
 
 ///|
-// Number of caller-save GPRs (x0-x18, matches C NGPS).
-pub const Arm64NGPS : Int = 19
+// Number of caller-save GPRs (R0-R15, IP0, IP1, R18, LR = 20).
+pub const Arm64NGPS : Int = 20
 
 ///|
 // Number of caller-save FPRs (v0-v7 and v16-v30, matches C NFPS).
@@ -259,6 +259,7 @@ pub let arm64_rsave : Array[Int] = [
   ARM64_IP0,
   ARM64_IP1,
   ARM64_R18,
+  ARM64_LR,
   ARM64_V0,
   ARM64_V1,
   ARM64_V2,
@@ -308,11 +309,11 @@ pub let arm64_rclob : Array[Int] = [
 ]
 
 ///|
-// ARM64 globally live registers bitmask (C RGLOB: FP | SP | R18).
+// ARM64 globally live registers bitmask (C RGLOB: FP | SP | IP1 | R18).
 // These overlap no argument register (C MAKESURE globals_are_not_arguments).
 pub fn arm64_rglob_mask() -> UInt64 {
   let one : UInt64 = 1
-  (one << ARM64_FP) | (one << ARM64_SP) | (one << ARM64_R18)
+  (one << ARM64_FP) | (one << ARM64_SP) | (one << ARM64_IP1) | (one << ARM64_R18)
 }
 
 ///|

@@ -6,6 +6,7 @@ pub(all) enum Ref {
   RNone
   RTmp(Int)
   RCon(Int)
+  RInt(Int)
   RType(Int)
   RSlot(Int)
   RCall(Int)
@@ -28,6 +29,12 @@ pub fn Ref::tmp(i : Int) -> Ref {
 /// CON(x) - constant reference
 pub fn Ref::con(i : Int) -> Ref {
   RCon(i)
+}
+
+///|
+/// INT(x) - integer literal reference (used by blit1's size)
+pub fn Ref::rint(i : Int) -> Ref {
+  RInt(i)
 }
 
 ///|
@@ -146,6 +153,33 @@ pub fn Ref::call_val(self : Ref) -> Int {
 pub fn Ref::slot_val(self : Ref) -> Int {
   match self {
     RSlot(v) => v
+    _ => -1
+  }
+}
+
+///|
+/// is_typ - check for a type reference
+pub fn Ref::is_typ(self : Ref) -> Bool {
+  match self {
+    RType(_) => true
+    _ => false
+  }
+}
+
+///|
+/// is_rint - check for an integer literal reference
+pub fn Ref::is_rint(self : Ref) -> Bool {
+  match self {
+    RInt(_) => true
+    _ => false
+  }
+}
+
+///|
+/// rint_val - extract integer literal value, -1 if not an RInt
+pub fn Ref::rint_val(self : Ref) -> Int {
+  match self {
+    RInt(v) => v
     _ => -1
   }
 }

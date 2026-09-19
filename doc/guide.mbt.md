@@ -364,5 +364,6 @@ Rewrites manual memory management from C code to MoonBit's safe data structures 
 - ✅ RISC-V 64 (rv64) code generation (GAS output, reusing spill/rega)
 - ✅ LoongArch 64 (la64) code generation (LP64D ABI, data + float pool, reusing spill/rega)
 - ✅ SSA interpreter (`interp` package, `--run` CLI flag, builtin runtime + external symbol hook)
-- rv64 backend improvements: `data` segment and floating-point constant rodata output, differential reference verification
+- ✅ rv64 `data` segment and floating-point constant rodata output (byte-identical to `vendor/qbe -t rv64`)
+- rv64 full byte-parity under `python compare.py --target rv64`
 - Interface with mbtcc to verify full end-to-end feasibility

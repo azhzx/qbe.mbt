@@ -7,7 +7,13 @@ import {
 }
 
 // Values
-pub fn emit_rv64(@types.Fn, @util.Interner, Bool, Array[@types.Typ]) -> String
+pub fn emit_rv64(@types.Fn, @util.Interner, String, String, Bool, Array[@types.Typ]) -> String
+
+pub fn gasemitdat_rv64(@types.Dat, String, String, StringBuilder) -> Unit
+
+pub fn gasemitfin_rv64(String, StringBuilder) -> Unit
+
+pub fn rv64_emit_reset() -> Unit
 
 // Errors
 

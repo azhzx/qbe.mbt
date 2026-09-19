@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/ifopt"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn blit(@types.Ref, @types.Ref, Int, @types.Fn) -> Array[@types.Ins]
+
+pub fn ifconvert(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+
+pub fn simpl(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -101,6 +101,7 @@ pub fn compile_debug(
 ///|
 // Assembly-producing compile, raising `@util.QbeError` on failure.
 fn compile_raise(text : String, gas : String) -> String raise {
+  @types.init_amd64_target()
   let (gasloc, gassym) = gas_setting(gas)
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let sb = StringBuilder::StringBuilder()
@@ -111,6 +112,7 @@ fn compile_raise(text : String, gas : String) -> String raise {
 ///|
 // Debug-dump compile, raising `@util.QbeError` on failure.
 fn compile_debug_raise(text : String, flags : String) -> String raise {
+  @types.init_amd64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()
@@ -222,8 +224,11 @@ fn compile_wasm_debug_raise(text : String, flags : String) -> String raise {
 //   assert_true(assembly.contains("li"))
 // }
 // ```
-pub fn compile_rv64(text : String) -> Result[String, @util.QbeError] {
-  try compile_rv64_raise(text) catch {
+pub fn compile_rv64(
+  text : String,
+  gas? : String = "e",
+) -> Result[String, @util.QbeError] {
+  try compile_rv64_raise(text, gas) catch {
     @util.QbeError::ParseError(f, l, m) =>
       Err(@util.QbeError::ParseError(f, l, m))
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
@@ -265,16 +270,19 @@ pub fn compile_rv64_debug(
 
 ///|
 // RISC-V compile, raising `@util.QbeError` on failure.
-fn compile_rv64_raise(text : String) -> String raise {
+fn compile_rv64_raise(text : String, gas : String) -> String raise {
+  @types.init_rv64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
+  let (gasloc, gassym) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
-  emit_rv64_module(funcs, datas, order, typs, interner, sb)
+  emit_rv64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
 }
 
 ///|
 // RISC-V debug-dump compile, raising `@util.QbeError` on failure.
 fn compile_rv64_debug_raise(text : String, flags : String) -> String raise {
+  @types.init_rv64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()
@@ -355,6 +363,7 @@ pub fn compile_la64_debug(
 ///|
 // LoongArch compile, raising `@util.QbeError` on failure.
 fn compile_la64_raise(text : String, gas : String) -> String raise {
+  @types.init_la64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let (gasloc, gassym) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
@@ -365,6 +374,7 @@ fn compile_la64_raise(text : String, gas : String) -> String raise {
 ///|
 // LoongArch debug-dump compile, raising `@util.QbeError` on failure.
 fn compile_la64_debug_raise(text : String, flags : String) -> String raise {
+  @types.init_la64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()
@@ -434,7 +444,7 @@ pub fn compile_target(
   match target {
     Target::Amd64Sysv => compile(text, gas~)
     Target::Wasm32 => compile_wasm(text)
-    Target::Rv64 => compile_rv64(text)
+    Target::Rv64 => compile_rv64(text, gas~)
     Target::La64 => compile_la64(text, gas~)
     Target::Arm64 => compile_arm64(text, gas~)
   }
@@ -488,6 +498,7 @@ pub fn compile_arm64_debug(
 ///|
 // ARM64 compile, raising `@util.QbeError` on failure.
 fn compile_arm64_raise(text : String, gas : String) -> String raise {
+  @types.init_arm64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let (gasloc, gassym) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
@@ -498,6 +509,7 @@ fn compile_arm64_raise(text : String, gas : String) -> String raise {
 ///|
 // ARM64 debug-dump compile, raising `@util.QbeError` on failure.
 fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
+  @types.init_arm64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()

@@ -11,13 +11,21 @@ RISC-V 64 GAS 汇编输出。在 `isel_rv64` 与 `spill`/`rega` 完成后运行�
 pub fn emit_rv64(
   @types.Fn,          // 已完成寄存器分配的函数
   @util.Interner,     // 字符串驻留器
+  String,             // gasloc：局部标签前缀（ELF 为 ".L"）
+  String,             // gassym：全局符号前缀（ELF 为 ""）
   Bool,               // 调试开关
   Array[@types.Typ],  // 全局类型表
 ) -> String
+
+pub fn gasemitdat_rv64(@types.Dat, String, String, StringBuilder) -> Unit
+pub fn gasemitfin_rv64(String, StringBuilder) -> Unit
+pub fn rv64_emit_reset() -> Unit
 ```
 
-返回该函数的 RISC-V 汇编文本。模块级的发射（函数按输入顺序拼接）封装在
-`pipeline.mbt` 的 `emit_rv64_module`，对库用户由 `@qbe.compile_rv64` 调用。
+返回该函数的 RISC-V 汇编文本。模块级发射（函数与 data 按输入顺序交错，末尾
+跟随浮点常量池）封装在 `pipeline.mbt` 的 `emit_rv64_module`，对库用户由
+`@qbe.compile_rv64` 调用。`gasemitdat_rv64` 对应 C 的 `emitdat`，
+`gasemitfin_rv64` 对应 C 的 `emitfin`/`elf_emitfin`。
 
 ## 输出形态
 
@@ -60,8 +68,8 @@ add:
 | --- | --- | --- | --- |
 | 输出格式 | x86-64 GAS | WAT 文本 | RISC-V GAS |
 | 栈帧 | `pushq %rbp`/`leave` | 无（栈机） | `sd fp`/`ld fp` 帧链 |
-| 数据段 | `gasemitdat` | 模块内 memory/data | 暂未输出（待完善） |
-| 浮点常量 | `.LfpN` rodata 暂存 | 常量指令 | 暂未输出（待完善） |
+| 数据段 | `gasemitdat` | 模块内 memory/data | `gasemitdat_rv64` |
+| 浮点常量 | `.LfpN` rodata 暂存 | 常量指令 | `.section .rodata` 中的 `.LfpN` |
 
 ## 依赖
 
@@ -70,7 +78,10 @@ add:
 
 ## 备注
 
-- rv64 后端目前没有差分参考验证（上游 C QBE 的 rv64 目标尚未纳入
-  `compare.py` 基线），输出格式以 RISC-V psABI 与 GAS 语法为准。
-- `data` 段与浮点字面量的 rodata 输出尚未实现，`emit_rv64_module`
-  当前只发射函数部分。
+- 与上游 C QBE 的字节级对齐：`compare.py --target rv64` 比较 `-d*`
+  IR/调试 dump，`tools/check_rv64_asm.py` 用 clang 集成汇编器对每个发射模块
+  做独立可编码性验证。
+- `data` 段（默认 `.balign 8`，纯零数据走 `.bss`）与浮点常量池
+  （`.section .rodata`、`.p2align`、`.quad`/`.int`）与
+  `vendor/qbe/qbe -t rv64` 逐字节一致；`emit_rv64` 支持 `-G e`
+  （`gasloc=".L"`、`gassym=""`）。

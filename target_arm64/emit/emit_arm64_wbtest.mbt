@@ -65,14 +65,19 @@ test "arm64 emit: simple add function" {
     asm,
     content=(
       #|.text
+      #|.balign 16
       #|.globl add
       #|add:
+      #|	hint	#34
       #|	stp	x29, x30, [sp, -16]!
-      #|	add	x29, sp, 0
+      #|	mov	x29, sp
       #|	add	w0, w0, w1
       #|	ldp	x29, x30, [sp], 16
       #|	ret
+      #|.type add, @function
+      #|.size add, .-add
       #|
+
     ),
   )
 }
@@ -101,10 +106,12 @@ test "arm64 emit: conditional branch and loop labels" {
     asm,
     content=(
       #|.text
+      #|.balign 16
       #|.globl count
       #|count:
+      #|	hint	#34
       #|	stp	x29, x30, [sp, -16]!
-      #|	add	x29, sp, 0
+      #|	mov	x29, sp
       #|	cmp	w0, #0
       #|	beq	.L3
       #|.L2:
@@ -116,7 +123,10 @@ test "arm64 emit: conditional branch and loop labels" {
       #|	mov	w0, #0
       #|	ldp	x29, x30, [sp], 16
       #|	ret
+      #|.type count, @function
+      #|.size count, .-count
       #|
+
     ),
   )
 }
@@ -136,6 +146,6 @@ test "arm64 emit: vararg prologue saves the argument registers" {
   let asm = emit_arm64(f, interner, typs)
   assert_true(asm.contains("\tstr\tq7, [sp, -16]!\n"))
   assert_true(asm.contains("\tstr\tx0, [sp, -8]!\n"))
-  assert_true(asm.contains("\tadd\tx29, sp, 0\n"))
+  assert_true(asm.contains("\tmov\tx29, sp\n"))
   assert_true(asm.contains("\tret\n"))
 }

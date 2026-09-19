@@ -59,7 +59,16 @@ fn printcon(
     @types.CUndef => ()
     @types.CAddr => {
       sb.write_string("$")
-      sb.write_string(interner.get(c.label))
+      // The fp-constant stash uses a local label; the reference stores it as
+      // the quoted symbol "\".LfpN\" (amd64/isel.c: sprintf(buf, "\"%sfp%d\"",
+      // T.asloc, n)), so print the same quoted form for is_local constants.
+      if c.is_local {
+        sb.write_string("\".L")
+        sb.write_string(interner.get(c.label))
+        sb.write_string("\"")
+      } else {
+        sb.write_string(interner.get(c.label))
+      }
     }
     @types.CBits =>
       if c.flt == 1 {
@@ -94,6 +103,7 @@ pub fn printref(
         sb.write_string(fn_.tmps[v].name)
       }
     RCon(v) => printcon(fn_.cons[v], interner, sb)
+    RInt(v) => sb.write_string(v.to_string())
     RSlot(v) => {
       sb.write_string("S")
       let s = if (v & (1 << 28)) != 0 { v - (1 << 29) } else { v }
@@ -183,9 +193,6 @@ pub fn printfn(
   all_typs : Array[@types.Typ],
 ) -> String {
   let sb = StringBuilder::StringBuilder()
-  if fn_.is_export {
-    sb.write_string("export ")
-  }
   sb.write_string("function $\{fn_.name}() {\n")
   for id in fn_.def_order {
     let b = fn_.blks[id]

@@ -3,6 +3,7 @@ package "azhzx/qbe/cfg"
 
 import {
   "azhzx/qbe/types",
+  "azhzx/qbe/util",
 }
 
 // Values
@@ -25,6 +26,8 @@ pub fn fillpreds(@types.Fn) -> Unit
 pub fn fillrpo(@types.Fn) -> Unit
 
 pub fn loopiter(@types.Fn, (Int, Int) -> Unit) -> Unit
+
+pub fn simplcfg(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
 pub fn simpljmp(@types.Fn) -> Unit
 

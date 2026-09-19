@@ -16,7 +16,9 @@
 ## Plan
 - (TODO) Add JIT interface (copy-and-patch approach)
 - (TODO) Add IR Debugger
-- (FIX) rv64 backend: `data` segment and floating-point constant rodata output, reference differential verification
+- (WIP) rv64 backend: `data` segment and floating-point constant rodata output done
+  (byte-identical to `vendor/qbe -t rv64`); remaining: full byte parity under
+  `python compare.py --target rv64`
 
 ## Contributors
 <a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">

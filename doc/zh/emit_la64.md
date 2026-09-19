@@ -36,4 +36,5 @@ pub fn gasemitfin_la64(String, StringBuilder) -> Unit
 - **数据段**：便携 ELF 指令拼写——`.balign`（LoongArch gas 的 `.align`
   是 2 的幂语义）、`.byte/.half/.word/.quad`、`.fill`。
 - **浮点常量池**：`fp_stash` 以 `.balign` + `.word` 序列输出，并附注释值
-  （`/* 2.500000 */`）。rv64 尚未输出常量池，la64 为首个完整支持。
+  （`/* 2.500000 */`）。rv64 现在也会输出常量池（`.section .rodata` +
+  `.p2align` + `.quad`/`.int`）。

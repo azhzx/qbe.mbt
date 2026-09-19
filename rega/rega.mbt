@@ -592,6 +592,12 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
       let v = read_slot(st, slot)
       write_slot(st, slot, ralloc(st, cur, v.tmp_val()))
     }
+    // Drop a copy that became a self-move after allocation (C rega.c:
+    // if (i->op == Ocopy && req(i->to, i->arg[0])) curi++).
+    if st.buf[last].op == @types.Copy && st.buf[last].to.eq(st.buf[last].arg1) {
+      ignore(st.buf.pop())
+      continue
+    }
     // try to change the register of a hinted temporary if rf is available
     if rf != -1 {
       let t = cur.w[rf]

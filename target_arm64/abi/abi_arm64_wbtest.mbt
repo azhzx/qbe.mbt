@@ -142,9 +142,9 @@ test "arm64 abi: small aggregate parameter is reassembled from registers" {
 test "arm64 abi: hfa parameter occupies consecutive float registers" {
   let src =
     #|type :hfa = { s, s }
-    #|function s $f(:hfa %h) {
+    #|function $f(:hfa %h) {
     #|@start
-    #|  ret %h
+    #|  ret
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)

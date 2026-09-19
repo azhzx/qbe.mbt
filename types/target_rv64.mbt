@@ -217,8 +217,8 @@ pub const Rv64NFPR : Int = 32
 pub const Rv64NGPS : Int = 14
 
 ///|
-// Number of caller-save FPRs (FT0-FA7)
-pub const Rv64NFPS : Int = 18
+// Number of caller-save FPRs (FA0-FA7 + FT0-FT10 = 19)
+pub const Rv64NFPS : Int = 19
 
 ///|
 // Number of callee-save registers (S1-S11, FS0-FS11)

@@ -83,29 +83,29 @@ fn cmpop(c : Int) -> Int {
   } else if c == CINE {
     CINE
   } else if c == NCMPI + 0 {
-    // NCmpI+Cfle -> NCmpI+Cfge
-    NCMPI + 3
-  } else if c == NCMPI + 1 {
-    // NCmpI+Cfl0t -> NCmpI+Cfgt
-    NCMPI + 2
-  } else if c == NCMPI + 2 {
-    // NCmpI+Cfgt -> NCmpI+Cfl0t
-    NCMPI + 1
-  } else if c == NCMPI + 3 {
-    // NCmpI+Cfge -> NCmpI+Cfle
+    // Cfeq -> Cfeq
     NCMPI + 0
-  } else if c == NCMPI + 4 {
-    // NCmpI+Cfne -> NCmpI+Cfne
+  } else if c == NCMPI + 1 {
+    // Cfge -> Cfle
+    NCMPI + 3
+  } else if c == NCMPI + 2 {
+    // Cfgt -> Cflt
     NCMPI + 4
+  } else if c == NCMPI + 3 {
+    // Cfle -> Cfge
+    NCMPI + 1
+  } else if c == NCMPI + 4 {
+    // Cflt -> Cfgt
+    NCMPI + 2
   } else if c == NCMPI + 5 {
-    // NCmpI+Cfeq -> NCmpI+Cfeq
+    // Cfne -> Cfne
     NCMPI + 5
   } else if c == NCMPI + 6 {
-    // NCmpI+Cfo -> NCmpI+Cfuo
-    NCMPI + 7
-  } else if c == NCMPI + 7 {
-    // NCmpI+Cfuo -> NCmpI+Cfo
+    // Cfo -> Cfo
     NCMPI + 6
+  } else if c == NCMPI + 7 {
+    // Cfuo -> Cfuo
+    NCMPI + 7
   } else {
     0
   }
@@ -121,4 +121,31 @@ fn flag_op(x : Int) -> @types.Op {
 // The conditional jump kind for an ICmp code (C Jjf + x).
 fn jjf_op(x : Int) -> @types.JumpKind {
   @types.JumpKind::from_index(@types.Jjfieq.index() + x)
+}
+
+///|
+// Whether op is a conditional-select op (C isxsel).
+fn isxsel(op : @types.Op) -> Bool {
+  let i = op.index()
+  i >= @types.Xselieq.index() && i <= @types.Xselfuo.index()
+}
+
+///|
+// The xsel op for an ICmp code (C Oxsel + x).
+fn xsel_op(x : Int) -> @types.Op {
+  @types.Op::from_index(@types.Xselieq.index() + x)
+}
+
+///|
+// Whether the operands must be swapped for a comparison code (C cmpswap).
+fn cmpswap(a0 : @types.Ref, c : Int) -> Bool {
+  if c == NCMPI + 4 || c == NCMPI + 3 {
+    // Cflt, Cfle
+    true
+  } else if c == NCMPI + 2 || c == NCMPI + 1 {
+    // Cfgt, Cfge
+    false
+  } else {
+    a0.is_con()
+  }
 }

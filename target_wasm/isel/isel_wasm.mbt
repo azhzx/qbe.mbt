@@ -167,6 +167,8 @@ fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit {
 
     // Error/placeholder
     @types.Oxxx => ()
+    // Conditional-select ops are amd64-only.
+    _ => ()
   }
 }
 

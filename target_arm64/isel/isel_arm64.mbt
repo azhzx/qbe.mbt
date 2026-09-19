@@ -280,8 +280,23 @@ fn arm64_selcmp(
 }
 
 ///|
-// Select one instruction (C sel in arm64/isel.c). The reference snapshot has
-// no callable() shortcut: call targets are materialized like any operand.
+// Whether a call target can be used directly (C callable in arm64/isel.c):
+// register temps and address constants with zero offset.
+fn arm64_callable(r : @types.Ref, fn_ : @types.Fn) -> Bool {
+  if r.is_tmp() {
+    return true
+  }
+  if r.is_con() {
+    let c = fn_.cons[r.con_val()]
+    if c.kind == @types.CAddr && c.bits.i == 0L {
+      return true
+    }
+  }
+  false
+}
+
+///|
+// Select one instruction (C sel in arm64/isel.c).
 fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
   let (is_cmp, ck, cc) = arm64_iscmp(i.op)
   if is_cmp {
@@ -302,6 +317,10 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     } else {
       st.buf[idx].op = arm64_flag_op(cc)
     }
+    return
+  }
+  if i.op == @types.Call && arm64_callable(i.arg1, st.fn_) {
+    arm64_isel_emit(st, i)
     return
   }
   if i.op != @types.Nop {

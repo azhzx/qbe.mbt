@@ -64,6 +64,7 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
     let tmp = fn_.tmps[t]
     tmp.ndef = 0
     tmp.nuse = 0
+    tmp.bid = -1
     tmp.cls = @types.Kx
     tmp.is_phi = 0
     tmp.width = @types.WFull
@@ -78,6 +79,7 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
         raise @util.QbeError::Ice("phi to not a tmp")
       }
       let tp = p.to.tmp_val()
+      fn_.tmps[tp].bid = id
       fn_.tmps[tp].ndef = fn_.tmps[tp].ndef + 1
       fn_.tmps[tp].cls = p.cls
       let tp1 = phicls(tp, fn_.tmps)
@@ -111,6 +113,7 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
         }
         let t = ins.to.tmp_val()
         fn_.tmps[t].width = w
+        fn_.tmps[t].bid = id
         fn_.tmps[t].ndef = fn_.tmps[t].ndef + 1
         fn_.tmps[t].cls = ins.cls
       }

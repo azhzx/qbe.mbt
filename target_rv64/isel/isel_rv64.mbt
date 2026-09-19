@@ -79,76 +79,128 @@ fn argcls(i : @types.Ins, n : Int) -> @types.Class {
 }
 
 ///|
-// Rewrite an argument so it can be used as an operand (C fixarg).
-// op is the enclosing instruction, None for phi args.
-//
-// Differences from the rv64 port:
-// - floating point constants are stashed AND loaded into a fresh FPR temp
-//   right away, so no dangling RMem refs reach the emitter;
-// - integer constants are materialized into registers for every non-Copy
-//   operation: RISC-V ALU/compare instructions have no immediate forms
-//   the emitter can rely on;
-// - the helper instruction is emitted after the (already pushed) parent,
-//   which the reversed write-back turns into correct order.
+// Operand class of an integer comparison (C iscmp: word ops -> Kw, long -> Kl).
+fn cmp_operand_class(op : @types.Op) -> @types.Class {
+  match op {
+    @types.Ceqw
+    | @types.Cnew
+    | @types.Csgew
+    | @types.Csgtw
+    | @types.Cslew
+    | @types.Csltw
+    | @types.Cugew
+    | @types.Cugtw
+    | @types.Culew
+    | @types.Cultw => @types.Kw
+    _ => @types.Kl
+  }
+}
+
+///|
+// Ops whose second operand can be an immediate (rv64/targ.c rv64_op[].imm,
+// from ops.h V(1)).
+fn rv64_imm(op : @types.Op) -> Bool {
+  match op {
+    @types.Add
+    | @types.And
+    | @types.Or
+    | @types.Xor
+    | @types.Sar
+    | @types.Shr
+    | @types.Shl
+    | @types.Csltw
+    | @types.Cultw
+    | @types.Csltl
+    | @types.Cultl => true
+    _ => false
+  }
+}
+
+///|
+// Rewrite an argument so it can be used as an operand (C rv64/isel.c fixarg).
+// op is the enclosing instruction, None for phi args; n is the argument index
+// (0 = arg1, 1 = arg2), which decides whether an immediate/address is allowed.
 fn fixarg(
   st : Rv64IselState,
   r : @types.Ref,
   k : @types.Class,
   op : @types.Op?,
+  n : Int,
 ) -> @types.Ref {
   let r0 = r
   let mut r1 = r0
   let s = rslot(r0, st.fn_)
-  let cpy = op is None || op == Some(@types.Copy)
-  let mem = op is Some(o) && (o.is_store() || o.is_load() || o == @types.Call)
+  let o = match op {
+    Some(o) => o
+    None => @types.Copy
+  }
+  let memarg = if o.is_load() || o == @types.Call {
+    n == 0
+  } else if o.is_store() {
+    n == 1
+  } else {
+    false
+  }
+  let immarg = n == 1 && rv64_imm(o)
 
-  if k.base() == 1 && r0.is_con() {
-    // Load floating point constants from the stash into an FPR temp
-    let bits = st.fn_.cons[r0.con_val()].raw_bits()
-    let nfp = @types.gasstash(bits, 0L, if k.wide() == 1 { 8 } else { 4 })
-    let label = st.interner.intern("fp\{nfp}")
-    let n = st.fn_.mems.length()
-    let a = @types.Addr::new()
-    a.offset = @types.Con::{
-      kind: @types.CAddr,
-      label,
-      bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
-      flt: 0,
-      is_local: true,
+  if r0.is_con() {
+    let c = st.fn_.cons[r0.con_val()]
+    if c.kind == @types.CAddr && memarg {
+      // keep address constant
+    } else if k.base() == 0 &&
+      c.kind == @types.CBits &&
+      immarg &&
+      c.bits.i >= -2048L &&
+      c.bits.i < 2048L {
+      // keep small integer immediate
+    } else {
+      r1 = rv64_isel_newtmp(st, k)
+      if k.base() == 1 {
+        // Load floating point constants from the stash into an FPR temp
+        // (C rv64/isel.c emits Oload with CON(c-fn->con), i.e. a plain
+        // address constant, not a memory reference).
+        let bits = c.raw_bits()
+        let nfp = @types.gasstash(bits, 0L, if k.wide() == 1 { 8 } else { 4 })
+        let label = st.interner.intern("fp\{nfp}")
+        let idx = st.fn_.cons.length()
+        st.fn_.cons.push(@types.Con::{
+          kind: @types.CAddr,
+          label,
+          bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
+          flt: 0,
+          is_local: true,
+        })
+        emit(st, @types.Load, k, r1, @types.Ref::con(idx), @types.Ref::none())
+      } else {
+        emit(st, @types.Copy, k, r1, r0, @types.Ref::none())
+      }
     }
-    st.fn_.mems.push(a)
-    let fpr = rv64_isel_newtmp(st, k)
-    emit(st, @types.Load, k, fpr, @types.Ref::mem(n), @types.Ref::none())
-    r1 = fpr
-  } else if !cpy &&
-    r0.is_con() &&
-    st.fn_.cons[r0.con_val()].kind == @types.CBits {
-    // Materialize integer constants: ALU/compare instructions are
-    // register-register only (Copy handles constants itself via li.d)
-    r1 = rv64_isel_newtmp(st, k)
-    emit(st, @types.Copy, k, r1, r0, @types.Ref::none())
-  } else if s != -1 {
-    // Load fast locals' addresses into temporaries
-    r1 = rv64_isel_newtmp(st, @types.Kl)
-    emit(
-      st,
-      @types.Addr,
-      @types.Kl,
-      r1,
-      @types.Ref::slot(s),
-      @types.Ref::none(),
-    )
-  } else if !mem &&
-    r0.is_con() &&
-    st.fn_.cons[r0.con_val()].kind == @types.CAddr {
-    // Materialize address constants (la.local needs a register)
-    r1 = rv64_isel_newtmp(st, @types.Kl)
-    emit(st, @types.Addr, @types.Kl, r1, r0, @types.Ref::none())
+  } else if r0.is_tmp() {
+    if isreg(r0) {
+      // keep
+    } else if s != -1 {
+      if memarg {
+        r1 = @types.Ref::slot(s)
+      } else {
+        r1 = rv64_isel_newtmp(st, @types.Kl)
+        emit(
+          st,
+          @types.Addr,
+          @types.Kl,
+          r1,
+          @types.Ref::slot(s),
+          @types.Ref::none(),
+        )
+      }
+    } else if k == @types.Kw && st.fn_.tmps[r0.tmp_val()].cls == @types.Kl {
+      r1 = rv64_isel_newtmp(st, k)
+      emit(st, @types.Extsw, @types.Kl, r1, r0, @types.Ref::none())
+    }
   } else if r0.is_mem() {
     // Materialize a memory base when it is empty
     let m = st.fn_.mems[r0.mem_val()]
     if m.base.is_none() {
-      let n = st.fn_.cons.length()
+      let nm = st.fn_.cons.length()
       st.fn_.cons.push(m.offset)
       let r2 = rv64_isel_newtmp(st, @types.Kl)
       emit(
@@ -156,7 +208,7 @@ fn fixarg(
         @types.Addr,
         @types.Kl,
         r2,
-        @types.Ref::con(n),
+        @types.Ref::con(nm),
         @types.Ref::none(),
       )
       m.base = r2
@@ -171,8 +223,8 @@ fn fixarg(
 fn sel_emit(st : Rv64IselState, i : @types.Ins) -> Unit {
   emiti(st, i)
   let idx = st.buf.length() - 1
-  st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, argcls(i, 0), Some(i.op))
-  st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, argcls(i, 1), Some(i.op))
+  st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, argcls(i, 0), Some(i.op), 0)
+  st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, argcls(i, 1), Some(i.op), 1)
 }
 
 ///|
@@ -182,22 +234,26 @@ fn sel_emit(st : Rv64IselState, i : @types.Ins) -> Unit {
 fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
   let to = i.to
   let con1 = @types.Ref::con(st.fn_.get_con(1L))
-  let con0 = @types.Ref::con(st.fn_.get_con(0L))
-  // Fix the compare's args at buffer index `idx` (helpers precede it after
-  // the reversed write-back).
-  fn fix_cmp(st : Rv64IselState, idx : Int, i : @types.Ins) -> Unit {
-    st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, argcls(i, 0), Some(i.op))
-    st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, argcls(i, 1), Some(i.op))
+  // Fix the emitted compare's args at buffer index `idx` (helpers precede it
+  // after the reversed write-back).  The op is the *emitted* compare (C's
+  // icmp), so immarg/memarg are decided from it, while k is the operand class.
+  fn fix_cmp(st : Rv64IselState, idx : Int, op : @types.Op, k : @types.Class) -> Unit {
+    st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(op), 0)
+    st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(op), 1)
   }
 
   match i.op {
     // a < b (signed/unsigned), direct. Word compares are rewritten to their
     // long forms: QBE keeps Kw values sign-extended in registers and the
     // emitter only maps the long opcodes.
-    @types.Csltl | @types.Csltw =>
-      emit(st, @types.Csltl, @types.Kw, to, i.arg1, i.arg2)
-    @types.Cultl | @types.Cultw =>
-      emit(st, @types.Cultl, @types.Kw, to, i.arg1, i.arg2)
+    @types.Csltl | @types.Csltw => {
+      emit(st, @types.Csltl, i.cls, to, i.arg1, i.arg2)
+      fix_cmp(st, st.buf.length() - 1, @types.Csltl, cmp_operand_class(i.op))
+    }
+    @types.Cultl | @types.Cultw => {
+      emit(st, @types.Cultl, i.cls, to, i.arg1, i.arg2)
+      fix_cmp(st, st.buf.length() - 1, @types.Cultl, cmp_operand_class(i.op))
+    }
     // a >= b  ==  !(a < b)
     @types.Csgel | @types.Csgew | @types.Cugel | @types.Cugew => {
       let lt = if i.op is (@types.Csgel | @types.Csgew) {
@@ -206,11 +262,9 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
         @types.Cultl
       }
       let r = rv64_isel_newtmp(st, @types.Kw)
-      let one = rv64_isel_newtmp(st, @types.Kl)
-      emit(st, @types.Xor, @types.Kw, to, r, one)
-      emit(st, lt, @types.Kw, r, i.arg1, i.arg2)
-      emit(st, @types.Copy, @types.Kl, one, con1, @types.Ref::none())
-      fix_cmp(st, st.buf.length() - 2, i)
+      emit(st, @types.Xor, @types.Kw, to, r, con1)
+      emit(st, lt, i.cls, r, i.arg1, i.arg2)
+      fix_cmp(st, st.buf.length() - 1, lt, cmp_operand_class(i.op))
     }
     // a > b  ==  b < a
     @types.Csgtl | @types.Csgtw | @types.Cugtl | @types.Cugtw => {
@@ -219,8 +273,8 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
       } else {
         @types.Cultl
       }
-      emit(st, lt, @types.Kw, to, i.arg2, i.arg1)
-      fix_cmp(st, st.buf.length() - 1, i)
+      emit(st, lt, i.cls, to, i.arg2, i.arg1)
+      fix_cmp(st, st.buf.length() - 1, lt, cmp_operand_class(i.op))
     }
     // a <= b  ==  !(b < a)
     @types.Cslel | @types.Cslew | @types.Culel | @types.Culew => {
@@ -230,29 +284,29 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
         @types.Cultl
       }
       let r = rv64_isel_newtmp(st, @types.Kw)
-      let one = rv64_isel_newtmp(st, @types.Kl)
-      emit(st, @types.Xor, @types.Kw, to, r, one)
-      emit(st, lt, @types.Kw, r, i.arg2, i.arg1)
-      emit(st, @types.Copy, @types.Kl, one, con1, @types.Ref::none())
-      fix_cmp(st, st.buf.length() - 2, i)
+      emit(st, @types.Xor, @types.Kw, to, r, con1)
+      emit(st, lt, i.cls, r, i.arg2, i.arg1)
+      fix_cmp(st, st.buf.length() - 1, lt, cmp_operand_class(i.op))
     }
-    // a == b  ==  (a ^ b) <u 1
+    // a == b  ==  reqz(a ^ b)  (C selcmp Cieq)
     @types.Ceql | @types.Ceqw => {
-      let r = rv64_isel_newtmp(st, @types.Kl)
-      let one = rv64_isel_newtmp(st, @types.Kl)
-      emit(st, @types.Cultl, @types.Kw, to, r, one)
-      emit(st, @types.Xor, @types.Kl, r, i.arg1, i.arg2)
-      emit(st, @types.Copy, @types.Kl, one, con1, @types.Ref::none())
-      fix_cmp(st, st.buf.length() - 2, i)
+      let k = cmp_operand_class(i.op)
+      let r = rv64_isel_newtmp(st, k)
+      emit(st, @types.Reqz, i.cls, to, r, @types.Ref::none())
+      emit(st, @types.Xor, k, r, i.arg1, i.arg2)
+      let idx = st.buf.length() - 1
+      st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xor), 0)
+      st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(@types.Xor), 1)
     }
-    // a != b  ==  0 <u (a ^ b)
+    // a != b  ==  rnez(a ^ b)  (C selcmp Cine)
     @types.Cnel | @types.Cnew => {
-      let r = rv64_isel_newtmp(st, @types.Kl)
-      let zero = rv64_isel_newtmp(st, @types.Kl)
-      emit(st, @types.Cultl, @types.Kw, to, zero, r)
-      emit(st, @types.Xor, @types.Kl, r, i.arg1, i.arg2)
-      emit(st, @types.Copy, @types.Kl, zero, con0, @types.Ref::none())
-      fix_cmp(st, st.buf.length() - 2, i)
+      let k = cmp_operand_class(i.op)
+      let r = rv64_isel_newtmp(st, k)
+      emit(st, @types.Rnez, i.cls, to, r, @types.Ref::none())
+      emit(st, @types.Xor, k, r, i.arg1, i.arg2)
+      let idx = st.buf.length() - 1
+      st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xor), 0)
+      st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(@types.Xor), 1)
     }
     _ => abort("not an integer comparison")
   }
@@ -261,14 +315,6 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
 ///|
 // Select a single instruction (C sel).
 fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
-  if i.to.is_tmp() {
-    if !isreg(i.to) && !isreg(i.arg1) && !isreg(i.arg2) {
-      if st.fn_.tmps[i.to.tmp_val()].nuse == 0 {
-        return
-      }
-    }
-  }
-
   match i.op {
     // RISC-V has native divide/remainder instructions
     @types.Div | @types.Rem | @types.Udiv | @types.Urem => sel_emit(st, i)
@@ -331,13 +377,14 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::none(),
         )
       } else {
-        // final order: salloc to = size; r1 = to + 15; to = r1 & -16
+        // final order: r1 = n + 15; r0 = r1 & -16; to = salloc r0 (C salloc)
+        let r0 = rv64_isel_newtmp(st, @types.Kl)
         let r1 = rv64_isel_newtmp(st, @types.Kl)
         let m16 = @types.Ref::con(st.fn_.get_con(-16L))
         let c15 = @types.Ref::con(st.fn_.get_con(15L))
-        emit(st, @types.And, @types.Kl, i.to, r1, m16)
-        emit(st, @types.Add, @types.Kl, r1, i.to, c15)
-        emit(st, @types.Salloc, @types.Kl, i.to, i.arg1, @types.Ref::none())
+        emit(st, @types.Salloc, @types.Kl, i.to, r0, @types.Ref::none())
+        emit(st, @types.And, @types.Kl, r0, r1, m16)
+        emit(st, @types.Add, @types.Kl, r1, i.arg1, c15)
       }
     }
     // Integer comparisons - lowered to slt/sltu sequences
@@ -388,6 +435,8 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Loaduw => sel_emit(st, i)
     // No-op
     @types.Nop => ()
+    // Address materialization (C Emit label: emitted and args fixed)
+    @types.Addr => sel_emit(st, i)
     // Internal ops - skip (amd64-specific)
     @types.Swap
     | @types.Sign
@@ -396,8 +445,7 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Xcmp
     | @types.Acmp
     | @types.Acmn
-    | @types.Afcmp
-    | @types.Addr => ()
+    | @types.Afcmp => ()
     // Flag-setting ops - skip (RISC-V doesn't use flags)
     @types.Flagieq
     | @types.Flagine
@@ -430,6 +478,8 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     @types.Vacall => ()
     // Error/placeholder
     @types.Oxxx => ()
+    // Conditional-select ops are amd64-only.
+    _ => ()
   }
 }
 
@@ -440,7 +490,7 @@ fn seljmp(st : Rv64IselState, bid : Int) -> Unit {
   // RISC-V uses conditional branches directly
   if b.jmp.kind == @types.Jjnz {
     let arg = b.jmp.arg
-    b.jmp.arg = fixarg(st, arg, @types.Kw, None)
+    b.jmp.arg = fixarg(st, arg, @types.Kw, None, 0)
   }
 }
 
@@ -500,7 +550,7 @@ pub fn isel_rv64(
         for phi in succ.phi {
           for arg in phi.args {
             if arg.blk_id == bid {
-              arg.value = fixarg(st, arg.value, phi.cls, None)
+              arg.value = fixarg(st, arg.value, phi.cls, None, 0)
             }
           }
         }
@@ -521,7 +571,7 @@ pub fn isel_rv64(
 
   if print_dbg {
     let sb = StringBuilder::StringBuilder()
-    sb.write_string("> After RISC-V instruction selection:\n")
+    sb.write_string("\n> After instruction selection:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")
     sb.to_string()

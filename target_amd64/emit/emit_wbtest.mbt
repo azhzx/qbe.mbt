@@ -73,14 +73,16 @@ test "emit: add function to ELF GAS (snapshot)" {
     asm,
     content=(
       #|.text
+      #|.balign 16
       #|add:
-      #|	pushq %rbp
-      #|	movq %rsp, %rbp
+      #|	endbr64
       #|	movl %edi, %eax
       #|	addl %esi, %eax
-      #|	leave
       #|	ret
+      #|.type add, @function
+      #|.size add, .-add
       #|
+
     ),
   )
 }

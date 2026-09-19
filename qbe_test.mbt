@@ -209,7 +209,7 @@ test "compile memory ops emits load/store" {
     Err(_) => fail("compile failed")
   }
   assert_true(assembly.contains("mem_demo:"))
-  assert_true(assembly.contains("movq"))
+  assert_true(assembly.contains("movl $42"))
 }
 
 ///|

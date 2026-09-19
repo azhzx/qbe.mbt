@@ -108,6 +108,8 @@ pub(all) enum Op {
   // === INTERNAL OPERATIONS ===
   Nop
   Addr
+  Blit0
+  Blit1
   Swap
   Sign
   Salloc
@@ -118,6 +120,8 @@ pub(all) enum Op {
   Acmp
   Acmn
   Afcmp
+  Reqz
+  Rnez
 
   // === Arguments, Parameters, and Calls ===
   Par
@@ -150,6 +154,31 @@ pub(all) enum Op {
   Flagfne
   Flagfo
   Flagfuo
+
+  // === Conditional select (if-conversion) ===
+  Sel0
+  Sel1
+  Xselieq
+  Xseline
+  Xselisge
+  Xselisgt
+  Xselisle
+  Xselislt
+  Xseliuge
+  Xseliugt
+  Xseliule
+  Xseliult
+  Xselfeq
+  Xselfge
+  Xselfgt
+  Xselfle
+  Xselflt
+  Xselfne
+  Xselfo
+  Xselfuo
+
+  // === Variadic argument marker (C Oargv) ===
+  Argv
 } derive(Eq, Debug)
 
 ///|
@@ -216,7 +245,7 @@ pub fn Op::is_par(self : Op) -> Bool {
 ///|
 // Check if op is an argument
 pub fn Op::is_arg(self : Op) -> Bool {
-  self == Arg || self == Argc || self == Arge
+  self == Arg || self == Argc || self == Arge || self == Argv
 }
 
 ///|
@@ -285,7 +314,8 @@ pub fn Op::from_string(s : String) -> Op {
     "loadsw" => Loadsw
     "loaduw" => Loaduw
     "load" => Load
-    "loadw" => Load // alias
+    // C parse.c: loadw aliases loadsw; loadl/loads/loadd alias load.
+    "loadw" => Loadsw
     "loadl" => Load // alias
     "loads" => Load // alias
     "loadd" => Load // alias
@@ -309,6 +339,7 @@ pub fn Op::from_string(s : String) -> Op {
     "vastart" => Vastart
     "copy" => Copy
     "call" => Call
+    "argv" => Argv
     _ => Oxxx
   }
 }

@@ -21,16 +21,23 @@ test "e2e arm64: return constant word" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl one
           #|one:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	mov	w0, #1
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type one, @function
+          #|.size one, .-one
           #|/* end function one */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -54,18 +61,25 @@ test "e2e arm64: word arithmetic" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl arith
           #|arith:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	add	w0, w0, w1
           #|	mov	w1, #3
           #|	mul	w0, w0, w1
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type arith, @function
+          #|.size arith, .-arith
           #|/* end function arith */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -97,33 +111,42 @@ test "e2e arm64: call and branch" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl callee
           #|callee:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type callee, @function
+          #|.size callee, .-callee
           #|/* end function callee */
           #|
           #|.text
+          #|.balign 16
           #|.globl caller
           #|caller:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	cmp	w0, #0
           #|	bgt	.L3
           #|	mov	w0, #0
           #|	ldp	x29, x30, [sp], 16
           #|	ret
           #|.L3:
-          #|	adrp	x1, callee
-          #|	add	x1, x1, #:lo12:callee
-          #|	blr	x1
+          #|	bl	callee
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type caller, @function
+          #|.size caller, .-caller
           #|/* end function caller */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -151,10 +174,12 @@ test "e2e arm64: loop with phi" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl count
           #|count:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	cmp	w0, #0
           #|	beq	.L2
           #|.L1:
@@ -166,9 +191,14 @@ test "e2e arm64: loop with phi" {
           #|	mov	w0, #0
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type count, @function
+          #|.size count, .-count
           #|/* end function count */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -192,16 +222,23 @@ test "e2e arm64: memory and alloc" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl mem
           #|mem:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	mov	w0, #7
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type mem, @function
+          #|.size mem, .-mem
           #|/* end function mem */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -223,16 +260,23 @@ test "e2e arm64: double arithmetic" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl dadd
           #|dadd:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	fadd	d0, d0, d1
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type dadd, @function
+          #|.size dadd, .-dadd
           #|/* end function dadd */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -253,24 +297,32 @@ test "e2e arm64: float constant stash" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl fconst
           #|fconst:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
-          #|	adrp	x0, .Lfp0
-          #|	add	x0, x0, #:lo12:.Lfp0
+          #|	mov	x29, sp
+          #|	adrp	x0, ".Lfp0"
+          #|	add	x0, x0, #:lo12:".Lfp0"
           #|	ldr	d0, [x0]
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type fconst, @function
+          #|.size fconst, .-fconst
           #|/* end function fconst */
           #|
           #|/* floating point constants */
-          #|.data
-          #|.align 8
+          #|.section .rodata
+          #|.p2align 3
           #|.Lfp0:
-          #|	.int 0
-          #|	.int 1073217536 /* 1.500000 */
+          #|	.quad 4609434218613702656 /* 1.500000 */
           #|
+          #|.section .note.GNU-stack,"",@progbits
+          #|
+
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -302,18 +354,25 @@ test "e2e arm64: data section" {
           #|/* end data */
           #|
           #|.text
+          #|.balign 16
           #|.globl first
           #|first:
+          #|	hint	#34
           #|	stp	x29, x30, [sp, -16]!
-          #|	add	x29, sp, 0
+          #|	mov	x29, sp
           #|	adrp	x0, buf
           #|	add	x0, x0, #:lo12:buf
           #|	ldrb	w0, [x0]
           #|	ldp	x29, x30, [sp], 16
           #|	ret
+          #|.type first, @function
+          #|.size first, .-first
           #|/* end function first */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
+
+
         ),
       )
     Err(_) => fail("compile_arm64 failed")
