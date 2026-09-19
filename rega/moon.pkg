@@ -11,7 +11,7 @@ import {
   "azhzx/qbe/ssa",
   "azhzx/qbe/live",
   "azhzx/qbe/fold",
-  "azhzx/qbe/abi_amd64",
-  "azhzx/qbe/isel",
+  "azhzx/qbe/target_amd64/abi" @abi_amd64,
+  "azhzx/qbe/target_amd64/isel",
   "azhzx/qbe/spill",
 } for "wbtest"

@@ -1,6 +1,6 @@
 # `isel_wasm` 包接口介绍
 
-包路径: `azhzx/qbe/isel_wasm`
+包路径: `azhzx/qbe/target_wasm/isel`
 
 Wasm 指令选择。将 QBE 的通用 SSA 操作码映射为 wasm 的等效操作，同时处理地址模式分解和 CFG 到结构化控制流的转换。
 

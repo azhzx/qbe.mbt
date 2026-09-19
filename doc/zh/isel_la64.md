@@ -1,6 +1,6 @@
 # `isel_la64` 包接口介绍
 
-包路径: `azhzx/qbe/isel_la64`
+包路径: `azhzx/qbe/target_la64/isel`
 
 LoongArch 64 (la64) 指令选择。对应上游假设的 `loongarch64/isel.c`：检查
 常量、物化立即数、暴露机器寄存器约束、为快速分配（fast alloc）指派栈槽。

@@ -1,6 +1,6 @@
 # `abi_rv64` Package API Reference
 
-Package path: `azhzx/qbe/abi_rv64`
+Package path: `azhzx/qbe/target_rv64/abi`
 
 RISC-V 64 (rv64) ABI processing. Before instruction selection, replaces abstract function parameter/return value references with concrete register references per the RISC-V calling convention. On the same level as `abi` (amd64 System V), corresponding to upstream QBE's `rv64/abi.c`.
 

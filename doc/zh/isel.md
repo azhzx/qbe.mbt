@@ -1,6 +1,6 @@
 # `isel` 包接口介绍
 
-包路径: `azhzx/qbe/isel`
+包路径: `azhzx/qbe/target_amd64/isel`
 
 指令选择 (Instruction Selection)。在 ABI 处理之后，把抽象的 SSA 指令模式替换为 amd64 上更高效的具体指令。对应 QBE 原项目的 `amd64/isel.c`、`amd64/addr.c`、`amd64/cmp.c`、`amd64/sel.c`。
 

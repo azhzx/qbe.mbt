@@ -1,6 +1,6 @@
 # `isel_rv64` 包接口介绍
 
-包路径: `azhzx/qbe/isel_rv64`
+包路径: `azhzx/qbe/target_rv64/isel`
 
 RISC-V 64 指令选择。在 `abi_rv64` 降级之后运行，把通用 SSA 指令映射为
 RISC-V 指令形态，对应上游 QBE 的 `rv64/isel.c`。

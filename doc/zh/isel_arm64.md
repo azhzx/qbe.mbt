@@ -1,6 +1,6 @@
 # `isel_arm64` 包接口介绍
 
-包路径: `azhzx/qbe/isel_arm64`
+包路径: `azhzx/qbe/target_arm64/isel`
 
 ARM64 (AArch64) 指令选择。逐行移植自 `vendor/qbe/arm64/isel.c`。把抽象
 操作转换为 arm64 机器操作，并为快速分配分配栈槽。

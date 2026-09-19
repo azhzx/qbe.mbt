@@ -1,6 +1,6 @@
 # `abi_arm64` 包接口介绍
 
-包路径: `azhzx/qbe/abi_arm64`
+包路径: `azhzx/qbe/target_arm64/abi`
 
 ARM64 (AArch64) AAPCS64 ABI 降级（ELF 风格）。在指令选择之前，把抽象的
 参数/返回值引用替换为具体的调用约定寄存器。逐行移植自

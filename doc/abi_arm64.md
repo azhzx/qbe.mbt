@@ -1,6 +1,6 @@
 # `abi_arm64` Package API Reference
 
-Package path: `azhzx/qbe/abi_arm64`
+Package path: `azhzx/qbe/target_arm64/abi`
 
 [中文版本 (Chinese Version)](zh/abi_arm64.md)
 

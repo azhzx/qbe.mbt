@@ -1,6 +1,6 @@
 # `isel_rv64` Package API Reference
 
-Package path: `azhzx/qbe/isel_rv64`
+Package path: `azhzx/qbe/target_rv64/isel`
 
 RISC-V 64 instruction selection. Runs after `abi_rv64` lowering, mapping generic SSA instructions to RISC-V instruction forms. Corresponds to upstream QBE's `rv64/isel.c`.
 

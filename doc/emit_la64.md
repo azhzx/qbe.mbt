@@ -1,6 +1,6 @@
 # `emit_la64` Package API Reference
 
-Package path: `azhzx/qbe/emit_la64`
+Package path: `azhzx/qbe/target_la64/emit`
 
 [中文版本 (Chinese Version)](zh/emit_la64.md)
 

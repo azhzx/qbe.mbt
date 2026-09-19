@@ -1,6 +1,6 @@
 # `emit_wasm` Package API Reference
 
-Package path: `azhzx/qbe/emit_wasm`
+Package path: `azhzx/qbe/target_wasm/emit`
 
 Wasm assembly output. Converts SSA functions after instruction selection into WAT (WebAssembly Text) format text.
 

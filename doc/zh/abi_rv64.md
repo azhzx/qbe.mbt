@@ -1,6 +1,6 @@
 # `abi_rv64` 包接口介绍
 
-包路径: `azhzx/qbe/abi_rv64`
+包路径: `azhzx/qbe/target_rv64/abi`
 
 RISC-V 64 (rv64) ABI 处理。在指令选择前把抽象的函数参数/返回值引用替换为
 RISC-V 调用约定的具体寄存器引用。与 `abi`（amd64 System V）平级，对应上游

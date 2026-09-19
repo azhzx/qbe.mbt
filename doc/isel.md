@@ -1,6 +1,6 @@
 # `isel` Package API Reference
 
-Package path: `azhzx/qbe/isel`
+Package path: `azhzx/qbe/target_amd64/isel`
 
 Instruction Selection. After ABI processing, replaces abstract SSA instruction patterns with more efficient concrete instructions on amd64. Corresponds to `amd64/isel.c`, `amd64/addr.c`, `amd64/cmp.c`, `amd64/sel.c` in the original QBE project.
 
