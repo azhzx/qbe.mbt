@@ -25,3 +25,9 @@
     byte-exact vs vendor/qbe -t arm64: IR 5684/5684, asm 406/406
     add CLI -t arm64, compile_arm64/compile_arm64_debug API, snapshots and
     docs; make live/spill/rega target-aware (rglob, nrsave, retregs/argregs)
+
+
+2026.9.19: v0.8.0
+    refactor documents
+    refactor repo package
+    refactor float in backends
