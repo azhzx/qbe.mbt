@@ -858,7 +858,8 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
   // C elf_emitfnfin emits the function type/size after each function.
   st.sb.write_string(".type \{st.gassym}\{fn_.name}, @function\n")
   st.sb.write_string(".size \{st.gassym}\{fn_.name}, .-\{st.gassym}\{fn_.name}\n")
-  rv64_id0[0] = rv64_id0[0] + fn_.nblk()
+  // C: id0 += fn->nblk (the reachable block count after fillrpo).
+  rv64_id0[0] = rv64_id0[0] + fn_.rpo.length()
 }
 
 ///|
