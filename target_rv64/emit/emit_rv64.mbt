@@ -772,6 +772,18 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
 
     match b.jmp.kind {
       @types.Jret0 => {
+        // C rv64/emit.c: dynamic allocs restore sp from fp first.
+        if fn_.has_dynalloc {
+          if frame - 16 <= 2048 {
+            st.sb.write_string("\tadd sp, fp, -")
+            st.sb.write_string((frame - 16).to_string())
+            st.sb.write_char('\n')
+          } else {
+            st.sb.write_string("\tli t6, ")
+            st.sb.write_string((frame - 16).to_string())
+            st.sb.write_string("\n\tsub sp, fp, t6\n")
+          }
+        }
         off = 0
         for pr in @types.rv64_rclob {
           if (fn_.reg & (1UL << pr)) != 0UL {
