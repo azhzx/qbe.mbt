@@ -5,10 +5,10 @@
 data $hello = { b "hello, world\n", b 0 }
 data $nums  = { w 1, w 2, w 3, w 4 }
 
-type :point { w 0, w 0 }  # 两个 word 的结构体
+type :point = { w 0, w 0 }  # 两个 word 的结构体
 
 export
-function w $test() {
+function l $test() {
 @start
 	%p =l load $nums
 	ret %p

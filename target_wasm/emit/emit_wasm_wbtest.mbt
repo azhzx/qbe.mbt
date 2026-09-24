@@ -55,13 +55,24 @@ test "emit_fn: wasm function body snapshot" {
     sb.to_string(),
     content=(
       #|  (func $add (param $t64 i32) (param $t65 i32) (result i32)
+      #|(local $pc i32)
       #|(local $t66 i32)
-      #|    local.get $t64
-      #|    local.get $t65
-      #|    i32.add
-      #|    local.set $t66
-      #|    local.get $t66
-      #|    return
+      #|    i32.const 0
+      #|    local.set $pc
+      #|    (block $exit
+      #|      (loop $dispatch
+      #|        (block $case0
+      #|          local.get $pc
+      #|          br_table $case0
+      #|        )
+      #|        local.get $t64
+      #|        local.get $t65
+      #|        i32.add
+      #|        local.set $t66
+      #|        local.get $t66
+      #|        return
+      #|      )
+      #|    )
       #|  )
       #|
     ),
@@ -102,4 +113,74 @@ test "emit_fn: float computation emits f32 arithmetic" {
   emit_fn(f, interner, sb)
   let wat = sb.to_string()
   assert_true(wat.contains("f32"))
+}
+
+///|
+test "emit_fn: loop and phi lower to a dispatch loop" {
+  let src =
+    #|function w $sum_to(w %n) {
+    #|@start
+    #|  %i =w copy 0
+    #|  %s =w copy 0
+    #|@loop
+    #|  %i2 =w phi @start %i, @body %i3
+    #|  %s2 =w phi @start %s, @body %s3
+    #|  %c =w csltw %i2, %n
+    #|  jnz %c, @body, @end
+    #|@body
+    #|  %s3 =w add %s2, %i2
+    #|  %i3 =w add %i2, 1
+    #|  jmp @loop
+    #|@end
+    #|  ret %s2
+    #|}
+    #|
+  let (f, interner, _typs) = wat_parse_pipeline(src)
+  let sb = StringBuilder::StringBuilder()
+  emit_fn(f, interner, sb)
+  let wat = sb.to_string()
+  assert_true(wat.contains("loop $dispatch"))
+  assert_true(wat.contains("br_table"))
+  assert_true(wat.contains("br $dispatch"))
+}
+
+///|
+test "emit_fn: long constant uses i64.const" {
+  let src =
+    #|function l $one() {
+    #|@start
+    #|  %x =l copy 1
+    #|  ret %x
+    #|}
+    #|
+  let (f, interner, _typs) = wat_parse_pipeline(src)
+  let sb = StringBuilder::StringBuilder()
+  emit_fn(f, interner, sb)
+  assert_true(sb.to_string().contains("i64.const 1"))
+}
+
+///|
+test "emit_wat_module: data segment and global address resolve" {
+  let src =
+    #|data $g = { w 7 }
+    #|export function w $get() {
+    #|@start
+    #|  %x =w loadw $g
+    #|  ret %x
+    #|}
+    #|
+  let lexer = @lexer.Lexer::new(src, "<test>")
+  let parser = @parser.Parser::new(lexer.tokenize(), "<test>")
+  parser.parse()
+  let sb = StringBuilder::StringBuilder()
+  emit_wat_module(
+    parser.get_funcs(),
+    parser.get_datas(),
+    parser.get_order(),
+    parser.interner_ref(),
+    sb,
+  )
+  let wat = sb.to_string()
+  assert_true(wat.contains("(data (i32.const 1024)"))
+  assert_true(wat.contains("i32.const 1024"))
 }

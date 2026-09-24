@@ -19,8 +19,11 @@ fn wasm_process_block(_st : WasmAbiState, blk : @types.Blk) -> Unit {
     let ins = blk.ins[i]
     match ins.op {
       // Par/Parc/Pare are kept so the emitter can declare the wasm
-      // parameters with their real classes; Arg* vanish into the call.
-      @types.Arg | @types.Argc | @types.Arge =>
+      // parameters with their real classes. Arg/Arge are kept too: the
+      // emitter pushes each argument value so the following call consumes
+      // them from the wasm operand stack. Argc only carries a type payload,
+      // which the wasm call does not need.
+      @types.Argc =>
         blk.ins[i] = @types.Ins::new_void(
           @types.Nop,
           ins.cls,

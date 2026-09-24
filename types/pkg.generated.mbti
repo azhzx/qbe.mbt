@@ -480,7 +480,9 @@ pub const TP : Int = 29
 
 pub const Tmp0 : Int = 64
 
-pub const WASM_MEMORY_PAGES : Int = 1
+pub const WASM_DATA_BASE : Int = 1024
+
+pub const WASM_MEMORY_PAGES : Int = 4
 
 pub const WASM_STACK_ALIGN : Int = 16
 

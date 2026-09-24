@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn emit_fn(@types.Fn, @util.Interner, StringBuilder) -> Unit
+pub fn emit_fn(@types.Fn, @util.Interner, StringBuilder, dats? : Array[(String, Int)]) -> Unit
 
 pub fn emit_wat_module(Array[@types.Fn], Array[@types.Dat], Array[String], @util.Interner, StringBuilder) -> Unit
 

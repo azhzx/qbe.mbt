@@ -15,7 +15,7 @@
 | CFG 分析 | `cfg` | [cfg.md](cfg.md) | 前驱、支配者、支配边界、循环、别名 |
 | SSA 构造 | `ssa` | [ssa.md](ssa.md) | 使用链、phi 插入、memopt/loadopt/copy |
 | 常量折叠 | `fold` | [fold.md](fold.md) | 常量指令求值 |
-| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | wasm 调用约定：Par/Arg→Nop，Call 简化 |
+| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | wasm 调用约定：保留 Par/Arg，Call 简化 |
 | Wasm 指令选择 | `target_wasm/isel` | [isel_wasm.md](isel_wasm.md) | wasm op 映射、地址模式分解、CFG→结构化控制流 |
 | Wasm 汇编输出 | `target_wasm/emit` | [emit_wasm.md](emit_wasm.md) | WAT 文本格式输出 |
 | ABI 处理 | `target_amd64/abi` | [abi.md](abi.md) | 参数/返回值的平台 ABI |

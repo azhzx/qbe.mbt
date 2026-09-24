@@ -53,9 +53,10 @@ runs the export under `node`. Example:
 
     qbe --run-wasm add,2,3 demo/01_arith.ssa   # 5
 
-Note: the wasm backend currently emits valid modules for straight-line
-functions; loops/phi nodes (structured control flow) and imports are still
-being finished, so those report an error.
+The wasm backend lowers QBE's CFG to a dispatch loop (`br_table`), so loops and
+phi nodes work, and it also supports internal calls/recursion, floating-point
+comparisons and `data` segments. External imports (`printf` et al.) and
+variadic calls are not emitted yet.
 
 ## Tests
 

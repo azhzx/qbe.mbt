@@ -231,12 +231,14 @@ async fn main {
           return
         }
       }
-      let args : Array[Int64] = []
+      let args : Array[String] = []
       for v in wasm_args {
         match v {
-          @interp.VInt(x) => args.push(x)
+          @interp.VInt(x) => args.push(x.to_string())
+          @interp.VDouble(d) => args.push(d.to_string())
+          @interp.VFloat(f) => args.push(f.to_double().to_string())
           _ => {
-            @util.eprint("error: --run-wasm takes integer arguments\n")
+            @util.eprint("error: --run-wasm takes numeric arguments\n")
             return
           }
         }

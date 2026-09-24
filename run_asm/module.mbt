@@ -111,7 +111,7 @@ pub fn run_command(cmd : String) -> Int {
 pub fn run_wasm(
   wat : String,
   func : String,
-  args : Array[Int64],
+  args : Array[String],
 ) -> String raise {
   let wat_path = tmp_path(".wat")
   let wasm_path = tmp_path(".wasm")
@@ -131,7 +131,7 @@ pub fn run_wasm(
   }
   let mut argstr = ""
   for a in args {
-    argstr = argstr + " " + a.to_string()
+    argstr = argstr + " " + a
   }
   let out = mbt_run_asm_capture(
     cstr("node " + js_path + " " + wasm_path + " " + func + argstr),

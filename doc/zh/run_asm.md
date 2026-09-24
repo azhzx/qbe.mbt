@@ -40,6 +40,18 @@ MoonBit 自身无法表达的部分放在 `run_asm/run_asm_stub.c`，通过类�
 IR 驱动（用二进制发射器替代字符串发射器），以及 `adrp`/`add`/`bl` 的重定位
 回填。
 
+## 运行 wasm（`--run-wasm`）
+
+`qbe --run-wasm FUNC[,ARG]...` 编译到 wasm（`-t wasm` 后端），用
+`moon-wasm-opt`（MoonBit 自带的 binaryen）把 WAT 转成模块，再在 `node` 下运行
+导出函数。例如：
+
+    qbe --run-wasm add,2,3 demo/01_arith.ssa   # 5
+
+wasm 后端把 QBE 的 CFG 下沉为带 `br_table` 的分发循环，因此循环与 phi 节点可用；
+同时支持内部调用/递归、浮点比较与 `data` 数据段。外部导入（`printf` 等）与可变
+参数调用尚未发射。
+
 ## 测试
 
     moon test --target native -p run_asm      # FFI、路线 A、路线 B 切片

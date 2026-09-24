@@ -20,9 +20,9 @@ pub fn abi_wasm(
 
 `abi_wasm()` performs the following work:
 
-1. **Parameter passing**: Replaces `Par`/`Arg` instructions with `Nop`. Wasm parameters are passed directly through the function signature, requiring no explicit copy instructions.
+1. **Parameter passing**: Keeps `Par`/`Parc`/`Pare` so the emitter can declare the wasm signature parameters with their real classes, and keeps call arguments (`Arg`/`Arge`) so the emitter pushes each value for the following `call` to consume. Only `Argc` (a type-only payload) becomes `Nop`.
 2. **Return values**: Replaces the return value reference in `Ret` jumps with assignment to local variables.
-3. **Call simplification**: Replaces `Arg` operands in `Call` instructions with `copy` to local variables, maintaining SSA form.
+3. **Call simplification**: Drops the return-type operand of `Call`, keeping only the callee reference.
 
 ## Differences from amd64 ABI
 
@@ -41,6 +41,6 @@ pub fn abi_wasm(
 
 ## Notes
 
-- `abi_wasm` is the **key transformation point** from abstract SSA to wasm-related SSA. Before this function returns, all references are abstract `RTmp`/`RCon`; after returning, parameter/return-value-related instructions become `Nop`.
+- `abi_wasm` is the **key transformation point** from abstract SSA to wasm-related SSA. Before this function returns, all references are abstract `RTmp`/`RCon`; afterwards parameters/arguments carry their real classes for the emitter.
 - wasm32 pointer width is 32 bits (`Km = Kw`), no `Kl` type.
 - Currently does not support wasm variadic arguments or aggregate types larger than 16 bytes (different from amd64 behavior).

@@ -19,7 +19,7 @@ Packages are listed in compilation pipeline order:
 | CFG Analysis | `cfg` | [cfg.md](cfg.md) | Predecessors, dominators, dominance frontiers, loops, aliasing |
 | SSA Construction | `ssa` | [ssa.md](ssa.md) | Use chains, phi insertion, memopt/loadopt/copy |
 | Constant Folding | `fold` | [fold.md](fold.md) | Constant instruction evaluation |
-| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | Wasm calling convention: Par/Arg→Nop, Call simplification |
+| Wasm ABI | `target_wasm/abi` | [abi_wasm.md](abi_wasm.md) | Wasm calling convention: keep Par/Arg, Call simplification |
 | Wasm Instruction Selection | `target_wasm/isel` | [isel_wasm.md](isel_wasm.md) | Wasm op mapping, address mode decomposition, CFG→structured control flow |
 | Wasm Assembly Output | `target_wasm/emit` | [emit_wasm.md](emit_wasm.md) | WAT text format output |
 | ABI Processing | `target_amd64/abi` | [abi.md](abi.md) | Platform-specific ABI for parameters/return values |

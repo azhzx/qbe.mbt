@@ -1,7 +1,7 @@
 ///|
-// Tests for the wasm32 ABI lowering: Arg becomes Nop, Par is retained (the
-// emitter needs it to declare wasm parameters) and Call keeps only its callee
-// reference (no return-type operand on the wasm target).
+// Tests for the wasm32 ABI lowering: Par/Arg are retained (the emitter needs
+// them to declare wasm parameters and push call arguments) and Call keeps only
+// its callee reference (no return-type operand on the wasm target).
 
 ///|
 // Parse IL text and set up def_order so abi_wasm can iterate blocks.
@@ -38,7 +38,7 @@ test "abi_wasm: Arg becomes Nop, Par is kept" {
 }
 
 ///|
-test "abi_wasm: call arguments become Nop, call keeps callee only" {
+test "abi_wasm: call arguments are kept, call keeps callee only" {
   let src =
     #|export function w $main() {
     #|@start
@@ -50,6 +50,7 @@ test "abi_wasm: call arguments become Nop, call keeps callee only" {
   let _ = abi_wasm(f, [], false, @util.Interner::new(), [])
   let start = f.blks[f.start_id]
   let mut calls = 0
+  let mut args = 0
   for ins in start.ins {
     match ins.op {
       @types.Call => {
@@ -58,11 +59,18 @@ test "abi_wasm: call arguments become Nop, call keeps callee only" {
         assert_true(!ins.arg1.is_none())
         assert_true(ins.arg2.is_none())
       }
+      @types.Arg | @types.Arge => {
+        // Argument values stay on the instruction (arg1) so the emitter can
+        // push them for the following call.
+        args = args + 1
+        assert_true(!ins.arg1.is_none())
+      }
       @types.Nop => ()
-      _ => assert_true(!ins.op.is_arg())
+      _ => ()
     }
   }
   assert_eq(calls, 1)
+  assert_eq(args, 2)
 }
 
 ///|
