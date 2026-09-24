@@ -62,6 +62,27 @@ clang -O0 -o /tmp/fibdemo /tmp/fib.s /tmp/main.c
 moon run cmd/main --target native -- --run fib,10 demo/10_fibonacci.ssa   # 55
 ```
 
+## 直接生成可执行文件（自带 main）
+
+`11_main.ssa` 导出了 C 的 `main`，所以产出的 `.o` 不需要额外 driver，
+直接用系统 C 编译器链接即可运行：
+
+```bash
+# 方案 B（默认，自包含）：产出 .qbe_build/11_main.o
+moon run --target native cmd/main -- --emit obj demo/11_main.ssa
+
+# 用 gcc 或 clang 直接链接
+gcc   -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
+# 或
+clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
+```
+
+输出：
+
+    Hello from qbe.mbt!
+
+其中对 libc `putchar` 的调用由链接器解析（对象里是 `BRANCH26` 外部重定位）。
+
 ## 演示文件列表
 
 | 文件 | 主题 | 展示特性 |
@@ -76,6 +97,7 @@ moon run cmd/main --target native -- --run fib,10 demo/10_fibonacci.ssa   # 55
 | [08_compare.ssa](08_compare.ssa) | 比较 | 有/无符号、整数/浮点比较 |
 | [09_bitwise.ssa](09_bitwise.ssa) | 位运算 | `and`/`or`/`xor`、`sar`/`shr`/`shl` |
 | [10_fibonacci.ssa](10_fibonacci.ssa) | 综合示例 | 迭代斐波那契，phi + 循环 + 长 |
+| [11_main.ssa](11_main.ssa) | 可执行 main | `export main`、调用 libc `putchar`、字符串 data、`.o` 直接链接 |
 
 ## IL 语法速查
 

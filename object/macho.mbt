@@ -203,15 +203,20 @@ pub fn write_object(
   let cmds_size = seg_cmd_size + build_size + symtab_size
   let header_size = 32
 
-  // Section file offsets.
+  // Section file offsets and in-segment addresses. In MH_OBJECT each section
+  // carries its offset from the start of the segment; linkers check these for
+  // overlaps (GNU ld via gcc rejects all-zero addresses).
   let sec_off : Array[Int] = []
+  let sec_addr : Array[Int] = []
   let mut cur = header_size + cmds_size
-  let mut sec_total = 0
+  let mut acur = 0
   for s in sections {
     cur = align_up(cur, 1 << s.align)
+    acur = align_up(acur, 1 << s.align)
     sec_off.push(cur)
+    sec_addr.push(acur)
     cur = cur + s.data.length()
-    sec_total = sec_total + s.data.length()
+    acur = acur + s.data.length()
   }
   let sec_end = cur
   // Relocation file offsets.
@@ -251,9 +256,9 @@ pub fn write_object(
   push_u32(out, seg_cmd_size)
   push_name16(out, "")
   push_u64(out, 0L) // vmaddr
-  push_u64(out, sec_total.to_int64()) // vmsize
+  push_u64(out, acur.to_int64()) // vmsize (aligned section extent)
   push_u64(out, (if nsect > 0 { sec_off[0] } else { 0 }).to_int64()) // fileoff
-  push_u64(out, sec_total.to_int64()) // filesize
+  push_u64(out, acur.to_int64()) // filesize
   push_u32(out, 7) // maxprot
   push_u32(out, 7) // initprot
   push_u32(out, nsect)
@@ -262,7 +267,7 @@ pub fn write_object(
     let s = sections[i]
     push_name16(out, s.name)
     push_name16(out, s.seg)
-    push_u64(out, 0L) // addr
+    push_u64(out, sec_addr[i].to_int64()) // addr
     push_u64(out, s.data.length().to_int64()) // size
     push_u32(out, sec_off[i]) // offset
     push_u32(out, s.align) // align (log2)
@@ -314,13 +319,20 @@ pub fn write_object(
   push_pad(out, sym_off - out.length())
   for i in 0..<syms.length() {
     let s = syms[i]
+    // For a section-based symbol n_value is its segment address (section
+    // addr + section-relative offset); undefined symbols keep 0.
+    let v = if s.sect > 0 && s.sect <= nsect {
+      sec_addr[s.sect - 1] + s.value
+    } else {
+      s.value
+    }
     push_u32(out, strx[i]) // n_strx
     let t = (if s.sect > 0 { N_SECT } else { N_UNDF }) |
       (if s.is_ext { N_EXT } else { 0 })
     push_u8(out, t)
     push_u8(out, s.sect) // n_sect
     push_u16(out, 0) // n_desc
-    push_u64(out, s.value.to_int64()) // n_value
+    push_u64(out, v.to_int64()) // n_value
   }
 
   // ---- string table ----

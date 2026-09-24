@@ -1,0 +1,25 @@
+# demo 11 - 带 main 的可执行程序
+# 展示: export main、调用 libc putchar、字符串数据段
+# 逻辑: 用 putchar 逐字符打印 "Hello from qbe.mbt!\n" 后返回 0
+# 用法: moon run --target native cmd/main -- --emit obj demo/11_main.ssa
+#       然后用 gcc/clang 直接链接产出可执行文件
+
+data $msg = { b "Hello from qbe.mbt!\n", b 0 }
+
+export
+function w $main() {
+@start
+	%p0 =l copy $msg
+	jmp @loop
+@loop
+	%p =l phi @start %p0, @body %p2
+	%c =w loadub %p
+	%z =w ceqw %c, 0
+	jnz %z, @end, @body
+@body
+	%r =w call $putchar(w %c)
+	%p2 =l add %p, 1
+	jmp @loop
+@end
+	ret 0
+}
