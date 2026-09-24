@@ -82,7 +82,6 @@ test "emit: add function to ELF GAS (snapshot)" {
       #|.type add, @function
       #|.size add, .-add
       #|
-
     ),
   )
 }

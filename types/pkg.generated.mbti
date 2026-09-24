@@ -790,6 +790,8 @@ pub(all) struct Fn {
   mut is_export : Bool
   mut is_vararg : Bool
   mut has_dynalloc : Bool
+  mut leaf : Bool
+  mut salign : Int
 } derive(@debug.Debug)
 pub fn Fn::add_blk(Self, String) -> Int
 pub fn Fn::add_con(Self, Con) -> Int
@@ -951,6 +953,8 @@ pub(all) enum Op {
   Copy
   Nop
   Addr
+  Blit0
+  Blit1
   Swap
   Sign
   Salloc
@@ -961,6 +965,8 @@ pub(all) enum Op {
   Acmp
   Acmn
   Afcmp
+  Reqz
+  Rnez
   Par
   Parc
   Pare
@@ -1047,6 +1053,7 @@ pub(all) enum Ref {
   RNone
   RTmp(Int)
   RCon(Int)
+  RInt(Int)
   RType(Int)
   RSlot(Int)
   RCall(Int)
@@ -1063,14 +1070,18 @@ pub fn Ref::eq(Self, Self) -> Bool
 pub fn Ref::is_con(Self) -> Bool
 pub fn Ref::is_mem(Self) -> Bool
 pub fn Ref::is_none(Self) -> Bool
+pub fn Ref::is_rint(Self) -> Bool
 pub fn Ref::is_slot(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
+pub fn Ref::is_typ(Self) -> Bool
 pub fn Ref::la64_argregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::la64_retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::mem(Int) -> Self
 pub fn Ref::mem_val(Self) -> Int
 pub fn Ref::none() -> Self
 pub fn Ref::retregs(Self) -> (UInt64, Int, Int)
+pub fn Ref::rint(Int) -> Self
+pub fn Ref::rint_val(Self) -> Int
 pub fn Ref::rv64_argregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::rv64_retregs(Self) -> (UInt64, Int, Int)
 pub fn Ref::slot(Int) -> Self

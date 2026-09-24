@@ -133,7 +133,6 @@ test "e2e la64: call and branch" {
           #|/* end function rec */
           #|
           #|
-
         ),
       )
     Err(_) => fail("compile_la64 failed")
@@ -195,7 +194,6 @@ test "e2e la64: loop with phi" {
           #|/* end function sum */
           #|
           #|
-
         ),
       )
     Err(_) => fail("compile_la64 failed")

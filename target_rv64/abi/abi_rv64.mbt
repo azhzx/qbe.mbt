@@ -480,7 +480,14 @@ fn rv64_selret(st : Rv64AbiState, bid : Int) -> Unit {
         @types.Ref::rint(cr.typ.unwrap().size.to_int()),
         @types.Ref::none(),
       )
-      rv64_emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), r0, st.fn_.retr)
+      rv64_emit(
+        st,
+        @types.Blit0,
+        @types.Kw,
+        @types.Ref::none(),
+        r0,
+        st.fn_.retr,
+      )
       ca = 0
     } else {
       rv64_ldregs(st, cr, r0)
@@ -749,7 +756,9 @@ fn rv64_selcall(
         rv64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, r1)
         rv64_emit(st, @types.Extsw, @types.Kl, r0, i.arg1, @types.Ref::none())
       } else {
-        let store_op = @types.Op::from_index(@types.Storew.index() + i.cls.code())
+        let store_op = @types.Op::from_index(
+          @types.Storew.index() + i.cls.code(),
+        )
         rv64_emit(st, store_op, @types.Kw, @types.Ref::none(), i.arg1, r1)
       }
       rv64_emit(
@@ -892,14 +901,7 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Unit {
       }
       for j in 0..<ca[a].nreg {
         let r = @types.Ref::tmp(ca[a].reg[j])
-        rv64_emit(
-          st,
-          @types.Copy,
-          ca[a].cls[j],
-          tmp[t],
-          r,
-          @types.Ref::none(),
-        )
+        rv64_emit(st, @types.Copy, ca[a].cls[j], tmp[t], r, @types.Ref::none())
         t = t + 1
       }
       if (ca[a].class_ & Cstk2) != 0 {

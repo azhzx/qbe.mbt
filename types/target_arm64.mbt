@@ -313,7 +313,10 @@ pub let arm64_rclob : Array[Int] = [
 // These overlap no argument register (C MAKESURE globals_are_not_arguments).
 pub fn arm64_rglob_mask() -> UInt64 {
   let one : UInt64 = 1
-  (one << ARM64_FP) | (one << ARM64_SP) | (one << ARM64_IP1) | (one << ARM64_R18)
+  (one << ARM64_FP) |
+  (one << ARM64_SP) |
+  (one << ARM64_IP1) |
+  (one << ARM64_R18)
 }
 
 ///|

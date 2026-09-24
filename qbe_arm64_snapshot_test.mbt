@@ -36,8 +36,6 @@ test "e2e arm64: return constant word" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -78,8 +76,6 @@ test "e2e arm64: word arithmetic" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -145,9 +141,6 @@ test "e2e arm64: call and branch" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -198,8 +191,6 @@ test "e2e arm64: loop with phi" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -238,8 +229,6 @@ test "e2e arm64: memory and alloc" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -276,8 +265,6 @@ test "e2e arm64: double arithmetic" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -321,9 +308,6 @@ test "e2e arm64: float constant stash" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")
@@ -372,9 +356,6 @@ test "e2e arm64: data section" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
         ),
       )
     Err(_) => fail("compile_arm64 failed")

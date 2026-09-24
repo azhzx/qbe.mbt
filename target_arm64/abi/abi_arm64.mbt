@@ -169,8 +169,8 @@ fn arm64_store_op(k : @types.Class) -> @types.Op {
   let store_ops = [@types.Storew, @types.Storel, @types.Stores, @types.Stored]
   let c = k.code()
   if c < 0 || c >= store_ops.length() {
-    @types.Storel // Kx/Ke: pointer-sized fallback
-  } else {
+    @types.Storel
+  } else { // Kx/Ke: pointer-sized fallback
     store_ops[c]
   }
 }
@@ -365,7 +365,14 @@ fn arm64_selret(st : Arm64AbiState, bid : Int) -> Unit raise {
         @types.Ref::rint(size),
         @types.Ref::none(),
       )
-      arm64_emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), r, st.fn_.retr)
+      arm64_emit(
+        st,
+        @types.Blit0,
+        @types.Kw,
+        @types.Ref::none(),
+        r,
+        st.fn_.retr,
+      )
     } else {
       arm64_ldregs(st, cr, cr.nreg, r)
     }
@@ -708,7 +715,14 @@ fn arm64_selcall(
         @types.Ref::rint(size),
         @types.Ref::none(),
       )
-      arm64_emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), i.arg2, i.arg1)
+      arm64_emit(
+        st,
+        @types.Blit0,
+        @types.Kw,
+        @types.Ref::none(),
+        i.arg2,
+        i.arg1,
+      )
     }
   }
 }

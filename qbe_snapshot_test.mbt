@@ -35,7 +35,6 @@ test "e2e fold: 001_add_w" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -71,7 +70,6 @@ test "e2e fold: 002_sub_w" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -126,7 +124,6 @@ test "e2e abi: 001_arg1w" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -181,7 +178,6 @@ test "e2e abi: 009_arg1l" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -218,7 +214,6 @@ test "e2e isel: 001_imm_add_w" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -255,7 +250,6 @@ test "e2e isel: 002_imm_sub_w" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -320,7 +314,6 @@ test "e2e regalloc: 006_callersave" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -404,7 +397,6 @@ test "e2e regalloc: 010_calleesave" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -448,8 +440,6 @@ test "e2e emit: 008_data_zero" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -500,8 +490,6 @@ test "e2e emit: 005_data_str" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -540,7 +528,6 @@ test "e2e programs: 030_gray" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")
@@ -580,7 +567,6 @@ test "e2e programs: 054_tower" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(e) => fail("compile failed")

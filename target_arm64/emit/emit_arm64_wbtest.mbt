@@ -80,7 +80,6 @@ test "arm64 emit: simple add function" {
       #|.type add, @function
       #|.size add, .-add
       #|
-
     ),
   )
 }
@@ -129,39 +128,6 @@ test "arm64 emit: conditional branch and loop labels" {
       #|.type count, @function
       #|.size count, .-count
       #|
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     ),
   )
 }

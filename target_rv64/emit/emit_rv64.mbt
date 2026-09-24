@@ -414,7 +414,7 @@ fn rv64_emit_load(
   } else if addr.is_con() {
     let con = st.fn_.cons[addr.con_val()]
     match con.kind {
-      @types.CAddr => {
+      @types.CAddr =>
         if is_float {
           // C rv64/emit.c %M: float loads from a symbol need a scratch reg.
           st.sb.write_string("\t")
@@ -434,7 +434,6 @@ fn rv64_emit_load(
           rv64_emitaddr(st, con)
           st.sb.write_char('\n')
         }
-      }
       _ => abort("invalid load address")
     }
   } else if addr.is_mem() {
@@ -816,7 +815,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
       @types.Jjmp =>
         if b.jmp.s1 >= 0 && b.jmp.s1 != next {
           st.sb.write_string("\tj \{st.gasloc}")
-          st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
+          st.sb.write_string(
+            (rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string(),
+          )
           st.sb.write_char('\n')
         } else {
           lbl = false
@@ -830,7 +831,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
             st.sb.write_string("\tbnez ")
             st.sb.write_string(rn)
             st.sb.write_string(", \{st.gasloc}")
-            st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
+            st.sb.write_string(
+              (rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string(),
+            )
             st.sb.write_char('\n')
             // C Jmp: b->s1 (now the fallthrough) == b->link -> no label next.
             lbl = false
@@ -838,7 +841,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
             st.sb.write_string("\tbeqz ")
             st.sb.write_string(rn)
             st.sb.write_string(", \{st.gasloc}")
-            st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s2].rpo_id).to_string())
+            st.sb.write_string(
+              (rv64_id0[0] + fn_.blks[b.jmp.s2].rpo_id).to_string(),
+            )
             st.sb.write_char('\n')
             if b.jmp.s1 >= 0 && b.jmp.s1 == next {
               // the true target is the next block: fall through
@@ -846,7 +851,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
             } else {
               // the true target is not the next block: jump to it
               st.sb.write_string("\tj \{st.gasloc}")
-              st.sb.write_string((rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string())
+              st.sb.write_string(
+                (rv64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string(),
+              )
               st.sb.write_char('\n')
             }
           }
@@ -857,7 +864,9 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit {
 
   // C elf_emitfnfin emits the function type/size after each function.
   st.sb.write_string(".type \{st.gassym}\{fn_.name}, @function\n")
-  st.sb.write_string(".size \{st.gassym}\{fn_.name}, .-\{st.gassym}\{fn_.name}\n")
+  st.sb.write_string(
+    ".size \{st.gassym}\{fn_.name}, .-\{st.gassym}\{fn_.name}\n",
+  )
   // C: id0 += fn->nblk (the reachable block count after fillrpo).
   rv64_id0[0] = rv64_id0[0] + fn_.rpo.length()
 }

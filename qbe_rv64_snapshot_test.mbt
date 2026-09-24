@@ -39,7 +39,6 @@ test "e2e rv64: return constant word" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -83,7 +82,6 @@ test "e2e rv64: word arithmetic" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -142,11 +140,6 @@ test "e2e rv64: call and branch" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
-
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -207,9 +200,6 @@ test "e2e rv64: loop with phi" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -251,7 +241,6 @@ test "e2e rv64: memory and alloc" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -292,7 +281,6 @@ test "e2e rv64: double arithmetic" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -340,9 +328,6 @@ test "e2e rv64: float constant stash" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")
@@ -393,8 +378,6 @@ test "e2e rv64: data section" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
-
-
         ),
       )
     Err(_) => fail("compile_rv64 failed")

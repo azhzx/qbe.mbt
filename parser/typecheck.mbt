@@ -66,7 +66,9 @@ fn Parser::typecheck(self : Self, fn_ : @types.Fn) -> Unit raise {
       if i.to.is_tmp() {
         let t = fn_.tmps[i.to.tmp_val()]
         if clsmerge(t, i.cls) {
-          raise self.error("temporary %\{t.name} is assigned with multiple types")
+          raise self.error(
+            "temporary %\{t.name} is assigned with multiple types",
+          )
         }
       }
     }

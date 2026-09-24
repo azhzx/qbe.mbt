@@ -237,7 +237,12 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
   // Fix the emitted compare's args at buffer index `idx` (helpers precede it
   // after the reversed write-back).  The op is the *emitted* compare (C's
   // icmp), so immarg/memarg are decided from it, while k is the operand class.
-  fn fix_cmp(st : Rv64IselState, idx : Int, op : @types.Op, k : @types.Class) -> Unit {
+  fn fix_cmp(
+    st : Rv64IselState,
+    idx : Int,
+    op : @types.Op,
+    k : @types.Class,
+  ) -> Unit {
     st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(op), 0)
     st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(op), 1)
   }

@@ -253,7 +253,11 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
     m.offset = m.offset.add(off)
     // C emit_mem uses TMP(e->fp), which is RSP for leaf functions.
     m.base = @types.Ref::tmp(
-      if st.fp == "%rbp" { @types.RBP } else { @types.RSP },
+      if st.fp == "%rbp" {
+        @types.RBP
+      } else {
+        @types.RSP
+      },
     )
   }
   if m.offset.kind != @types.CUndef {
@@ -808,7 +812,7 @@ pub fn gasemitfin(gasloc : String, sb : StringBuilder) -> Unit {
     for lg in [4, 3, 2] {
       for i in 0..<@types.fp_stash_len() {
         let b = @types.fp_stash_at(i)
-        if b.size == (1 << lg) {
+        if b.size == 1 << lg {
           sb.write_string(".section .rodata\n.p2align \{lg}\n\{gasloc}fp\{i}:")
           if lg == 4 {
             sb.write_string("\n\t.quad \{b.b0}\n\t.quad 0\n\n")
