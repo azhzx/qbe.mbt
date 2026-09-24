@@ -99,6 +99,7 @@ pub fn emit_wat_module(
 
 - WAT 是 WebAssembly 的文本表示，可直接被 `wasm-tools` 等工具解析。
 - wasm32 使用 32 位指针，所有 `i32` 操作对应 wasm 的 `i32` 类型。
-- 当前不支持浮点操作（wasm 的 `f32`/`f64` 类型）。
+- 支持 `f32`/`f64` 运算（含浮点比较），映射到对应的 wasm 指令。
+- 循环与 phi 节点下沉为带 `br_table` 的分发循环；全局 `data` 定义变成 `(data ...)` 数据段，`$global` 引用解析为线性内存地址。
 - 不支持内存增长 (`memory.grow`)——需要配合线性内存使用。
 - 输出的 WAT 格式符合 WebAssembly 规范 1.0。

@@ -101,6 +101,7 @@ pub fn emit_wat_module(
 
 - WAT is WebAssembly's text representation, directly parseable by tools like `wasm-tools`.
 - wasm32 uses 32-bit pointers, all `i32` operations correspond to wasm's `i32` type.
-- Currently does not support floating-point operations (wasm's `f32`/`f64` types).
+- Emits `f32`/`f64` operations, including floating-point comparisons, mapped to the matching wasm instructions.
+- Loops and phi nodes lower to a dispatch loop with `br_table`; global `data` definitions become a `(data ...)` segment and `$global` references resolve to linear-memory addresses.
 - Does not support memory growth (`memory.grow`) — requires linear memory usage.
 - Output WAT format conforms to WebAssembly specification 1.0.

@@ -60,7 +60,12 @@ pub const WASM_STACK_ALIGN : Int = 16
 
 ///|
 // Wasm memory initial pages (64KB each)
-pub const WASM_MEMORY_PAGES : Int = 1
+pub const WASM_MEMORY_PAGES : Int = 4
+
+///|
+// Base address of the data segment in linear memory. The stack grows up from
+// WASM_STACK_BASE, so static data lives below it.
+pub const WASM_DATA_BASE : Int = 1024
 
 ///|
 // Wasm local variable classes (maps QBE Class to wasm type)

@@ -1,0 +1,190 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/object"
+
+// Values
+pub const ARM64_RELOC_BRANCH26 : Int = 2
+
+pub const ARM64_RELOC_GOT_LOAD_PAGE21 : Int = 5
+
+pub const ARM64_RELOC_GOT_LOAD_PAGEOFF12 : Int = 6
+
+pub const ARM64_RELOC_PAGE21 : Int = 3
+
+pub const ARM64_RELOC_PAGEOFF12 : Int = 4
+
+pub const ARM64_RELOC_POINTER_TO_GOT : Int = 7
+
+pub const ARM64_RELOC_SUBTRACTOR : Int = 1
+
+pub const ARM64_RELOC_UNSIGNED : Int = 0
+
+pub fn enc_add_imm(Int, Int, Int) -> Int
+
+pub fn enc_add_imm32(Int, Int, Int) -> Int
+
+pub fn enc_add_reg(Int, Int, Int) -> Int
+
+pub fn enc_and_reg(Int, Int, Int) -> Int
+
+pub fn enc_asr(Int, Int, Int) -> Int
+
+pub fn enc_b(Int) -> Int
+
+pub fn enc_bcond(Int, Int) -> Int
+
+pub fn enc_bitfield(Bool, Int, Int, Int, Int, Int, Int) -> Int
+
+pub fn enc_bl(Int) -> Int
+
+pub fn enc_blr(Int) -> Int
+
+pub fn enc_br(Int) -> Int
+
+pub fn enc_cbz(Bool, Bool, Int, Int) -> Int
+
+pub fn enc_cmn(Int, Int) -> Int
+
+pub fn enc_cmp(Int, Int) -> Int
+
+pub fn enc_dp2(Int, Int, Int, Int) -> Int
+
+pub fn enc_eor_reg(Int, Int, Int) -> Int
+
+pub fn enc_fadd_d(Int, Int, Int) -> Int
+
+pub fn enc_fcmp_d(Int, Int) -> Int
+
+pub fn enc_fcvt_d_s(Int, Int) -> Int
+
+pub fn enc_fcvtzs_x_d(Int, Int) -> Int
+
+pub fn enc_fdiv_d(Int, Int, Int) -> Int
+
+pub fn enc_fmov_d(Int, Int) -> Int
+
+pub fn enc_fmov_x_d(Int, Int) -> Int
+
+pub fn enc_fmul_d(Int, Int, Int) -> Int
+
+pub fn enc_fsub_d(Int, Int, Int) -> Int
+
+pub fn enc_hint(Int) -> Int
+
+pub fn enc_ldp(Int, Int, Int, Int) -> Int
+
+pub fn enc_ldp_post(Int, Int, Int, Int) -> Int
+
+pub fn enc_ldp_stp(Bool, Bool, Int, Int, Int, Int, Bool, Bool) -> Int
+
+pub fn enc_ldr_w(Int, Int, Int) -> Int
+
+pub fn enc_ldr_x(Int, Int, Int) -> Int
+
+pub fn enc_ldrb(Int, Int, Int) -> Int
+
+pub fn enc_ldrh(Int, Int, Int) -> Int
+
+pub fn enc_ldrsw(Int, Int, Int) -> Int
+
+pub fn enc_ldst(Int, Int, Int, Int, Int) -> Int
+
+pub fn enc_logic(Int, Int, Int, Int) -> Int
+
+pub fn enc_lsl(Int, Int, Int) -> Int
+
+pub fn enc_lsr(Int, Int, Int) -> Int
+
+pub fn enc_madd(Bool, Bool, Int, Int, Int, Int) -> Int
+
+pub fn enc_mov_reg(Int, Int) -> Int
+
+pub fn enc_movk(Int, Int, Int) -> Int
+
+pub fn enc_movz(Int, Int, Int) -> Int
+
+pub fn enc_msub(Int, Int, Int, Int) -> Int
+
+pub fn enc_mul(Int, Int, Int) -> Int
+
+pub fn enc_nop() -> Int
+
+pub fn enc_orr_reg(Int, Int, Int) -> Int
+
+pub fn enc_ret() -> Int
+
+pub fn enc_scvtf_d_x(Int, Int) -> Int
+
+pub fn enc_sdiv(Int, Int, Int) -> Int
+
+pub fn enc_stp_pre(Int, Int, Int, Int) -> Int
+
+pub fn enc_str_w(Int, Int, Int) -> Int
+
+pub fn enc_str_x(Int, Int, Int) -> Int
+
+pub fn enc_strb(Int, Int, Int) -> Int
+
+pub fn enc_strh(Int, Int, Int) -> Int
+
+pub fn enc_sub_imm(Int, Int, Int) -> Int
+
+pub fn enc_sub_imm32(Int, Int, Int) -> Int
+
+pub fn enc_sub_reg(Int, Int, Int) -> Int
+
+pub fn enc_sxtb(Int, Int) -> Int
+
+pub fn enc_sxth(Int, Int) -> Int
+
+pub fn enc_sxtw(Int, Int) -> Int
+
+pub fn enc_udiv(Int, Int, Int) -> Int
+
+pub fn enc_uxtb(Int, Int) -> Int
+
+pub fn enc_uxth(Int, Int) -> Int
+
+pub fn section_flags_cstring() -> Int
+
+pub fn section_flags_data() -> Int
+
+pub fn section_flags_literal4() -> Int
+
+pub fn section_flags_literal8() -> Int
+
+pub fn section_flags_text() -> Int
+
+pub fn words_to_bytes(Array[Int]) -> Bytes
+
+pub fn write_object(Array[MachoSection], Array[MachoSym]) -> Bytes
+
+// Errors
+
+// Types and methods
+pub(all) struct MachoReloc {
+  offset : Int
+  sym : Int
+  pcrel : Bool
+  length : Int
+  rtype : Int
+}
+
+pub(all) struct MachoSection {
+  name : String
+  seg : String
+  data : Bytes
+  align : Int
+  flags : Int
+  relocs : Array[MachoReloc]
+}
+
+pub(all) struct MachoSym {
+  name : String
+  sect : Int
+  value : Int
+  is_ext : Bool
+}
+
+// Type aliases
+
+// Traits

@@ -2,6 +2,7 @@ import {
   "azhzx/qbe",
   "azhzx/qbe/util",
   "azhzx/qbe/interp",
+  "azhzx/qbe/run_asm",
   "moonbitlang/core/argparse",
   "moonbitlang/core/string",
   "moonbitlang/x/fs",

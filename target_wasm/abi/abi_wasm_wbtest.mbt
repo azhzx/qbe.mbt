@@ -1,5 +1,6 @@
 ///|
-// Tests for the wasm32 ABI lowering: Par/Arg become Nop and Call keeps only
+// Tests for the wasm32 ABI lowering: Par/Arg are retained (the emitter needs
+// them to declare wasm parameters and push call arguments) and Call keeps only
 // its callee reference (no return-type operand on the wasm target).
 
 ///|
@@ -14,7 +15,7 @@ fn wasm_abi_parse(text : String) -> @types.Fn raise {
 }
 
 ///|
-test "abi_wasm: parameters become Nop" {
+test "abi_wasm: Arg becomes Nop, Par is kept" {
   let src =
     #|function w $f(w %a, w %b) {
     #|@start
@@ -24,18 +25,20 @@ test "abi_wasm: parameters become Nop" {
     #|
   let f = wasm_abi_parse(src)
   let _ = abi_wasm(f, [], false, @util.Interner::new(), [])
+  let mut pars = 0
   for id in f.def_order {
     for ins in f.blks[id].ins {
-      if ins.op == @types.Nop {
-        continue
+      assert_true(!ins.op.is_arg())
+      if ins.op.is_par() {
+        pars = pars + 1
       }
-      assert_true(!ins.op.is_par())
     }
   }
+  assert_eq(pars, 2)
 }
 
 ///|
-test "abi_wasm: call arguments become Nop, call keeps callee only" {
+test "abi_wasm: call arguments are kept, call keeps callee only" {
   let src =
     #|export function w $main() {
     #|@start
@@ -47,6 +50,7 @@ test "abi_wasm: call arguments become Nop, call keeps callee only" {
   let _ = abi_wasm(f, [], false, @util.Interner::new(), [])
   let start = f.blks[f.start_id]
   let mut calls = 0
+  let mut args = 0
   for ins in start.ins {
     match ins.op {
       @types.Call => {
@@ -55,11 +59,18 @@ test "abi_wasm: call arguments become Nop, call keeps callee only" {
         assert_true(!ins.arg1.is_none())
         assert_true(ins.arg2.is_none())
       }
+      @types.Arg | @types.Arge => {
+        // Argument values stay on the instruction (arg1) so the emitter can
+        // push them for the following call.
+        args = args + 1
+        assert_true(!ins.arg1.is_none())
+      }
       @types.Nop => ()
-      _ => assert_true(!ins.op.is_arg())
+      _ => ()
     }
   }
   assert_eq(calls, 1)
+  assert_eq(args, 2)
 }
 
 ///|

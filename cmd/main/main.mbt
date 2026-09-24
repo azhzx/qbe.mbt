@@ -15,6 +15,9 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("gas", short='G'),
     @argparse.OptionArg("debug", short='d'),
     @argparse.OptionArg("run"),
+    @argparse.OptionArg("emit"),
+    @argparse.OptionArg("run-asm"),
+    @argparse.OptionArg("run-wasm"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -213,6 +216,137 @@ async fn main {
           }
           Err(e) => @util.eprint(format_qbe_error(e) + "\n")
         }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --run-wasm mode: compile to wasm and run it (node + moon-wasm-opt).
+  match parsed.values.get("run-wasm") {
+    Some(specs) if specs.length() > 0 => {
+      let (entry, wasm_args) = match parse_run_spec(specs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
+      let args : Array[String] = []
+      for v in wasm_args {
+        match v {
+          @interp.VInt(x) => args.push(x.to_string())
+          @interp.VDouble(d) => args.push(d.to_string())
+          @interp.VFloat(f) => args.push(f.to_double().to_string())
+          _ => {
+            @util.eprint("error: --run-wasm takes numeric arguments\n")
+            return
+          }
+        }
+      }
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        match @qbe.compile_target(source, @qbe.Target::Wasm32) {
+          Ok(wat) => {
+            let out = @run_asm.run_wasm(wat, entry, args) catch {
+              e => {
+                @util.eprint("run-wasm error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            @util.iprint(out + "\n")
+          }
+          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+        }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --run-asm mode: compile to arm64 Mach-O assembly, load it and call `func`.
+  match parsed.values.get("run-asm") {
+    Some(specs) if specs.length() > 0 => {
+      let (entry, asm_args) = match parse_run_spec(specs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
+      let a0 = if asm_args.length() == 0 {
+        0L
+      } else if asm_args.length() == 1 {
+        match asm_args[0] {
+          @interp.VInt(v) => v
+          _ => {
+            @util.eprint("error: --run-asm takes a single integer argument\n")
+            return
+          }
+        }
+      } else {
+        @util.eprint("error: --run-asm takes at most one argument\n")
+        return
+      }
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
+          Ok(asm) => {
+            let m = @run_asm.RunAsmModule::load_shared(asm) catch {
+              e => {
+                @util.eprint("run-asm error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            let r = m.call1(entry, a0) catch {
+              e => {
+                @util.eprint("run-asm error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            @util.iprint("\{r}\n")
+          }
+          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+        }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --emit obj: assemble the Mach-O output text into a .o file.
+  match parsed.values.get("emit") {
+    Some(arr) if arr.length() > 0 && arr[0] == "obj" => {
+      for file in files {
+        let asm = process_file(file, flags, "m", "arm64")
+        if asm == "" {
+          continue
+        }
+        let obj = @run_asm.assemble_object(asm) catch {
+          e => {
+            @util.eprint("run-asm error: \{Repr(e)}\n")
+            continue
+          }
+        }
+        let path = if out_file != "" && out_file != "-" {
+          out_file
+        } else {
+          file + ".o"
+        }
+        @run_asm.write_file(path, obj) catch {
+          e => {
+            @util.eprint("run-asm error: \{Repr(e)}\n")
+            continue
+          }
+        }
+        @util.eprint("qbe: wrote \{path}\n")
       }
       return
     }
