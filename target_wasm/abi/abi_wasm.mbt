@@ -18,13 +18,8 @@ fn wasm_process_block(_st : WasmAbiState, blk : @types.Blk) -> Unit {
   for i in 0..<blk.ins.length() {
     let ins = blk.ins[i]
     match ins.op {
-      @types.Par | @types.Parc | @types.Pare =>
-        blk.ins[i] = @types.Ins::new_void(
-          @types.Nop,
-          ins.cls,
-          @types.Ref::none(),
-          @types.Ref::none(),
-        )
+      // Par/Parc/Pare are kept so the emitter can declare the wasm
+      // parameters with their real classes; Arg* vanish into the call.
       @types.Arg | @types.Argc | @types.Arge =>
         blk.ins[i] = @types.Ins::new_void(
           @types.Nop,

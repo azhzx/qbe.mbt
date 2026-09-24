@@ -54,7 +54,7 @@ test "emit_fn: wasm function body snapshot" {
   inspect(
     sb.to_string(),
     content=(
-      #|  (func $add
+      #|  (func $add (param $t64 i32) (param $t65 i32) (result i32)
       #|(local $t66 i32)
       #|    local.get $t64
       #|    local.get $t65

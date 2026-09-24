@@ -105,6 +105,27 @@ int32_t mbt_run_asm_unlink(moonbit_bytes_t path) {
 /* ---- process spawn ---------------------------------------------------- */
 
 MOONBIT_FFI_EXPORT
+moonbit_bytes_t mbt_run_asm_capture(moonbit_bytes_t cmd) {
+  FILE *f = popen((const char *)cmd, "r");
+  if (!f) return moonbit_make_bytes(0, 0);
+  size_t cap = 256, len = 0;
+  char *buf = malloc(cap);
+  size_t n;
+  while ((n = fread(buf + len, 1, cap - len, f)) > 0) {
+    len += n;
+    if (len == cap) {
+      cap *= 2;
+      buf = realloc(buf, cap);
+    }
+  }
+  pclose(f);
+  moonbit_bytes_t b = moonbit_make_bytes((int32_t)len, 0);
+  memcpy(b, buf, len);
+  free(buf);
+  return b;
+}
+
+MOONBIT_FFI_EXPORT
 int32_t mbt_run_asm_run(moonbit_bytes_t cmd) {
   int rc = system((const char *)cmd);
   return rc;

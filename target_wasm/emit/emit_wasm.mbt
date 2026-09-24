@@ -38,6 +38,21 @@ fn wasm_type(cls : @types.Class) -> String {
 }
 
 ///|
+// The class the function returns, taken from its Jret* terminator.
+fn return_class(st : WatEmitState) -> @types.Class? {
+  for bid in st.fn_.def_order {
+    match st.fn_.blks[bid].jmp.kind {
+      @types.Jretw => return Some(@types.Kw)
+      @types.Jretl => return Some(@types.Kl)
+      @types.Jrets => return Some(@types.Ks)
+      @types.Jretd => return Some(@types.Kd)
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
 fn wasm_op_name(op : @types.Op, cls : @types.Class) -> String {
   match op {
     @types.Add =>
@@ -208,7 +223,13 @@ fn emit_load(st : WatEmitState, ins : @types.Ins) -> Unit {
 ///|
 fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
   match ins.op {
-    @types.Nop => ()
+    @types.Nop
+    | @types.Par
+    | @types.Parc
+    | @types.Pare
+    | @types.Arg
+    | @types.Argc
+    | @types.Arge => ()
     @types.Copy => {
       emit_ref(st, ins.arg1)
       if ins.to.is_tmp() {
@@ -338,34 +359,37 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
 }
 
 ///|
+// True for the parameter ops retained by the wasm ABI.
+fn is_param_op(op : @types.Op) -> Bool {
+  match op {
+    @types.Par | @types.Parc | @types.Pare => true
+    _ => false
+  }
+}
+
+///|
 fn emit_params(st : WatEmitState) -> Unit {
   for bid in st.fn_.def_order {
-    let blk = st.fn_.blks[bid]
-    for ins in blk.ins {
-      match ins.op {
-        @types.Par =>
-          st.sb.write_string(
-            " (param $t\{ins.to.tmp_val()} \{wasm_type(ins.cls)})",
-          )
-        @types.Parc => st.sb.write_string(" (param $t\{ins.to.tmp_val()} i32)")
-        _ => ()
+    for ins in st.fn_.blks[bid].ins {
+      if ins.op == @types.Par && ins.to.is_tmp() {
+        st.sb.write_string(
+          " (param $t\{ins.to.tmp_val()} \{wasm_type(ins.cls)})",
+        )
+      } else if ins.op == @types.Parc && ins.to.is_tmp() {
+        st.sb.write_string(" (param $t\{ins.to.tmp_val()} i32)")
       }
     }
-    break
   }
 }
 
 ///|
 fn emit_locals(st : WatEmitState) -> Unit {
   for bid in st.fn_.def_order {
-    let blk = st.fn_.blks[bid]
-    for ins in blk.ins {
-      if ins.to.is_tmp() {
+    for ins in st.fn_.blks[bid].ins {
+      if ins.to.is_tmp() && !is_param_op(ins.op) {
         let tid = ins.to.tmp_val()
         if tid >= @types.WasmTmp0 {
-          if ins.op != @types.Par && ins.op != @types.Parc {
-            wat_writeln(st, "(local $t\{tid} \{wasm_type(ins.cls)})")
-          }
+          wat_writeln(st, "(local $t\{tid} \{wasm_type(ins.cls)})")
         }
       }
     }
@@ -429,8 +453,9 @@ pub fn emit_fn(
   let st = wat_emit_new(fn_, interner, sb)
   sb.write_string("  (func $\{fn_.name}")
   emit_params(st)
-  if fn_.ret_ty >= 0 {
-    sb.write_string(" (result \{wasm_type(@types.Kw)})")
+  match return_class(st) {
+    Some(c) => sb.write_string(" (result \{wasm_type(c)})")
+    None => ()
   }
   sb.write_string("\n")
   emit_locals(st)

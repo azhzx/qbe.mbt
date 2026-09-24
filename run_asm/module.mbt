@@ -106,6 +106,61 @@ pub fn run_command(cmd : String) -> Int {
 }
 
 ///|
+// Compile WAT to wasm (moon-wasm-opt) and run `func` with `args` under node.
+// Returns whatever the invocation printed (the result).
+pub fn run_wasm(
+  wat : String,
+  func : String,
+  args : Array[Int64],
+) -> String raise {
+  let wat_path = tmp_path(".wat")
+  let wasm_path = tmp_path(".wasm")
+  let js_path = tmp_path(".cjs")
+  if mbt_run_asm_write_file(cstr(wat_path), cstr(wat)) != 0 {
+    raise @util.QbeError::CompileError("run-wasm: cannot write " + wat_path)
+  }
+  let opt = "$HOME/.moon/bin/moon-wasm-opt"
+  let rc = mbt_run_asm_run(cstr(opt + " " + wat_path + " -o " + wasm_path))
+  if rc != 0 {
+    raise @util.QbeError::CompileError(
+      "run-wasm: wat2wasm failed (moon-wasm-opt missing, or the wasm is invalid)",
+    )
+  }
+  if mbt_run_asm_write_file(cstr(js_path), cstr(driver)) != 0 {
+    raise @util.QbeError::CompileError("run-wasm: cannot write the node driver")
+  }
+  let mut argstr = ""
+  for a in args {
+    argstr = argstr + " " + a.to_string()
+  }
+  let out = mbt_run_asm_capture(
+    cstr("node " + js_path + " " + wasm_path + " " + func + argstr),
+  )
+  ignore(mbt_run_asm_unlink(cstr(wat_path)))
+  ignore(mbt_run_asm_unlink(cstr(wasm_path)))
+  ignore(mbt_run_asm_unlink(cstr(js_path)))
+  @utf8.decode_lossy(out)
+}
+
+///|
+// Node driver used by run_wasm.
+let driver : String =
+  #|const fs = require('fs');
+  #|const argv = process.argv;
+  #|const wasmPath = argv[2];
+  #|const func = argv[3];
+  #|const rest = argv.slice(4);
+  #|WebAssembly.instantiate(fs.readFileSync(wasmPath)).then(function(res) {
+  #|  var f = res.instance.exports[func];
+  #|  if (!f) { console.error('no export ' + func); process.exit(2); }
+  #|  var r;
+  #|  try { r = f.apply(null, rest.map(Number)); }
+  #|  catch (e) { r = f.apply(null, rest.map(BigInt)); }
+  #|  process.stdout.write(String(r));
+  #|}).catch(function(e) { console.error(String(e.message || e)); process.exit(1); });
+  #|
+
+///|
 // Write raw bytes to a file.
 pub fn write_file(path : String, data : Bytes) -> Unit raise {
   if mbt_run_asm_write_file(cstr(path), data) != 0 {

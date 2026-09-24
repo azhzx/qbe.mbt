@@ -17,6 +17,7 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("run"),
     @argparse.OptionArg("emit"),
     @argparse.OptionArg("run-asm"),
+    @argparse.OptionArg("run-wasm"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -214,6 +215,50 @@ async fn main {
             }
           }
           Err(e) => @util.eprint(format_qbe_error(e) + "\n")
+        }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --run-wasm mode: compile to wasm and run it (node + moon-wasm-opt).
+  match parsed.values.get("run-wasm") {
+    Some(specs) if specs.length() > 0 => {
+      let (entry, wasm_args) = match parse_run_spec(specs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
+      let args : Array[Int64] = []
+      for v in wasm_args {
+        match v {
+          @interp.VInt(x) => args.push(x)
+          _ => {
+            @util.eprint("error: --run-wasm takes integer arguments\n")
+            return
+          }
+        }
+      }
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        match @qbe.compile_target(source, @qbe.Target::Wasm32) {
+          Ok(wat) => {
+            let out = @run_asm.run_wasm(wat, entry, args) catch {
+              e => {
+                @util.eprint("run-wasm error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            @util.iprint(out + "\n")
+          }
+          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
         }
       }
       return

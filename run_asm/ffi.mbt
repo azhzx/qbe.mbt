@@ -45,6 +45,10 @@ extern "c" fn mbt_run_asm_unlink(path : Bytes) -> Int = "mbt_run_asm_unlink"
 extern "c" fn mbt_run_asm_run(cmd : Bytes) -> Int = "mbt_run_asm_run"
 
 ///|
+#borrow(cmd)
+extern "c" fn mbt_run_asm_capture(cmd : Bytes) -> Bytes = "mbt_run_asm_capture"
+
+///|
 #borrow(path)
 extern "c" fn mbt_run_asm_dlopen(path : Bytes) -> Int64 = "mbt_run_asm_dlopen"
 

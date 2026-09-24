@@ -1,6 +1,7 @@
 ///|
-// Tests for the wasm32 ABI lowering: Par/Arg become Nop and Call keeps only
-// its callee reference (no return-type operand on the wasm target).
+// Tests for the wasm32 ABI lowering: Arg becomes Nop, Par is retained (the
+// emitter needs it to declare wasm parameters) and Call keeps only its callee
+// reference (no return-type operand on the wasm target).
 
 ///|
 // Parse IL text and set up def_order so abi_wasm can iterate blocks.
@@ -14,7 +15,7 @@ fn wasm_abi_parse(text : String) -> @types.Fn raise {
 }
 
 ///|
-test "abi_wasm: parameters become Nop" {
+test "abi_wasm: Arg becomes Nop, Par is kept" {
   let src =
     #|function w $f(w %a, w %b) {
     #|@start
@@ -24,14 +25,16 @@ test "abi_wasm: parameters become Nop" {
     #|
   let f = wasm_abi_parse(src)
   let _ = abi_wasm(f, [], false, @util.Interner::new(), [])
+  let mut pars = 0
   for id in f.def_order {
     for ins in f.blks[id].ins {
-      if ins.op == @types.Nop {
-        continue
+      assert_true(!ins.op.is_arg())
+      if ins.op.is_par() {
+        pars = pars + 1
       }
-      assert_true(!ins.op.is_par())
     }
   }
+  assert_eq(pars, 2)
 }
 
 ///|
