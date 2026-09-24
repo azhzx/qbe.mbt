@@ -484,12 +484,15 @@ fn run_passes_arm64(
   interner : @util.Interner,
   typs : Array[@types.Typ],
   dbg : DbFlags,
+  apple : Bool,
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_arm64_target()
   run_frontend_passes(fn_, interner, typs, dbg, false, out)
   // ARM64 ABI lowering
-  out.write_string(@abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, typs))
+  out.write_string(
+    @abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, apple, typs),
+  )
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
   @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
@@ -531,7 +534,7 @@ fn emit_arm64_module(
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1
-      run_passes_arm64(fn_, interner, typs, DbFlags::new(), sb)
+      run_passes_arm64(fn_, interner, typs, DbFlags::new(), apple, sb)
       sb.write_string(
         @emit_arm64.emit_arm64(fn_, interner, typs, gasloc, gassym, apple),
       )

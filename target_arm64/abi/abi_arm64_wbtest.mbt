@@ -46,7 +46,7 @@ test "arm64 abi: word parameters come in via x0 and x1" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let dbg = abi_arm64(f, typs, true, interner, typs)
+  let dbg = abi_arm64(f, typs, true, interner, false, typs)
   // registers print as R<tmp id>: x0 is tmp 1, x1 is tmp 2
   assert_true(dbg.contains("R1"))
   assert_true(dbg.contains("R2"))
@@ -64,7 +64,7 @@ test "arm64 abi: float parameters come in via v0 and v1" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let dbg = abi_arm64(f, typs, true, interner, typs)
+  let dbg = abi_arm64(f, typs, true, interner, false, typs)
   // v0 is tmp 33, v1 is tmp 34
   assert_true(dbg.contains("R33"))
   assert_true(dbg.contains("R34"))
@@ -80,7 +80,7 @@ test "arm64 abi: call lowering passes arguments in registers" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let dbg = abi_arm64(f, typs, true, interner, typs)
+  let dbg = abi_arm64(f, typs, true, interner, false, typs)
   assert_true(dbg.contains("call $g"))
   let start = f.blks[f.start_id]
   let mut calls = 0
@@ -105,7 +105,7 @@ test "arm64 abi: large aggregate parameter is passed by pointer" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let dbg = abi_arm64(f, typs, true, interner, typs)
+  let dbg = abi_arm64(f, typs, true, interner, false, typs)
   // the pointer arrives in x0 (tmp 1) and no stack blob is materialized
   assert_true(dbg.contains("copy R1"))
 }
@@ -121,7 +121,7 @@ test "arm64 abi: small aggregate parameter is reassembled from registers" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let _ = abi_arm64(f, typs, false, interner, typs)
+  let _ = abi_arm64(f, typs, false, interner, false, typs)
   let start = f.blks[f.start_id]
   // the blob is allocated (alloc4 8) and one 8-byte block is stored into it
   let mut allocs = 0
@@ -148,7 +148,7 @@ test "arm64 abi: hfa parameter occupies consecutive float registers" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let dbg = abi_arm64(f, typs, true, interner, typs)
+  let dbg = abi_arm64(f, typs, true, interner, false, typs)
   // v0 and v1 (tmp 33/34) hold the two float elements; no GP register used
   assert_true(dbg.contains("R33"))
   assert_true(dbg.contains("R34"))
@@ -165,7 +165,7 @@ test "arm64 abi: aggregate return reserves x8" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let _ = abi_arm64(f, typs, false, interner, typs)
+  let _ = abi_arm64(f, typs, false, interner, false, typs)
   // the hidden result pointer arrives in x8 and is copied to fn.retr
   assert_true(f.retr.is_tmp())
   let start = f.blks[f.start_id]
@@ -191,7 +191,7 @@ test "arm64 abi: vararg functions keep the shared register pool" {
     #|}
     #|
   let (f, interner, typs) = arm64_abi_parse_frontend(src)
-  let _ = abi_arm64(f, typs, false, interner, typs)
+  let _ = abi_arm64(f, typs, false, interner, false, typs)
   // vastart writes the va_list fields relative to the save area (slot -1)
   let start = f.blks[f.start_id]
   let mut addr_ops = 0

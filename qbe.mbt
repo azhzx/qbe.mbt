@@ -517,7 +517,7 @@ fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
-    run_passes_arm64(fn_, interner, typs, dbg, out)
+    run_passes_arm64(fn_, interner, typs, dbg, false, out)
     out.write_string("\n")
   }
   out.to_string()

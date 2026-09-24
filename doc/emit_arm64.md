@@ -43,11 +43,12 @@ with functions.
 
 ## Notes
 
-- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for the ELF
-  (`-G e`) flavor (406/406). The Mach-O (`-G m`) emission syntax is
-  implemented (labels, `sym@page`/`@pageoff`, Mach-O literal sections, no ELF
-  directives) but its Apple ABI and vararg lowering (`apple_selvastart` /
-  `apple_selvaarg` / `apple_extsb`) are not ported, so it is not yet fully
-  aligned.
+- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for both the
+  ELF (`-G e`) and Mach-O (`-G m`, `-t arm64_apple`) flavors (406/406 each):
+  labels, `sym@page`/`@pageoff`, `.balign 4`, `_` prefixes, Mach-O literal
+  sections, the Apple ABI (4-byte stack slots for non-wide scalars,
+  `apple_selvastart`/`apple_selvaarg`) and no ELF directives. The reference's
+  `apple_extsb` pre-pass is a no-op here because this port has no narrow
+  `parsb..paruh`/`argsb..arguh` forms.
 - An independent assemblability gate is available at
   `tools/check_arm64_asm.py` (clang aarch64 integrated assembler).

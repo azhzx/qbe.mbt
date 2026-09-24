@@ -48,9 +48,10 @@ replaced by a pointer (`Cptr`) and copied through a stack blob
 - The byte-level oracle is `vendor/qbe/qbe -t arm64`; the backend
   matches it for both IR dumps (5684/5684) and ELF assembly (406/406, `-G e`).
   The Mach-O (`-G m`) flavor, which the reference exposes as
-  `-t arm64_apple`, needs the Apple ABI (4-byte stack slots for non-wide
-  scalars, `apple_selvastart`/`apple_selvaarg`/`apple_extsb`) and is not yet
-  aligned.
+  `-t arm64_apple`, is also byte-identical: 4-byte stack slots for non-wide
+  scalars and the Apple vararg lowering (`apple_selvastart`/`apple_selvaarg`)
+  are implemented. `apple_extsb` is unnecessary here because this port has no
+  narrow `parsb..paruh`/`argsb..arguh` forms.
 - Narrow `parsb..paruh`/`argsb..arguh` forms do not exist in this port.
 - Aggregate `Cptr` copies are expanded into explicit `blt.`-prefixed
   load/store chunks (the reference snapshot's `blit`), since this port predates

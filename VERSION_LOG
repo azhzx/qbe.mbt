@@ -72,3 +72,12 @@
     apple_selvastart/apple_selvaarg/apple_extsb) is still pending, so arm64
     -G m is reported but not gated
     docs (en+zh): retract the previously unverified "406/406 (-G e and -G m)"
+2026.9.24: v0.13.0
+    arm64 Mach-O (-G m) now byte-identical to vendor/qbe -t arm64_apple
+    (336/336; compare.py 406/406): ported the Apple ABI path -- 4-byte stack
+    slots for non-wide scalars (T.apple && !KWIDE), arguments after the
+    ellipsis forced to 8-byte stack slots, apple_selvastart/apple_selvaarg,
+    no vararg register-save area/slot bias, and a true 16-byte stack align
+    (the old stk + (stk & 15) only worked for 8-byte-aligned stacks);
+    apple_extsb is a no-op here (no narrow parsb..paruh/argsb..arguh forms)
+    CI now gates the Mach-O flavor on both amd64 and arm64

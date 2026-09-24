@@ -186,9 +186,8 @@ arm64 (AArch64, AAPCS64 ELF):
 
 arm64 shares `spill`/`rega` with the other targets via `types.target_cfg`.
 It is validated byte-for-byte against `vendor/qbe/qbe -t arm64`: 5684/5684 IR
-dumps and 406/406 ELF assembly (`-G e`); the Mach-O (`-G m`) flavor has
-aligned emission syntax but its Apple ABI is not ported, so it is not yet
-fully aligned. The pinned reference's unsupported features (dynamic `alloc`,
+dumps and 406/406 assembly for both the ELF (`-G e`) and Mach-O (`-G m`)
+flavors. The pinned reference's unsupported features (dynamic `alloc`,
 `truncd`, ...) fail identically on both sides.
 
 The interpreter bypasses ABI/isel/regalloc entirely and executes the
