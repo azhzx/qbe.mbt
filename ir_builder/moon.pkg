@@ -1,0 +1,9 @@
+import {
+  "azhzx/qbe",
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+import {
+  "azhzx/qbe/run_asm",
+} for "wbtest"

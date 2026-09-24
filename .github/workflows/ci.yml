@@ -1,11 +1,13 @@
 # CI for qbe.mbt — a 1:1 MoonBit reimplementation of QBE.
 #
-# Three jobs:
+# Four jobs:
 #   check  — cross-platform sanity: formatting, generated interface (`.mbti`)
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every
 #            debug flag against the reference C QBE built from the vendored
 #            submodule (Ubuntu), plus independent assembly validation.
+#   capi   — the programmatic builder's C ABI: builds the foreign library and
+#            runs the C smoke test end to end (macOS arm64).
 #
 # The CI gates on every debug stage and on the emitted assembly, all of which
 # are byte-identical to the frozen reference on amd64/arm64/rv64.
@@ -65,6 +67,37 @@ jobs:
 
       - name: Unit tests (native)
         run: moon test --target native
+
+  capi:
+    name: C ABI builder (macOS arm64)
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
+
+      - name: Sync dependencies
+        run: moon update
+
+      # Builds ir_builder_capi (foreign library), then compiles the C driver
+      # against include/qbe_builder.h, emits add.o + fib.o through the C ABI,
+      # links them with the driver and checks the results.
+      - name: Build & run C ABI smoke test
+        run: bash scripts/build_capi.sh
 
   diff:
     name: Byte-differential vs reference QBE

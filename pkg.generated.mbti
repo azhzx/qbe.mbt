@@ -23,6 +23,12 @@ pub fn compile_arm64_object(String) -> Bytes raise
 
 pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 
+pub fn compile_ir_asm(Array[@types.Fn], Array[@types.Dat], Array[String], Array[@types.Typ], @util.Interner, gas? : String) -> String raise
+
+pub fn compile_ir_bin_module(Array[@types.Fn], Array[@types.Dat], Array[@types.Typ], @util.Interner) -> @emit.Arm64BinModule raise
+
+pub fn compile_ir_object(Array[@types.Fn], Array[@types.Dat], Array[@types.Typ], @util.Interner) -> Bytes raise
+
 pub fn compile_la64(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_la64_debug(String, String) -> Result[String, @util.QbeError]

@@ -573,6 +573,63 @@ pub fn compile_arm64_object(text : String) -> Bytes raise {
 }
 
 ///|
+// Compile an already-constructed module (e.g. from `ir_builder`) to a
+// self-contained Mach-O arm64 object. The caller owns the IR; the arm64 target
+// is selected here so the ABI/isel passes see the right configuration.
+pub fn compile_ir_object(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+) -> Bytes raise {
+  @types.init_arm64_target()
+  @types.fp_stash_reset()
+  let out = StringBuilder::StringBuilder()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_object(funcs, datas, interner, true)
+}
+
+///|
+// Compile an already-constructed module to a linked, self-contained arm64 code
+// image (Route B). Suitable for the in-memory JIT via `run_asm.ExecBlock`.
+pub fn compile_ir_bin_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+) -> @emit_arm64.Arm64BinModule raise {
+  @types.init_arm64_target()
+  @types.fp_stash_reset()
+  let out = StringBuilder::StringBuilder()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, true)
+}
+
+///|
+// Compile an already-constructed module to arm64 assembly text. `order`
+// interleaves "f" (function) and "d" (data section) in definition order.
+pub fn compile_ir_asm(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  order : Array[String],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+  gas? : String = "e",
+) -> String raise {
+  @types.init_arm64_target()
+  let (gasloc, gassym, apple) = gas_setting(gas)
+  let sb = StringBuilder::StringBuilder()
+  emit_arm64_module(
+    funcs, datas, order, typs, interner, gasloc, gassym, apple, sb,
+  )
+  sb.to_string()
+}
+
+///|
 pub type Arm64BinModule = @emit_arm64.Arm64BinModule
 
 ///|

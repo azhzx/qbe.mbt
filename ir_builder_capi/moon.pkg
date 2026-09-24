@@ -1,0 +1,11 @@
+pkgtype(kind: "foreign_library")
+
+import {
+  "azhzx/qbe/ir_builder",
+  "azhzx/qbe/types",
+  "moonbitlang/core/encoding/utf8",
+}
+
+options(
+  "native-stub": [ "native_stub.c" ],
+)

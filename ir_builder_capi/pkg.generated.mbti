@@ -1,0 +1,63 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/ir_builder_capi"
+
+// Values
+pub fn qbe_add_block(Int64, Int, Bytes) -> Int
+
+pub fn qbe_add_func(Int64, Bytes, Int, Int, Bytes) -> Int
+
+pub fn qbe_arg(Int64, Int, Int, Int) -> Unit
+
+pub fn qbe_block_param(Int64, Int, Int, Int) -> Int
+
+pub fn qbe_builder_free(Int64) -> Unit
+
+pub fn qbe_builder_new() -> Int64
+
+pub fn qbe_call(Int64, Int, Bytes, Int) -> Int
+
+pub fn qbe_const_double(Int64, Int, Double) -> Int
+
+pub fn qbe_const_int(Int64, Int, Int64) -> Int
+
+pub fn qbe_const_single(Int64, Int, Float) -> Int
+
+pub fn qbe_data_bytes(Int64, Bytes, Int, Bytes) -> Unit
+
+pub fn qbe_data_string(Int64, Bytes, Int, Bytes) -> Unit
+
+pub fn qbe_emit(Int64, Int, Bytes, Int, Int, Int, Int) -> Int
+
+pub fn qbe_emit_asm(Int64) -> Bytes
+
+pub fn qbe_emit_object(Int64) -> Bytes
+
+pub fn qbe_emit_void(Int64, Int, Bytes, Int, Int, Int) -> Unit
+
+pub fn qbe_func_param(Int64, Int, Int) -> Int
+
+pub fn qbe_global(Int64, Int, Bytes) -> Int
+
+pub fn qbe_jmp(Int64, Int, Int) -> Unit
+
+pub fn qbe_jmp1(Int64, Int, Int, Int) -> Unit
+
+pub fn qbe_jmp4(Int64, Int, Int, Int, Int, Int, Int) -> Unit
+
+pub fn qbe_jnz(Int64, Int, Int, Int, Int) -> Unit
+
+pub fn qbe_jnz1(Int64, Int, Int, Int, Int, Int, Int) -> Unit
+
+pub fn qbe_last_error() -> Bytes
+
+pub fn qbe_ret(Int64, Int, Int) -> Unit
+
+pub fn qbe_switch_to(Int64, Int, Int) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
