@@ -30,7 +30,7 @@ Usage: qbe [OPTIONS] {file.ssa, -}
 | `wasm` | WAT text | WebAssembly text format; skips register allocation |
 | `rv64` | RISC-V 64 GAS assembly | ELF; supports `-G e` (`.L` labels), emits data + float pool |
 | `la64` | LoongArch64 GAS assembly | LP64D ABI; supports `-G e`/`-G m` labels |
-| `arm64` | AArch64 GAS assembly | AAPCS64 ELF; `-G m` labels/relocations supported, Apple ABI not yet ported |
+| `arm64` | AArch64 GAS assembly | AAPCS64; `-G e` (ELF) / `-G m` (Mach-O) both byte-identical to the reference |
 
 Examples:
 

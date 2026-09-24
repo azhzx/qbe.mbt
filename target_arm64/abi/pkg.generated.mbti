@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn abi_arm64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String raise
+pub fn abi_arm64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Bool, Array[@types.Typ]) -> String raise
 
 // Errors
 

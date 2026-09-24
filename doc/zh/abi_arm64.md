@@ -43,8 +43,9 @@ pub fn abi_arm64(
 
 - 字节级裁判为 `vendor/qbe/qbe -t arm64`；IR dump（5684/5684）与 ELF
   汇编（406/406，`-G e`）均逐字节一致；Mach-O（`-G m`，参考中为
-  `-t arm64_apple`）需要 Apple ABI（非宽标量占 4 字节栈槽、
-  `apple_selvastart`/`apple_selvaarg`/`apple_extsb`），尚未对齐。
+  `-t arm64_apple`）同样逐字节一致：已实现非宽标量 4 字节栈槽与 Apple 变参
+  处理（`apple_selvastart`/`apple_selvaarg`）；`apple_extsb` 在本移植中
+  不需要，因为没有窄参数 `parsb..paruh`/`argsb..arguh` 形式。
 - 本移植没有窄参数 `parsb..paruh`/`argsb..arguh` 形式。
 - 聚合 `Cptr` 拷贝展开为显式的 `blt.` 前缀存取块（即参考快照的 `blit`），
   因为本移植早于 `Oblit0`/`Oblit1`。

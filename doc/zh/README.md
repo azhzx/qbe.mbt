@@ -175,9 +175,8 @@ arm64（AArch64，AAPCS64 ELF）：
 
 arm64 通过 `types.target_cfg` 与其它目标共享 `spill`/`rega`，并对照
 `vendor/qbe/qbe -t arm64` 逐字节验证：IR dump 5684/5684、ELF 汇编 406/406
-（`-G e`）；Mach-O（`-G m`）的发射语法已对齐，但其 Apple ABI 尚未
-移植，故尚未完全对齐。参考快照未实现的功能（动态 `alloc`、`truncd` 等）
-在两端同样失败。
+（`-G e`）与 Mach-O（`-G m`）两种风格（各 406/406）。参考快照未实现的
+功能（动态 `alloc`、`truncd` 等）在两端同样失败。
 
 ```
 interp（SSA 直接解释执行）：

@@ -154,7 +154,7 @@ fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
     16 + st.frame
   } else if s < 0 {
     // C arm64/emit.c slot(): negative slots already carry a byte offset.
-    if st.fn_.is_vararg {
+    if st.fn_.is_vararg && !st.apple {
       16 + st.frame + 192 - (s + 2)
     } else {
       16 + st.frame - (s + 2)
@@ -533,7 +533,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   // BTI landing pad (C arm64_emitfn always emits it).
   sb.write_string("\thint\t#34\n")
 
-  if fn_.is_vararg {
+  if fn_.is_vararg && !st.apple {
     for n in 7>=..0 {
       sb.write_string("\tstr\tq")
       sb.write_string(n.to_string())
@@ -605,7 +605,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
           sb.write_string("\tmov sp, x29\n")
         }
         let mut oo = st.frame + 16
-        if fn_.is_vararg {
+        if fn_.is_vararg && !st.apple {
           oo = oo + 192
         }
         if oo > 504 {

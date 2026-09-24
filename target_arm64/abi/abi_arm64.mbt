@@ -66,17 +66,25 @@ priv struct Arm64AbiState {
   fn_ : @types.Fn
   typs : Array[@types.Typ]
   buf : Array[@types.Ins]
+  // true for the Mach-O flavor (C T.apple): different stack-argument sizes
+  // and vararg lowering
+  apple : Bool
   // stack-parameter layout of the current function, filled by selpar and
   // consumed by vastart
   params : Arm64Params
 }
 
 ///|
-fn arm64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> Arm64AbiState {
+fn arm64_abi_new(
+  fn_ : @types.Fn,
+  typs : Array[@types.Typ],
+  apple : Bool,
+) -> Arm64AbiState {
   Arm64AbiState::{
     fn_,
     typs,
     buf: [],
+    apple,
     params: Arm64Params::{ ngp: 0, nfp: 0, nstk: 0, },
   }
 }
@@ -424,6 +432,7 @@ fn arm64_argsclass(
   let mut ngp = 8
   let mut nfp = 8
   let mut env = @types.Ref::none()
+  let mut va = false
   let mut a = 0
   for idx in i0..<i1 {
     let ins = orig[idx]
@@ -432,7 +441,17 @@ fn arm64_argsclass(
       @types.Par | @types.Arg => {
         c.cls[0] = ins.cls
         c.size = 8
-        if ins.cls.base() == 0 && ngp > 0 {
+        // Mach-O passes non-wide scalar stack arguments in 4 bytes
+        // (C arm64/abi.c: if (T.apple && !KWIDE(i->cls)) c->size = 4).
+        if st.apple && ins.cls.wide() == 0 {
+          c.size = 4
+        }
+        if va {
+          // C: arguments after the ellipsis always go on the stack in 8-byte
+          // slots.
+          c.class_ = c.class_ | Arm64Cstk
+          c.size = 8
+        } else if ins.cls.base() == 0 && ngp > 0 {
           ngp = ngp - 1
           c.reg[0] = arm64_gpreg[gpi]
           gpi = gpi + 1
@@ -474,7 +493,7 @@ fn arm64_argsclass(
       }
       @types.Pare => env = ins.to
       @types.Arge => env = ins.arg1
-      @types.Argv => ()
+      @types.Argv => va = st.apple
       _ => abort("unreachable")
     }
     a = a + 1
@@ -536,7 +555,9 @@ fn arm64_selcall(
       stk = stk + c.size
     }
   }
-  stk = stk + (stk & 15)
+  // C align(stk, 16); note stk may be 4-aligned for Mach-O non-wide scalars,
+  // so `stk + (stk & 15)` is not sufficient.
+  stk = (stk + 15) & -16
   let rstk = arm64_getcon(st, stk.to_int64())
   if stk != 0 {
     arm64_emit(
@@ -869,6 +890,38 @@ fn arm64_chpred(st : Arm64AbiState, bid : Int, bp : Int, bp1 : Int) -> Unit {
 }
 
 ///|
+// Apple va_arg lowering (C apple_selvaarg in arm64/abi.c): the argument
+// pointer directly addresses the next stack slot.
+fn arm64_apple_selvaarg(st : Arm64AbiState, i : @types.Ins) -> Unit {
+  let c8 = arm64_getcon(st, 8L)
+  let ap = i.arg1
+  let stk8 = arm64_newtmp(st, @types.Kl)
+  let stk = arm64_newtmp(st, @types.Kl)
+  arm64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), stk8, ap)
+  arm64_emit(st, @types.Add, @types.Kl, stk8, stk, c8)
+  arm64_emit(st, @types.Load, i.cls, i.to, stk, @types.Ref::none())
+  arm64_emit(st, @types.Load, @types.Kl, stk, ap, @types.Ref::none())
+}
+
+///|
+// Apple va_start lowering (C apple_selvastart in arm64/abi.c).
+fn arm64_apple_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
+  let off = arm64_getcon(st, st.params.nstk.to_int64())
+  let stk = arm64_newtmp(st, @types.Kl)
+  let arg = arm64_newtmp(st, @types.Kl)
+  arm64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), arg, ap)
+  arm64_emit(st, @types.Add, @types.Kl, arg, stk, off)
+  arm64_emit(
+    st,
+    @types.Addr,
+    @types.Kl,
+    stk,
+    @types.Ref::slot(-1),
+    @types.Ref::none(),
+  )
+}
+
+///|
 // Select va_arg lowering (C arm64_selvaarg in arm64/abi.c).
 //
 // @b    [...]
@@ -1023,9 +1076,10 @@ pub fn abi_arm64(
   typs : Array[@types.Typ],
   print_dbg : Bool,
   interner : @util.Interner,
+  apple : Bool,
   all_typs : Array[@types.Typ],
 ) -> String raise {
-  let st = arm64_abi_new(fn_, typs)
+  let st = arm64_abi_new(fn_, typs, apple)
   for id in fn_.def_order {
     fn_.blks[id].visit = 0
   }
@@ -1111,8 +1165,18 @@ fn arm64_process_block(
         arm64_selcall(st, orig, i0, j, il)
         j = i0
       }
-      @types.Vastart => arm64_selvastart(st, ins.arg1)
-      @types.Vaarg => arm64_selvaarg(st, bid, ins)
+      @types.Vastart =>
+        if st.apple {
+          arm64_apple_selvastart(st, ins.arg1)
+        } else {
+          arm64_selvastart(st, ins.arg1)
+        }
+      @types.Vaarg =>
+        if st.apple {
+          arm64_apple_selvaarg(st, ins)
+        } else {
+          arm64_selvaarg(st, bid, ins)
+        }
       @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
       _ => arm64_emiti(st, ins)
     }

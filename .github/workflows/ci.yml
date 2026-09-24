@@ -117,29 +117,13 @@ jobs:
       - name: "Differential: assembly (rv64)"
         run: python compare.py --target rv64 --asm
 
-      # Mach-O gas flavor (-G m). amd64 is byte-identical and gated. arm64
-      # emission is aligned but its Apple ABI/vararg lowering
-      # (apple_selvastart/apple_selvaarg/apple_extsb) is not ported, so the
-      # arm64 step guards against the known gap growing instead of hiding a
-      # failure behind continue-on-error.
+      # Mach-O gas flavor (-G m): both backends are byte-identical to the
+      # reference's amd64_apple / arm64_apple targets.
       - name: "Differential: Mach-O flavor (amd64)"
         run: python compare.py --asm -G m
 
-      - name: "Differential: Mach-O flavor (arm64, known gap)"
-        run: |
-          set +e
-          out=$(python compare.py --target arm64 --asm -G m)
-          set -e
-          echo "$out" | tail -1
-          n=$(echo "$out" | sed -n 's#^\([0-9]*\)/406 passed$#\1#p')
-          if [ -z "$n" ]; then
-            echo "::error::arm64 -G m produced no summary line"
-            exit 1
-          fi
-          if [ "$n" -lt 396 ]; then
-            echo "::error::arm64 -G m regressed: $n/406 (known gap is 10; Apple ABI pending)"
-            exit 1
-          fi
+      - name: "Differential: Mach-O flavor (arm64)"
+        run: python compare.py --target arm64 --asm -G m
 
       - name: "ARM64 assemblability (clang)"
         run: python tools/check_arm64_asm.py
