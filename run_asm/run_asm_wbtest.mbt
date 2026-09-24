@@ -317,3 +317,39 @@ test "route B: swap and float constants run" {
   assert_eq(blk.call1_at(fp_off, 2L), 3L)
   assert_eq(blk.call1_at(fp_off, 10L), 11L)
 }
+
+///|
+// route B: a data pointer referencing another global needs an UNSIGNED
+// relocation so the linker fills in the address.
+test "route B: data pointer UNSIGNED relocation" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|data $t = { w 7 }
+    #|data $r = { l $t }
+    #|export
+    #|function w $deref() {
+    #|@start
+    #|  %p =l load $r
+    #|  %v =w loadw %p
+    #|  ret %v
+    #|}
+    #|
+  let obj = @qbe.compile_arm64_object(src) catch {
+    _ => abort("route B data-ref compile failed")
+  }
+  write_file("/tmp/qbe_rb_data.o", obj)
+  let driver =
+    #|int deref(void);
+    #|int main(void) { return deref() == 7 ? 0 : 1; }
+    #|
+  write_file("/tmp/qbe_rb_data.c", @utf8.encode(driver))
+  assert_eq(
+    run_command(
+      "clang -o /tmp/qbe_rb_data /tmp/qbe_rb_data.o /tmp/qbe_rb_data.c",
+    ),
+    0,
+  )
+  assert_eq(run_command("/tmp/qbe_rb_data"), 0)
+}

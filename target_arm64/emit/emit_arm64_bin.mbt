@@ -1076,8 +1076,10 @@ fn arm64_bin_dat_size(d : @types.Dat) -> Int {
 // of every named global (byte offset within the image).
 fn arm64_bin_layout_data(
   datas : Array[@types.Dat],
-) -> (Array[(String, Int)], Array[Int]) {
+) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int)]) {
   let addr_of : Array[(String, Int)] = []
+  // Relocatable pointer entries: (byte offset, target symbol, byte width).
+  let refs : Array[(Int, String, Int)] = []
   let mut off = 0
   let mut align = 8
   for d in datas {
@@ -1111,6 +1113,7 @@ fn arm64_bin_layout_data(
             buf[cur + i] = b[i].to_int()
           }
         } else if d.is_ref {
+          refs.push((cur, d.ref_name, w))
           let mut base = 0
           for p in addr_of {
             if p.0 == d.ref_name {
@@ -1136,7 +1139,7 @@ fn arm64_bin_layout_data(
       }
     }
   }
-  (addr_of, buf)
+  (addr_of, buf, refs)
 }
 
 ///|
@@ -1236,7 +1239,7 @@ pub fn emit_arm64_bin_module(
     }
     words[c.0] = @object.enc_bl((target - c.0) * 4)
   }
-  let (datas_map0, data_bytes0) = arm64_bin_layout_data(datas)
+  let (datas_map0, data_bytes0, _data_refs) = arm64_bin_layout_data(datas)
   // Append the floating-point constant stash (fpN) after the data section.
   let (fp_map, fp_bytes) = arm64_fp_layout()
   let fp_base = arm64_bin_align_up(data_bytes0.length(), 16)

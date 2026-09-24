@@ -61,7 +61,10 @@ pub fn emit_arm64_object(
       addrs.push((off + x.0, off + x.1, x.2, x.3, x.4))
     }
   }
-  let (datas_map, data_bytes) = arm64_bin_layout_data(datas)
+  let (datas_map, data_bytes0, data_refs) = arm64_bin_layout_data(datas)
+  // Pointer entries are relocatable in an object file: zero the addend and let
+  // the linker fill in the address via an UNSIGNED relocation.
+  let data_bytes = data_bytes0.copy()
 
   let syms : Array[@object.MachoSym] = []
   let index : Map[String, Int] = Map([])
@@ -92,6 +95,26 @@ pub fn emit_arm64_object(
       sect: 3,
       value: p.1,
       is_ext: false,
+    })
+  }
+
+  let data_relocs : Array[@object.MachoReloc] = []
+  for r in data_refs {
+    let w = r.2
+    for i in 0..<w {
+      data_bytes[r.0 + i] = 0
+    }
+    let i = arm64_obj_sym(syms, index, r.1, 0, 0, true)
+    data_relocs.push(@object.MachoReloc::{
+      offset: r.0,
+      sym: i,
+      pcrel: false,
+      length: if w == 8 {
+        3
+      } else {
+        2
+      },
+      rtype: @object.ARM64_RELOC_UNSIGNED,
     })
   }
 
@@ -141,7 +164,7 @@ pub fn emit_arm64_object(
       data: arm64_obj_bytes(data_bytes),
       align: 3,
       flags: @object.section_flags_data(),
-      relocs: [],
+      relocs: data_relocs,
     },
     @object.MachoSection::{
       name: "__const",
