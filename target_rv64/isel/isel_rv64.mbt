@@ -505,35 +505,32 @@ pub fn isel_rv64(
 ) -> String raise {
   let st = rv64_isel_new(fn_, interner)
 
-  // Assign slots to fast allocs in the start block
+  // Assign slots to fast allocs in the start block. The C reference walks
+  // the alignment classes outermost (alloc4, then alloc8, then alloc16), so
+  // slots are not assigned in instruction order.
   let start = fn_.blks[fn_.start_id]
-  for i in 0..<start.ins.length() {
-    let ins = start.ins[i]
-    if ins.op == @types.Alloc4 ||
-      ins.op == @types.Alloc8 ||
-      ins.op == @types.Alloc16 {
-      if ins.arg1.is_con() {
-        let mut sz = fn_.cons[ins.arg1.con_val()].raw_bits()
-        let n = if ins.op == @types.Alloc4 {
-          4
-        } else if ins.op == @types.Alloc8 {
-          8
-        } else {
-          16
+  for al in 0..<3 {
+    let op = @types.Op::from_index(@types.Alloc4.index() + al)
+    let n = 4 << al
+    for i in 0..<start.ins.length() {
+      let ins = start.ins[i]
+      if ins.op == op {
+        if ins.arg1.is_con() {
+          let mut sz = fn_.cons[ins.arg1.con_val()].raw_bits()
+          sz = (sz + n.to_int64() - 1L) & (-n).to_int64()
+          sz = sz / 4
+          if sz > 2147483647L - fn_.slot.to_int64() {
+            abort("alloc too large")
+          }
+          fn_.tmps[ins.to.tmp_val()].slot = fn_.slot
+          fn_.slot = fn_.slot + sz.to_int()
+          start.ins[i] = @types.Ins::new_void(
+            @types.Nop,
+            ins.cls,
+            @types.Ref::none(),
+            @types.Ref::none(),
+          )
         }
-        sz = (sz + n.to_int64() - 1L) & (-n).to_int64()
-        sz = sz / 4
-        if sz > 2147483647L - fn_.slot.to_int64() {
-          abort("alloc too large")
-        }
-        fn_.tmps[ins.to.tmp_val()].slot = fn_.slot
-        fn_.slot = fn_.slot + sz.to_int()
-        start.ins[i] = @types.Ins::new_void(
-          @types.Nop,
-          ins.cls,
-          @types.Ref::none(),
-          @types.Ref::none(),
-        )
       }
     }
   }
