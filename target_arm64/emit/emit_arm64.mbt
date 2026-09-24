@@ -334,9 +334,13 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
           if r.is_tmp() {
             sb.write_string(arm64_rname(r.tmp_val(), k))
           } else if r.is_con() {
+            // C arm64/emit.c: use the full 64-bit value for bitmask immediates.
             let pc = st.fn_.cons[r.con_val()]
-            let n = arm64_u32(pc.raw_bits())
-            if (n & 0xFFF000L) != 0L {
+            let n = pc.bits.i.reinterpret_as_uint64()
+            if (n >> 24) != 0UL {
+              sb.write_string("#")
+              sb.write_string(n.to_string())
+            } else if (n & 0xFFF000UL) != 0UL {
               sb.write_string("#")
               sb.write_string((n >> 12).to_string())
               sb.write_string(", lsl #12")
