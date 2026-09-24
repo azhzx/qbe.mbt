@@ -1,4 +1,5 @@
 import {
+  "azhzx/qbe/object",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }

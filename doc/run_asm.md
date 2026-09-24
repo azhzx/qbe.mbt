@@ -40,9 +40,16 @@ Done and validated:
 - `run_asm/module.mbt` - `ExecBlock`: `mmap` + copy + `mprotect` + call, so
   in-memory arm64 code executes.
 
-Remaining: encode the full arm64 instruction set the text emitter produces and
-drive it from the same post-`rega` IR (a binary arm64 emitter replacing the
-string one), plus relocation application for `adrp`/`add`/`bl`.
+Route B progress: `target_arm64/emit/emit_arm64_bin.mbt` now drives the same
+post-`rega` IR and emits raw arm64 words (prologue/epilogue, integer and double
+ALU, loads/stores, comparisons via `cset`, constant materialization and local
+branch fixups). It is byte-for-byte identical to clang's encoding of the text
+emitter for the `add` and loop/branch cases, and a native test runs the emitted
+code in `ExecBlock` (`sum_to`).
+
+Remaining: calls and global addresses (with `BRANCH26`/`PAGE21`/`PAGEOFF12`
+relocations), float constants and single precision, multi-section `.o` output,
+and wiring `--emit obj` / `--run-asm` onto this path.
 
 
 ## Running wasm (`--run-wasm`)

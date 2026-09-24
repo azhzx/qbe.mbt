@@ -12,6 +12,8 @@ pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_arm64(String, gas? : String) -> Result[String, @util.QbeError]
 
+pub fn compile_arm64_bin(String) -> Array[Array[Int]] raise
+
 pub fn compile_arm64_debug(String, String) -> Result[String, @util.QbeError]
 
 pub fn compile_debug(String, String) -> Result[String, @util.QbeError]

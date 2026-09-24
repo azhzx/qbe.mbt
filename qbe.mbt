@@ -524,6 +524,23 @@ fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
 }
 
 ///|
+// Route B (self-contained): compile the module and return the binary arm64
+// instruction words of every function, in definition order. No assembler or
+// linker is involved; the words feed object/macho.mbt or the in-memory JIT.
+pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
+  @types.init_arm64_target()
+  let (funcs, _datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @emit_arm64.arm64_emit_reset()
+  let res : Array[Array[Int]] = []
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), false, out)
+    res.push(@emit_arm64.emit_arm64_bin_fn(fn_, interner, false))
+  }
+  res
+}
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".

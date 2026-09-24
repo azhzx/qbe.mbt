@@ -150,3 +150,68 @@ test "arm64 emit: vararg prologue saves the argument registers" {
   assert_true(asm.contains("\tmov\tx29, sp\n"))
   assert_true(asm.contains("\tret\n"))
 }
+
+///|
+// Compare the binary emitter against clang's encoding of the same function.
+fn check_bin_words(words : Array[Int], expected : Array[Int64]) -> Unit raise {
+  assert_eq(words.length(), expected.length())
+  for i in 0..<words.length() {
+    assert_eq(words[i].to_int64() & 0xFFFFFFFFL, expected[i])
+  }
+}
+
+///|
+test "arm64 bin: simple add matches clang" {
+  let src =
+    #|export
+    #|function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  let (f, interner, _typs) = arm64_emit_parse_pipeline(src)
+  let words = emit_arm64_bin_fn(f, interner, false)
+  check_bin_words(words, [
+    0xD503245FL, // hint #34
+     0xA9BF7BFDL, // stp x29, x30, [sp, -16]!
+     0x910003FDL, // mov x29, sp
+     0x0B010000L, // add w0, w0, w1
+     0xA8C17BFDL, // ldp x29, x30, [sp], 16
+     0xD65F03C0L, // ret
+  ])
+}
+
+///|
+test "arm64 bin: loop branches match clang" {
+  let src =
+    #|export
+    #|function w $count(w %n) {
+    #|@start
+    #|  jnz %n, @loop, @done
+    #|@loop
+    #|  %n2 =w phi @start %n, @loop %m
+    #|  %m =w sub %n2, 1
+    #|  %c =w csgtw %m, 0
+    #|  jnz %c, @loop, @done
+    #|@done
+    #|  ret 0
+    #|}
+    #|
+  let (f, interner, _typs) = arm64_emit_parse_pipeline(src)
+  let words = emit_arm64_bin_fn(f, interner, false)
+  check_bin_words(words, [
+    0xD503245FL, // hint #34
+     0xA9BF7BFDL, // stp x29, x30, [sp, -16]!
+     0x910003FDL, // mov x29, sp
+     0x7100001FL, // cmp w0, #0
+     0x540000A0L, // beq .L2
+     0x52800021L, // mov w1, #1
+     0x4B010000L, // sub w0, w0, w1
+     0x7100001FL, // cmp w0, #0
+     0x54FFFFACL, // bgt .L1
+     0x52800000L, // mov w0, #0
+     0xA8C17BFDL, // ldp x29, x30, [sp], 16
+     0xD65F03C0L, // ret
+  ])
+}

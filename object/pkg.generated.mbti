@@ -22,11 +22,21 @@ pub fn enc_add_imm(Int, Int, Int) -> Int
 
 pub fn enc_add_imm32(Int, Int, Int) -> Int
 
+pub fn enc_add_imm_sf(Bool, Int, Int, Int) -> Int
+
 pub fn enc_add_reg(Int, Int, Int) -> Int
+
+pub fn enc_add_reg_sf(Bool, Int, Int, Int) -> Int
+
+pub fn enc_adrp(Int, Int) -> Int
 
 pub fn enc_and_reg(Int, Int, Int) -> Int
 
+pub fn enc_and_reg_sf(Bool, Int, Int, Int) -> Int
+
 pub fn enc_asr(Int, Int, Int) -> Int
+
+pub fn enc_asr_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_b(Int) -> Int
 
@@ -44,11 +54,27 @@ pub fn enc_cbz(Bool, Bool, Int, Int) -> Int
 
 pub fn enc_cmn(Int, Int) -> Int
 
+pub fn enc_cmn_imm_sf(Bool, Int, Int) -> Int
+
+pub fn enc_cmn_sf(Bool, Int, Int) -> Int
+
 pub fn enc_cmp(Int, Int) -> Int
+
+pub fn enc_cmp_imm_sf(Bool, Int, Int) -> Int
+
+pub fn enc_cmp_sf(Bool, Int, Int) -> Int
+
+pub fn enc_cset(Bool, Int, Int) -> Int
+
+pub fn enc_csinc(Bool, Int, Int, Int, Int) -> Int
 
 pub fn enc_dp2(Int, Int, Int, Int) -> Int
 
+pub fn enc_dp2_sf(Bool, Int, Int, Int, Int) -> Int
+
 pub fn enc_eor_reg(Int, Int, Int) -> Int
+
+pub fn enc_eor_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_fadd_d(Int, Int, Int) -> Int
 
@@ -90,31 +116,51 @@ pub fn enc_ldst(Int, Int, Int, Int, Int) -> Int
 
 pub fn enc_logic(Int, Int, Int, Int) -> Int
 
+pub fn enc_logic_sf(Bool, Int, Int, Int, Int) -> Int
+
 pub fn enc_lsl(Int, Int, Int) -> Int
 
+pub fn enc_lsl_sf(Bool, Int, Int, Int) -> Int
+
 pub fn enc_lsr(Int, Int, Int) -> Int
+
+pub fn enc_lsr_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_madd(Bool, Bool, Int, Int, Int, Int) -> Int
 
 pub fn enc_mov_reg(Int, Int) -> Int
 
+pub fn enc_mov_reg_sf(Bool, Int, Int) -> Int
+
 pub fn enc_movk(Int, Int, Int) -> Int
+
+pub fn enc_movk_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_movz(Int, Int, Int) -> Int
 
+pub fn enc_movz_sf(Bool, Int, Int, Int) -> Int
+
 pub fn enc_msub(Int, Int, Int, Int) -> Int
 
+pub fn enc_msub_sf(Bool, Int, Int, Int, Int) -> Int
+
 pub fn enc_mul(Int, Int, Int) -> Int
+
+pub fn enc_mul_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_nop() -> Int
 
 pub fn enc_orr_reg(Int, Int, Int) -> Int
+
+pub fn enc_orr_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_ret() -> Int
 
 pub fn enc_scvtf_d_x(Int, Int) -> Int
 
 pub fn enc_sdiv(Int, Int, Int) -> Int
+
+pub fn enc_sdiv_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_stp_pre(Int, Int, Int, Int) -> Int
 
@@ -130,7 +176,11 @@ pub fn enc_sub_imm(Int, Int, Int) -> Int
 
 pub fn enc_sub_imm32(Int, Int, Int) -> Int
 
+pub fn enc_sub_imm_sf(Bool, Int, Int, Int) -> Int
+
 pub fn enc_sub_reg(Int, Int, Int) -> Int
+
+pub fn enc_sub_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_sxtb(Int, Int) -> Int
 
@@ -139,6 +189,8 @@ pub fn enc_sxth(Int, Int) -> Int
 pub fn enc_sxtw(Int, Int) -> Int
 
 pub fn enc_udiv(Int, Int, Int) -> Int
+
+pub fn enc_udiv_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_uxtb(Int, Int) -> Int
 

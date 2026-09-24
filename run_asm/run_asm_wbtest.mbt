@@ -69,3 +69,40 @@ test "run-asm: load shared module and call a function" {
   let m = RunAsmModule::load_shared(src)
   assert_eq(m.call1("add1", 41L), 42L)
 }
+
+///|
+// route B: source -> binary arm64 words -> executable memory -> call. No
+// assembler, linker or clang anywhere in this path.
+test "route B: self-contained binary sum_to runs" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|export
+    #|function w $sum_to(w %n) {
+    #|@start
+    #|  %i =w copy 0
+    #|  %s =w copy 0
+    #|@loop
+    #|  %i2 =w phi @start %i, @body %i3
+    #|  %s2 =w phi @start %s, @body %s3
+    #|  %c =w cslew %i2, %n
+    #|  jnz %c, @body, @end
+    #|@body
+    #|  %s3 =w add %s2, %i2
+    #|  %i3 =w add %i2, 1
+    #|  jmp @loop
+    #|@end
+    #|  ret %s2
+    #|}
+    #|
+  let words = @qbe.compile_arm64_bin(src) catch {
+    e => abort("route B compile failed: {Repr(e)}")
+  }
+  assert_eq(words.length(), 1)
+  let m = ExecBlock::load_text(@object.words_to_bytes(words[0]))
+  assert_eq(m.call1(0L), 0L)
+  assert_eq(m.call1(10L), 55L)
+  assert_eq(m.call1(100L), 5050L)
+  assert_eq(m.call1(1000L), 500500L)
+}

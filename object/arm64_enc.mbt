@@ -17,6 +17,27 @@ fn sfbit(sf : Bool) -> Int {
 }
 
 ///|
+// ADD/SUB (immediate): sf op S 100010 sh imm12 Rn Rd.
+fn dpr_addsub_imm(
+  sf : Bool,
+  sub : Bool,
+  set_flags : Bool,
+  rd : Int,
+  rn : Int,
+  sh : Int,
+  imm12 : Int,
+) -> Int {
+  (sfbit(sf) << 31) |
+  ((if sub { 1 } else { 0 }) << 30) |
+  ((if set_flags { 1 } else { 0 }) << 29) |
+  (0x22 << 23) |
+  ((sh & 1) << 22) |
+  ((imm12 & 0xFFF) << 10) |
+  (r5(rn) << 5) |
+  r5(rd)
+}
+
+///|
 // ADD/SUB (shifted register): sf op S 01011 shift N Rm imm6 Rn Rd.
 fn dpr_addsub(
   sf : Bool,
@@ -79,6 +100,28 @@ pub fn enc_add_imm32(rd : Int, rn : Int, imm12 : Int) -> Int {
 ///|
 pub fn enc_sub_imm32(rd : Int, rn : Int, imm12 : Int) -> Int {
   (1 << 30) | (0x22 << 23) | ((imm12 & 0xFFF) << 10) | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+// Class-aware immediate forms (32/64-bit) and the CMP/CMN aliases (Rd = ZR,
+// S = 1), which the binary emitter needs for operands left as constants.
+pub fn enc_add_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
+  dpr_addsub_imm(sf, false, false, rd, rn, 0, imm12)
+}
+
+///|
+pub fn enc_sub_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
+  dpr_addsub_imm(sf, true, false, rd, rn, 0, imm12)
+}
+
+///|
+pub fn enc_cmp_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
+  dpr_addsub_imm(sf, true, true, 31, rn, 0, imm12)
+}
+
+///|
+pub fn enc_cmn_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
+  dpr_addsub_imm(sf, false, true, 31, rn, 0, imm12)
 }
 
 ///|
@@ -192,6 +235,160 @@ pub fn enc_movz(rd : Int, imm16 : Int, hw : Int) -> Int {
 ///|
 pub fn enc_movk(rd : Int, imm16 : Int, hw : Int) -> Int {
   (1 << 31) |
+  (3 << 29) |
+  (0x25 << 23) |
+  ((hw & 3) << 21) |
+  ((imm16 & 0xFFFF) << 5) |
+  r5(rd)
+}
+
+///|
+// ADRP: PC-relative page address (op 1 immlo 10000 immhi Rd). `imm` is the
+// signed page count (byte offset / 4096), i.e. the 21-bit value split across
+// immlo:immhi.
+pub fn enc_adrp(rd : Int, imm : Int) -> Int {
+  (1 << 31) |
+  ((imm & 3) << 29) |
+  (0x10 << 24) |
+  (((imm >> 2) & 0x7FFFF) << 5) |
+  r5(rd)
+}
+
+///|
+// CSINC (conditional select, increment): sf op S 11010100 Rm cond 01 Rn Rd.
+pub fn enc_csinc(sf : Bool, rd : Int, rn : Int, rm : Int, cond : Int) -> Int {
+  (sfbit(sf) << 31) |
+  (0b11010100 << 21) |
+  (r5(rm) << 16) |
+  ((cond & 15) << 12) |
+  (0b01 << 10) |
+  (r5(rn) << 5) |
+  r5(rd)
+}
+
+///|
+// CSET Rd, cond is the alias CSINC Rd, ZR, ZR, invert(cond).
+pub fn enc_cset(sf : Bool, rd : Int, cond : Int) -> Int {
+  enc_csinc(sf, rd, 31, 31, cond ^ 1)
+}
+
+///|
+// Class-aware variants: the text emitter selects w/x (and s/d) by class, so the
+// binary emitter needs the same sf bit. The 64-bit wrappers above delegate here.
+pub fn enc_logic_sf(sf : Bool, opc : Int, rd : Int, rn : Int, rm : Int) -> Int {
+  (sfbit(sf) << 31) |
+  (opc << 29) |
+  (0x0A << 24) |
+  (r5(rm) << 16) |
+  (r5(rn) << 5) |
+  r5(rd)
+}
+
+///|
+pub fn enc_and_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_logic_sf(sf, 0, rd, rn, rm)
+}
+
+///|
+pub fn enc_orr_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_logic_sf(sf, 1, rd, rn, rm)
+}
+
+///|
+pub fn enc_eor_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_logic_sf(sf, 2, rd, rn, rm)
+}
+
+///|
+pub fn enc_mov_reg_sf(sf : Bool, rd : Int, rm : Int) -> Int {
+  enc_orr_reg_sf(sf, rd, 31, rm)
+}
+
+///|
+pub fn enc_dp2_sf(
+  sf : Bool,
+  opcode2 : Int,
+  rd : Int,
+  rn : Int,
+  rm : Int,
+) -> Int {
+  (sfbit(sf) << 31) |
+  (0xD6 << 21) |
+  (r5(rm) << 16) |
+  ((opcode2 & 0x3F) << 10) |
+  (r5(rn) << 5) |
+  r5(rd)
+}
+
+///|
+pub fn enc_lsl_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_dp2_sf(sf, 0x08, rd, rn, rm)
+}
+
+///|
+pub fn enc_lsr_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_dp2_sf(sf, 0x09, rd, rn, rm)
+}
+
+///|
+pub fn enc_asr_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_dp2_sf(sf, 0x0A, rd, rn, rm)
+}
+
+///|
+pub fn enc_sdiv_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_dp2_sf(sf, 0x03, rd, rn, rm)
+}
+
+///|
+pub fn enc_udiv_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_dp2_sf(sf, 0x02, rd, rn, rm)
+}
+
+///|
+pub fn enc_add_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  dpr_addsub(sf, false, false, rd, rn, rm)
+}
+
+///|
+pub fn enc_sub_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  dpr_addsub(sf, true, false, rd, rn, rm)
+}
+
+///|
+pub fn enc_cmp_sf(sf : Bool, rn : Int, rm : Int) -> Int {
+  dpr_addsub(sf, true, true, 31, rn, rm)
+}
+
+///|
+pub fn enc_cmn_sf(sf : Bool, rn : Int, rm : Int) -> Int {
+  dpr_addsub(sf, false, true, 31, rn, rm)
+}
+
+///|
+pub fn enc_mul_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
+  enc_madd(sf, false, rd, rn, rm, 31)
+}
+
+///|
+pub fn enc_msub_sf(sf : Bool, rd : Int, rn : Int, rm : Int, ra : Int) -> Int {
+  enc_madd(sf, true, rd, rn, rm, ra)
+}
+
+///|
+// MOVZ/MOVK without the sf bit fixed to 1 (32-bit form uses 0x52.../0x72...).
+pub fn enc_movz_sf(sf : Bool, rd : Int, imm16 : Int, hw : Int) -> Int {
+  (sfbit(sf) << 31) |
+  (2 << 29) |
+  (0x25 << 23) |
+  ((hw & 3) << 21) |
+  ((imm16 & 0xFFFF) << 5) |
+  r5(rd)
+}
+
+///|
+pub fn enc_movk_sf(sf : Bool, rd : Int, imm16 : Int, hw : Int) -> Int {
+  (sfbit(sf) << 31) |
   (3 << 29) |
   (0x25 << 23) |
   ((hw & 3) << 21) |
