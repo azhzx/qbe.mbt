@@ -110,3 +110,10 @@ clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
 - 控制流：`jmp @label`，`jnz %cond, @then, @else`，`ret %val`
 
 更完整的指令集可参考 [test/](../test/) 目录的回归测试。
+
+## 程序化构造（不使用 .ssa）
+
+除文本 IL 之外，也可以用 `ir_builder` 直接构造与解析器完全相同的 IR，再生成汇编、
+Mach-O 目标文件或 JIT 代码镜像。C 侧示例见
+[`examples/capi/`](../examples/capi/README.md)；接口说明见
+[`doc/ir_builder.md`](../doc/ir_builder.md)（[中文](../doc/zh/ir_builder.md)）。
