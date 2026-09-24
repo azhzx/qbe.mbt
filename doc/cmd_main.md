@@ -26,11 +26,11 @@ Usage: qbe [OPTIONS] {file.ssa, -}
 
 | Target | Output | Description |
 | --- | --- | --- |
-| `amd64_sysv` | x86-64 GAS assembly | Default; `-G e` (Linux `.L` labels) / `-G m` (macOS `L` + `_` prefix) selects GAS style |
+| `amd64_sysv` | x86-64 GAS assembly | Default; `-G e` (Linux `.L` labels) / `-G m` (macOS `L` + `_` prefix) selects GAS style; both flavors are byte-identical to the reference (`-t amd64_sysv` / `-t amd64_apple`) |
 | `wasm` | WAT text | WebAssembly text format; skips register allocation |
 | `rv64` | RISC-V 64 GAS assembly | ELF; supports `-G e` (`.L` labels), emits data + float pool |
 | `la64` | LoongArch64 GAS assembly | LP64D ABI; supports `-G e`/`-G m` labels |
-| `arm64` | AArch64 GAS assembly | AAPCS64 ELF; supports `-G e`/`-G m` labels |
+| `arm64` | AArch64 GAS assembly | AAPCS64 ELF; `-G m` labels/relocations supported, Apple ABI not yet ported |
 
 Examples:
 

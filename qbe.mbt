@@ -102,10 +102,10 @@ pub fn compile_debug(
 // Assembly-producing compile, raising `@util.QbeError` on failure.
 fn compile_raise(text : String, gas : String) -> String raise {
   @types.init_amd64_target()
-  let (gasloc, gassym) = gas_setting(gas)
+  let (gasloc, gassym, apple) = gas_setting(gas)
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
   let sb = StringBuilder::StringBuilder()
-  emit_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
+  emit_module(funcs, datas, order, typs, interner, gasloc, gassym, apple, sb)
   sb.to_string()
 }
 
@@ -273,7 +273,7 @@ pub fn compile_rv64_debug(
 fn compile_rv64_raise(text : String, gas : String) -> String raise {
   @types.init_rv64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let (gasloc, gassym) = gas_setting(gas)
+  let (gasloc, gassym, _apple) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
   emit_rv64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
@@ -365,7 +365,7 @@ pub fn compile_la64_debug(
 fn compile_la64_raise(text : String, gas : String) -> String raise {
   @types.init_la64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let (gasloc, gassym) = gas_setting(gas)
+  let (gasloc, gassym, _apple) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
   emit_la64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
   sb.to_string()
@@ -500,9 +500,11 @@ pub fn compile_arm64_debug(
 fn compile_arm64_raise(text : String, gas : String) -> String raise {
   @types.init_arm64_target()
   let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
-  let (gasloc, gassym) = gas_setting(gas)
+  let (gasloc, gassym, apple) = gas_setting(gas)
   let sb = StringBuilder::StringBuilder()
-  emit_arm64_module(funcs, datas, order, typs, interner, gasloc, gassym, sb)
+  emit_arm64_module(
+    funcs, datas, order, typs, interner, gasloc, gassym, apple, sb,
+  )
   sb.to_string()
 }
 

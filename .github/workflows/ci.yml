@@ -117,12 +117,12 @@ jobs:
       - name: "Differential: assembly (rv64)"
         run: python compare.py --target rv64 --asm
 
-      # Mach-O gas flavor (-G m). The port is still being aligned with the
-      # reference's amd64_apple/arm64_apple emitters, so these are reported
-      # but not yet gating.
+      # Mach-O gas flavor (-G m). amd64 is byte-identical and gated; arm64
+      # emission is aligned but its Apple ABI/vararg lowering (apple_selvastart
+      # / apple_selvaarg / apple_extsb) is not ported yet, so it is reported
+      # but not gating.
       - name: "Differential: Mach-O flavor (amd64)"
         run: python compare.py --asm -G m
-        continue-on-error: true
 
       - name: "Differential: Mach-O flavor (arm64)"
         run: python compare.py --target arm64 --asm -G m

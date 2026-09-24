@@ -15,6 +15,9 @@ priv struct Arm64EmitState {
   fn_ : @types.Fn
   interner : @util.Interner
   sb : StringBuilder
+  gasloc : String
+  gassym : String
+  apple : Bool
   mut frame : Int
   mut padding : Int
 }
@@ -232,13 +235,15 @@ fn arm64_loadcon(
   let sb = st.sb
   if con.kind == @types.CAddr {
     let rn = arm64_rname(r, @types.Kl)
-    let p = if con.is_local { ".L" } else { "" }
+    // Local (fp-constant) symbols use the flavor's local prefix and are
+    // printed quoted, e.g. ".Lfp0" (ELF) or "Lfp0" (Mach-O); globals use the
+    // symbol prefix, e.g. "glo1" (ELF) or "_glo1" (Mach-O).
+    let p = if con.is_local { st.gasloc } else { st.gassym }
     let l = st.interner.get(con.label)
     let mut off = ""
     if con.bits.i != 0L {
       off = "+" + con.bits.i.to_string()
     }
-    // Local (fp-constant) symbols are printed quoted, e.g. ".Lfp0".
     let q = if con.is_local { "\"" } else { "" }
     sb.write_string("\tadrp\t")
     sb.write_string(rn)
@@ -248,18 +253,30 @@ fn arm64_loadcon(
     sb.write_string(l)
     sb.write_string(off)
     sb.write_string(q)
-    sb.write_char('\n')
+    // Mach-O uses sym@page / sym@pageoff; ELF uses sym / #:lo12:sym.
+    if st.apple {
+      sb.write_string("@page\n")
+    } else {
+      sb.write_char('\n')
+    }
     sb.write_string("\tadd\t")
     sb.write_string(rn)
     sb.write_string(", ")
     sb.write_string(rn)
-    sb.write_string(", #:lo12:")
+    sb.write_string(", ")
+    if !st.apple {
+      sb.write_string("#:lo12:")
+    }
     sb.write_string(q)
     sb.write_string(p)
     sb.write_string(l)
     sb.write_string(off)
     sb.write_string(q)
-    sb.write_char('\n')
+    if st.apple {
+      sb.write_string("@pageoff\n")
+    } else {
+      sb.write_char('\n')
+    }
     return
   }
   let rn = arm64_rname(r, k)
@@ -451,6 +468,7 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
         let c = st.fn_.cons[i.arg1.con_val()]
         if c.kind == @types.CAddr && c.bits.i == 0L && !c.is_local {
           sb.write_string("\tbl\t")
+          sb.write_string(st.gassym)
           sb.write_string(st.interner.get(c.label))
           sb.write_char('\n')
         } else {
@@ -497,12 +515,19 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   st.padding = 4 * (f - fn_.slot)
   st.frame = 4 * f + 8 * o
 
-  sb.write_string(".text\n.balign 16\n")
+  // C arm64/emit.c forces the function alignment to 4 for the Mach-O flavor.
+  if st.apple {
+    sb.write_string(".text\n.balign 4\n")
+  } else {
+    sb.write_string(".text\n.balign 16\n")
+  }
   if fn_.is_export {
     sb.write_string(".globl ")
+    sb.write_string(st.gassym)
     sb.write_string(fn_.name)
     sb.write_char('\n')
   }
+  sb.write_string(st.gassym)
   sb.write_string(fn_.name)
   sb.write_string(":\n")
   // BTI landing pad (C arm64_emitfn always emits it).
@@ -555,7 +580,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     let b = fn_.blks[bid]
     let next = if idx + 1 < fn_.rpo.length() { fn_.rpo[idx + 1] } else { -1 }
     if lbl || b.npred > 1 {
-      sb.write_string(".L")
+      sb.write_string(st.gasloc)
       sb.write_string((arm64_emit_id0[0] + b.rpo_id).to_string())
       sb.write_string(":\n")
     }
@@ -597,7 +622,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
       }
       @types.Jjmp =>
         if b.jmp.s1 >= 0 && b.jmp.s1 != next {
-          sb.write_string("\tb\t.L")
+          sb.write_string("\tb\t" + st.gasloc)
           sb.write_string(
             (arm64_emit_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string(),
           )
@@ -622,11 +647,11 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
         }
         sb.write_string("\tb")
         sb.write_string(if neg { arm64_cond_neg[c] } else { arm64_cond[c] })
-        sb.write_string("\t.L")
+        sb.write_string("\t" + st.gasloc)
         sb.write_string((arm64_emit_id0[0] + fn_.blks[s2].rpo_id).to_string())
         sb.write_char('\n')
         if s1 >= 0 && s1 != next {
-          sb.write_string("\tb\t.L")
+          sb.write_string("\tb\t" + st.gasloc)
           sb.write_string((arm64_emit_id0[0] + fn_.blks[s1].rpo_id).to_string())
           sb.write_char('\n')
         } else {
@@ -636,14 +661,17 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
   }
   arm64_emit_id0[0] = arm64_emit_id0[0] + fn_.rpo.length()
-  // C elf_emitfnfin emits the function type/size after each function.
-  sb.write_string(".type ")
-  sb.write_string(fn_.name)
-  sb.write_string(", @function\n.size ")
-  sb.write_string(fn_.name)
-  sb.write_string(", .-")
-  sb.write_string(fn_.name)
-  sb.write_char('\n')
+  // C elf_emitfnfin emits the function type/size after each function; the
+  // Mach-O flavor emits nothing.
+  if !st.apple {
+    sb.write_string(".type ")
+    sb.write_string(fn_.name)
+    sb.write_string(", @function\n.size ")
+    sb.write_string(fn_.name)
+    sb.write_string(", .-")
+    sb.write_string(fn_.name)
+    sb.write_char('\n')
+  }
 }
 
 ///|
@@ -652,10 +680,22 @@ pub fn emit_arm64(
   fn_ : @types.Fn,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
+  gasloc : String,
+  gassym : String,
+  apple : Bool,
 ) -> String raise {
   let _ = all_typs
   let sb = StringBuilder()
-  let st = Arm64EmitState::{ fn_, interner, sb, frame: 0, padding: 0, }
+  let st = Arm64EmitState::{
+    fn_,
+    interner,
+    sb,
+    gasloc,
+    gassym,
+    apple,
+    frame: 0,
+    padding: 0,
+  }
   arm64_emitfn(st)
   sb.to_string()
 }

@@ -242,11 +242,12 @@ fn parse_module(
 }
 
 ///|
-// Translate the GAS flavor string into (gasloc, gassym), matching QBE's -G.
-fn gas_setting(gas : String) -> (String, String) raise {
+// Translate the GAS flavor string into (gasloc, gassym, apple), matching
+// QBE's -G. "m" is the Mach-O flavor.
+fn gas_setting(gas : String) -> (String, String, Bool) raise {
   match gas {
-    "e" => (".L", "")
-    "m" => ("L", "_")
+    "e" => (".L", "", false)
+    "m" => ("L", "_", true)
     g => raise @util.QbeError::CompileError("unknown gas flavor '\{g}'")
   }
 }
@@ -262,6 +263,7 @@ fn emit_module(
   interner : @util.Interner,
   gasloc : String,
   gassym : String,
+  apple : Bool,
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
@@ -272,7 +274,7 @@ fn emit_module(
       let fn_ = funcs[fi]
       fi = fi + 1
       run_passes(fn_, interner, typs, DbFlags::new(), sb)
-      @emit_amd64.emitfn(fn_, interner, gasloc, gassym, sb)
+      @emit_amd64.emitfn(fn_, interner, gasloc, gassym, apple, sb)
       sb.write_string("/* end function \{fn_.name} */\n\n")
     } else {
       while di < datas.length() {
@@ -286,7 +288,7 @@ fn emit_module(
       }
     }
   }
-  @emit_amd64.gasemitfin(gasloc, sb)
+  @emit_amd64.gasemitfin(gasloc, apple, sb)
 }
 
 ///|
@@ -518,6 +520,7 @@ fn emit_arm64_module(
   interner : @util.Interner,
   gasloc : String,
   gassym : String,
+  apple : Bool,
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
@@ -529,7 +532,9 @@ fn emit_arm64_module(
       let fn_ = funcs[fi]
       fi = fi + 1
       run_passes_arm64(fn_, interner, typs, DbFlags::new(), sb)
-      sb.write_string(@emit_arm64.emit_arm64(fn_, interner, typs))
+      sb.write_string(
+        @emit_arm64.emit_arm64(fn_, interner, typs, gasloc, gassym, apple),
+      )
       sb.write_string("/* end function \{fn_.name} */\n\n")
     } else {
       while di < datas.length() {
@@ -543,5 +548,5 @@ fn emit_arm64_module(
       }
     }
   }
-  @emit_amd64.gasemitfin(gasloc, sb)
+  @emit_amd64.gasemitfin(gasloc, apple, sb)
 }

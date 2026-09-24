@@ -60,3 +60,15 @@
     rv64: argsclass ngp check, fpstruct field classes, struct-return blobs,
     extension constant class, alloc slots grouped by alignment class
     loadopt: stable phi ordering; CI now gates every debug flag and assembly
+2026.9.24: v0.12.0
+    compare.py: reference and port now get their own flagsets; -G m maps to the
+    matching Mach-O reference target (amd64_apple/arm64_apple) and is skipped
+    for targets without one (the blanket amd64_apple mapping was wrong)
+    amd64 Mach-O (-G m): byte-identical to vendor/qbe -t amd64_apple (336/336);
+    no .type/.size/.note.GNU-stack, __TEXT literal sections, "_" data refs;
+    CI gates it
+    arm64 Mach-O: labels, sym@page/@pageoff, .balign 4, "_" prefixes and
+    literal sections implemented; the Apple ABI (4-byte non-wide stack slots,
+    apple_selvastart/apple_selvaarg/apple_extsb) is still pending, so arm64
+    -G m is reported but not gated
+    docs (en+zh): retract the previously unverified "406/406 (-G e and -G m)"

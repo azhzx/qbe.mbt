@@ -580,6 +580,7 @@ pub fn emitfn(
   interner : @util.Interner,
   gasloc : String,
   gassym : String,
+  apple : Bool,
   sb : StringBuilder,
 ) -> Unit raise {
   let st = EmitState::{
@@ -721,9 +722,12 @@ pub fn emitfn(
     }
   }
   emit_id0[0] = emit_id0[0] + fn_.rpo.length()
-  // C elf_emitfnfin emits the function type/size after each function.
-  st.sb.write_string(".type \{gassym}\{fn_.name}, @function\n")
-  st.sb.write_string(".size \{gassym}\{fn_.name}, .-\{gassym}\{fn_.name}\n")
+  // C elf_emitfnfin emits the function type/size after each function; the
+  // Mach-O flavor emits nothing.
+  if !apple {
+    st.sb.write_string(".type \{gassym}\{fn_.name}, @function\n")
+    st.sb.write_string(".size \{gassym}\{fn_.name}, .-\{gassym}\{fn_.name}\n")
+  }
 }
 
 ///|
@@ -769,7 +773,11 @@ pub fn gasemitdat(
       if d.is_str {
         sb.write_string("\t.ascii \"\{d.str}\"\n")
       } else if d.is_ref {
-        sb.write_string("\{dtoa} \{d.ref_name}\{s64_plus(d.ref_offset)}\n")
+        // C gasemitdat prefixes referenced symbols with the gas symbol
+        // prefix (empty for ELF, "_" for Mach-O).
+        sb.write_string(
+          "\{dtoa} \{gassym}\{d.ref_name}\{s64_plus(d.ref_offset)}\n",
+        )
       } else {
         // C emitdat masks the value to the data item width.
         let mask = match d.kind {
@@ -805,15 +813,26 @@ fn word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
 
 ///|
 // Emit the floating point constants table (C gasemitfin in gas.c).
-pub fn gasemitfin(gasloc : String, sb : StringBuilder) -> Unit {
+pub fn gasemitfin(gasloc : String, apple : Bool, sb : StringBuilder) -> Unit {
   if @types.fp_stash_len() > 0 {
     sb.write_string("/* floating point constants */\n")
     // Sizes are emitted largest first (C emitfin: lg 4,3,2 = 16,8,4 bytes).
     for lg in [4, 3, 2] {
+      // Apple keeps floating point constants in Mach-O literal sections
+      // (C macho_emitfin); ELF uses .rodata (C elf_emitfin).
+      let sec = if apple {
+        match lg {
+          4 => "__TEXT,__literal16,16byte_literals"
+          3 => "__TEXT,__literal8,8byte_literals"
+          _ => "__TEXT,__literal4,4byte_literals"
+        }
+      } else {
+        ".rodata"
+      }
       for i in 0..<@types.fp_stash_len() {
         let b = @types.fp_stash_at(i)
         if b.size == 1 << lg {
-          sb.write_string(".section .rodata\n.p2align \{lg}\n\{gasloc}fp\{i}:")
+          sb.write_string(".section \{sec}\n.p2align \{lg}\n\{gasloc}fp\{i}:")
           if lg == 4 {
             sb.write_string("\n\t.quad \{b.b0}\n\t.quad 0\n\n")
           } else if lg == 3 {
@@ -831,6 +850,9 @@ pub fn gasemitfin(gasloc : String, sb : StringBuilder) -> Unit {
       }
     }
   }
-  // C elf_emitfin always terminates with the GNU-stack note.
-  sb.write_string(".section .note.GNU-stack,\"\",@progbits\n")
+  // C elf_emitfin always terminates with the GNU-stack note; the Mach-O
+  // flavor does not.
+  if !apple {
+    sb.write_string(".section .note.GNU-stack,\"\",@progbits\n")
+  }
 }
