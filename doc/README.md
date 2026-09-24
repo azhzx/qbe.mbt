@@ -16,6 +16,8 @@ Packages are listed in compilation pipeline order:
 | Utilities | `util` | [util.md](util.md) | Error types, string interning, output, sorting |
 | Lexing | `lexer` | [lexer.md](lexer.md) | IL text → token sequence |
 | Parsing | `parser` | [parser.md](parser.md) | Token sequence → `Fn`/`Dat`/`Typ` |
+| Programmatic Front End | `ir_builder` | [ir_builder.md](ir_builder.md) | Builder-based IL construction, no text round-trip |
+| C ABI | `ir_builder_capi` | [ir_builder.md](ir_builder.md) | `qbe_*` foreign-library exports for C |
 | CFG Analysis | `cfg` | [cfg.md](cfg.md) | Predecessors, dominators, dominance frontiers, loops, aliasing |
 | SSA Construction | `ssa` | [ssa.md](ssa.md) | Use chains, phi insertion, memopt/loadopt/copy |
 | Constant Folding | `fold` | [fold.md](fold.md) | Constant instruction evaluation |

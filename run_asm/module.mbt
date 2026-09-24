@@ -7,6 +7,13 @@
 // macOS/aarch64 pass the Mach-O flavor (-G m) text.
 
 ///|
+// Whether the in-process arm64 backend is usable on this host (macOS on
+// aarch64). Other hosts skip the executable-memory tests.
+pub fn host_supported() -> Bool {
+  mbt_run_asm_host_supported() != 0
+}
+
+///|
 fn cstr(s : String) -> Bytes {
   @utf8.encode(s)
 }

@@ -1,0 +1,77 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/ir_builder"
+
+import {
+  "azhzx/qbe/target_arm64/emit",
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Builder {
+  funcs : Array[@types.Fn]
+  datas : Array[@types.Dat]
+  typs : Array[@types.Typ]
+  interner : @util.Interner
+  vals : Array[@types.Ref]
+  cur : Array[Int]
+  rets : Array[Ret]
+  params : Array[Array[Int]]
+  order : Array[String]
+  // private fields
+}
+pub fn Builder::add_block(Self, Int, String) -> Int
+pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool) -> Int
+pub fn Builder::add_param(Self, Int, @types.Class) -> Int
+pub fn Builder::arith(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
+pub fn Builder::block_param(Self, Int, Int, @types.Class) -> Int
+pub fn Builder::call(Self, Int, String, Array[(@types.Class, Int)], Ret) -> Int
+pub fn Builder::cmp(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
+pub fn Builder::current_block(Self, Int) -> Int
+pub fn Builder::data_bytes(Self, String, Bool, Bytes) -> Unit
+pub fn Builder::data_items(Self) -> Array[@types.Dat]
+pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
+pub fn Builder::data_string(Self, String, Bool, String) -> Unit
+pub fn Builder::emit_asm(Self, gas? : String) -> String raise
+pub fn Builder::emit_bin_module(Self) -> @emit.Arm64BinModule raise
+pub fn Builder::emit_ins(Self, Int, @types.Op, @types.Class, @types.Class, Int, Int) -> Int
+pub fn Builder::emit_object(Self) -> Bytes raise
+pub fn Builder::emit_void(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
+pub fn Builder::fconst(Self, Int, Double) -> Int
+pub fn Builder::func_params(Self, Int) -> Array[Int]
+pub fn Builder::functions(Self) -> Array[@types.Fn]
+pub fn Builder::global(Self, Int, String) -> Int
+pub fn Builder::iconst(Self, Int, Int64) -> Int
+pub fn Builder::interner_ref(Self) -> @util.Interner
+pub fn Builder::jmp(Self, Int, Int, Array[Int]) -> Unit
+pub fn Builder::jnz(Self, Int, Int, Int, Array[Int], Int, Array[Int]) -> Unit
+pub fn Builder::load(Self, Int, @types.Op, @types.Class, Int) -> Int
+pub fn Builder::new() -> Self
+pub fn Builder::param(Self, Int, Int) -> Int
+pub fn Builder::ret(Self, Int, Int) -> Unit
+pub fn Builder::sconst(Self, Int, Float) -> Int
+pub fn Builder::store(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
+pub fn Builder::switch_to(Self, Int, Int) -> Unit
+pub fn Builder::symbol(Self, String) -> Int
+pub fn Builder::unop(Self, Int, @types.Op, @types.Class, @types.Class, Int) -> Int
+pub fn Builder::val_ref(Self, Int) -> @types.Ref
+
+pub(all) enum Ret {
+  Void
+  Word
+  Long
+  Single
+  Double
+} derive(Eq, @debug.Debug)
+pub fn Ret::cls(Self) -> @types.Class
+pub fn Ret::from_code(Int) -> Self
+pub fn Ret::jump_kind(Self) -> @types.JumpKind
+
+// Type aliases
+
+// Traits

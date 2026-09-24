@@ -12,6 +12,8 @@
 | 通用工具 | `util` | [util.md](util.md) | 错误类型、字符串驻留、输出、排序 |
 | 词法分析 | `lexer` | [lexer.md](lexer.md) | IL 文本 → token 序列 |
 | 语法分析 | `parser` | [parser.md](parser.md) | token 序列 → `Fn`/`Dat`/`Typ` |
+| 程序化前端 | `ir_builder` | [ir_builder.md](ir_builder.md) | 基于 builder 构造 IL，无需文本往返 |
+| C ABI | `ir_builder_capi` | [ir_builder.md](ir_builder.md) | 面向 C 的 `qbe_*` foreign-library 导出 |
 | CFG 分析 | `cfg` | [cfg.md](cfg.md) | 前驱、支配者、支配边界、循环、别名 |
 | SSA 构造 | `ssa` | [ssa.md](ssa.md) | 使用链、phi 插入、memopt/loadopt/copy |
 | 常量折叠 | `fold` | [fold.md](fold.md) | 常量指令求值 |
