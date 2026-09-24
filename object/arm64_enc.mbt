@@ -356,6 +356,36 @@ pub fn enc_sub_reg_sf(sf : Bool, rd : Int, rn : Int, rm : Int) -> Int {
 }
 
 ///|
+// ADD/SUB (extended register): sf op S 01011 001 Rm option imm3 Rn Rd.
+// GAS uses this form whenever SP is an operand.
+pub fn enc_addsub_ext(
+  sf : Bool,
+  sub : Bool,
+  rd : Int,
+  rn : Int,
+  rm : Int,
+) -> Int {
+  (sfbit(sf) << 31) |
+  ((if sub { 1 } else { 0 }) << 30) |
+  (0x0B << 24) |
+  (1 << 21) |
+  (r5(rm) << 16) |
+  (3 << 13) |
+  (r5(rn) << 5) |
+  r5(rd)
+}
+
+///|
+pub fn enc_add_ext(rd : Int, rn : Int, rm : Int) -> Int {
+  enc_addsub_ext(true, false, rd, rn, rm)
+}
+
+///|
+pub fn enc_sub_ext(rd : Int, rn : Int, rm : Int) -> Int {
+  enc_addsub_ext(true, true, rd, rn, rm)
+}
+
+///|
 pub fn enc_cmp_sf(sf : Bool, rn : Int, rm : Int) -> Int {
   dpr_addsub(sf, true, true, 31, rn, rm)
 }
@@ -585,12 +615,43 @@ pub fn enc_cbz(sf : Bool, nonzero : Bool, rt : Int, off : Int) -> Int {
 
 ///|
 pub fn enc_br(rn : Int) -> Int {
-  (0xD6 << 21) | (0x1F << 16) | (r5(rn) << 5)
+  (0xD6 << 24) | (0x1F << 16) | (r5(rn) << 5)
 }
 
 ///|
 pub fn enc_blr(rn : Int) -> Int {
-  (0xD6 << 21) | (0x3F << 16) | (r5(rn) << 5)
+  (0xD6 << 24) | (0x3F << 16) | (r5(rn) << 5)
+}
+
+///|
+// MOVN (inverted wide immediate): sf 00 100101 hw imm16 Rd.
+pub fn enc_movn_sf(sf : Bool, rd : Int, imm16 : Int, hw : Int) -> Int {
+  (sfbit(sf) << 31) |
+  (0x25 << 23) |
+  ((hw & 3) << 21) |
+  ((imm16 & 0xFFFF) << 5) |
+  r5(rd)
+}
+
+///|
+// Logical (immediate): sf opc 100100 N immr imms Rn Rd (opc 0=AND 1=ORR 2=EOR).
+pub fn enc_logimm_sf(
+  sf : Bool,
+  opc : Int,
+  rd : Int,
+  rn : Int,
+  n : Int,
+  immr : Int,
+  imms : Int,
+) -> Int {
+  (sfbit(sf) << 31) |
+  ((opc & 3) << 29) |
+  (0x24 << 23) |
+  ((n & 1) << 22) |
+  ((immr & 0x3F) << 16) |
+  ((imms & 0x3F) << 10) |
+  (r5(rn) << 5) |
+  r5(rd)
 }
 
 ///|
@@ -724,6 +785,11 @@ pub fn enc_scvtf_s_x(rd : Int, rn : Int) -> Int {
 ///|
 pub fn enc_fcvt_s_d(rd : Int, rn : Int) -> Int {
   0x1E624000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fmov_s(rd : Int, rn : Int) -> Int {
+  0x1E204000 | (r5(rn) << 5) | r5(rd)
 }
 
 ///|

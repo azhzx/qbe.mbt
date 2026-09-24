@@ -93,6 +93,17 @@ test "arm64 enc: branches and misc" {
   check_word(enc_ret(), 0xD65F03C0L)
   check_word(enc_hint(34), 0xD503245FL)
   check_word(enc_nop(), 0xD503201FL)
+  check_word(enc_br(7), 0xD61F00E0L)
+  check_word(enc_blr(7), 0xD63F00E0L)
+  check_word(enc_movn_sf(false, 0, 0x8000, 1), 0x12B00000L)
+  check_word(enc_logimm_sf(false, 0, 0, 1, 0, 0, 7), 0x12001C20L)
+  check_word(enc_logimm_sf(true, 0, 0, 1, 1, 0, 7), 0x92401C20L)
+  check_word(enc_logimm_sf(false, 1, 0, 31, 0, 0, 39), 0x32009FE0L)
+  check_word(enc_logimm_sf(false, 2, 0, 1, 0, 0, 7), 0x52001C20L)
+  check_word(enc_add_ext(0, 31, 0), 0x8B2063E0L)
+  check_word(enc_add_ext(31, 31, 0), 0x8B2063FFL)
+  check_word(enc_sub_ext(31, 31, 0), 0xCB2063FFL)
+  check_word(enc_sub_ext(0, 31, 1), 0xCB2163E0L)
 }
 
 ///|

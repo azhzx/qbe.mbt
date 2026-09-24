@@ -18,6 +18,8 @@ pub const ARM64_RELOC_SUBTRACTOR : Int = 1
 
 pub const ARM64_RELOC_UNSIGNED : Int = 0
 
+pub fn enc_add_ext(Int, Int, Int) -> Int
+
 pub fn enc_add_imm(Int, Int, Int) -> Int
 
 pub fn enc_add_imm32(Int, Int, Int) -> Int
@@ -27,6 +29,8 @@ pub fn enc_add_imm_sf(Bool, Int, Int, Int) -> Int
 pub fn enc_add_reg(Int, Int, Int) -> Int
 
 pub fn enc_add_reg_sf(Bool, Int, Int, Int) -> Int
+
+pub fn enc_addsub_ext(Bool, Bool, Int, Int, Int) -> Int
 
 pub fn enc_adrp(Int, Int) -> Int
 
@@ -106,6 +110,8 @@ pub fn enc_fmov_d(Int, Int) -> Int
 
 pub fn enc_fmov_d_x(Int, Int) -> Int
 
+pub fn enc_fmov_s(Int, Int) -> Int
+
 pub fn enc_fmov_s_w(Int, Int) -> Int
 
 pub fn enc_fmov_w_s(Int, Int) -> Int
@@ -146,6 +152,8 @@ pub fn enc_logic(Int, Int, Int, Int) -> Int
 
 pub fn enc_logic_sf(Bool, Int, Int, Int, Int) -> Int
 
+pub fn enc_logimm_sf(Bool, Int, Int, Int, Int, Int, Int) -> Int
+
 pub fn enc_lsl(Int, Int, Int) -> Int
 
 pub fn enc_lsl_sf(Bool, Int, Int, Int) -> Int
@@ -163,6 +171,8 @@ pub fn enc_mov_reg_sf(Bool, Int, Int) -> Int
 pub fn enc_movk(Int, Int, Int) -> Int
 
 pub fn enc_movk_sf(Bool, Int, Int, Int) -> Int
+
+pub fn enc_movn_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_movz(Int, Int, Int) -> Int
 
@@ -205,6 +215,8 @@ pub fn enc_str_x(Int, Int, Int) -> Int
 pub fn enc_strb(Int, Int, Int) -> Int
 
 pub fn enc_strh(Int, Int, Int) -> Int
+
+pub fn enc_sub_ext(Int, Int, Int) -> Int
 
 pub fn enc_sub_imm(Int, Int, Int) -> Int
 

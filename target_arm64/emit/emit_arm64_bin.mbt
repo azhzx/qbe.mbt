@@ -148,6 +148,103 @@ fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
 // Materialize a constant into a register with movz/movk. The text emitter can
 // pick a single MOV bitmask-immediate; movz+movk is functionally identical and
 // is byte-identical whenever the constant fits one 16-bit chunk.
+fn arm64_bin_popcount(x : Int64) -> Int {
+  let mut v = x
+  let mut c = 0
+  while v != 0L {
+    v = v & (v - 1L)
+    c = c + 1
+  }
+  c
+}
+
+///|
+fn arm64_bin_ror(x : Int64, r : Int, esize : Int) -> Int64 {
+  // 1L << 64 wraps in MoonBit, so the full-width mask is explicit.
+  let mask = if esize == 64 { -1L } else { (1L << esize) - 1L }
+  if r == 0 {
+    x & mask
+  } else {
+    ((x >> r) | (x << (esize - r))) & mask
+  }
+}
+
+///|
+fn arm64_bin_log2(e : Int) -> Int {
+  match e {
+    2 => 1
+    4 => 2
+    8 => 3
+    16 => 4
+    32 => 5
+    64 => 6
+    _ => 0
+  }
+}
+
+///|
+// Encode a 32/64-bit value as an AArch64 bitmask immediate (N, immr, imms).
+fn arm64_bin_encode_logimm(value : Int64, wide : Bool) -> (Int, Int, Int)? {
+  let bits = if wide { 64 } else { 32 }
+  let mask = if wide { -1L } else { 0xFFFFFFFFL }
+  let v = value & mask
+  if v == 0L || v == mask {
+    return None
+  }
+  let mut esize = 2
+  while esize <= bits {
+    if bits % esize == 0 {
+      let emask = if esize == 64 { -1L } else { (1L << esize) - 1L }
+      let pattern = v & emask
+      let mut rep = 0L
+      let mut i = 0
+      while i < bits {
+        rep = rep | (pattern << i)
+        i = i + esize
+      }
+      if rep == v && pattern != 0L {
+        let ones = arm64_bin_popcount(pattern)
+        let contiguous = (1L << ones) - 1L
+        let mut r = 0
+        while r < esize {
+          if arm64_bin_ror(contiguous, r, esize) == pattern {
+            let d = arm64_bin_log2(esize)
+            let n = if esize == 64 { 1 } else { 0 }
+            let not_imms = (1 << d) | (((ones - 1) ^ -1) & ((1 << d) - 1))
+            let imms = (not_imms ^ -1) & 0x3F
+            return Some((n, r, imms))
+          }
+          r = r + 1
+        }
+      }
+    }
+    esize = esize * 2
+  }
+  None
+}
+
+///|
+// A value encodable as a single MOVZ/MOVN: (imm16, hw), or None.
+fn arm64_bin_movz_single(value : Int64, bits : Int) -> (Int, Int)? {
+  if value == 0L {
+    return Some((0, 0))
+  }
+  let mut hw = 0
+  while hw < bits / 16 {
+    let chunk = (value >> (16 * hw)) & 0xFFFFL
+    if chunk != 0L {
+      // Guard the last chunk: value >> 64 would wrap in MoonBit.
+      if hw + 1 < bits / 16 && value >> (16 * (hw + 1)) != 0L {
+        return None
+      }
+      return Some((chunk.to_int(), hw))
+    }
+    hw = hw + 1
+  }
+  None
+}
+
+///|
 fn arm64_bin_loadcon(
   st : Arm64BinState,
   con : @types.Con,
@@ -173,11 +270,35 @@ fn arm64_bin_loadcon(
   }
   let w = k.wide()
   let sf = w != 0
+  let bits = if sf { 64 } else { 32 }
+  let mask = if sf { -1L } else { 0xFFFFFFFFL }
   let mut n = con.raw_bits()
   if w == 0 {
     n = arm64_s32(n)
   }
   let rd = arm64_bin_reg(r)
+  let li = arm64_bin_encode_logimm(n, sf)
+  if n == -1L || li.is_some() {
+    // The text emitter prints one MOV for these; mirror GAS's encoding choice
+    // (MOVZ, else MOVN, else the ORR bitmask immediate).
+    match arm64_bin_movz_single(n, bits) {
+      Some(p) => arm64_bin_emit(st, @object.enc_movz_sf(sf, rd, p.0, p.1))
+      None =>
+        match arm64_bin_movz_single((n ^ -1L) & mask, bits) {
+          Some(p) => arm64_bin_emit(st, @object.enc_movn_sf(sf, rd, p.0, p.1))
+          None =>
+            match li {
+              Some(t) =>
+                arm64_bin_emit(
+                  st,
+                  @object.enc_logimm_sf(sf, 1, rd, 31, t.0, t.1, t.2),
+                )
+              None => raise @util.QbeError::Ice("arm64 bin: unencodable MOV")
+            }
+        }
+    }
+    return
+  }
   arm64_bin_emit(st, @object.enc_movz_sf(sf, rd, (n & 0xFFFFL).to_int(), 0))
   let mut sh = 16
   let mut m = n >> 16
@@ -309,15 +430,13 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
           ),
         )
       } else {
-        arm64_bin_emit(
-          st,
-          @object.enc_add_reg_sf(
-            sf,
-            rd,
-            arm64_bin_r(st, i.arg1),
-            arm64_bin_r(st, i.arg2),
-          ),
-        )
+        let rn = arm64_bin_r(st, i.arg1)
+        let rm = arm64_bin_r(st, i.arg2)
+        if rd == 31 || rn == 31 {
+          arm64_bin_emit(st, @object.enc_add_ext(rd, rn, rm))
+        } else {
+          arm64_bin_emit(st, @object.enc_add_reg_sf(sf, rd, rn, rm))
+        }
       }
     @types.Sub =>
       if is_d {
@@ -340,15 +459,13 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
           ),
         )
       } else {
-        arm64_bin_emit(
-          st,
-          @object.enc_sub_reg_sf(
-            sf,
-            rd,
-            arm64_bin_r(st, i.arg1),
-            arm64_bin_r(st, i.arg2),
-          ),
-        )
+        let rn = arm64_bin_r(st, i.arg1)
+        let rm = arm64_bin_r(st, i.arg2)
+        if rd == 31 || rn == 31 {
+          arm64_bin_emit(st, @object.enc_sub_ext(rd, rn, rm))
+        } else {
+          arm64_bin_emit(st, @object.enc_sub_reg_sf(sf, rd, rn, rm))
+        }
       }
     @types.Mul =>
       if is_d {
@@ -413,36 +530,37 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
       arm64_bin_emit(st, @object.enc_msub_sf(sf, rd, ip1, rm, rn))
     }
-    @types.And =>
-      arm64_bin_emit(
-        st,
-        @object.enc_and_reg_sf(
-          sf,
-          rd,
-          arm64_bin_r(st, i.arg1),
-          arm64_bin_r(st, i.arg2),
-        ),
-      )
-    @types.Or =>
-      arm64_bin_emit(
-        st,
-        @object.enc_orr_reg_sf(
-          sf,
-          rd,
-          arm64_bin_r(st, i.arg1),
-          arm64_bin_r(st, i.arg2),
-        ),
-      )
-    @types.Xor =>
-      arm64_bin_emit(
-        st,
-        @object.enc_eor_reg_sf(
-          sf,
-          rd,
-          arm64_bin_r(st, i.arg1),
-          arm64_bin_r(st, i.arg2),
-        ),
-      )
+    @types.And | @types.Or | @types.Xor => {
+      let rn = arm64_bin_r(st, i.arg1)
+      let opc = match i.op {
+        @types.And => 0
+        @types.Or => 1
+        _ => 2
+      }
+      if i.arg2.is_con() {
+        let v = st.fn_.cons[i.arg2.con_val()].raw_bits()
+        match arm64_bin_encode_logimm(v, sf) {
+          Some(t) =>
+            arm64_bin_emit(
+              st,
+              @object.enc_logimm_sf(sf, opc, rd, rn, t.0, t.1, t.2),
+            )
+          None =>
+            raise @util.QbeError::Ice(
+              "arm64 bin: unencodable logical immediate",
+            )
+        }
+      } else {
+        let rm = arm64_bin_r(st, i.arg2)
+        match i.op {
+          @types.And =>
+            arm64_bin_emit(st, @object.enc_and_reg_sf(sf, rd, rn, rm))
+          @types.Or =>
+            arm64_bin_emit(st, @object.enc_orr_reg_sf(sf, rd, rn, rm))
+          _ => arm64_bin_emit(st, @object.enc_eor_reg_sf(sf, rd, rn, rm))
+        }
+      }
+    }
     @types.Shl =>
       arm64_bin_emit(
         st,
@@ -532,6 +650,12 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       arm64_bin_emit(st, @object.enc_uxtb_sf(sf, rd, arm64_bin_r(st, i.arg1)))
     @types.Extuh =>
       arm64_bin_emit(st, @object.enc_uxth_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+    @types.Extuw =>
+      // Zero-extend word to long: a 32-bit mov clears the upper half.
+      arm64_bin_emit(
+        st,
+        @object.enc_mov_reg_sf(false, rd, arm64_bin_r(st, i.arg1)),
+      )
     @types.Exts =>
       arm64_bin_emit(st, @object.enc_fcvt_d_s(rd, arm64_bin_r(st, i.arg1)))
     @types.Truncd =>
@@ -629,12 +753,17 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     @types.Swap => {
       let r1 = arm64_bin_r(st, i.arg1)
       let r2 = arm64_bin_r(st, i.arg2)
-      let ip1 = @types.ARM64_IP1 - @types.ARM64_R0
       if is_d {
-        arm64_bin_emit(st, @object.enc_fmov_d(ip1, r1))
+        // The text emitter's float scratch is s31/d31, not the integer IP1.
+        arm64_bin_emit(st, @object.enc_fmov_d(31, r1))
         arm64_bin_emit(st, @object.enc_fmov_d(r1, r2))
-        arm64_bin_emit(st, @object.enc_fmov_d(r2, ip1))
+        arm64_bin_emit(st, @object.enc_fmov_d(r2, 31))
+      } else if is_s {
+        arm64_bin_emit(st, @object.enc_fmov_s(31, r1))
+        arm64_bin_emit(st, @object.enc_fmov_s(r1, r2))
+        arm64_bin_emit(st, @object.enc_fmov_s(r2, 31))
       } else {
+        let ip1 = @types.ARM64_IP1 - @types.ARM64_R0
         arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, ip1, r1))
         arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, r1, r2))
         arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, r2, ip1))
@@ -678,7 +807,13 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
           ),
         )
       } else if i.cls == @types.Ks {
-        raise @util.QbeError::Ice("arm64 bin: single-precision copy")
+        arm64_bin_emit(
+          st,
+          @object.enc_fmov_s(
+            arm64_bin_reg(i.to.tmp_val()),
+            arm64_bin_r(st, i.arg1),
+          ),
+        )
       } else {
         arm64_bin_emit(
           st,
@@ -725,7 +860,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
     @types.Salloc => {
       let rn = arm64_bin_r(st, i.arg1)
-      arm64_bin_emit(st, @object.enc_sub_reg(31, 31, rn))
+      arm64_bin_emit(st, @object.enc_sub_ext(31, 31, rn))
       if !i.to.is_none() {
         arm64_bin_emit(
           st,
@@ -744,7 +879,12 @@ fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
-      arm64_bin_emit(st, @object.enc_ldr_x(arm64_bin_reg(r), 29, o))
+      let rr = arm64_bin_reg(r)
+      if r >= @types.ARM64_V0 {
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 1, rr, 29, o))
+      } else {
+        arm64_bin_emit(st, @object.enc_ldr_x(rr, 29, o))
+      }
     }
   }
   if fn_.has_dynalloc {
@@ -795,7 +935,12 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
-      arm64_bin_emit(st, @object.enc_str_x(arm64_bin_reg(r), 29, o))
+      let rr = arm64_bin_reg(r)
+      if r >= @types.ARM64_V0 {
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 0, rr, 29, o))
+      } else {
+        arm64_bin_emit(st, @object.enc_str_x(rr, 29, o))
+      }
     }
   }
 

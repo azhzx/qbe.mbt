@@ -88,3 +88,10 @@ variadic calls are not emitted yet.
     moon test --target native -p run_asm      # FFI, route A, route B slice
     qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node
     moon test --target native -p object   # encoder vs clang, object layout
+
+## Route B differential
+
+`python tools/check_route_b.py` compares the machine code emitted by the
+self-contained object writer with clang's assembly of the route A text, for
+every non-`_` test under `test/`. It currently matches 322/406 (the rest are
+vararg and a few ABI/constant gaps).
