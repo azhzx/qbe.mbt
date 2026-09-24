@@ -32,6 +32,7 @@ pub(all) struct Fn {
   mut is_vararg : Bool
   mut has_dynalloc : Bool
   mut leaf : Bool // no call instructions (C fn->leaf)
+  mut salign : Int // alignment of the largest static alloc (C fn->salign)
 } derive(Debug)
 
 ///|
@@ -54,6 +55,7 @@ pub fn Fn::new(name : String) -> Fn {
     is_vararg: false,
     has_dynalloc: false,
     leaf: true,
+    salign: 0,
   }
 }
 

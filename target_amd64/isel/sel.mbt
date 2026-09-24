@@ -459,6 +459,8 @@ pub fn isel(
         sz = sz / 4L
         fn_.tmps[i.to.tmp_val()].slot = fn_.slot
         fn_.slot = fn_.slot + sz.to_int()
+        // C amd64/isel.c: salign = 2 + al - Oalloc.
+        fn_.salign = 2 + s
         start.ins[idx] = @types.Ins::new(
           @types.Nop,
           @types.Kx,

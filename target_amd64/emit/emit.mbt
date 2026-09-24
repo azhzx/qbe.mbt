@@ -554,6 +554,10 @@ fn framesz(st : EmitState) -> Int {
   }
   let mut f = st.fn_.slot
   f = (f + 3) & -4
+  // C sysv_framesz: a leaf using %rsp keeps the stack 16-byte aligned.
+  if f > 0 && st.fp == "%rsp" && st.fn_.salign == 4 {
+    f = f + 2
+  }
   4 * f + 8 * o + (if st.fn_.is_vararg { 176 } else { 0 })
 }
 
