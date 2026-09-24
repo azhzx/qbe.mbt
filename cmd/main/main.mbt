@@ -16,7 +16,7 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("debug", short='d'),
     @argparse.OptionArg("run"),
     @argparse.OptionArg("emit"),
-    @argparse.OptionArg("jit"),
+    @argparse.OptionArg("run-asm"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -220,28 +220,28 @@ async fn main {
     }
     _ => ()
   }
-  // --jit mode: compile to arm64 Mach-O assembly, load it and call `func`.
-  match parsed.values.get("jit") {
+  // --run-asm mode: compile to arm64 Mach-O assembly, load it and call `func`.
+  match parsed.values.get("run-asm") {
     Some(specs) if specs.length() > 0 => {
-      let (entry, jit_args) = match parse_run_spec(specs[0]) {
+      let (entry, asm_args) = match parse_run_spec(specs[0]) {
         Ok(spec) => spec
         Err(msg) => {
           @util.eprint("error: \{msg}\n")
           return
         }
       }
-      let a0 = if jit_args.length() == 0 {
+      let a0 = if asm_args.length() == 0 {
         0L
-      } else if jit_args.length() == 1 {
-        match jit_args[0] {
+      } else if asm_args.length() == 1 {
+        match asm_args[0] {
           @interp.VInt(v) => v
           _ => {
-            @util.eprint("error: --jit takes a single integer argument\n")
+            @util.eprint("error: --run-asm takes a single integer argument\n")
             return
           }
         }
       } else {
-        @util.eprint("error: --jit takes at most one argument\n")
+        @util.eprint("error: --run-asm takes at most one argument\n")
         return
       }
       for file in files {
@@ -253,15 +253,15 @@ async fn main {
         }
         match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
           Ok(asm) => {
-            let m = @jit.JitModule::load_shared(asm) catch {
+            let m = @run_asm.RunAsmModule::load_shared(asm) catch {
               e => {
-                @util.eprint("jit error: \{Repr(e)}\n")
+                @util.eprint("run-asm error: \{Repr(e)}\n")
                 continue
               }
             }
             let r = m.call1(entry, a0) catch {
               e => {
-                @util.eprint("jit error: \{Repr(e)}\n")
+                @util.eprint("run-asm error: \{Repr(e)}\n")
                 continue
               }
             }
@@ -282,9 +282,9 @@ async fn main {
         if asm == "" {
           continue
         }
-        let obj = @jit.assemble_object(asm) catch {
+        let obj = @run_asm.assemble_object(asm) catch {
           e => {
-            @util.eprint("jit error: \{Repr(e)}\n")
+            @util.eprint("run-asm error: \{Repr(e)}\n")
             continue
           }
         }
@@ -293,9 +293,9 @@ async fn main {
         } else {
           file + ".o"
         }
-        @jit.write_file(path, obj) catch {
+        @run_asm.write_file(path, obj) catch {
           e => {
-            @util.eprint("jit error: \{Repr(e)}\n")
+            @util.eprint("run-asm error: \{Repr(e)}\n")
             continue
           }
         }

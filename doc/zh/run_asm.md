@@ -3,21 +3,21 @@
 qbe.mbt 可以把 .ssa 变成机器码，目前支持 **macOS / aarch64**，有两条路径：
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # 生成 Mach-O .o
-    qbe --jit fib,10 demo/10_fibonacci.ssa           # 输出 55
+    qbe --run-asm fib,10 demo/10_fibonacci.ssa           # 输出 55
 
 两者都走同一条流水线（前端 -> arm64 ABI -> isel -> rega）和逐字节对齐的
 arm64 文本发射器。
 
 ## 路线 A - 借道系统工具链（默认）
 
-`jit/`（仅 native）调用系统工具链：
+`run_asm/`（仅 native）调用系统工具链：
 
 - `--emit obj`：把 Mach-O 汇编写到临时 `.s`，再 `clang -c` 得到 `.o`。
-- `--jit FUNC[,ARG]`：把 Mach-O 汇编写到临时 `.s`，`clang -dynamiclib` 生成
+- `--run-asm FUNC[,ARG]`：把 Mach-O 汇编写到临时 `.s`，`clang -dynamiclib` 生成
   dylib，`dlopen` 后用 `dlsym` 解析 `FUNC` 并调用。
 
-MoonBit 自身无法表达的部分放在 `jit/jit_stub.c`，通过类型化 FFI
-（`jit/ffi.mbt`）暴露：`mmap`/`mprotect` 可执行内存、临时文件、进程启动、
+MoonBit 自身无法表达的部分放在 `run_asm/run_asm_stub.c`，通过类型化 FFI
+（`run_asm/ffi.mbt`）暴露：`mmap`/`mprotect` 可执行内存、临时文件、进程启动、
 `dlopen`/`dlsym`、调用裸代码地址。
 
 优点：今天即可用、代码少、复用已验证的发射器。缺点：运行期依赖 Xcode/clang。
@@ -33,7 +33,7 @@ MoonBit 自身无法表达的部分放在 `jit/jit_stub.c`，通过类型化 FFI
   重定位。手工构造的目标文件可被 `ld` 链接并运行。
 - `object/arm64_enc.mbt` - 编码器切片（`add` 立即数、`movz`、`movk`、`ret`），
   与 `clang` 逐字节对拍通过。
-- `jit/module.mbt` - `JitExec`：`mmap` + 拷贝 + `mprotect` + 调用，内存中的
+- `run_asm/module.mbt` - `ExecBlock`：`mmap` + 拷贝 + `mprotect` + 调用，内存中的
   arm64 代码可直接执行。
 
 待完成：把文本发射器产生的全部 arm64 指令编码出来，并从同一份 post-`rega`
@@ -42,5 +42,5 @@ IR 驱动（用二进制发射器替代字符串发射器），以及 `adrp`/`ad
 
 ## 测试
 
-    moon test --target native -p jit      # FFI、路线 A、路线 B 切片
+    moon test --target native -p run_asm      # FFI、路线 A、路线 B 切片
     moon test --target native -p object   # 编码器对拍、目标文件布局

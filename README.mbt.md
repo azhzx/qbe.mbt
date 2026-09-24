@@ -14,7 +14,9 @@
 - IR Interpreter
 
 ## Plan
-- (TODO) Add JIT interface (copy-and-patch approach)
+- (WIP) JIT / object emission for macOS-aarch64: `--emit obj` and
+  `--run-asm FUNC[,ARG]` (toolchain backed, in `run_asm/`); a self-contained
+  Mach-O writer + arm64 encoder (`object/`) is in progress
 - (TODO) Add IR Debugger
 - (WIP) align with the frozen `vendor/qbe` reference (661ceb2):
   `data` segment and floating-point constant rodata output are byte-identical to

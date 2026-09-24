@@ -4,11 +4,11 @@ import {
 }
 
 options(
-  "native-stub": [ "jit_stub.c" ],
+  "native-stub": [ "run_asm_stub.c" ],
   targets: {
     "ffi.mbt": [ "native" ],
     "module.mbt": [ "native" ],
-    "jit_wbtest.mbt": [ "native" ],
+    "run_asm_wbtest.mbt": [ "native" ],
     "macho_link_wbtest.mbt": [ "native" ],
   },
 )

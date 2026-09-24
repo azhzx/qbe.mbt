@@ -38,12 +38,12 @@ test "object: hand-built Mach-O object links and runs" {
 }
 
 ///|
-test "jit: execute in-memory arm64 code (self-contained)" {
+test "run-asm: execute in-memory arm64 code (self-contained)" {
   let text = @object.words_to_bytes([
     @object.enc_add_imm(0, 0, 1),
     @object.enc_ret(),
   ])
-  let m = JitExec::load_text(text)
+  let m = ExecBlock::load_text(text)
   assert_eq(m.call1(41L), 42L)
   assert_eq(m.call1(0L), 1L)
 }
