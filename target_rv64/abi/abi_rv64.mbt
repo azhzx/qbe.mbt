@@ -201,7 +201,17 @@ fn rv64_fpstruct(
           c.nfp = c.nfp + 1
           off = off + f.len
         }
-        @types.Fb | @types.Fh | @types.Fw | @types.Fl => {
+        @types.Fb | @types.Fh | @types.Fw => {
+          let n = c.nfp + c.ngp
+          if n == 2 {
+            return -1
+          }
+          c.cls[n] = @types.Kw
+          c.off[n] = off
+          c.ngp = c.ngp + 1
+          off = off + f.len
+        }
+        @types.Fl => {
           let n = c.nfp + c.ngp
           if n == 2 {
             return -1
@@ -388,7 +398,7 @@ fn rv64_argsclass(
             tf = tf + 1
           }
         }
-        if c.nfp <= nfp {
+        if c.ngp <= ngp {
           ngp = ngp - c.ngp
           nfp = nfp - c.nfp
           gpi = gpi + c.ngp
@@ -573,11 +583,13 @@ fn rv64_selcall(
   }
 
   if has_retty {
+    // C rv64/abi.c: a struct-returning call always gets a caller-allocated
+    // blob, whether or not the result is returned via a hidden pointer.
+    rv64_stkblob(st, callins.to, cr.typ.unwrap())
+    let blob = st.buf[st.buf.length() - 1]
+    ignore(st.buf.remove(st.buf.length() - 1))
+    il.push(blob)
     if (cr.class_ & Cptr) != 0 {
-      rv64_stkblob(st, callins.to, cr.typ.unwrap())
-      let blob = st.buf[st.buf.length() - 1]
-      ignore(st.buf.remove(st.buf.length() - 1))
-      il.push(blob)
       rv64_emit(
         st,
         @types.Copy,

@@ -355,10 +355,11 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Extsw
     | @types.Extuw =>
       if i.arg1.is_con() {
-        let r = rv64_isel_newtmp(st, @types.Kl)
+        let k = argcls(i, 0)
+        let r = rv64_isel_newtmp(st, k)
         let i1 = @types.Ins::new(i.op, i.cls, i.to, r, i.arg2)
         sel_emit(st, i1)
-        emit(st, @types.Copy, @types.Kl, r, i.arg1, @types.Ref::none())
+        emit(st, @types.Copy, k, r, i.arg1, @types.Ref::none())
       } else {
         sel_emit(st, i)
       }

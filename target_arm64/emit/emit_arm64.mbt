@@ -37,6 +37,15 @@ let arm64_cond : Array[String] = [
 ]
 
 ///|
+// Negated branch-condition suffixes (C ctoa[c][1] in arm64/emit.c). These are
+// not the suffixes of the negated comparison code for float conditions, so
+// they are encoded separately.
+let arm64_cond_neg : Array[String] = [
+  "ne", "eq", "lt", "le", "gt", "ge", "cc", "ls", "hi", "cs", "ne", "lt", "le", "hi",
+  "pl", "eq", "vs", "vc",
+]
+
+///|
 // Negation of a comparison code (C cmpneg / cmptab[..][0]).
 fn arm64_cmpneg(c : Int) -> Int {
   match c {
@@ -597,21 +606,22 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
           lbl = false
         }
       _ => {
-        let mut c = b.jmp.kind.index() - @types.Jjfieq.index()
+        let c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c < 0 || c > 17 {
           raise @util.QbeError::Ice("unhandled jump")
         }
         let mut s1 = b.jmp.s1
         let mut s2 = b.jmp.s2
+        let mut neg = false
         if next == b.jmp.s2 {
           let t = s1
           s1 = s2
           s2 = t
         } else {
-          c = arm64_cmpneg(c)
+          neg = true
         }
         sb.write_string("\tb")
-        sb.write_string(arm64_cond[c])
+        sb.write_string(if neg { arm64_cond_neg[c] } else { arm64_cond[c] })
         sb.write_string("\t.L")
         sb.write_string((arm64_emit_id0[0] + fn_.blks[s2].rpo_id).to_string())
         sb.write_char('\n')

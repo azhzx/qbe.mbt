@@ -445,7 +445,7 @@ fn emit_xsel(st : EmitState, i : @types.Ins) -> Unit raise {
     emitf(st, "cmov\{amd64_cmov_s0[c]} %0, %=", i)
   } else {
     if !i.to.eq(i.arg1) {
-      emitf(st, "mov%k %0, %=", i)
+      emitf(st, "mov %0, %=", i)
     }
     emitf(st, "cmov\{amd64_cmov_s1[c]} %1, %=", i)
   }
@@ -549,8 +549,12 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
 ///|
 fn framesz(st : EmitState) -> Int {
   let mut o = 0
-  for r in @types.rclob {
-    o = o ^ ((st.fn_.reg >> r) & 1UL).to_int()
+  // C sysv_framesz: only non-leaf functions account for the callee-saved
+  // registers they push.
+  if !st.fn_.leaf {
+    for r in @types.rclob {
+      o = o ^ ((st.fn_.reg >> r) & 1UL).to_int()
+    }
   }
   let mut f = st.fn_.slot
   f = (f + 3) & -4
@@ -671,8 +675,8 @@ pub fn emitfn(
         }
         if use_fp {
           st.sb.write_string("\tleave\n")
-        } else if fs != 0 {
-          st.sb.write_string("\taddq $\{fs}, %rsp\n")
+        } else if st.fsz != 0 {
+          st.sb.write_string("\taddq $\{st.fsz}, %rsp\n")
         }
         st.sb.write_string("\tret\n")
       }
