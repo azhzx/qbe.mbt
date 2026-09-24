@@ -141,10 +141,11 @@ fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
   if s == -1 {
     16 + st.frame
   } else if s < 0 {
+    // C arm64/emit.c slot(): negative slots already carry a byte offset.
     if st.fn_.is_vararg {
-      16 + st.frame + 192 - (s + 2) * 8
+      16 + st.frame + 192 - (s + 2)
     } else {
-      16 + st.frame - (s + 2) * 8
+      16 + st.frame - (s + 2)
     }
   } else {
     16 + st.padding + 4 * s
