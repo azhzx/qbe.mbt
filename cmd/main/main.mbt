@@ -19,6 +19,7 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("run-asm"),
     @argparse.OptionArg("run-wasm"),
     @argparse.OptionArg("route"),
+    @argparse.OptionArg("out-dir"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -84,6 +85,32 @@ fn format_qbe_error(e : @util.QbeError, src_file? : String = "") -> String {
     }
     @util.QbeError::CompileError(msg) => "error: \{msg}"
     @util.QbeError::Ice(msg) => "ICE: \{msg}"
+  }
+}
+
+///|
+// The .o file name for \`file\`: directory stripped, ".ssa" dropped, ".o" added.
+fn obj_basename(file : String) -> String {
+  let mut base = file
+  let mut i = file.length() - 1
+  while i >= 0 {
+    if file[i] == '/' {
+      base = file[i + 1:].to_owned()
+      break
+    }
+    i = i - 1
+  }
+  if base.has_suffix(".ssa") {
+    base = base[:base.length() - 4].to_owned()
+  }
+  base + ".o"
+}
+
+///|
+// Create the output directory if it does not exist yet.
+fn ensure_dir(dir : String) -> Unit raise {
+  if dir != "" && !@fs.path_exists(dir) {
+    @fs.create_dir(dir)
   }
 }
 
@@ -158,6 +185,10 @@ async fn main {
     None => ()
   }
   let out_file = match parsed.values.get("output") {
+    Some(arr) if arr.length() > 0 => arr[0]
+    _ => ""
+  }
+  let out_dir = match parsed.values.get("out-dir") {
     Some(arr) if arr.length() > 0 => arr[0]
     _ => ""
   }
@@ -395,7 +426,16 @@ async fn main {
         let path = if out_file != "" && out_file != "-" {
           out_file
         } else {
-          file + ".o"
+          // Default to a build directory so the source tree stays clean;
+          // --out-dir overrides it. -o still names an exact file.
+          let dir = if out_dir != "" { out_dir } else { ".qbe_build" }
+          ensure_dir(dir) catch {
+            e => {
+              @util.eprint("run-asm error: \{e}\n")
+              continue
+            }
+          }
+          dir + "/" + obj_basename(file)
         }
         @run_asm.write_file(path, obj) catch {
           e => {

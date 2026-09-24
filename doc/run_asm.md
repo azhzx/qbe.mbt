@@ -20,10 +20,12 @@ Build once (`moon build --target native`), then:
     $M --run-asm global_demo demo/06_memory.ssa      # 1
     $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295 (-1 as u32)
 
-    # Emit a Mach-O object and link it with ld/clang.
-    $M --emit obj -o fib.o demo/10_fibonacci.ssa
+    # Emit a Mach-O object. Without -o it goes to .qbe_build/<name>.o.
+    $M --emit obj demo/10_fibonacci.ssa                     # .qbe_build/10_fibonacci.o
+    $M --emit obj --out-dir build demo/10_fibonacci.ssa     # build/10_fibonacci.o
+    $M --emit obj -o fib.o demo/10_fibonacci.ssa            # exact path
     printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
-    clang -o fib fib.o drv.c && ./fib; echo $?       # 0
+    clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
 `--run-asm` needs macOS/aarch64 (it executes the code); `--emit obj` is pure
 MoonBit and works on any host. `--route a` switches both back to the

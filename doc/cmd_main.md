@@ -28,6 +28,8 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     --route {a,b}
                 backend for arm64 --emit obj / --run-asm:
                 b = self-contained (default), a = clang-backed
+    --out-dir DIR
+                directory for --emit obj output (default: .qbe_build)
 ```
 
 ### `-t` Target Selection
@@ -58,6 +60,8 @@ toolchain (route B, default):
 
 ```
 moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
+moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
 ```
