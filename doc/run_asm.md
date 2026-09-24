@@ -1,77 +1,85 @@
 # JIT and object emission
 
-qbe.mbt can turn a .ssa file into machine code two ways, currently for
-**macOS / aarch64**:
+qbe.mbt turns a `.ssa` file into arm64 machine code for **macOS / aarch64**
+without any toolchain (route B, the default), or by borrowing clang
+(route A, `--route a`):
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # Mach-O object file
-    qbe --run-asm fib,10 demo/10_fibonacci.ssa           # 55
+    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 55
 
-Both go through the same pipeline (front-end -> arm64 ABI -> isel -> rega)
-and the byte-exact arm64 text emitter.
+## Trying it
 
-## Route A - toolchain backed (default)
+Build once (`moon build --target native`), then:
 
-`run_asm/` (native only) drives the system toolchain:
+    M=./_build/native/debug/build/cmd/main/main.exe
 
-- `--emit obj` writes the Mach-O assembly to a temp `.s` and runs `clang -c`
-  to produce the `.o`.
-- `--run-asm FUNC[,ARG]` writes the Mach-O assembly to a temp `.s`, runs
-  `clang -dynamiclib`, `dlopen`s it, resolves `FUNC` with `dlsym` and calls it.
+    # Run a function in-process: mmap + mprotect + call. No clang, no linker.
+    $M --run-asm fib,10 demo/10_fibonacci.ssa        # 55
+    $M --run-asm sum_to,100 demo/03_loop_phi.ssa     # 5050
+    $M --run-asm fact,10 demo/04_recursion.ssa       # 3628800
+    $M --run-asm global_demo demo/06_memory.ssa      # 1
+    $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295 (-1 as u32)
 
-The pieces MoonBit cannot express itself live in `run_asm/run_asm_stub.c` behind a
-typed FFI (`run_asm/ffi.mbt`): `mmap`/`mprotect` executable memory, temp files,
-process spawn, `dlopen`/`dlsym`, and calling a code address.
+    # Emit a Mach-O object and link it with ld/clang.
+    $M --emit obj -o fib.o demo/10_fibonacci.ssa
+    printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
+    clang -o fib fib.o drv.c && ./fib; echo $?       # 0
 
-Pros: works today, tiny, reuses the verified emitter. Cons: needs Xcode/clang
-at run time.
+`--run-asm` needs macOS/aarch64 (it executes the code); `--emit obj` is pure
+MoonBit and works on any host. `--route a` switches both back to the
+clang-backed route A.
 
-## Route B - self contained (in progress)
+## Route B - self contained (default)
 
-Goal (Cranelift style): emit the object and run the code entirely in process,
-without a toolchain.
-
-Done and validated:
-
-- `object/macho.mbt` - a Mach-O (`MH_OBJECT`, arm64) writer: header,
-  `LC_SEGMENT_64` with sections, `LC_BUILD_VERSION`, `LC_SYMTAB`, `nlist_64`
-  and external relocations. A hand-built object links with `ld` and runs.
-- `object/arm64_enc.mbt` - an instruction encoder slice (`add` immediate,
-  `movz`, `movk`, `ret`), validated byte-for-byte against `clang`.
-- `run_asm/module.mbt` - `ExecBlock`: `mmap` + copy + `mprotect` + call, so
-  in-memory arm64 code executes.
-
-Route B progress: `target_arm64/emit/emit_arm64_bin.mbt` now drives the same
-post-`rega` IR and emits raw arm64 words (prologue/epilogue, integer and double
-ALU, loads/stores, comparisons via `cset`, constant materialization and local
-branch fixups). It is byte-for-byte identical to clang's encoding of the text
-emitter for the `add` and loop/branch cases, and a native test runs the emitted
-code in `ExecBlock` (`sum_to`).
+`target_arm64/emit/emit_arm64_bin.mbt` drives the same post-`rega` IR and
+emits raw arm64 words directly: prologue/epilogue, integer and double ALU,
+loads/stores, comparisons via `cset`, constant materialization
+(`MOVZ`/`MOVN`/`ORR` bitmask), single-precision ops, FP conversions and the
+floating-point rodata pool (`Lfp0`, `Lfp1`, ...), parallel-copy `swap`, and
+local branch fixups.
 
 The module emitter (`emit_arm64_bin_module`) links all functions into one text
 blob, patches intra-module `bl` calls, lays out the `data` section in the same
-image and patches global `adrp`/`add` addresses. `ExecBlock::load_module` maps
-the image and makes only the code region executable, so globals stay writable.
-Native tests cover recursion (`fact`), cross-function calls and global-data
-read/write.
+image and patches global `adrp`/`add` addresses. `ExecBlock::load_module`
+maps the image and marks only the code region executable (RX), so globals stay
+writable (RW).
 
-Also supported: parallel-copy `swap`, single-precision arithmetic, FP
-conversions and the floating-point rodata pool (`Lfp0`, `Lfp1`, ...).
+`target_arm64/emit/emit_arm64_obj.mbt` builds a multi-section Mach-O object
+(`__text` / `__data` / `__TEXT,__const`) with the four relocation kinds:
+`PAGE21`/`PAGEOFF12` (global addresses), `BRANCH26` (calls) and `UNSIGNED`
+(data pointers).
 
-Object emission (`emit_arm64_object`) builds a multi-section Mach-O object with
-real relocations: `BRANCH26` for calls, `PAGE21`/`PAGEOFF12` for global
-addresses, over `__text`/`__data`/`__TEXT,__const`. `--emit obj` writes it and
-it links with clang/ld (a native test links and runs one).
+`object/macho.mbt` writes the object; `object/arm64_enc.mbt` holds the
+instruction encoders, each validated byte-for-byte against `clang`.
+`run_asm/run_asm_stub.c` supplies the pieces MoonBit cannot express itself
+(`mmap`/`mprotect`, temp files, process spawn, `dlopen`/`dlsym`, calling a
+code address) behind a typed FFI (`run_asm/ffi.mbt`).
 
-`--run-asm` executes the same module image directly (no clang).
+## Route A - toolchain backed (fallback, `--route a`)
 
-Both are now **route B by default**; `--route a` selects the older clang-backed
-route A. `python tools/check_route_b.py` reports 336/336 compilable arm64
-cases byte-identical to clang (the other 70 `test/` files are inputs that the
-frozen reference QBE rejects as well, so there is no assembly to compare).
+`run_asm/` (native only) writes the Mach-O assembly to a temp `.s` and runs
+`clang -c` for `--emit obj`, or `clang -dynamiclib` + `dlopen`/`dlsym` for
+`--run-asm`. It needs Xcode/clang at run time and exists mainly as a reference
+and as a fallback.
 
-Remaining: external symbols in the JIT (libc calls need `dlsym`/`BRANCH26`
-resolution) and full support for the QBE vararg ABI.
+## Verification
 
+    moon test --target native          # 315 unit/whitebox tests
+    python tools/check_route_b.py      # 336/336 compilable arm64 cases match clang
+
+`tools/check_route_b.py` compares route B's Mach-O `__text` against clang's
+assembly of the route A text for every non-`_` file under `test/`. The other
+70 files are rejected identically by the frozen reference QBE, so there is no
+assembly to compare. A native test also links a route-B object and runs it, and
+another dereferences a `$r -> $t` data pointer to exercise `UNSIGNED`.
+
+## Limitations
+
+- JIT: external symbols (libc `printf` et al.) are not resolved yet, so
+  `--run-asm` is limited to self-contained functions.
+- The QBE vararg ABI is not implemented (vararg prologues are skipped).
+- `--emit obj` writes `__text`/`__data`/`__TEXT,__const`; `__bss` and
+  `__cstring` are folded into `__data`.
 
 ## Running wasm (`--run-wasm`)
 
@@ -88,13 +96,6 @@ variadic calls are not emitted yet.
 
 ## Tests
 
-    moon test --target native -p run_asm      # FFI, route A, route B slice
+    moon test --target native -p run_asm      # FFI, route A, route B, object linkage
+    moon test --target native -p object       # encoder vs clang, object layout
     qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node
-    moon test --target native -p object   # encoder vs clang, object layout
-
-## Route B differential
-
-`python tools/check_route_b.py` compares the machine code emitted by the
-self-contained object writer with clang's assembly of the route A text, for
-every non-`_` test under `test/`. It currently matches 322/406 (the rest are
-vararg and a few ABI/constant gaps).
