@@ -197,6 +197,7 @@ let arm64_omap : Array[(Int, Int, String)] = [
   (@types.Extsw.index(), ARM64_KI, "sxtw %L=, %W0"),
   (@types.Extuw.index(), ARM64_KI, "mov %W=, %W0"),
   (@types.Exts.index(), @types.Kd.code(), "fcvt %=, %S0"),
+  (@types.Truncd.index(), @types.Ks.code(), "fcvt %=, %D0"),
   (@types.Cast.index(), @types.Kw.code(), "fmov %=, %S0"),
   (@types.Cast.index(), @types.Kl.code(), "fmov %=, %D0"),
   (@types.Cast.index(), @types.Ks.code(), "fmov %=, %W0"),
