@@ -50,3 +50,13 @@
     assembly: .text/.balign/endbr64+hint#34/.p2align/.type/.size/GNU-stack,
     leaf-function %rsp framing, reference fp-constant rodata layout, quoted
     local symbols; amd64 263/336, arm64 252/336, rv64 224/336 byte-identical
+2026.9.24: v0.11.0
+    complete byte-for-byte alignment with vendor/qbe (661ceb2) on amd64/arm64/rv64
+    debug dumps: 12096/12096 (12 flags x 3 targets); emitted assembly:
+    1008/1008 (336 compilable tests x 3 targets) byte-identical
+    rega: live-out registers mapped before allocation; section-3 bshas guard
+    amd64: xsel "mov" suffix, non-leaf frame parity, leaf epilogue addq,
+    shift-argument fixarg; arm64: ctoa negated table, Cptr call cty bit;
+    rv64: argsclass ngp check, fpstruct field classes, struct-return blobs,
+    extension constant class, alloc slots grouped by alignment class
+    loadopt: stable phi ordering; CI now gates every debug flag and assembly

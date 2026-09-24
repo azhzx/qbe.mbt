@@ -117,6 +117,9 @@
 
 每个带 `-d*` 标志的阶段在调试模式下会输出 IL 形式的快照到 stderr，参考 [cmd_main.md](cmd_main.md) 的标志表。
 
+三个差分目标（`amd64_sysv`、`arm64`、`rv64`）的每个调试标志输出与
+生成的汇编，均与冻结参考 `vendor/qbe`（661ceb2）逐字节一致。
+
 ## 项目相关
 
 - 总体介绍：[README.mbt.md](../README.mbt.md)

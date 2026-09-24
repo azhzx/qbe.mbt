@@ -121,6 +121,10 @@ Packages are listed in compilation pipeline order:
 
 Each stage with a `-d*` flag outputs an IL-form snapshot to stderr in debug mode; see [cmd_main.md](cmd_main.md) for the flag table.
 
+All three differential targets (`amd64_sysv`, `arm64`, `rv64`) are
+byte-for-byte identical to the frozen `vendor/qbe` reference (661ceb2) for
+every debug flag and for the emitted assembly.
+
 ## Project Links
 
 - Overview: [README.mbt.md](../README.mbt.md)
