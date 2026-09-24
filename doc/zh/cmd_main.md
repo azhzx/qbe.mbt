@@ -26,6 +26,8 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     --route {a,b}
                 arm64 的 --emit obj / --run-asm 后端：
                 b = 自包含（默认），a = 借道 clang
+    --out-dir DIR
+                --emit obj 的输出目录（默认 .qbe_build）
 ```
 
 ### `-t` 目标选择
@@ -51,6 +53,8 @@ moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 
 ```
 moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
+moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
 ```

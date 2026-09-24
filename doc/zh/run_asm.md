@@ -19,10 +19,12 @@ qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**�
     $M --run-asm global_demo demo/06_memory.ssa      # 1
     $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295（-1 的 u32）
 
-    # 产出 Mach-O 目标文件，再用 ld/clang 链接
-    $M --emit obj -o fib.o demo/10_fibonacci.ssa
+    # 产出 Mach-O 目标文件；不加 -o 时默认写到 .qbe_build/<名字>.o
+    $M --emit obj demo/10_fibonacci.ssa                     # .qbe_build/10_fibonacci.o
+    $M --emit obj --out-dir build demo/10_fibonacci.ssa     # build/10_fibonacci.o
+    $M --emit obj -o fib.o demo/10_fibonacci.ssa            # 指定精确路径
     printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
-    clang -o fib fib.o drv.c && ./fib; echo $?       # 0
+    clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
 `--run-asm` 需要 macOS/aarch64（要真正执行代码）；`--emit obj` 是纯 MoonBit，
 任何平台都能跑。`--route a` 可把两者切回 clang 路线。
