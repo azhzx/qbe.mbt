@@ -76,6 +76,28 @@ pub struct ExecBlock {
 }
 
 ///|
+// Copy a route-B module image into memory: the first code_bytes are made
+// executable (RX) while any global data that follows stays writable (RW).
+pub fn ExecBlock::load_module(
+  image : Bytes,
+  code_bytes : Int,
+) -> ExecBlock raise {
+  let n = image.length()
+  if n == 0 {
+    abort("run-asm: empty module image")
+  }
+  let addr = mbt_run_asm_alloc(n)
+  if addr == 0L {
+    abort("run-asm: mmap failed")
+  }
+  mbt_run_asm_write_bytes(addr, 0, image)
+  if mbt_run_asm_protect(addr, code_bytes) != 0 {
+    abort("run-asm: mprotect failed")
+  }
+  { addr, size: n, }
+}
+
+///|
 // Copy arm64 code into executable memory.
 pub fn ExecBlock::load_text(text : Bytes) -> ExecBlock raise {
   let n = text.length()
@@ -97,6 +119,17 @@ pub fn ExecBlock::load_text(text : Bytes) -> ExecBlock raise {
 // Call a one-argument i64 function in this code block.
 pub fn ExecBlock::call1(self : ExecBlock, a0 : Int64) -> Int64 raise {
   mbt_run_asm_call_i64_1(self.addr, a0)
+}
+
+///|
+// Call a one-argument i64 function at a word offset into this code block (the
+// offset used by Arm64BinModule::fns).
+pub fn ExecBlock::call1_at(
+  self : ExecBlock,
+  off : Int,
+  a0 : Int64,
+) -> Int64 raise {
+  mbt_run_asm_call_i64_1(self.addr + off.to_int64() * 4L, a0)
 }
 
 ///|

@@ -541,6 +541,25 @@ pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
 }
 
 ///|
+// Route B (self-contained), linked: all functions in one contiguous text blob
+// with intra-module direct calls patched. This is what the in-memory JIT and
+// the future Mach-O writer consume.
+pub fn compile_arm64_bin_module(
+  text : String,
+) -> @emit_arm64.Arm64BinModule raise {
+  @types.init_arm64_target()
+  let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), false, out)
+  }
+  @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, false)
+}
+
+///|
+pub type Arm64BinModule = @emit_arm64.Arm64BinModule
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".

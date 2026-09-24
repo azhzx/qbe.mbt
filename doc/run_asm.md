@@ -47,9 +47,16 @@ branch fixups). It is byte-for-byte identical to clang's encoding of the text
 emitter for the `add` and loop/branch cases, and a native test runs the emitted
 code in `ExecBlock` (`sum_to`).
 
-Remaining: calls and global addresses (with `BRANCH26`/`PAGE21`/`PAGEOFF12`
-relocations), float constants and single precision, multi-section `.o` output,
-and wiring `--emit obj` / `--run-asm` onto this path.
+The module emitter (`emit_arm64_bin_module`) links all functions into one text
+blob, patches intra-module `bl` calls, lays out the `data` section in the same
+image and patches global `adrp`/`add` addresses. `ExecBlock::load_module` maps
+the image and makes only the code region executable, so globals stay writable.
+Native tests cover recursion (`fact`), cross-function calls and global-data
+read/write.
+
+Remaining: external symbols (libc calls, with `BRANCH26`/GOT relocations),
+float constants and single precision, multi-section `.o` output, and wiring
+`--emit obj` / `--run-asm` onto this path.
 
 
 ## Running wasm (`--run-wasm`)

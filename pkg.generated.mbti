@@ -3,6 +3,7 @@ package "azhzx/qbe"
 
 import {
   "azhzx/qbe/interp",
+  "azhzx/qbe/target_arm64/emit",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }
@@ -13,6 +14,8 @@ pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
 pub fn compile_arm64(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_arm64_bin(String) -> Array[Array[Int]] raise
+
+pub fn compile_arm64_bin_module(String) -> @emit.Arm64BinModule raise
 
 pub fn compile_arm64_debug(String, String) -> Result[String, @util.QbeError]
 
@@ -48,6 +51,8 @@ pub(all) enum Target {
 }
 
 // Type aliases
+pub using @emit {type Arm64BinModule}
+
 pub using @types {type BSet}
 
 pub using @types {type Blk}

@@ -24,6 +24,11 @@ priv struct Arm64BinState {
   words : Array[Int]
   labels : Map[Int, Int]
   fixups : Array[BinFix]
+  // Direct calls: (word index of the bl, callee symbol name). Resolved either
+  // by the module emitter (intra-module) or turned into relocations later.
+  calls : Array[(Int, String)]
+  // Global-address fixups: (adrp word, add word, dest reg, symbol, byte offset).
+  addrs : Array[(Int, Int, Int, String, Int)]
   mut frame : Int
   mut padding : Int
 }
@@ -41,6 +46,8 @@ fn arm64_bin_new(
     words: [],
     labels: Map([]),
     fixups: [],
+    calls: [],
+    addrs: [],
     frame: 0,
     padding: 0,
   }
@@ -148,9 +155,21 @@ fn arm64_bin_loadcon(
   k : @types.Class,
 ) -> Unit raise {
   if con.kind == @types.CAddr {
-    raise @util.QbeError::Ice(
-      "arm64 bin: global address constants not supported yet",
+    // adrp/add with a placeholder page/offset; the module emitter patches both
+    // once the data section is laid out.
+    let rd = arm64_bin_reg(r)
+    st.addrs.push(
+      (
+        st.words.length(),
+        st.words.length() + 1,
+        rd,
+        st.interner.get(con.label),
+        con.bits.i.to_int(),
+      ),
     )
+    st.words.push(@object.enc_adrp(rd, 0))
+    st.words.push(@object.enc_add_imm(rd, rd, 0))
+    return
   }
   let w = k.wide()
   let sf = w != 0
@@ -559,7 +578,20 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         raise @util.QbeError::Ice("arm64 bin: invalid address")
       }
     @types.Call | @types.Vacall =>
-      raise @util.QbeError::Ice("arm64 bin: calls not supported yet")
+      // The ABI pass has already placed the arguments in x0..x7, so a direct
+      // call is just bl; the result is left in x0 for later copies.
+      if i.arg1.is_con() {
+        let c = st.fn_.cons[i.arg1.con_val()]
+        if c.kind == @types.CAddr && !c.is_local {
+          st.calls.push((st.words.length(), st.interner.get(c.label)))
+          st.words.push(@object.enc_bl(0))
+        } else {
+          raise @util.QbeError::Ice("arm64 bin: unsupported call target")
+        }
+      } else {
+        // Indirect call through a register.
+        arm64_bin_emit(st, @object.enc_blr(arm64_bin_r(st, i.arg1)))
+      }
     @types.Salloc => {
       let rn = arm64_bin_r(st, i.arg1)
       arm64_bin_emit(st, @object.enc_sub_reg(31, 31, rn))
@@ -694,13 +726,253 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
 }
 
 ///|
-// Emit one function as a flat array of 32-bit instruction words.
+// Emit one function as words plus its unresolved direct calls.
+pub fn emit_arm64_bin_fn_ex(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  apple : Bool,
+) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise {
+  let st = arm64_bin_new(fn_, interner, apple)
+  arm64_binfn(st)
+  (st.words, st.calls, st.addrs)
+}
+
+///|
+// Emit one function as a flat array of 32-bit instruction words. Only valid for
+// functions without direct calls (use the module emitter otherwise).
 pub fn emit_arm64_bin_fn(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
 ) -> Array[Int] raise {
-  let st = arm64_bin_new(fn_, interner, apple)
-  arm64_binfn(st)
-  st.words
+  let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+  if calls.length() > 0 || addrs.length() > 0 {
+    raise @util.QbeError::Ice(
+      "arm64 bin: function needs module linking; use emit_arm64_bin_module",
+    )
+  }
+  words
+}
+
+///|
+// Little-endian write of the low n bytes of v.
+fn arm64_bin_put_le(buf : Array[Int], off : Int, v : Int64, n : Int) -> Unit {
+  let mut x = v
+  for i in 0..<n {
+    buf[off + i] = (x & 0xFFL).to_int()
+    x = x >> 8
+  }
+}
+
+///|
+fn arm64_bin_align_up(v : Int, a : Int) -> Int {
+  if a <= 1 {
+    v
+  } else {
+    (v + a - 1) / a * a
+  }
+}
+
+///|
+fn arm64_bin_dat_width(kind : @types.DatKind) -> Int {
+  match kind {
+    @types.DB => 1
+    @types.DH => 2
+    @types.DW => 4
+    @types.DL => 8
+    _ => 0
+  }
+}
+
+///|
+fn arm64_bin_dat_size(d : @types.Dat) -> Int {
+  if d.is_str {
+    @utf8.encode(d.str).length()
+  } else {
+    arm64_bin_dat_width(d.kind)
+  }
+}
+
+///|
+// Lay the module's data items out as a flat byte image, returning the address
+// of every named global (byte offset within the image).
+fn arm64_bin_layout_data(
+  datas : Array[@types.Dat],
+) -> (Array[(String, Int)], Array[Int]) {
+  let addr_of : Array[(String, Int)] = []
+  let mut off = 0
+  let mut align = 8
+  for d in datas {
+    match d.kind {
+      @types.DStart => align = 8
+      @types.DAlign => align = d.num.to_int()
+      @types.DName => {
+        off = arm64_bin_align_up(off, align)
+        addr_of.push((d.str, off))
+      }
+      @types.DEnd => ()
+      @types.DZ => off = off + d.num.to_int()
+      _ => off = off + arm64_bin_dat_size(d)
+    }
+  }
+  let buf : Array[Int] = Array::make(off, 0)
+  let mut cur = 0
+  let mut align = 8
+  for d in datas {
+    match d.kind {
+      @types.DStart => align = 8
+      @types.DAlign => align = d.num.to_int()
+      @types.DName => cur = arm64_bin_align_up(cur, align)
+      @types.DEnd => ()
+      @types.DZ => cur = cur + d.num.to_int()
+      _ => {
+        let w = arm64_bin_dat_size(d)
+        if d.is_str {
+          let b = @utf8.encode(d.str)
+          for i in 0..<b.length() {
+            buf[cur + i] = b[i].to_int()
+          }
+        } else if d.is_ref {
+          let mut base = 0
+          for p in addr_of {
+            if p.0 == d.ref_name {
+              base = p.1
+            }
+          }
+          arm64_bin_put_le(
+            buf,
+            cur,
+            (base + d.ref_offset.to_int()).to_int64(),
+            w,
+          )
+        } else {
+          let mut v = d.num
+          if d.num == 0L && d.flts != 0.0 {
+            v = d.flts.reinterpret_as_uint().to_int64()
+          } else if d.num == 0L && d.fltd != 0.0 {
+            v = d.fltd.reinterpret_as_int64()
+          }
+          arm64_bin_put_le(buf, cur, v, w)
+        }
+        cur = cur + w
+      }
+    }
+  }
+  (addr_of, buf)
+}
+
+///|
+// A linked module image: text words plus a data byte image with every
+// intra-module direct call and global address already patched.
+pub(all) struct Arm64BinModule {
+  words : Array[Int]
+  data : Array[Int] // data bytes
+  // function name -> word offset within the text
+  fns : Array[(String, Int)]
+  // global name -> byte offset within the data image
+  datas : Array[(String, Int)]
+  exports : Array[String]
+  // Byte length of the executable code region. When the module has data this is
+  // page-aligned so the data can stay writable while the code is mprotected RX.
+  code_bytes : Int
+}
+
+///|
+// The executable image: text bytes, padded to 16, then the data bytes. Global
+// addresses were computed against exactly this layout.
+pub fn Arm64BinModule::image(self : Arm64BinModule) -> Bytes {
+  let a : Array[Byte] = []
+  for w in self.words {
+    a.push((w & 0xFF).to_byte())
+    a.push(((w >> 8) & 0xFF).to_byte())
+    a.push(((w >> 16) & 0xFF).to_byte())
+    a.push(((w >> 24) & 0xFF).to_byte())
+  }
+  while a.length() < self.code_bytes {
+    a.push((0).to_byte())
+  }
+  for b in self.data {
+    a.push(b.to_byte())
+  }
+  Bytes::from_array(a[:])
+}
+
+///|
+pub fn emit_arm64_bin_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  interner : @util.Interner,
+  apple : Bool,
+) -> Arm64BinModule raise {
+  arm64_emit_reset()
+  let words : Array[Int] = []
+  let fns : Array[(String, Int)] = []
+  let pending : Array[(Int, String)] = []
+  let pending_addrs : Array[(Int, Int, Int, String, Int)] = []
+  for fn_ in funcs {
+    let (w, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+    let off = words.length()
+    fns.push((fn_.name, off))
+    for x in w {
+      words.push(x)
+    }
+    for c in calls {
+      pending.push((off + c.0, c.1))
+    }
+    for a in addrs {
+      pending_addrs.push((off + a.0, off + a.1, a.2, a.3, a.4))
+    }
+  }
+  for c in pending {
+    let mut target = -1
+    for f in fns {
+      if f.0 == c.1 {
+        target = f.1
+      }
+    }
+    if target < 0 {
+      raise @util.QbeError::Ice("arm64 bin: call to undefined symbol " + c.1)
+    }
+    words[c.0] = @object.enc_bl((target - c.0) * 4)
+  }
+  let (datas_map, data_bytes) = arm64_bin_layout_data(datas)
+  let text_bytes = words.length() * 4
+  // Keep the data region in its own page(s): mprotect() protects whole pages,
+  // and the smallest page size the JIT might run on is 4KB while macOS/aarch64
+  // uses 16KB, so align well above both.
+  let code_bytes = if data_bytes.length() > 0 {
+    arm64_bin_align_up(text_bytes, 65536)
+  } else {
+    text_bytes
+  }
+  let data_start = code_bytes
+  for a in pending_addrs {
+    let mut base = -1
+    for p in datas_map {
+      if p.0 == a.3 {
+        base = p.1
+      }
+    }
+    if base < 0 {
+      raise @util.QbeError::Ice("arm64 bin: undefined data symbol " + a.3)
+    }
+    let target = data_start + base + a.4
+    let pc = a.0 * 4
+    words[a.0] = @object.enc_adrp(a.2, (target >> 12) - (pc >> 12))
+    words[a.1] = @object.enc_add_imm(a.2, a.2, target & 0xFFF)
+  }
+  let exports : Array[String] = []
+  for fn_ in funcs {
+    if fn_.is_export {
+      exports.push(fn_.name)
+    }
+  }
+  Arm64BinModule::{
+    words,
+    data: data_bytes,
+    fns,
+    datas: datas_map,
+    exports,
+    code_bytes,
+  }
 }

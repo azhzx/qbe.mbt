@@ -106,3 +106,105 @@ test "route B: self-contained binary sum_to runs" {
   assert_eq(m.call1(100L), 5050L)
   assert_eq(m.call1(1000L), 500500L)
 }
+
+///|
+// route B: recursion and cross-function calls in one linked binary module.
+test "route B: binary module links recursion and cross-function calls" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|export
+    #|function w $fact(w %n) {
+    #|@start
+    #|  %c =w csgtw %n, 1
+    #|  jnz %c, @rec, @base
+    #|@base
+    #|  ret 1
+    #|@rec
+    #|  %m =w sub %n, 1
+    #|  %r =w call $fact(w %m)
+    #|  %res =w mul %n, %r
+    #|  ret %res
+    #|}
+    #|
+    #|function w $twice(w %x) {
+    #|@start
+    #|  %y =w mul %x, 2
+    #|  ret %y
+    #|}
+    #|
+    #|export
+    #|function w $plus_one(w %x) {
+    #|@start
+    #|  %t =w call $twice(w %x)
+    #|  %r =w add %t, 1
+    #|  ret %r
+    #|}
+    #|
+  let m = @qbe.compile_arm64_bin_module(src) catch {
+    _ => abort("route B module compile failed")
+  }
+  let blk = ExecBlock::load_text(@object.words_to_bytes(m.words))
+  let mut fact_off = 0
+  let mut plus_off = 0
+  for f in m.fns {
+    if f.0 == "fact" {
+      fact_off = f.1
+    }
+    if f.0 == "plus_one" {
+      plus_off = f.1
+    }
+  }
+  assert_eq(blk.call1_at(fact_off, 0L), 1L)
+  assert_eq(blk.call1_at(fact_off, 5L), 120L)
+  assert_eq(blk.call1_at(fact_off, 10L), 3628800L)
+  assert_eq(blk.call1_at(plus_off, 20L), 41L)
+}
+
+///|
+// route B: global data laid out in the same executable image, with adrp/add
+// addresses patched at link time.
+test "route B: binary module handles global data" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|data $g = { w 0 }
+    #|data $nums = { w 1, w 2, w 3, w 4 }
+    #|export
+    #|function w $global_demo() {
+    #|@start
+    #|  %x =w loadw $g
+    #|  %x2 =w add %x, 1
+    #|  storew %x2, $g
+    #|  %r =w loadw $g
+    #|  ret %r
+    #|}
+    #|
+    #|export
+    #|function l $sum_nums() {
+    #|@start
+    #|  %a =l load $nums
+    #|  ret %a
+    #|}
+    #|
+  let m = @qbe.compile_arm64_bin_module(src) catch {
+    _ => abort("route B data compile failed")
+  }
+  let blk = ExecBlock::load_module(m.image(), m.code_bytes)
+  let mut g_off = 0
+  let mut nums_off = 0
+  for f in m.fns {
+    if f.0 == "global_demo" {
+      g_off = f.1
+    }
+    if f.0 == "sum_nums" {
+      nums_off = f.1
+    }
+  }
+  assert_eq(blk.call1_at(g_off, 0L), 1L)
+  assert_eq(blk.call1_at(g_off, 0L), 2L)
+  // Little-endian first two words of $nums: 0x0000000200000001.
+  assert_eq(blk.call1_at(nums_off, 0L), 8589934593L)
+}
