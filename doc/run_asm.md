@@ -27,6 +27,10 @@ Build once (`moon build --target native`), then:
     printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
     clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
+    # demo/11_main.ssa already exports main, so its object links as-is:
+    $M --emit obj demo/11_main.ssa
+    gcc -o hello .qbe_build/11_main.o && ./hello    # Hello from qbe.mbt!
+
 `--run-asm` needs macOS/aarch64 (it executes the code); `--emit obj` is pure
 MoonBit and works on any host. `--clang` switches both back to the
 clang-backed route A.

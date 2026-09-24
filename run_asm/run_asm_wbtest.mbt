@@ -353,3 +353,38 @@ test "route B: data pointer UNSIGNED relocation" {
   )
   assert_eq(run_command("/tmp/qbe_rb_data"), 0)
 }
+
+///|
+// route B: a self-contained main function (like demo/11_main.ssa) links with
+// the system C compiler and runs.
+test "route B: a main-bearing object links and runs" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|data $msg = { b "Hi!", b 0 }
+    #|export
+    #|function w $main() {
+    #|@start
+    #|  %p0 =l copy $msg
+    #|  jmp @loop
+    #|@loop
+    #|  %p =l phi @start %p0, @body %p2
+    #|  %c =w loadub %p
+    #|  %z =w ceqw %c, 0
+    #|  jnz %z, @end, @body
+    #|@body
+    #|  %r =w call $putchar(w %c)
+    #|  %p2 =l add %p, 1
+    #|  jmp @loop
+    #|@end
+    #|  ret 0
+    #|}
+    #|
+  let obj = @qbe.compile_arm64_object(src) catch {
+    _ => abort("route B main compile failed")
+  }
+  write_file("/tmp/qbe_rb_main.o", obj)
+  assert_eq(run_command("cc -o /tmp/qbe_rb_main /tmp/qbe_rb_main.o"), 0)
+  assert_eq(run_command("/tmp/qbe_rb_main"), 0)
+}

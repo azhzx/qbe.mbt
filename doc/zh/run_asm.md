@@ -26,6 +26,10 @@ qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**�
     printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
     clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
+    # demo/11_main.ssa 自带 export main，产出的 .o 可直接链接
+    $M --emit obj demo/11_main.ssa
+    gcc -o hello .qbe_build/11_main.o && ./hello    # Hello from qbe.mbt!
+
 `--run-asm` 需要 macOS/aarch64（要真正执行代码）；`--emit obj` 是纯 MoonBit，
 任何平台都能跑。`--clang` 可把两者切回 clang 路线。
 
