@@ -1,7 +1,7 @@
 # JIT 与目标文件生成
 
 qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**完全自包含**的
-路线 B（不需要工具链），也可以用 `--route a` 回到借道 clang 的路线 A：
+路线 B（不需要工具链），也可以用 `--clang` 回到借道 clang 的路线 A：
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # 生成 Mach-O .o
     qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 输出 55
@@ -27,7 +27,7 @@ qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**�
     clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
 `--run-asm` 需要 macOS/aarch64（要真正执行代码）；`--emit obj` 是纯 MoonBit，
-任何平台都能跑。`--route a` 可把两者切回 clang 路线。
+任何平台都能跑。`--clang` 可把两者切回 clang 路线。
 
 ## 路线 B - 自包含（默认）
 
@@ -49,7 +49,7 @@ arm64 机器字：函数序言/尾声、整数与双精度运算、加载/存储
 （`mmap`/`mprotect`、临时文件、进程启动、`dlopen`/`dlsym`、调用裸代码地址），
 通过类型化 FFI（`run_asm/ffi.mbt`）暴露。
 
-## 路线 A - 借道工具链（回退，`--route a`）
+## 路线 A - 借道工具链（回退，`--clang`）
 
 `run_asm/`（仅 native）把 Mach-O 汇编写到临时 `.s`：`--emit obj` 调 `clang -c`；
 `--run-asm` 调 `clang -dynamiclib` 再 `dlopen`/`dlsym` 调用。运行期依赖

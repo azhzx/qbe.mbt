@@ -23,9 +23,8 @@ Usage: qbe [OPTIONS] {file.ssa, -}
                 编译到 arm64，用 mmap 装载并调用 FUNC（macOS/aarch64）
     --run-wasm FUNC[,ARG]
                 编译到 wasm，在 node 下运行 FUNC
-    --route {a,b}
-                arm64 的 --emit obj / --run-asm 后端：
-                b = 自包含（默认），a = 借道 clang
+    --clang     用借道 clang 的 arm64 后端跑 --emit obj / --run-asm
+                （默认：自包含）
     --out-dir DIR
                 --emit obj 的输出目录（默认 .qbe_build）
 ```
@@ -56,7 +55,7 @@ moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 
 moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
-moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
 ```
 
 `--emit obj` 是纯 MoonBit，任何平台都能用。路线 B 的细节与限制见

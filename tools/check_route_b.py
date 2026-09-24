@@ -137,7 +137,7 @@ def main():
             if run(["clang", "-c", s, "-o", ao]).returncode != 0:
                 skipped += 1
                 continue
-            rb = run([MINE, "--emit", "obj", "--route", "b", "-o", bo, f])
+            rb = run([MINE, "--emit", "obj", "-o", bo, f])
             if rb.returncode != 0 or not os.path.exists(bo):
                 b_err += 1
                 errors.append((rel, "route B: " + rb.stderr.decode()[:120]))
