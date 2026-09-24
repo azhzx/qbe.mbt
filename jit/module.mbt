@@ -64,7 +64,45 @@ pub fn JitModule::load_shared(asm : String) -> JitModule raise {
   if handle == 0L {
     abort("jit: dlopen failed")
   }
-  { handle }
+  { handle, }
+}
+
+///|
+// A self-contained executable code block: machine code copied into
+// mmap'd memory and made executable.
+pub struct JitExec {
+  addr : Int64
+  size : Int
+}
+
+///|
+// Copy arm64 code into executable memory.
+pub fn JitExec::load_text(text : Bytes) -> JitExec raise {
+  let n = text.length()
+  if n == 0 {
+    abort("jit: empty code")
+  }
+  let addr = mbt_jit_alloc(n)
+  if addr == 0L {
+    abort("jit: mmap failed")
+  }
+  mbt_jit_write_bytes(addr, 0, text)
+  if mbt_jit_protect(addr, n) != 0 {
+    abort("jit: mprotect failed")
+  }
+  { addr, size: n, }
+}
+
+///|
+// Call a one-argument i64 function in this code block.
+pub fn JitExec::call1(self : JitExec, a0 : Int64) -> Int64 raise {
+  mbt_jit_call_i64_1(self.addr, a0)
+}
+
+///|
+// Run a shell command, returning its exit status.
+pub fn run_command(cmd : String) -> Int {
+  mbt_jit_run(cstr(cmd))
 }
 
 ///|
@@ -88,6 +126,10 @@ pub fn JitModule::lookup(self : JitModule, name : String) -> Int64 raise {
 
 ///|
 // Call a one-argument i64 function.
-pub fn JitModule::call1(self : JitModule, name : String, a0 : Int64) -> Int64 raise {
+pub fn JitModule::call1(
+  self : JitModule,
+  name : String,
+  a0 : Int64,
+) -> Int64 raise {
   mbt_jit_call_i64_1(self.lookup(name), a0)
 }

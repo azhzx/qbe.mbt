@@ -288,7 +288,11 @@ async fn main {
             continue
           }
         }
-        let path = if out_file != "" && out_file != "-" { out_file } else { file + ".o" }
+        let path = if out_file != "" && out_file != "-" {
+          out_file
+        } else {
+          file + ".o"
+        }
         @jit.write_file(path, obj) catch {
           e => {
             @util.eprint("jit error: \{Repr(e)}\n")

@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/encoding/utf8",
+  "azhzx/qbe/object",
 }
 
 options(
@@ -8,5 +9,6 @@ options(
     "ffi.mbt": [ "native" ],
     "module.mbt": [ "native" ],
     "jit_wbtest.mbt": [ "native" ],
+    "macho_link_wbtest.mbt": [ "native" ],
   },
 )
