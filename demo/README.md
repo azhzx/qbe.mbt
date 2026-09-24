@@ -7,22 +7,59 @@
 通过 `cmd/main` 编译单个 `.ssa` 文件，生成 amd64_sysv 汇编：
 
 ```bash
-moon run main -- demo/01_arith.ssa -o demo/01_arith.s
+moon run cmd/main --target native -- demo/01_arith.ssa -o demo/01_arith.s
 # 或直接输出到 stdout
-moon run main -- demo/02_control_flow.ssa
+moon run cmd/main --target native -- demo/02_control_flow.ssa
 ```
 
 调试 dump (输出到 stderr)：
 
 ```bash
-moon run main -- demo/03_loop_phi.ssa -dM      # 打印内存优化后
-moon run main -- demo/03_loop_phi.ssa -dN      # 打印支配者与 SSA 构造
-moon run main -- demo/03_loop_phi.ssa -dC      # 打印 copy 传播
-moon run main -- demo/03_loop_phi.ssa -dA      # 打印 ABI 处理
-moon run main -- demo/03_loop_phi.ssa -dI      # 打印指令选择
-moon run main -- demo/03_loop_phi.ssa -dL      # 打印活跃变量
-moon run main -- demo/03_loop_phi.ssa -dS      # 打印溢出代价与分配
-moon run main -- demo/03_loop_phi.ssa -dR      # 打印寄存器分配
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dM      # 打印内存优化后
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dN      # 打印支配者与 SSA 构造
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dC      # 打印 copy 传播
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dA      # 打印 ABI 处理
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dI      # 打印指令选择
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dL      # 打印活跃变量
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dS      # 打印溢出代价与分配
+moon run cmd/main --target native -- demo/03_loop_phi.ssa -dR      # 打印寄存器分配
+```
+
+## 汇编并运行
+
+`10_fibonacci.ssa` 只导出 `$fib`，没有 `main`，所以要配一个 C driver 来调用。
+先生成与主机匹配的汇编，再用 clang 汇编链接：
+
+```bash
+# macOS (Apple Silicon)：arm64 + Mach-O
+moon run cmd/main --target native -- -t arm64 -G m -o /tmp/fib.s demo/10_fibonacci.ssa
+
+# Linux/x86-64：默认 amd64_sysv ELF（不需要 -G m）
+moon run cmd/main --target native -- -o /tmp/fib.s demo/10_fibonacci.ssa
+```
+
+```c
+/* /tmp/main.c */
+#include <stdio.h>
+long fib(long n);
+int main(void) { printf("fib(10) = %ld\n", fib(10)); return 0; }
+```
+
+```bash
+clang -O0 -o /tmp/fibdemo /tmp/fib.s /tmp/main.c
+/tmp/fibdemo        # fib(10) = 55
+```
+
+也可以一步到位运行（见 [../scripts/run_fib_demo.sh](../scripts/run_fib_demo.sh)）：
+
+```bash
+./scripts/run_fib_demo.sh 10     # fib(10) = 55
+```
+
+不想汇编的话，内置解释器可以直接跑：
+
+```bash
+moon run cmd/main --target native -- --run fib,10 demo/10_fibonacci.ssa   # 55
 ```
 
 ## 演示文件列表
