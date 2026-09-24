@@ -509,6 +509,12 @@ pub fn enc_str_w(rt : Int, rn : Int, off : Int) -> Int {
 }
 
 ///|
+// FP/SIMD load/store: the integer LDR/STR immediate with the V (bit 26) set.
+pub fn enc_ldst_fp(size : Int, opc : Int, rt : Int, rn : Int, off : Int) -> Int {
+  enc_ldst(size, opc, rt, rn, off) | (1 << 26)
+}
+
+///|
 // LDP/STP: the addressing mode selects the base; imm7 is scaled by 8.
 pub fn enc_ldp_stp(
   is_load : Bool,
@@ -651,6 +657,109 @@ pub fn enc_fmov_x_d(rd : Int, rn : Int) -> Int {
 ///|
 pub fn enc_fcvt_d_s(rd : Int, rn : Int) -> Int {
   0x1E22C000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+// Single-precision FP arithmetic (bit 22 cleared vs the double forms).
+pub fn enc_fadd_s(rd : Int, rn : Int, rm : Int) -> Int {
+  0x1E202800 | (r5(rm) << 16) | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fsub_s(rd : Int, rn : Int, rm : Int) -> Int {
+  0x1E203800 | (r5(rm) << 16) | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fmul_s(rd : Int, rn : Int, rm : Int) -> Int {
+  0x1E200800 | (r5(rm) << 16) | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fdiv_s(rd : Int, rn : Int, rm : Int) -> Int {
+  0x1E201800 | (r5(rm) << 16) | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+// FCMPE: like FCMP but signals on quiet NaNs (QBE emits the e form).
+pub fn enc_fcmpe_d(rn : Int, rm : Int) -> Int {
+  0x1E612010 | (r5(rm) << 16) | (r5(rn) << 5)
+}
+
+///|
+pub fn enc_fcmpe_s(rn : Int, rm : Int) -> Int {
+  0x1E212010 | (r5(rm) << 16) | (r5(rn) << 5)
+}
+
+///|
+pub fn enc_fcvtzs_w_d(rd : Int, rn : Int) -> Int {
+  0x1E780000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvtzs_w_s(rd : Int, rn : Int) -> Int {
+  0x1E380000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvtzs_x_s(rd : Int, rn : Int) -> Int {
+  0x9E380000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_scvtf_d_w(rd : Int, rn : Int) -> Int {
+  0x1E620000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_scvtf_s_w(rd : Int, rn : Int) -> Int {
+  0x1E220000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_scvtf_s_x(rd : Int, rn : Int) -> Int {
+  0x9E220000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvt_s_d(rd : Int, rn : Int) -> Int {
+  0x1E624000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fmov_w_s(rd : Int, rn : Int) -> Int {
+  0x1E260000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fmov_s_w(rd : Int, rn : Int) -> Int {
+  0x1E270000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fmov_d_x(rd : Int, rn : Int) -> Int {
+  0x9E670000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+// Sign/zero extension with an explicit sf (SBFM's N bit mirrors sf).
+pub fn enc_sxtb_sf(sf : Bool, rd : Int, rn : Int) -> Int {
+  enc_bitfield(sf, 0, sfbit(sf), rd, rn, 0, 7)
+}
+
+///|
+pub fn enc_sxth_sf(sf : Bool, rd : Int, rn : Int) -> Int {
+  enc_bitfield(sf, 0, sfbit(sf), rd, rn, 0, 15)
+}
+
+///|
+pub fn enc_uxtb_sf(sf : Bool, rd : Int, rn : Int) -> Int {
+  enc_bitfield(sf, 2, 0, rd, rn, 0, 7)
+}
+
+///|
+pub fn enc_uxth_sf(sf : Bool, rd : Int, rn : Int) -> Int {
+  enc_bitfield(sf, 2, 0, rd, rn, 0, 15)
 }
 
 ///|

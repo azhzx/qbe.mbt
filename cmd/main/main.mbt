@@ -18,6 +18,7 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("emit"),
     @argparse.OptionArg("run-asm"),
     @argparse.OptionArg("run-wasm"),
+    @argparse.OptionArg("route"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -177,6 +178,12 @@ async fn main {
       }
     _ => ()
   }
+  // --route b selects the self-contained (route B) arm64 backend for
+  // --run-asm and --emit obj instead of the clang-backed route A.
+  let route_b = match parsed.values.get("route") {
+    Some(arr) if arr.length() > 0 => arr[0] == "b"
+    _ => false
+  }
   let files = match parsed.values.get("file") {
     Some(arr) => arr
     None => []
@@ -298,23 +305,58 @@ async fn main {
             continue
           }
         }
-        match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
-          Ok(asm) => {
-            let m = @run_asm.RunAsmModule::load_shared(asm) catch {
-              e => {
-                @util.eprint("run-asm error: \{Repr(e)}\n")
-                continue
-              }
+        if route_b {
+          let module = @qbe.compile_arm64_bin_module(source) catch {
+            e => {
+              @util.eprint("run-asm error: \{Repr(e)}\n")
+              continue
             }
-            let r = m.call1(entry, a0) catch {
-              e => {
-                @util.eprint("run-asm error: \{Repr(e)}\n")
-                continue
-              }
-            }
-            @util.iprint("\{r}\n")
           }
-          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+          let mut off = -1
+          for f in module.fns {
+            if f.0 == entry {
+              off = f.1
+            }
+          }
+          if off < 0 {
+            @util.eprint("run-asm error: no function '\{entry}'\n")
+            continue
+          }
+          let blk = @run_asm.ExecBlock::load_module(
+            module.image(),
+            module.code_bytes,
+          ) catch {
+            e => {
+              @util.eprint("run-asm error: \{Repr(e)}\n")
+              continue
+            }
+          }
+          let r = blk.call1_at(off, a0) catch {
+            e => {
+              @util.eprint("run-asm error: \{Repr(e)}\n")
+              continue
+            }
+          }
+          @util.iprint("\{r}\n")
+        } else {
+          match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
+            Ok(asm) => {
+              let m = @run_asm.RunAsmModule::load_shared(asm) catch {
+                e => {
+                  @util.eprint("run-asm error: \{Repr(e)}\n")
+                  continue
+                }
+              }
+              let r = m.call1(entry, a0) catch {
+                e => {
+                  @util.eprint("run-asm error: \{Repr(e)}\n")
+                  continue
+                }
+              }
+              @util.iprint("\{r}\n")
+            }
+            Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+          }
         }
       }
       return
@@ -325,14 +367,29 @@ async fn main {
   match parsed.values.get("emit") {
     Some(arr) if arr.length() > 0 && arr[0] == "obj" => {
       for file in files {
-        let asm = process_file(file, flags, "m", "arm64")
-        if asm == "" {
-          continue
-        }
-        let obj = @run_asm.assemble_object(asm) catch {
-          e => {
-            @util.eprint("run-asm error: \{Repr(e)}\n")
+        let obj = if route_b {
+          let source = read_source(file) catch {
+            e => {
+              @util.eprint("error: \{e}\n")
+              continue
+            }
+          }
+          @qbe.compile_arm64_object(source) catch {
+            e => {
+              @util.eprint("run-asm error: \{Repr(e)}\n")
+              continue
+            }
+          }
+        } else {
+          let asm = process_file(file, flags, "m", "arm64")
+          if asm == "" {
             continue
+          }
+          @run_asm.assemble_object(asm) catch {
+            e => {
+              @util.eprint("run-asm error: \{Repr(e)}\n")
+              continue
+            }
           }
         }
         let path = if out_file != "" && out_file != "-" {

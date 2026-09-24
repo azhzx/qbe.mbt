@@ -531,6 +531,7 @@ pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
   @types.init_arm64_target()
   let (funcs, _datas, _order, typs, interner) = parse_module(text, "<input>")
   let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
   @emit_arm64.arm64_emit_reset()
   let res : Array[Array[Int]] = []
   for fn_ in funcs {
@@ -550,10 +551,25 @@ pub fn compile_arm64_bin_module(
   @types.init_arm64_target()
   let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
   let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
   for fn_ in funcs {
     run_passes_arm64(fn_, interner, typs, DbFlags::new(), false, out)
   }
   @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, false)
+}
+
+///|
+// Route B (self-contained) object emission: a Mach-O arm64 object built from
+// the binary emitter, with BRANCH26 / PAGE21 / PAGEOFF12 relocations. No clang.
+pub fn compile_arm64_object(text : String) -> Bytes raise {
+  @types.init_arm64_target()
+  let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), false, out)
+  }
+  @emit_arm64.emit_arm64_object(funcs, datas, interner, true)
 }
 
 ///|

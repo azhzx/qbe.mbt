@@ -228,6 +228,65 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
   let rd = if i.to.is_tmp() { arm64_bin_reg(i.to.tmp_val()) } else { 0 }
   let sf = i.cls == @types.Kl
   let is_d = i.cls == @types.Kd
+  let is_s = i.cls == @types.Ks
+  if is_s {
+    // Single-precision arithmetic has its own opcodes; handle it before the
+    // integer fallthrough so it can never be silently miscompiled.
+    match i.op {
+      @types.Add => {
+        arm64_bin_emit(
+          st,
+          @object.enc_fadd_s(
+            rd,
+            arm64_bin_r(st, i.arg1),
+            arm64_bin_r(st, i.arg2),
+          ),
+        )
+        return
+      }
+      @types.Sub => {
+        arm64_bin_emit(
+          st,
+          @object.enc_fsub_s(
+            rd,
+            arm64_bin_r(st, i.arg1),
+            arm64_bin_r(st, i.arg2),
+          ),
+        )
+        return
+      }
+      @types.Mul => {
+        arm64_bin_emit(
+          st,
+          @object.enc_fmul_s(
+            rd,
+            arm64_bin_r(st, i.arg1),
+            arm64_bin_r(st, i.arg2),
+          ),
+        )
+        return
+      }
+      @types.Div => {
+        arm64_bin_emit(
+          st,
+          @object.enc_fdiv_s(
+            rd,
+            arm64_bin_r(st, i.arg1),
+            arm64_bin_r(st, i.arg2),
+          ),
+        )
+        return
+      }
+      @types.Afcmp => {
+        arm64_bin_emit(
+          st,
+          @object.enc_fcmpe_s(arm64_bin_r(st, i.arg1), arm64_bin_r(st, i.arg2)),
+        )
+        return
+      }
+      _ => ()
+    }
+  }
   match i.op {
     @types.Add =>
       if is_d {
@@ -458,15 +517,69 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       if is_d {
         arm64_bin_emit(
           st,
-          @object.enc_fcmp_d(arm64_bin_r(st, i.arg1), arm64_bin_r(st, i.arg2)),
+          @object.enc_fcmpe_d(arm64_bin_r(st, i.arg1), arm64_bin_r(st, i.arg2)),
         )
       } else {
-        raise @util.QbeError::Ice("arm64 bin: single-precision compare")
+        raise @util.QbeError::Ice("arm64 bin: unsupported fp compare class")
+      }
+    @types.Extsb =>
+      arm64_bin_emit(st, @object.enc_sxtb_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+    @types.Extsh =>
+      arm64_bin_emit(st, @object.enc_sxth_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+    @types.Extsw =>
+      arm64_bin_emit(st, @object.enc_sxtw(rd, arm64_bin_r(st, i.arg1)))
+    @types.Extub =>
+      arm64_bin_emit(st, @object.enc_uxtb_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+    @types.Extuh =>
+      arm64_bin_emit(st, @object.enc_uxth_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+    @types.Exts =>
+      arm64_bin_emit(st, @object.enc_fcvt_d_s(rd, arm64_bin_r(st, i.arg1)))
+    @types.Truncd =>
+      arm64_bin_emit(st, @object.enc_fcvt_s_d(rd, arm64_bin_r(st, i.arg1)))
+    @types.Stosi =>
+      if sf {
+        arm64_bin_emit(st, @object.enc_fcvtzs_x_s(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_fcvtzs_w_s(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Dtosi =>
+      if sf {
+        arm64_bin_emit(st, @object.enc_fcvtzs_x_d(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_fcvtzs_w_d(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Swtof =>
+      if is_d {
+        arm64_bin_emit(st, @object.enc_scvtf_d_w(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_scvtf_s_w(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Sltof =>
+      if is_d {
+        arm64_bin_emit(st, @object.enc_scvtf_d_x(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_scvtf_s_x(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Cast =>
+      match i.cls {
+        @types.Kw =>
+          arm64_bin_emit(st, @object.enc_fmov_w_s(rd, arm64_bin_r(st, i.arg1)))
+        @types.Kl =>
+          arm64_bin_emit(st, @object.enc_fmov_x_d(rd, arm64_bin_r(st, i.arg1)))
+        @types.Ks =>
+          arm64_bin_emit(st, @object.enc_fmov_s_w(rd, arm64_bin_r(st, i.arg1)))
+        @types.Kd =>
+          arm64_bin_emit(st, @object.enc_fmov_d_x(rd, arm64_bin_r(st, i.arg1)))
+        _ => raise @util.QbeError::Ice("arm64 bin: bad cast class")
       }
     @types.Load => {
       let (rn, off) = arm64_bin_mem(st, i.arg1)
       let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
-      arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
+      if i.cls == @types.Ks || i.cls == @types.Kd {
+        arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, rd, rn, off))
+      } else {
+        arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
+      }
     }
     @types.Loadub => {
       let (rn, off) = arm64_bin_mem(st, i.arg1)
@@ -507,7 +620,25 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         @types.Stored => (3, 0)
         _ => (3, 0)
       }
-      arm64_bin_emit(st, @object.enc_ldst(size, opc, rt, rn, off))
+      if i.op == @types.Stores || i.op == @types.Stored {
+        arm64_bin_emit(st, @object.enc_ldst_fp(size, opc, rt, rn, off))
+      } else {
+        arm64_bin_emit(st, @object.enc_ldst(size, opc, rt, rn, off))
+      }
+    }
+    @types.Swap => {
+      let r1 = arm64_bin_r(st, i.arg1)
+      let r2 = arm64_bin_r(st, i.arg2)
+      let ip1 = @types.ARM64_IP1 - @types.ARM64_R0
+      if is_d {
+        arm64_bin_emit(st, @object.enc_fmov_d(ip1, r1))
+        arm64_bin_emit(st, @object.enc_fmov_d(r1, r2))
+        arm64_bin_emit(st, @object.enc_fmov_d(r2, ip1))
+      } else {
+        arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, ip1, r1))
+        arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, r1, r2))
+        arm64_bin_emit(st, @object.enc_mov_reg_sf(sf, r2, ip1))
+      }
     }
     _ => raise @util.QbeError::Ice("arm64 bin: unsupported op " + i.op.name())
   }
@@ -862,6 +993,29 @@ fn arm64_bin_layout_data(
 }
 
 ///|
+// Lay out the floating-point constant stash (fp0, fp1, ...) that the arm64 isel
+// references as local rodata symbols. Returns (name -> byte offset, bytes).
+fn arm64_fp_layout() -> (Array[(String, Int)], Array[Int]) {
+  let syms : Array[(String, Int)] = []
+  let buf : Array[Int] = []
+  for i in 0..<@types.fp_stash_len() {
+    let e = @types.fp_stash_at(i)
+    let n = if e.size == 16 { 16 } else if e.size == 8 { 8 } else { 4 }
+    let align = if n == 16 { 16 } else if n == 8 { 8 } else { 4 }
+    while buf.length() % align != 0 {
+      buf.push(0)
+    }
+    syms.push(("fp" + i.to_string(), buf.length()))
+    let mut x = e.b0
+    for _ in 0..<n {
+      buf.push((x & 0xFFL).to_int())
+      x = x >> 8
+    }
+  }
+  (syms, buf)
+}
+
+///|
 // A linked module image: text words plus a data byte image with every
 // intra-module direct call and global address already patched.
 pub(all) struct Arm64BinModule {
@@ -935,7 +1089,21 @@ pub fn emit_arm64_bin_module(
     }
     words[c.0] = @object.enc_bl((target - c.0) * 4)
   }
-  let (datas_map, data_bytes) = arm64_bin_layout_data(datas)
+  let (datas_map0, data_bytes0) = arm64_bin_layout_data(datas)
+  // Append the floating-point constant stash (fpN) after the data section.
+  let (fp_map, fp_bytes) = arm64_fp_layout()
+  let fp_base = arm64_bin_align_up(data_bytes0.length(), 16)
+  let data_bytes = data_bytes0.copy()
+  while data_bytes.length() < fp_base {
+    data_bytes.push(0)
+  }
+  for b in fp_bytes {
+    data_bytes.push(b)
+  }
+  let datas_map = datas_map0.copy()
+  for p in fp_map {
+    datas_map.push((p.0, fp_base + p.1))
+  }
   let text_bytes = words.length() * 4
   // Keep the data region in its own page(s): mprotect() protects whole pages,
   // and the smallest page size the JIT might run on is 4KB while macOS/aarch64

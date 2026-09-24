@@ -17,6 +17,8 @@ pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool) -> (Array[Int], Arr
 
 pub fn emit_arm64_bin_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Arm64BinModule raise
 
+pub fn emit_arm64_object(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Bytes raise
+
 // Errors
 
 // Types and methods

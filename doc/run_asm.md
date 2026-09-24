@@ -54,9 +54,20 @@ the image and makes only the code region executable, so globals stay writable.
 Native tests cover recursion (`fact`), cross-function calls and global-data
 read/write.
 
-Remaining: external symbols (libc calls, with `BRANCH26`/GOT relocations),
-float constants and single precision, multi-section `.o` output, and wiring
-`--emit obj` / `--run-asm` onto this path.
+Also supported: parallel-copy `swap`, single-precision arithmetic, FP
+conversions and the floating-point rodata pool (`Lfp0`, `Lfp1`, ...).
+
+Object emission (`emit_arm64_object`) builds a multi-section Mach-O object with
+real relocations: `BRANCH26` for calls, `PAGE21`/`PAGEOFF12` for global
+addresses, over `__text`/`__data`/`__TEXT,__const`. `--emit obj --route b`
+writes it and it links with clang/ld (a native test links and runs one).
+
+`--run-asm --route b` executes the same module image directly (no clang). Both
+routes agree on the demos.
+
+Remaining: external symbols in the JIT (libc calls need `dlsym`/`BRANCH26`
+resolution), byte-for-byte parity with clang on the full 406-case arm64 suite,
+and eventually making route B the default.
 
 
 ## Running wasm (`--run-wasm`)

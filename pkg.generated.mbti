@@ -19,6 +19,8 @@ pub fn compile_arm64_bin_module(String) -> @emit.Arm64BinModule raise
 
 pub fn compile_arm64_debug(String, String) -> Result[String, @util.QbeError]
 
+pub fn compile_arm64_object(String) -> Bytes raise
+
 pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 
 pub fn compile_la64(String, gas? : String) -> Result[String, @util.QbeError]

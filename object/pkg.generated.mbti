@@ -78,21 +78,47 @@ pub fn enc_eor_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_fadd_d(Int, Int, Int) -> Int
 
+pub fn enc_fadd_s(Int, Int, Int) -> Int
+
 pub fn enc_fcmp_d(Int, Int) -> Int
+
+pub fn enc_fcmpe_d(Int, Int) -> Int
+
+pub fn enc_fcmpe_s(Int, Int) -> Int
 
 pub fn enc_fcvt_d_s(Int, Int) -> Int
 
+pub fn enc_fcvt_s_d(Int, Int) -> Int
+
+pub fn enc_fcvtzs_w_d(Int, Int) -> Int
+
+pub fn enc_fcvtzs_w_s(Int, Int) -> Int
+
 pub fn enc_fcvtzs_x_d(Int, Int) -> Int
+
+pub fn enc_fcvtzs_x_s(Int, Int) -> Int
 
 pub fn enc_fdiv_d(Int, Int, Int) -> Int
 
+pub fn enc_fdiv_s(Int, Int, Int) -> Int
+
 pub fn enc_fmov_d(Int, Int) -> Int
+
+pub fn enc_fmov_d_x(Int, Int) -> Int
+
+pub fn enc_fmov_s_w(Int, Int) -> Int
+
+pub fn enc_fmov_w_s(Int, Int) -> Int
 
 pub fn enc_fmov_x_d(Int, Int) -> Int
 
 pub fn enc_fmul_d(Int, Int, Int) -> Int
 
+pub fn enc_fmul_s(Int, Int, Int) -> Int
+
 pub fn enc_fsub_d(Int, Int, Int) -> Int
+
+pub fn enc_fsub_s(Int, Int, Int) -> Int
 
 pub fn enc_hint(Int) -> Int
 
@@ -113,6 +139,8 @@ pub fn enc_ldrh(Int, Int, Int) -> Int
 pub fn enc_ldrsw(Int, Int, Int) -> Int
 
 pub fn enc_ldst(Int, Int, Int, Int, Int) -> Int
+
+pub fn enc_ldst_fp(Int, Int, Int, Int, Int) -> Int
 
 pub fn enc_logic(Int, Int, Int, Int) -> Int
 
@@ -156,7 +184,13 @@ pub fn enc_orr_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_ret() -> Int
 
+pub fn enc_scvtf_d_w(Int, Int) -> Int
+
 pub fn enc_scvtf_d_x(Int, Int) -> Int
+
+pub fn enc_scvtf_s_w(Int, Int) -> Int
+
+pub fn enc_scvtf_s_x(Int, Int) -> Int
 
 pub fn enc_sdiv(Int, Int, Int) -> Int
 
@@ -184,7 +218,11 @@ pub fn enc_sub_reg_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_sxtb(Int, Int) -> Int
 
+pub fn enc_sxtb_sf(Bool, Int, Int) -> Int
+
 pub fn enc_sxth(Int, Int) -> Int
+
+pub fn enc_sxth_sf(Bool, Int, Int) -> Int
 
 pub fn enc_sxtw(Int, Int) -> Int
 
@@ -194,7 +232,11 @@ pub fn enc_udiv_sf(Bool, Int, Int, Int) -> Int
 
 pub fn enc_uxtb(Int, Int) -> Int
 
+pub fn enc_uxtb_sf(Bool, Int, Int) -> Int
+
 pub fn enc_uxth(Int, Int) -> Int
+
+pub fn enc_uxth_sf(Bool, Int, Int) -> Int
 
 pub fn section_flags_cstring() -> Int
 
