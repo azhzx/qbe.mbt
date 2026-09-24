@@ -40,6 +40,7 @@
     temp naming (Tmp.bid + single-definition early-out)
     parser errors: qbe:<file>:<line>: format, reference token names and messages
     add tools/check_rv64_asm.py independent RISC-V encodability gate
+
 2026.9.20: v0.10.0
     align with the frozen vendor/qbe reference (ripe-lang master 661ceb2)
     debug dumps: port parse.c typecheck() (operand/jump/undefined-block checks,
@@ -50,6 +51,7 @@
     assembly: .text/.balign/endbr64+hint#34/.p2align/.type/.size/GNU-stack,
     leaf-function %rsp framing, reference fp-constant rodata layout, quoted
     local symbols; amd64 263/336, arm64 252/336, rv64 224/336 byte-identical
+
 2026.9.24: v0.11.0
     complete byte-for-byte alignment with vendor/qbe (661ceb2) on amd64/arm64/rv64
     debug dumps: 12096/12096 (12 flags x 3 targets); emitted assembly:
@@ -60,6 +62,7 @@
     rv64: argsclass ngp check, fpstruct field classes, struct-return blobs,
     extension constant class, alloc slots grouped by alignment class
     loadopt: stable phi ordering; CI now gates every debug flag and assembly
+
 2026.9.24: v0.12.0
     compare.py: reference and port now get their own flagsets; -G m maps to the
     matching Mach-O reference target (amd64_apple/arm64_apple) and is skipped
@@ -72,6 +75,7 @@
     apple_selvastart/apple_selvaarg/apple_extsb) is still pending, so arm64
     -G m is reported but not gated
     docs (en+zh): retract the previously unverified "406/406 (-G e and -G m)"
+    
 2026.9.24: v0.13.0
     arm64 Mach-O (-G m) now byte-identical to vendor/qbe -t arm64_apple
     (336/336; compare.py 406/406): ported the Apple ABI path -- 4-byte stack
