@@ -15,6 +15,8 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("gas", short='G'),
     @argparse.OptionArg("debug", short='d'),
     @argparse.OptionArg("run"),
+    @argparse.OptionArg("emit"),
+    @argparse.OptionArg("jit"),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -213,6 +215,87 @@ async fn main {
           }
           Err(e) => @util.eprint(format_qbe_error(e) + "\n")
         }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --jit mode: compile to arm64 Mach-O assembly, load it and call `func`.
+  match parsed.values.get("jit") {
+    Some(specs) if specs.length() > 0 => {
+      let (entry, jit_args) = match parse_run_spec(specs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
+      let a0 = if jit_args.length() == 0 {
+        0L
+      } else if jit_args.length() == 1 {
+        match jit_args[0] {
+          @interp.VInt(v) => v
+          _ => {
+            @util.eprint("error: --jit takes a single integer argument\n")
+            return
+          }
+        }
+      } else {
+        @util.eprint("error: --jit takes at most one argument\n")
+        return
+      }
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
+          Ok(asm) => {
+            let m = @jit.JitModule::load_shared(asm) catch {
+              e => {
+                @util.eprint("jit error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            let r = m.call1(entry, a0) catch {
+              e => {
+                @util.eprint("jit error: \{Repr(e)}\n")
+                continue
+              }
+            }
+            @util.iprint("\{r}\n")
+          }
+          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+        }
+      }
+      return
+    }
+    _ => ()
+  }
+  // --emit obj: assemble the Mach-O output text into a .o file.
+  match parsed.values.get("emit") {
+    Some(arr) if arr.length() > 0 && arr[0] == "obj" => {
+      for file in files {
+        let asm = process_file(file, flags, "m", "arm64")
+        if asm == "" {
+          continue
+        }
+        let obj = @jit.assemble_object(asm) catch {
+          e => {
+            @util.eprint("jit error: \{Repr(e)}\n")
+            continue
+          }
+        }
+        let path = if out_file != "" && out_file != "-" { out_file } else { file + ".o" }
+        @jit.write_file(path, obj) catch {
+          e => {
+            @util.eprint("jit error: \{Repr(e)}\n")
+            continue
+          }
+        }
+        @util.eprint("qbe: wrote \{path}\n")
       }
       return
     }
