@@ -46,6 +46,9 @@ fn arm64_emit_parse_pipeline(
   @cfg.simpljmp(f)
   @cfg.fillrpo(f)
   @cfg.fillpreds(f)
+  // The C reference resets its static label counter per process; each test
+  // emits from a fresh state.
+  arm64_emit_reset()
   (f, interner, typs)
 }
 

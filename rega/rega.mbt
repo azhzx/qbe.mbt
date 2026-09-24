@@ -519,12 +519,6 @@ fn doblk_def(st : RState, cur : RMap, last : Int) -> Int {
 ///|
 // Allocate registers for one block (C doblk).
 fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
-  // registers live-in are mapped to themselves
-  for r in 0..<@types.Tmp0 {
-    if b.out_set.unwrap().has(r) {
-      radd(st, cur, r, r)
-    }
-  }
   if b.jmp.arg.is_tmp() {
     b.jmp.arg = ralloc(st, cur, b.jmp.arg.tmp_val())
   }
@@ -746,6 +740,13 @@ pub fn rega(
         }
       }
     })
+    // registers live-out are mapped to themselves (C rega.c section 2,
+    // before allocation)
+    for r in 0..<@types.Tmp0 {
+      if b.out_set.unwrap().has(r) {
+        radd(st, cur, r, r)
+      }
+    }
     for j in 0..<x {
       ignore(ralloctry(st, cur, rl[j], true))
     }
@@ -819,9 +820,10 @@ pub fn rega(
       let t = m.t[j]
       let r = m.r[j]
       let xx = rl[r]
-      if xx > 0 {
+      if xx > 0 && !m.b.has(xx) {
         pmadd(st, @types.Ref::tmp(xx), @types.Ref::tmp(r), fn_.tmps[t].cls)
         m.r[j] = xx
+        m.b.set(xx)
       }
     }
     st.buf.clear()
