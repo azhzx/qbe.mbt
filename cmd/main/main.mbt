@@ -18,8 +18,14 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("emit"),
     @argparse.OptionArg("run-asm"),
     @argparse.OptionArg("run-wasm"),
-    @argparse.OptionArg("route"),
     @argparse.OptionArg("out-dir"),
+  ],
+  flags=[
+    @argparse.FlagArg(
+      "clang",
+      long="clang",
+      about="use the clang-backed arm64 backend for --emit obj / --run-asm (default: self-contained)",
+    ),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -220,10 +226,10 @@ async fn main {
       }
     _ => ()
   }
-  // --emit obj and --run-asm use the self-contained (route B) arm64 backend
-  // by default; --route a falls back to the clang-backed route A.
-  let route_b = match parsed.values.get("route") {
-    Some(arr) if arr.length() > 0 => arr[0] != "a"
+  // --emit obj and --run-asm are self-contained by default; --clang selects
+  // the clang-backed backend instead.
+  let self_contained = match parsed.flags.get("clang") {
+    Some(true) => false
     _ => true
   }
   let files = match parsed.values.get("file") {
@@ -347,7 +353,7 @@ async fn main {
             continue
           }
         }
-        if route_b {
+        if self_contained {
           let module = @qbe.compile_arm64_bin_module(source) catch {
             e => {
               @util.eprint("run-asm error: \{Repr(e)}\n")
@@ -409,7 +415,7 @@ async fn main {
   match parsed.values.get("emit") {
     Some(arr) if arr.length() > 0 && arr[0] == "obj" => {
       for file in files {
-        let obj = if route_b {
+        let obj = if self_contained {
           let source = read_source(file) catch {
             e => {
               @util.eprint("error: \{e}\n")

@@ -25,9 +25,8 @@ Usage: qbe [OPTIONS] {file.ssa, -}
                 compile to arm64, mmap and call FUNC (macOS/aarch64)
     --run-wasm FUNC[,ARG]
                 compile to wasm and run FUNC under node
-    --route {a,b}
-                backend for arm64 --emit obj / --run-asm:
-                b = self-contained (default), a = clang-backed
+    --clang     use the clang-backed arm64 backend for --emit obj / --run-asm
+                (default: self-contained)
     --out-dir DIR
                 directory for --emit obj output (default: .qbe_build)
 ```
@@ -63,7 +62,7 @@ moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 
 moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
-moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
 ```
 
 `--emit obj` is pure MoonBit and works on any host. See

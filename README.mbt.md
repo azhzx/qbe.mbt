@@ -17,8 +17,8 @@
 - Self-contained JIT / object emission for macOS-aarch64 (`object/`,
   `target_arm64/emit/`): `--emit obj` writes a Mach-O arm64 `.o` and
   `--run-asm FUNC[,ARG]` maps and calls the code in-process, both with no
-  clang in the path (route B, the default; `--route a` keeps the clang
-  fallback). `python tools/check_route_b.py` shows byte-identical output to
+  clang in the path (self-contained by default; `--clang` keeps the
+  clang fallback). `python tools/check_route_b.py` shows byte-identical output to
   clang on all 336 compilable arm64 tests
 - `--run-wasm FUNC[,ARG]` runs the WASM backend end-to-end (node +
   `moon-wasm-opt`): loops/phi via a `br_table` dispatch loop, internal calls

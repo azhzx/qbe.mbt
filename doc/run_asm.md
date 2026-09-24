@@ -2,7 +2,7 @@
 
 qbe.mbt turns a `.ssa` file into arm64 machine code for **macOS / aarch64**
 without any toolchain (route B, the default), or by borrowing clang
-(route A, `--route a`):
+(route A, `--clang`):
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # Mach-O object file
     qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 55
@@ -28,7 +28,7 @@ Build once (`moon build --target native`), then:
     clang -o fib .qbe_build/10_fibonacci.o drv.c && ./fib; echo $?   # 0
 
 `--run-asm` needs macOS/aarch64 (it executes the code); `--emit obj` is pure
-MoonBit and works on any host. `--route a` switches both back to the
+MoonBit and works on any host. `--clang` switches both back to the
 clang-backed route A.
 
 ## Route B - self contained (default)
@@ -57,7 +57,7 @@ instruction encoders, each validated byte-for-byte against `clang`.
 (`mmap`/`mprotect`, temp files, process spawn, `dlopen`/`dlsym`, calling a
 code address) behind a typed FFI (`run_asm/ffi.mbt`).
 
-## Route A - toolchain backed (fallback, `--route a`)
+## Route A - toolchain backed (fallback, `--clang`)
 
 `run_asm/` (native only) writes the Mach-O assembly to a temp `.s` and runs
 `clang -c` for `--emit obj`, or `clang -dynamiclib` + `dlopen`/`dlsym` for
