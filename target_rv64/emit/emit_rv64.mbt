@@ -528,7 +528,12 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
           }
           @types.CBits => {
             let rn = @types.rv64_reg_name(i.to.tmp_val())
-            let n = con.bits.i
+            // C loadcon: non-wide constants are truncated to int32.
+            let n = if i.cls.wide() == 0 {
+              con.bits.i.to_int().to_int64()
+            } else {
+              con.bits.i
+            }
             st.sb.write_string("\tli ")
             st.sb.write_string(rn)
             st.sb.write_string(", ")
