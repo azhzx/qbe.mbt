@@ -43,7 +43,7 @@ with functions.
 
 ## Notes
 
-- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for both
-  `-G e` and `-G m` (406/406).
+- Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for the ELF
+  (`-G e`) flavor (406/406); the Mach-O (`-G m`) flavor is not yet aligned.
 - An independent assemblability gate is available at
   `tools/check_arm64_asm.py` (clang aarch64 integrated assembler).

@@ -35,7 +35,7 @@ pub fn arm64_emit_reset() -> Unit
 
 ## 说明
 
-- 通过 `vendor/qbe/qbe -t arm64` 对 `-G e` 与 `-G m` 均逐字节验证
-  （406/406）。
+- 通过 `vendor/qbe/qbe -t arm64` 对 ELF（`-G e`）风格逐字节验证
+  （406/406）；Mach-O（`-G m`）风格尚未对齐。
 - 独立的可汇编性校验脚本：`tools/check_arm64_asm.py`（clang aarch64 集成
   汇编器）。
