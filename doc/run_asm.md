@@ -44,7 +44,21 @@ Remaining: encode the full arm64 instruction set the text emitter produces and
 drive it from the same post-`rega` IR (a binary arm64 emitter replacing the
 string one), plus relocation application for `adrp`/`add`/`bl`.
 
+
+## Running wasm (`--run-wasm`)
+
+`qbe --run-wasm FUNC[,ARG]...` compiles to wasm (the `-t wasm` backend), turns
+the WAT into a module with `moon-wasm-opt` (binaryen, shipped with MoonBit) and
+runs the export under `node`. Example:
+
+    qbe --run-wasm add,2,3 demo/01_arith.ssa   # 5
+
+Note: the wasm backend currently emits valid modules for straight-line
+functions; loops/phi nodes (structured control flow) and imports are still
+being finished, so those report an error.
+
 ## Tests
 
     moon test --target native -p run_asm      # FFI, route A, route B slice
+    qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node
     moon test --target native -p object   # encoder vs clang, object layout
