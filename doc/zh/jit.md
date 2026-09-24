@@ -1,0 +1,46 @@
+# JIT 与目标文件生成
+
+qbe.mbt 可以把 .ssa 变成机器码，目前支持 **macOS / aarch64**，有两条路径：
+
+    qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # 生成 Mach-O .o
+    qbe --jit fib,10 demo/10_fibonacci.ssa           # 输出 55
+
+两者都走同一条流水线（前端 -> arm64 ABI -> isel -> rega）和逐字节对齐的
+arm64 文本发射器。
+
+## 路线 A - 借道系统工具链（默认）
+
+`jit/`（仅 native）调用系统工具链：
+
+- `--emit obj`：把 Mach-O 汇编写到临时 `.s`，再 `clang -c` 得到 `.o`。
+- `--jit FUNC[,ARG]`：把 Mach-O 汇编写到临时 `.s`，`clang -dynamiclib` 生成
+  dylib，`dlopen` 后用 `dlsym` 解析 `FUNC` 并调用。
+
+MoonBit 自身无法表达的部分放在 `jit/jit_stub.c`，通过类型化 FFI
+（`jit/ffi.mbt`）暴露：`mmap`/`mprotect` 可执行内存、临时文件、进程启动、
+`dlopen`/`dlsym`、调用裸代码地址。
+
+优点：今天即可用、代码少、复用已验证的发射器。缺点：运行期依赖 Xcode/clang。
+
+## 路线 B - 自包含（进行中）
+
+目标（对齐 Cranelift）：不依赖工具链，进程内直接产出目标文件并执行。
+
+已完成并验证：
+
+- `object/macho.mbt` - Mach-O（`MH_OBJECT`，arm64）写入器：header、带 section
+  的 `LC_SEGMENT_64`、`LC_BUILD_VERSION`、`LC_SYMTAB`、`nlist_64` 与外部
+  重定位。手工构造的目标文件可被 `ld` 链接并运行。
+- `object/arm64_enc.mbt` - 编码器切片（`add` 立即数、`movz`、`movk`、`ret`），
+  与 `clang` 逐字节对拍通过。
+- `jit/module.mbt` - `JitExec`：`mmap` + 拷贝 + `mprotect` + 调用，内存中的
+  arm64 代码可直接执行。
+
+待完成：把文本发射器产生的全部 arm64 指令编码出来，并从同一份 post-`rega`
+IR 驱动（用二进制发射器替代字符串发射器），以及 `adrp`/`add`/`bl` 的重定位
+回填。
+
+## 测试
+
+    moon test --target native -p jit      # FFI、路线 A、路线 B 切片
+    moon test --target native -p object   # 编码器对拍、目标文件布局
