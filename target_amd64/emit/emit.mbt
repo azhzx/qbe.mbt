@@ -763,7 +763,14 @@ pub fn gasemitdat(
       } else if d.is_ref {
         sb.write_string("\{dtoa} \{d.ref_name}\{s64_plus(d.ref_offset)}\n")
       } else {
-        sb.write_string("\{dtoa} \{d.num}\n")
+        // C emitdat masks the value to the data item width.
+        let mask = match d.kind {
+          @types.DB => 0xffL
+          @types.DH => 0xffffL
+          @types.DW => 0xffffffffL
+          _ => -1L
+        }
+        sb.write_string("\{dtoa} \{(d.num & mask).to_string()}\n")
       }
     }
   }
