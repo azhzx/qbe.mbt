@@ -63,7 +63,7 @@ def find_qbe_ref():
 QBE_REF = None  # resolved in main()
 
 
-DEFAULT_FLAGS = ["-dP", "-dM", "-dN", "-dC", "-dF", "-dA", "-dI", "-dL", "-dS", "-dR", "-dPM", "-dPN", "-dPC", "-dPMNC"]
+DEFAULT_FLAGS = ["-dP", "-dM", "-dN", "-dC", "-dF", "-dA", "-dI", "-dL", "-dS", "-dR", "-dG", "-dK", "-dPM", "-dPN", "-dPC", "-dPMNC"]
 
 _qbe_g_support = None
 
@@ -105,12 +105,18 @@ def check(label, out1, out2):
 
 
 def one(args):
-    """Run one (flagset, test) pair; returns (label, None|(n1,n2))."""
-    fset, t, qbe_ref = args
+    """Run one (flagset, test) pair; returns (label, None|(n1,n2)).
+
+    Debug dumps are written to stderr; generated assembly is written to
+    stdout.  Compare the stream that the mode actually produces.
+    """
+    fset, t, qbe_ref, asm = args
     r1 = run([qbe_ref, *fset, t])
     r2 = run([MINE, *fset, t])
     label = (" ".join(fset) + " " if fset else "") + os.path.basename(t)
-    return check(label, r1.stdout, r2.stdout)
+    if asm:
+        return check(label, r1.stdout, r2.stdout)
+    return check(label, r1.stderr, r2.stderr)
 
 
 def main():
@@ -185,7 +191,7 @@ def main():
     ref_flagsets = {tuple(fs): ref_flavor_args(fs, QBE_REF) for fs in flagsets}
 
     jobs_list = [
-        (ref_flagsets[tuple(fset)], t, QBE_REF)
+        (ref_flagsets[tuple(fset)], t, QBE_REF, asm_mode)
         for fset in flagsets
         for t in tests
     ]

@@ -117,6 +117,9 @@
 
 每个带 `-d*` 标志的阶段在调试模式下会输出 IL 形式的快照到 stderr，参考 [cmd_main.md](cmd_main.md) 的标志表。
 
+三个差分目标（`amd64_sysv`、`arm64`、`rv64`）的每个调试标志输出与
+生成的汇编，均与冻结参考 `vendor/qbe`（661ceb2）逐字节一致。
+
 ## 项目相关
 
 - 总体介绍：[README.mbt.md](../README.mbt.md)
@@ -141,7 +144,8 @@ parse → fillrpo → fillpreds → filluse → memopt
 
 rv64 与 amd64 共享同一套 `spill`/`rega`：目标差异通过 `types.target_cfg`
 （见 [types.md](types.md) 的 TargetCfg 章节）在运行时切换。
-rv64 后端目前没有差分参考验证，`data` 段与浮点常量 rodata 输出待完善。
+rv64 的 `data` 段与浮点常量池与 `vendor/qbe -t rv64` 逐字节一致；差分验证通过
+`python compare.py --target rv64` 与独立的 `tools/check_rv64_asm.py` 汇编门禁进行。
 
 ```
 la64（LoongArch64，LP64D）：
@@ -155,8 +159,8 @@ la64（LoongArch64，LP64D）：
 ```
 
 la64 通过 `types.target_cfg` 与 amd64/rv64 共享同一套 `spill`/`rega`。
-与 rv64 一样没有差分参考基线，快照逐条对照 LoongArch ELF psABI 手工核验；
-数据段与浮点常量池为完整输出（rv64 尚缺）。
+没有上游差分参考基线，快照逐条对照 LoongArch ELF psABI 手工核验；
+数据段与浮点常量池为完整输出，与 rv64 相同。
 
 ```
 arm64（AArch64，AAPCS64 ELF）：

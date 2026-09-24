@@ -121,6 +121,10 @@ Packages are listed in compilation pipeline order:
 
 Each stage with a `-d*` flag outputs an IL-form snapshot to stderr in debug mode; see [cmd_main.md](cmd_main.md) for the flag table.
 
+All three differential targets (`amd64_sysv`, `arm64`, `rv64`) are
+byte-for-byte identical to the frozen `vendor/qbe` reference (661ceb2) for
+every debug flag and for the emitted assembly.
+
 ## Project Links
 
 - Overview: [README.mbt.md](../README.mbt.md)
@@ -144,7 +148,7 @@ parse → fillrpo → fillpreds → filluse → memopt
 ```
 
 rv64 shares the same `spill`/`rega` with amd64: target differences are switched at runtime via `types.target_cfg` (see [types.md](types.md) TargetCfg section).
-The rv64 backend currently has no differential reference validation; `data` segment and floating-point constant rodata output are pending.
+rv64 emits `data` segments and the floating-point constant pool byte-identically to `vendor/qbe -t rv64`; differential validation runs via `python compare.py --target rv64` and the independent `tools/check_rv64_asm.py` assembler gate.
 
 ```
 la64 (LoongArch64, LP64D):
@@ -158,9 +162,9 @@ la64 (LoongArch64, LP64D):
 ```
 
 la64 shares the same `spill`/`rega` with amd64 and rv64 via `types.target_cfg`.
-Like rv64, it has no differential reference baseline; its snapshots are
+It has no upstream differential reference baseline; its snapshots are
 hand-verified against the LoongArch ELF psABI. It emits data sections and the
-floating-point constant pool (which rv64 still lacks).
+floating-point constant pool, like rv64.
 
 ```
 interp (direct SSA execution):

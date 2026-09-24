@@ -3,15 +3,15 @@
 // amd64/isel.c (selcmp, sel, flagi, seljmp, amd64_isel).
 
 ///|
-fn selcmp(
+fn selcmp_swap(
   st : IselState,
   a0 : @types.Ref,
   a1 : @types.Ref,
   k : @types.Class,
-) -> Bool {
+  swap : Bool,
+) -> Unit {
   let mut arg0 = a0
   let mut arg1 = a1
-  let swap = arg0.is_con()
   if swap {
     let t = arg1
     arg1 = arg0
@@ -20,12 +20,31 @@ fn selcmp(
   emit(st, @types.Xcmp, k, @types.Ref::none(), arg1, arg0)
   let idx = st.buf.length() - 1
   if arg0.is_con() {
+    // C selcmp materialises arg[0] and writes it back to the emitted
+    // instruction's second operand (icmp->arg[1]).
     let r = isel_newtmp(st, k)
-    st.buf[idx].arg1 = r
+    st.buf[idx].arg2 = r
     emit(st, @types.Copy, k, r, arg0, @types.Ref::none())
+    // C: fixarg(&curi->arg[0], k, curi) -- stashes float constants.
+    let cidx = st.buf.length() - 1
+    st.buf[cidx].arg1 = fixarg(st, st.buf[cidx].arg1, k, Some(@types.Copy))
   }
   st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Xcmp))
   st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, k, Some(@types.Xcmp))
+}
+
+///|
+fn selcmp(
+  st : IselState,
+  a0 : @types.Ref,
+  a1 : @types.Ref,
+  k : @types.Class,
+  x : Int,
+) -> Bool {
+  // C cmpswap: float predicates fix the operand order, otherwise swap when
+  // the first operand is a constant.
+  let swap = cmpswap(a0, x)
+  selcmp_swap(st, a0, a1, k, swap)
   swap
 }
 
@@ -123,6 +142,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::none(),
         )
         emiti(st, i1)
+        let i1idx = st.buf.length() - 1
         emit(
           st,
           @types.Copy,
@@ -130,6 +150,13 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::tmp(@types.RCX),
           r0,
           @types.Ref::none(),
+        )
+        // C amd64/isel.c: fixarg(&i1->arg[0], argcls(&i, 0), i1, fn).
+        st.buf[i1idx].arg1 = fixarg(
+          st,
+          st.buf[i1idx].arg1,
+          argcls(i, 0),
+          Some(i.op),
         )
       }
     @types.Nop => ()
@@ -204,7 +231,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
       }
     }
     _ =>
-      if i.op.is_ext() {
+      if isxsel(i.op) {
+        sel_emit(st, i)
+      } else if i.op.is_ext() {
         sel_emit(st, i)
       } else if i.op.is_load() {
         let i1 = i
@@ -215,7 +244,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
         if is_cmp {
           emit(st, flag_op(x), k, i.to, @types.Ref::none(), @types.Ref::none())
           let idx = st.buf.length() - 1
-          if selcmp(st, i.arg1, i.arg2, kc) {
+          if selcmp(st, i.arg1, i.arg2, kc, x) {
             st.buf[idx].op = flag_op(cmpop(x))
           }
         } else {
@@ -225,6 +254,101 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
         }
       }
   }
+}
+
+///|
+// Lower a sel1 group to conditional moves (C amd64/isel.c selsel). Returns
+// the index of the matching sel0 so the caller continues before it.
+fn selsel(st : IselState, b : @types.Blk, i : Int) -> Int raise {
+  let mut isel0 = i
+  while isel0 > 0 {
+    isel0 = isel0 - 1
+    if b.ins[isel0].op == @types.Sel0 {
+      break
+    }
+  }
+  let s0 = b.ins[isel0]
+  let r = s0.arg1
+  let t = st.fn_.tmps[r.tmp_val()]
+  let fi = flagi(b.ins, isel0)
+  let mut cr0 = @types.Ref::none()
+  let mut cr1 = @types.Ref::none()
+  let mut gencmp = false
+  let mut gencpy = false
+  let mut swap = false
+  let mut k = @types.Kw
+  let mut c = CINE
+  let mut other = false
+  if fi < 0 || !b.ins[fi].to.eq(r) {
+    gencmp = true
+    cr0 = r
+    cr1 = @types.Ref::con(st.fn_.get_con(0L))
+  } else {
+    let (is_cmp, kc, x) = iscmp(b.ins[fi].op)
+    if is_cmp {
+      k = kc
+      c = x
+      if c == NCMPI + 0 || c == NCMPI + 5 {
+        // Cfeq/Cfne are selected as and/or, check with Cine
+        c = CINE
+        other = true
+      } else {
+        swap = cmpswap(b.ins[fi].arg1, c)
+        if swap {
+          c = cmpop(c)
+        }
+        if t.nuse == 1 {
+          gencmp = true
+          cr0 = b.ins[fi].arg1
+          cr1 = b.ins[fi].arg2
+          b.ins[fi] = @types.Ins::new(
+            @types.Nop,
+            @types.Kx,
+            @types.Ref::none(),
+            @types.Ref::none(),
+            @types.Ref::none(),
+          )
+        }
+      }
+    } else if b.ins[fi].op == @types.And &&
+      t.nuse == 1 &&
+      (b.ins[fi].arg1.is_tmp() || b.ins[fi].arg2.is_tmp()) {
+      let ins = b.ins[fi]
+      ins.op = @types.Xtest
+      ins.to = @types.Ref::none()
+      if ins.arg2.is_con() {
+        let rr = ins.arg2
+        ins.arg2 = ins.arg1
+        ins.arg1 = rr
+      }
+      b.ins[fi] = ins
+    } else {
+      other = true
+    }
+  }
+  if other && t.nuse == 1 {
+    gencpy = true
+  }
+  let mut isel1 = i
+  while isel1 > isel0 {
+    b.ins[isel1].op = xsel_op(c)
+    sel(st, b.ins[isel1])
+    isel1 = isel1 - 1
+  }
+  if gencmp {
+    selcmp_swap(st, cr0, cr1, k, swap)
+  }
+  if gencpy {
+    emit(st, @types.Copy, @types.Kw, @types.Ref::none(), r, @types.Ref::none())
+  }
+  b.ins[isel0] = @types.Ins::new(
+    @types.Nop,
+    @types.Kx,
+    @types.Ref::none(),
+    @types.Ref::none(),
+    @types.Ref::none(),
+  )
+  isel0
 }
 
 ///|
@@ -264,13 +388,13 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
   let fi = flagi(b.ins, b.ins.length())
   if fi < 0 || !b.ins[fi].to.eq(r) {
     let c0 = @types.Ref::con(st.fn_.get_con(0L))
-    ignore(selcmp(st, r, c0, @types.Kw))
+    ignore(selcmp(st, r, c0, @types.Kw, -1))
     b.jmp.kind = jjf_op(1)
   } else {
     let (is_cmp, k, c) = iscmp(b.ins[fi].op)
     if is_cmp {
       if t >= 0 && st.fn_.tmps[t].nuse == 1 {
-        let c1 = if selcmp(st, b.ins[fi].arg1, b.ins[fi].arg2, k) {
+        let c1 = if selcmp(st, b.ins[fi].arg1, b.ins[fi].arg2, k, c) {
           cmpop(c)
         } else {
           c
@@ -343,6 +467,8 @@ pub fn isel(
         sz = sz / 4L
         fn_.tmps[i.to.tmp_val()].slot = fn_.slot
         fn_.slot = fn_.slot + sz.to_int()
+        // C amd64/isel.c: salign = 2 + al - Oalloc.
+        fn_.salign = 2 + s
         start.ins[idx] = @types.Ins::new(
           @types.Nop,
           @types.Kx,
@@ -385,7 +511,11 @@ pub fn isel(
     let mut i = b.ins.length()
     while i > 0 {
       i = i - 1
-      sel(st, b.ins[i])
+      if b.ins[i].op == @types.Sel1 {
+        i = selsel(st, b, i)
+      } else {
+        sel(st, b.ins[i])
+      }
     }
     let nb = emit_block(st)
     b.ins.clear()

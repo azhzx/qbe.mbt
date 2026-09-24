@@ -362,10 +362,20 @@ fn uf_find(f : @types.Fn, pb : Int, uf : Array[Int]) -> Int {
 // Simplify jumps by merging empty blocks that just jump (C simpljmp in cfg.c).
 // Requires: rpo and no phis (rega clears them). Breaks the CFG.
 pub fn simpljmp(f : @types.Fn) -> Unit {
+  // C cfg.c: create one shared return block; every Jret0 becomes a jump to it.
+  let ret_id = f.add_blk("ret")
+  let ret = f.blks[ret_id]
+  ret.jmp.kind = @types.Jret0
+  ret.rpo_id = ret_id
   // union-find indexed by block rpo id
   let uf : Array[Int] = Array::make(f.blks.length(), -1)
   for id in f.def_order {
     let b = f.blks[id]
+    if b.jmp.kind == @types.Jret0 {
+      b.jmp.kind = @types.Jjmp
+      b.jmp.s1 = ret_id
+      b.jmp.s2 = -1
+    }
     if b.ins.length() == 0 {
       if b.jmp.kind == @types.Jjmp {
         let s1 = uf_find(f, b.jmp.s1, uf)
@@ -391,4 +401,6 @@ pub fn simpljmp(f : @types.Fn) -> Unit {
       }
     }
   }
+  // C: *p = ret -- append the shared return block at the end.
+  f.def_order.push(ret_id)
 }

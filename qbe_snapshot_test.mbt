@@ -23,15 +23,17 @@ test "e2e fold: 001_add_w" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl fold_add_w
           #|fold_add_w:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl $4000000000, %eax
-          #|	leave
           #|	ret
+          #|.type fold_add_w, @function
+          #|.size fold_add_w, .-fold_add_w
           #|/* end function fold_add_w */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -56,15 +58,17 @@ test "e2e fold: 002_sub_w" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl fold_sub_w
           #|fold_sub_w:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
-          #|	movl $-2147483649, %eax
-          #|	leave
+          #|	endbr64
+          #|	movl $2147483647, %eax
           #|	ret
+          #|.type fold_sub_w, @function
+          #|.size fold_sub_w, .-fold_sub_w
           #|/* end function fold_sub_w */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -94,26 +98,31 @@ test "e2e abi: 001_arg1w" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl callee1
           #|callee1:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl %edi, %eax
-          #|	addl $0, %eax
-          #|	leave
           #|	ret
+          #|.type callee1, @function
+          #|.size callee1, .-callee1
           #|/* end function callee1 */
           #|
           #|.text
+          #|.balign 16
           #|test:
+          #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
           #|	movl $1, %edi
           #|	callq callee1
           #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -143,26 +152,31 @@ test "e2e abi: 009_arg1l" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl callee1
           #|callee1:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movq %rdi, %rax
-          #|	addq $0, %rax
-          #|	leave
           #|	ret
+          #|.type callee1, @function
+          #|.size callee1, .-callee1
           #|/* end function callee1 */
           #|
           #|.text
+          #|.balign 16
           #|test:
+          #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
           #|	movl $1, %edi
           #|	callq callee1
           #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -187,16 +201,18 @@ test "e2e isel: 001_imm_add_w" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl test
           #|test:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
-          #|	movl $2147483647, %eax
-          #|	addl %edi, %eax
-          #|	leave
+          #|	endbr64
+          #|	movl %edi, %eax
+          #|	addl $2147483647, %eax
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -221,16 +237,18 @@ test "e2e isel: 002_imm_sub_w" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl test
           #|test:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl $0, %eax
           #|	subl %edi, %eax
-          #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -262,21 +280,24 @@ test "e2e regalloc: 006_callersave" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl callee
           #|callee:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
-          #|	movl $1, %eax
-          #|	addl %edi, %eax
-          #|	leave
+          #|	endbr64
+          #|	movl %edi, %eax
+          #|	addl $1, %eax
           #|	ret
+          #|.type callee, @function
+          #|.size callee, .-callee
           #|/* end function callee */
           #|
           #|.text
+          #|.balign 16
           #|test:
+          #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
-          #|	sub $8, %rsp
+          #|	subq $8, %rsp
           #|	pushq %rbx
           #|	movl %edi, %eax
           #|	movl %esi, %edi
@@ -287,8 +308,11 @@ test "e2e regalloc: 006_callersave" {
           #|	popq %rbx
           #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -324,21 +348,24 @@ test "e2e regalloc: 010_calleesave" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl callee
           #|callee:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
-          #|	movl $1, %eax
-          #|	addl %edi, %eax
-          #|	leave
+          #|	endbr64
+          #|	movl %edi, %eax
+          #|	addl $1, %eax
           #|	ret
+          #|.type callee, @function
+          #|.size callee, .-callee
           #|/* end function callee */
           #|
           #|.text
+          #|.balign 16
           #|test:
+          #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
-          #|	sub $8, %rsp
+          #|	subq $8, %rsp
           #|	pushq %rbx
           #|	pushq %r12
           #|	pushq %r13
@@ -355,18 +382,20 @@ test "e2e regalloc: 010_calleesave" {
           #|	movl %ebx, %edi
           #|	movl %eax, %ebx
           #|	callq callee
-          #|	movl %eax, %ecx
-          #|	movl %r12d, %eax
-          #|	addl %r13d, %eax
-          #|	addl %ebx, %eax
+          #|	movl %r12d, %ecx
+          #|	addl %r13d, %ecx
+          #|	addl %ebx, %ecx
           #|	addl %ecx, %eax
           #|	popq %r13
           #|	popq %r12
           #|	popq %rbx
           #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -391,7 +420,7 @@ test "e2e emit: 008_data_zero" {
         assembly,
         content=(
           #|.data
-          #|.align 8
+          #|.balign 8
           #|z:
           #|	.byte 1
           #|	.fill 64,1,0
@@ -399,15 +428,17 @@ test "e2e emit: 008_data_zero" {
           #|/* end data */
           #|
           #|.text
+          #|.balign 16
           #|.globl test
           #|test:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl $0, %eax
-          #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -433,29 +464,31 @@ test "e2e emit: 005_data_str" {
         assembly,
         content=(
           #|.data
-          #|.align 8
+          #|.balign 8
           #|s:
           #|	.ascii "hello\n"
           #|	.byte 0
           #|/* end data */
           #|
           #|.data
-          #|.align 8
+          #|.balign 8
           #|s2:
           #|	.ascii "tab\there"
           #|	.byte 0
           #|/* end data */
           #|
           #|.text
+          #|.balign 16
           #|.globl test
           #|test:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl $0, %eax
-          #|	leave
           #|	ret
+          #|.type test, @function
+          #|.size test, .-test
           #|/* end function test */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -481,17 +514,19 @@ test "e2e programs: 030_gray" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl gray
           #|gray:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl %edi, %eax
           #|	shrl $1, %eax
           #|	xorl %edi, %eax
-          #|	leave
           #|	ret
+          #|.type gray, @function
+          #|.size gray, .-gray
           #|/* end function gray */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )
@@ -517,18 +552,20 @@ test "e2e programs: 054_tower" {
         assembly,
         content=(
           #|.text
+          #|.balign 16
           #|.globl hanoi
           #|hanoi:
-          #|	pushq %rbp
-          #|	movq %rsp, %rbp
+          #|	endbr64
           #|	movl %edi, %ecx
           #|	movl $1, %eax
           #|	shll %cl, %eax
           #|	subl $1, %eax
-          #|	leave
           #|	ret
+          #|.type hanoi, @function
+          #|.size hanoi, .-hanoi
           #|/* end function hanoi */
           #|
+          #|.section .note.GNU-stack,"",@progbits
           #|
         ),
       )

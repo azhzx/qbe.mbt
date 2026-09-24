@@ -7,9 +7,8 @@
 #            debug flag against the reference C QBE built from the vendored
 #            submodule (Ubuntu), plus independent assembly validation.
 #
-# Expected baselines (see test/README.md):
-#   python compare.py          -> 5684/5684
-#   python compare.py --target arm64        -> 5684/5684
+# The CI gates on every debug stage and on the emitted assembly, all of which
+# are byte-identical to the frozen reference on amd64/arm64/rv64.
 
 name: CI
 
@@ -98,11 +97,28 @@ jobs:
       # compare.py builds `_build/native/debug/build/cmd/main/main.exe`
       # internally, then diffs stdout/stderr against the reference binary
       # (auto-detected at vendor/qbe/qbe, or via $QBE_REF).
-      - name: "Differential: all debug flags"
-        run: python compare.py
+      # Every debug stage and the emitted assembly are byte-identical to the
+      # frozen reference on all three backends, so all of them are gated.
+      - name: "Differential: all debug flags (amd64)"
+        run: python compare.py -dP -dM -dN -dC -dF -dA -dI -dL -dS -dR -dG -dK
 
-      - name: "Differential: arm64 IR dumps"
-        run: python compare.py --target arm64
+      - name: "Differential: all debug flags (arm64)"
+        run: python compare.py --target arm64 -dP -dM -dN -dC -dF -dA -dI -dL -dS -dR -dG -dK
+
+      - name: "Differential: all debug flags (rv64)"
+        run: python compare.py --target rv64 -dP -dM -dN -dC -dF -dA -dI -dL -dS -dR -dG -dK
+
+      - name: "Differential: assembly (amd64)"
+        run: python compare.py --asm
+
+      - name: "Differential: assembly (arm64)"
+        run: python compare.py --target arm64 --asm
+
+      - name: "Differential: assembly (rv64)"
+        run: python compare.py --target rv64 --asm
 
       - name: "ARM64 assemblability (clang)"
         run: python tools/check_arm64_asm.py
+
+      - name: "RISC-V64 assemblability (clang)"
+        run: python tools/check_rv64_asm.py

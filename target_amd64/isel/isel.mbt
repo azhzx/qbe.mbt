@@ -156,6 +156,10 @@ fn fixarg(
       m.base = r0
       m.offset = @types.Con::new()
     }
+  } else if op is Some(o) && isxsel(o) && r0.is_con() {
+    // xsel operands must be in registers (C fixarg's isxsel branch)
+    r1 = isel_newtmp(st, k)
+    emit(st, @types.Copy, k, r1, r0, @types.Ref::none())
   }
   r1
 }
@@ -167,9 +171,6 @@ fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
   if r0.is_tmp() {
     let av = @types.Addr::new()
     amatch(st, av, r0, true)
-    if av.base.eq(r0) {
-      return r0
-    }
     if av.offset.kind == @types.CAddr {
       if !av.base.is_none() {
         // apple asm fix

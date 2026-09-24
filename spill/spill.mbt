@@ -333,6 +333,16 @@ pub fn spill(
         v.bits[0] = v.bits[0] | @types.target_retregs(b.jmp.arg).0
       }
     }
+    // the jump argument must be in a register at the branch, otherwise it
+    // is replaced by its stack slot (C spill.c 409-416)
+    if b.jmp.arg.is_tmp() {
+      let t = b.jmp.arg.tmp_val()
+      v.set(t)
+      limit2(st, v, 0, 0, None)
+      if !v.has(t) {
+        b.jmp.arg = sp_slot(st, t)
+      }
+    }
     // spill temps live-out but not in registers at the border
     b.out_set
     .unwrap()

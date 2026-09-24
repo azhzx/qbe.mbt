@@ -43,5 +43,5 @@ constant pool.
 - **Data sections**: portable ELF spellings - `.balign` (LoongArch gas
   treats `.align` as a power of two), `.byte/.half/.word/.quad`, `.fill`.
 - **Float constant pool**: `fp_stash` emitted as `.balign` + `.word`
-  sequences with a value comment (`/* 2.500000 */`). rv64 does not emit the
-  pool yet; la64 is the first complete implementation.
+  sequences with a value comment (`/* 2.500000 */`). rv64 now emits the pool
+  too (as `.section .rodata` + `.p2align` + `.quad`/`.int`).

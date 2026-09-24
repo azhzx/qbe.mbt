@@ -12,12 +12,22 @@ RISC-V 64 GAS assembly output. Runs after `isel_rv64` and `spill`/`rega` complet
 pub fn emit_rv64(
   @types.Fn,          // function with completed register allocation
   @util.Interner,     // string interner
+  String,             // gasloc: local-label prefix (".L" for ELF)
+  String,             // gassym: global-symbol prefix ("" for ELF)
   Bool,               // debug switch
   Array[@types.Typ],  // global type table
 ) -> String
+
+pub fn gasemitdat_rv64(@types.Dat, String, String, StringBuilder) -> Unit
+pub fn gasemitfin_rv64(String, StringBuilder) -> Unit
+pub fn rv64_emit_reset() -> Unit
 ```
 
-Returns the function's RISC-V assembly text. Module-level emission (functions concatenated in input order) is encapsulated in `pipeline.mbt`'s `emit_rv64_module`, called by `@qbe.compile_rv64` for library users.
+Returns the function's RISC-V assembly text. Module-level emission (functions and
+data interleaved in input order, followed by the floating-point constant pool)
+is encapsulated in `pipeline.mbt`'s `emit_rv64_module`, called by
+`@qbe.compile_rv64` for library users. `gasemitdat_rv64` mirrors C's
+`emitdat` and `gasemitfin_rv64` mirrors C's `emitfin`/`elf_emitfin`.
 
 ## Output Form
 
@@ -56,8 +66,8 @@ Key points:
 | --- | --- | --- | --- |
 | Output format | x86-64 GAS | WAT text | RISC-V GAS |
 | Stack frame | `pushq %rbp`/`leave` | None (stack machine) | `sd fp`/`ld fp` frame chain |
-| Data segment | `gasemitdat` | Module-internal memory/data | Not yet output (pending) |
-| Floating-point constants | `.LfpN` rodata stash | Constant instructions | Not yet output (pending) |
+| Data segment | `gasemitdat` | Module-internal memory/data | `gasemitdat_rv64` |
+| Floating-point constants | `.LfpN` rodata stash | Constant instructions | `.LfpN` in `.section .rodata` |
 
 ## Dependencies
 
@@ -66,5 +76,10 @@ Key points:
 
 ## Notes
 
-- The rv64 backend currently has no differential reference validation (upstream C QBE's rv64 target has not yet been added to the `compare.py` baseline); output format follows RISC-V psABI and GAS syntax.
-- `data` segment and floating-point literal rodata output are not yet implemented; `emit_rv64_module` currently only emits function parts.
+- Byte-level parity against upstream C QBE: `compare.py --target rv64` compares the
+  `-d*` IR/debug dumps, and `tools/check_rv64_asm.py` assembles every emitted
+  module with clang's integrated assembler as an independent encodability gate.
+- `data` segments (including default `.balign 8`, zero runs emitted to `.bss`) and
+  the floating-point constant pool (`.section .rodata`, `.p2align`, `.quad`/`.int`)
+  match `vendor/qbe/qbe -t rv64` byte-for-byte; `emit_rv64` supports `-G e`
+  (`gasloc=".L"`, `gassym=""`).

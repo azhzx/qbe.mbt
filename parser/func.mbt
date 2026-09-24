@@ -75,6 +75,8 @@ fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
       start.ins.insert(0, self.par_ins[i])
     }
   }
+  // Validate the function (C parse.c typecheck, phi subset)
+  self.typecheck(fn_final)
   // Add the function to the result
   self.funcs.push(self.curfn.unwrap())
   self.curfn = None
@@ -170,6 +172,22 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
   // Check for ... (variadic)
   if self.peek_kind() == TDot3 {
     let _ = self.next() // consume ...
+    // C parserefl emits an Oargv marker at the ... position for calls.
+    if arg {
+      let fn_ = self.curfn()
+      let ins = @types.Ins::new(
+        @types.Argv,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::none(),
+        @types.Ref::none(),
+      )
+      if self.curblk >= 0 {
+        fn_.blks[self.curblk].ins.push(ins)
+      } else {
+        self.par_ins.push(ins)
+      }
+    }
     self.expect(TRpa) // )
     return true
   }
@@ -305,7 +323,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
         @types.Oxxx
       }
       if op == @types.Oxxx {
-        raise self.error("invalid instruction: \{op_tok.raw}")
+        raise self.error("unknown keyword \{op_tok.raw}")
       }
       // Parse arguments
       let (arg1, arg2) = self.parse_ins_args()
@@ -391,14 +409,16 @@ fn Parser::parse_call(
   cls : @types.Class,
   ty : Int,
 ) -> Unit raise {
+  // Any call makes the function non-leaf (C parse.c: curf->leaf = 0).
+  self.curfn().leaf = false
   // Parse function reference
   let callee = self.parseref()
   if callee.is_none() {
     raise self.error("invalid callee in call")
   }
-  // Parse argument list
-  let is_vararg = self.parserefl(true)
-  let op = if is_vararg { @types.Vacall } else { @types.Call }
+  // Parse argument list; a variadic call is marked by an Argv instruction.
+  let _is_vararg = self.parserefl(true)
+  let op = @types.Call
   let (call_cls, arg2) = if cls == @types.Kx {
     (@types.Kl, @types.Ref::typ(ty))
   } else {
@@ -426,17 +446,26 @@ fn Parser::parse_ins_args(self : Self) -> (@types.Ref, @types.Ref) raise {
   if self.peek_kind() == TNl {
     return (arg1, arg2)
   }
-  self.expect(TCom) // ,
+  // C parse.c parseins: after an operand, only a comma or end of line is
+  // accepted.
+  if self.peek_kind() != TCom {
+    raise self.error(", or end of line expected")
+  }
+  let _ = self.next() // consume ,
   // Parse second argument
   let r2 = self.parseref()
   if r2.is_none() {
     raise self.error("invalid instruction argument")
   }
   arg2 = r2
-  // Skip any additional arguments (shouldn't happen in QBE)
+  // Skip any additional arguments (shouldn't happen in QBE) and enforce the
+  // C parse.c loop's trailing check after every operand.
   while self.peek_kind() == TCom {
     let _ = self.next() // consume ,
     let _ = self.parseref() // skip extra arg
+  }
+  if self.peek_kind() != TNl {
+    raise self.error(", or end of line expected")
   }
   (arg1, arg2)
 }

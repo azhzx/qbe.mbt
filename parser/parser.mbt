@@ -98,8 +98,25 @@ fn Parser::expect(self : Self, expected : @lexer.TokenKind) -> Unit raise {
     raise @util.QbeError::ParseError(
       self.source_file,
       t.line,
-      "\{expected} expected, got \{t.kind_str()} instead",
+      "\{tok_display(expected)} expected, got \{tok_display(t.kind)} instead",
     )
+  }
+}
+
+///|
+// Token display name used by expect(), mirroring vendor/qbe parse.c ttoa[]:
+// only these tokens have names, every other token renders as "??".
+fn tok_display(k : @lexer.TokenKind) -> String {
+  match k {
+    TLoc => "label"
+    TCom => ","
+    TEq => "="
+    TNl => "newline"
+    TLpa => "("
+    TRpa => ")"
+    TLbr => "{"
+    TRbr => "}"
+    _ => "??"
   }
 }
 

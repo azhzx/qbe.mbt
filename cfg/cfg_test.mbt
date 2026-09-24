@@ -138,8 +138,8 @@ test "simpljmp - merges empty jump blocks" {
   fillrpo(f)
   fillpreds(f)
   simpljmp(f)
-  // b1 is an empty jmp-only block, so b0 now jumps straight to b2.
-  assert_true(f.blks[0].jmp.s1 == 2)
+  // b1 is an empty jmp-only block, so b0 jumps straight to the shared return.
+  assert_true(f.blks[0].jmp.s1 == f.blks.length() - 1)
 }
 
 ///|
@@ -251,7 +251,7 @@ test "simpljmp - removes empty chained jumps" {
   fillpreds(f)
   filldom(f)
   simpljmp(f)
-  // the jump through the empty block is shortened to the final target
+  // the jump through the empty block is shortened to the shared return
   assert_true(f.blks[0].jmp.s1 == 2 || f.blks[0].jmp.kind == @types.Jjmp)
-  assert_true(f.blks[1].jmp.s1 == 2)
+  assert_true(f.blks[1].jmp.s1 == f.blks.length() - 1)
 }

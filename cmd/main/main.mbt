@@ -71,9 +71,13 @@ fn parse_run_spec(
 
 ///|
 // Format a compile error the way the reference CLI does.
-fn format_qbe_error(e : @util.QbeError) -> String {
+fn format_qbe_error(e : @util.QbeError, src_file? : String = "") -> String {
   match e {
-    @util.QbeError::ParseError(f, line, msg) => "\{f}:\{line}: error: \{msg}"
+    @util.QbeError::ParseError(f, line, msg) => {
+      // vendor/qbe parse.c: fprintf(stderr, "qbe:%s:%d: ", inpath, lnum)
+      let src = if src_file == "" { f } else { src_file }
+      "qbe:\{src}:\{line}: \{msg}"
+    }
     @util.QbeError::CompileError(msg) => "error: \{msg}"
     @util.QbeError::Ice(msg) => "ICE: \{msg}"
   }
@@ -118,7 +122,7 @@ async fn process_file(
         ""
       }
       Err(e) => {
-        @util.eprint(format_qbe_error(e) + "\n")
+        @util.eprint(format_qbe_error(e, src_file=file) + "\n")
         ""
       }
     }
@@ -126,7 +130,7 @@ async fn process_file(
     match @qbe.compile_target(source, backend, gas~) {
       Ok(assembly) => assembly
       Err(e) => {
-        @util.eprint(format_qbe_error(e) + "\n")
+        @util.eprint(format_qbe_error(e, src_file=file) + "\n")
         ""
       }
     }

@@ -6,7 +6,8 @@ test "format_qbe_error: parse errors carry file, line and message" {
   let msg = format_qbe_error(
     @util.QbeError::ParseError("input.ssa", 12, "unexpected token"),
   )
-  assert_eq(msg, "input.ssa:12: error: unexpected token")
+  // vendor/qbe parse.c err(): "qbe:%s:%d: " + message
+  assert_eq(msg, "qbe:input.ssa:12: unexpected token")
 }
 
 ///|

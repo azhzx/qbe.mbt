@@ -280,8 +280,23 @@ fn arm64_selcmp(
 }
 
 ///|
-// Select one instruction (C sel in arm64/isel.c). The reference snapshot has
-// no callable() shortcut: call targets are materialized like any operand.
+// Whether a call target can be used directly (C callable in arm64/isel.c):
+// register temps and address constants with zero offset.
+fn arm64_callable(r : @types.Ref, fn_ : @types.Fn) -> Bool {
+  if r.is_tmp() {
+    return true
+  }
+  if r.is_con() {
+    let c = fn_.cons[r.con_val()]
+    if c.kind == @types.CAddr && c.bits.i == 0L {
+      return true
+    }
+  }
+  false
+}
+
+///|
+// Select one instruction (C sel in arm64/isel.c).
 fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
   let (is_cmp, ck, cc) = arm64_iscmp(i.op)
   if is_cmp {
@@ -302,6 +317,27 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     } else {
       st.buf[idx].op = arm64_flag_op(cc)
     }
+    return
+  }
+  if i.op == @types.Alloc4 || i.op == @types.Alloc8 || i.op == @types.Alloc16 {
+    // C arm64/isel.c sel(): dynamic allocs lower via salloc().
+    st.fn_.has_dynalloc = true
+    let r0 = arm64_isel_newtmp(st, @types.Kl)
+    let r1 = arm64_isel_newtmp(st, @types.Kl)
+    let m16 = arm64_isel_getcon(st, -16L)
+    let c15 = arm64_isel_getcon(st, 15L)
+    arm64_isel_emit(
+      st,
+      @types.Ins::new(@types.Salloc, @types.Kl, i.to, r0, @types.Ref::none()),
+    )
+    arm64_isel_emit(st, @types.Ins::new(@types.And, @types.Kl, r0, r1, m16))
+    arm64_isel_emit(st, @types.Ins::new(@types.Add, @types.Kl, r1, i.arg1, c15))
+    let aidx = st.buf.length() - 1
+    st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
+    return
+  }
+  if i.op == @types.Call && arm64_callable(i.arg1, st.fn_) {
+    arm64_isel_emit(st, i)
     return
   }
   if i.op != @types.Nop {

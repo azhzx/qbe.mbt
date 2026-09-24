@@ -31,3 +31,32 @@
     refactor documents
     refactor repo package
     refactor float in backends
+
+2026.9.19: v0.9.0
+    rv64: emit data segments and floating-point constant pool byte-identical
+    to vendor/qbe -t rv64; thread -G gas settings; unique cross-function labels
+    compare.py: diff stderr for debug dumps (the old stdout compare was a no-op)
+    debug dumps: drop the export keyword, canonical stage headers, fix phiins
+    temp naming (Tmp.bid + single-definition early-out)
+    parser errors: qbe:<file>:<line>: format, reference token names and messages
+    add tools/check_rv64_asm.py independent RISC-V encodability gate
+2026.9.20: v0.10.0
+    align with the frozen vendor/qbe reference (ripe-lang master 661ceb2)
+    debug dumps: port parse.c typecheck() (operand/jump/undefined-block checks,
+    clsmerge); front-end flags now 406/406 on all three targets, differential
+    matrix 99.7%
+    port simpl.c blit expansion; add blit0/blit1 pseudo-ops, reqz/rnez; rv64
+    vararg lowering, aggregate Cptr blobs, compare operand classes
+    assembly: .text/.balign/endbr64+hint#34/.p2align/.type/.size/GNU-stack,
+    leaf-function %rsp framing, reference fp-constant rodata layout, quoted
+    local symbols; amd64 263/336, arm64 252/336, rv64 224/336 byte-identical
+2026.9.24: v0.11.0
+    complete byte-for-byte alignment with vendor/qbe (661ceb2) on amd64/arm64/rv64
+    debug dumps: 12096/12096 (12 flags x 3 targets); emitted assembly:
+    1008/1008 (336 compilable tests x 3 targets) byte-identical
+    rega: live-out registers mapped before allocation; section-3 bshas guard
+    amd64: xsel "mov" suffix, non-leaf frame parity, leaf epilogue addq,
+    shift-argument fixarg; arm64: ctoa negated table, Cptr call cty bit;
+    rv64: argsclass ngp check, fpstruct field classes, struct-return blobs,
+    extension constant class, alloc slots grouped by alignment class
+    loadopt: stable phi ordering; CI now gates every debug flag and assembly

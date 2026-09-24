@@ -112,6 +112,7 @@ pub(all) struct Tmp {
   uses : Array[Use]
   mut ndef : Int
   mut nuse : Int
+  mut bid : Int // Block id of the definition (C Tmp.bid)
   mut cost : Int
   mut slot : Int // Spill slot, -1 if unset
   mut cls : Class
@@ -129,6 +130,7 @@ pub fn Tmp::new(name : String, cls : Class) -> Tmp {
     uses: [],
     ndef: 0,
     nuse: 0,
+    bid: -1,
     cost: 0,
     slot: -1,
     cls,

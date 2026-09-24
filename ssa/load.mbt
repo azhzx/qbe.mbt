@@ -383,7 +383,9 @@ fn icmp(a : Insert, b : Insert) -> Int {
     return a.bid - b.bid
   }
   if a.isphi && b.isphi {
-    return 0
+    // The reference's qsort preserves the insertion order of equal-key phis
+    // (macOS stable qsort); `num` is a unique monotone insertion counter.
+    return a.num - b.num
   }
   if a.isphi {
     return -1

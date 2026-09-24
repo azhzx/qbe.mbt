@@ -431,6 +431,8 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
     @types.Vacall => ()
     // Error/placeholder
     @types.Oxxx => ()
+    // Conditional-select ops are amd64-only.
+    _ => ()
   }
 }
 
@@ -522,7 +524,7 @@ pub fn isel_la64(
 
   if print_dbg {
     let sb = StringBuilder::StringBuilder()
-    sb.write_string("> After LoongArch instruction selection:\n")
+    sb.write_string("\n> After instruction selection:\n")
     sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")
     sb.to_string()

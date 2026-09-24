@@ -18,6 +18,8 @@ priv struct DbFlags {
   mut f : Bool
   mut s : Bool
   mut r : Bool
+  mut g : Bool
+  mut k : Bool
 }
 
 ///|
@@ -33,6 +35,8 @@ fn DbFlags::new() -> DbFlags {
     f: false,
     s: false,
     r: false,
+    g: false,
+    k: false,
   }
 }
 
@@ -49,6 +53,8 @@ fn set_dbg(dbg : DbFlags, c : UInt16) -> Unit {
     'F' | 'f' => dbg.f = true
     'S' | 's' => dbg.s = true
     'R' | 'r' => dbg.r = true
+    'G' | 'g' => dbg.g = true
+    'K' | 'k' => dbg.k = true
     _ => ()
   }
 }
@@ -114,6 +120,7 @@ fn run_frontend_passes(
   interner : @util.Interner,
   typs : Array[@types.Typ],
   dbg : DbFlags,
+  cansel : Bool,
   out : StringBuilder,
 ) -> Unit raise {
   if dbg.p {
@@ -123,11 +130,10 @@ fn run_frontend_passes(
   @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
-  @ssa.memopt(fn_)
-  if dbg.m {
-    out.write_string("\n> After memory optimization:\n")
-    dbg_function(fn_, interner, typs, out)
-  }
+  // promote (mem.c): -dM "After slot promotion".
+  out.write_string(@mem.promote(fn_, dbg.m, interner, typs))
+  @ssa.filluse(fn_)
+  // ssa construction (ssa.c): filldom/fillfron/filllive/phiins/renblk.
   @cfg.filldom(fn_)
   if dbg.n {
     out.write_string("\n> Dominators:\n")
@@ -143,14 +149,36 @@ fn run_frontend_passes(
     out.write_string("\n> After SSA construction:\n")
     dbg_function(fn_, interner, typs, out)
   }
-  @cfg.fillloop(fn_)
   @cfg.fillalias(fn_)
+  // loadopt (load.c): -dM "After load elimination".
   out.write_string(@ssa.loadopt(fn_, dbg.m, interner, typs))
   @ssa.filluse(fn_)
-  @ssa.ssacheck(fn_)
-  out.write_string(@ssa.copy(fn_, dbg.c, interner, typs))
+  @cfg.fillalias(fn_)
+  // coalesce (mem.c): -dM "Slot coalescing".
+  out.write_string(@mem.coalesce(fn_, dbg.m, interner, typs))
   @ssa.filluse(fn_)
-  out.write_string(@fold.fold(fn_, dbg.f, interner, typs))
+  @cfg.filldom(fn_)
+  @ssa.ssacheck(fn_)
+  // gvn/gcm (gvn.c/gcm.c): -dG.
+  out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
+  @cfg.fillrpo(fn_)
+  @cfg.fillpreds(fn_)
+  // simplcfg (cfg.c): -dC.
+  out.write_string(@cfg.simplcfg(fn_, dbg.c, interner, typs))
+  @ssa.filluse(fn_)
+  @cfg.filldom(fn_)
+  out.write_string(@gvn.gcm(fn_, dbg.g, interner, typs))
+  @ssa.filluse(fn_)
+  @ssa.ssacheck(fn_)
+  if cansel {
+    // ifconvert (ifopt.c): -dK, amd64 only.
+    out.write_string(@ifopt.ifconvert(fn_, dbg.k, interner, typs))
+    @cfg.fillrpo(fn_)
+    @cfg.fillpreds(fn_)
+    @ssa.filluse(fn_)
+    @cfg.filldom(fn_)
+    @ssa.ssacheck(fn_)
+  }
 }
 
 ///|
@@ -165,9 +193,12 @@ fn run_passes(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_amd64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, out)
+  run_frontend_passes(fn_, interner, typs, dbg, true, out)
   // T.abi (sysv.c): -dA.
   out.write_string(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
+  // simpl (simpl.c), then refill cfg/use.
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // T.isel (amd64/isel.c): -dI.
@@ -269,7 +300,7 @@ fn run_passes_wasm(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
-  run_frontend_passes(fn_, interner, typs, dbg, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, out)
   // Wasm ABI lowering
   out.write_string(@abi_wasm.abi_wasm(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -308,9 +339,11 @@ fn run_passes_rv64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_rv64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, out)
   // RISC-V ABI lowering
   out.write_string(@abi_rv64.abi_rv64(fn_, typs, dbg.a, interner, typs))
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // RISC-V instruction selection
@@ -336,13 +369,36 @@ fn emit_rv64_module(
   order : Array[String],
   typs : Array[@types.Typ],
   interner : @util.Interner,
+  gasloc : String,
+  gassym : String,
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
-  for fn_ in funcs {
-    run_passes_rv64(fn_, interner, typs, DbFlags::new(), sb)
-    sb.write_string(@emit_rv64.emit_rv64(fn_, interner, false, typs))
+  @emit_rv64.rv64_emit_reset()
+  let mut fi = 0
+  let mut di = 0
+  for item in order {
+    if item == "f" {
+      let fn_ = funcs[fi]
+      fi = fi + 1
+      run_passes_rv64(fn_, interner, typs, DbFlags::new(), sb)
+      sb.write_string(
+        @emit_rv64.emit_rv64(fn_, interner, gasloc, gassym, false, typs),
+      )
+      sb.write_string("/* end function \{fn_.name} */\n\n")
+    } else {
+      while di < datas.length() {
+        let d = datas[di]
+        di = di + 1
+        @emit_rv64.gasemitdat_rv64(d, gasloc, gassym, sb)
+        if d.kind == @types.DEnd {
+          sb.write_string("/* end data */\n\n")
+          break
+        }
+      }
+    }
   }
+  @emit_rv64.gasemitfin_rv64(gasloc, sb)
 }
 
 ///|
@@ -357,9 +413,11 @@ fn run_passes_la64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_la64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, out)
   // LoongArch ABI lowering
   out.write_string(@abi_la64.abi_la64(fn_, typs, dbg.a, interner, typs))
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // LoongArch instruction selection
@@ -427,9 +485,11 @@ fn run_passes_arm64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_arm64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, out)
   // ARM64 ABI lowering
   out.write_string(@abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, typs))
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // ARM64 instruction selection

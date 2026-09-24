@@ -58,16 +58,30 @@ fn Rv64Class::new() -> Rv64Class {
 }
 
 ///|
+// Stack-parameter layout produced by selpar (C struct Params)
+priv struct Rv64Params {
+  mut ngp : Int
+  mut nfp : Int
+  mut stk : Int
+}
+
+///|
 // RISC-V ABI state
 priv struct Rv64AbiState {
   fn_ : @types.Fn
   typs : Array[@types.Typ]
   buf : Array[@types.Ins]
+  params : Rv64Params
 }
 
 ///|
 fn rv64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> Rv64AbiState {
-  Rv64AbiState::{ fn_, typs, buf: [], }
+  Rv64AbiState::{
+    fn_,
+    typs,
+    buf: [],
+    params: Rv64Params::{ ngp: 0, nfp: 0, stk: 0, },
+  }
 }
 
 ///|
@@ -102,6 +116,11 @@ fn rv64_newtmp(st : Rv64AbiState, k : @types.Class) -> @types.Ref {
 }
 
 ///|
+fn rv64_newblt(st : Rv64AbiState, k : @types.Class) -> @types.Ref {
+  @types.Ref::tmp(st.fn_.new_tmp("blt", k))
+}
+
+///|
 fn rv64_getcon(st : Rv64AbiState, v : Int64) -> @types.Ref {
   @types.Ref::con(st.fn_.get_con(v))
 }
@@ -112,23 +131,45 @@ fn rv64_call_ref(ca : Int) -> @types.Ref {
 }
 
 ///|
-// Copy sz bytes from rsrc to rstk in 8-byte chunks.
+// Copy sz bytes between src and dst (C blit in simpl.c). A non-negative sz
+// copies backwards (the shared offset starts at sz and decreases), a negative
+// sz copies forwards; the load and the store of each chunk use the same
+// offset. Chunks are emitted in reverse program order by the prepending
+// emit(), and the chunk table is ordered 8/4/2/1 bytes.
 fn rv64_blit(
   st : Rv64AbiState,
-  rstk : @types.Ref,
-  rsrc : @types.Ref,
+  dst : @types.Ref,
+  src : @types.Ref,
   sz : Int64,
 ) -> Unit {
-  let mut off = 0L
-  while off < sz {
-    let r = rv64_newtmp(st, @types.Kl)
-    let r1 = rv64_newtmp(st, @types.Kl)
-    rv64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r, r1)
-    rv64_emit(st, @types.Add, @types.Kl, r1, rstk, rv64_getcon(st, off))
-    let r2 = rv64_newtmp(st, @types.Kl)
-    rv64_emit(st, @types.Load, @types.Kl, r, r2, @types.Ref::none())
-    rv64_emit(st, @types.Add, @types.Kl, r2, rsrc, rv64_getcon(st, off))
-    off = off + 8L
+  let st_ops = [@types.Storel, @types.Storew, @types.Storeh, @types.Storeb]
+  let ld_ops = [@types.Load, @types.Load, @types.Loaduh, @types.Loadub]
+  let clss = [@types.Kl, @types.Kw, @types.Kw, @types.Kw]
+  let sizes = [8, 4, 2, 1]
+  let fwd = sz >= 0
+  let mut sz_ = if fwd { sz } else { -sz }
+  let mut off = if fwd { sz_ } else { 0L }
+  let mut p = 0
+  while sz_ > 0 {
+    let s = sizes[p].to_int64()
+    while sz_ >= s {
+      if fwd {
+        off = off - s
+      }
+      let r = rv64_newblt(st, @types.Kl)
+      let r1 = rv64_newblt(st, @types.Kl)
+      let ro = rv64_getcon(st, off)
+      rv64_emit(st, st_ops[p], @types.Kw, @types.Ref::none(), r, r1)
+      rv64_emit(st, @types.Add, @types.Kl, r1, dst, ro)
+      let r1b = rv64_newblt(st, @types.Kl)
+      rv64_emit(st, ld_ops[p], clss[p], r, r1b, @types.Ref::none())
+      rv64_emit(st, @types.Add, @types.Kl, r1b, src, ro)
+      if !fwd {
+        off = off + s
+      }
+      sz_ = sz_ - s
+    }
+    p = p + 1
   }
 }
 
@@ -160,7 +201,17 @@ fn rv64_fpstruct(
           c.nfp = c.nfp + 1
           off = off + f.len
         }
-        @types.Fb | @types.Fh | @types.Fw | @types.Fl => {
+        @types.Fb | @types.Fh | @types.Fw => {
+          let n = c.nfp + c.ngp
+          if n == 2 {
+            return -1
+          }
+          c.cls[n] = @types.Kw
+          c.off[n] = off
+          c.ngp = c.ngp + 1
+          off = off + f.len
+        }
+        @types.Fl => {
           let n = c.nfp + c.ngp
           if n == 2 {
             return -1
@@ -203,7 +254,10 @@ fn rv64_typclass(
   c.nfp = 0
 
   if t.align > 4 {
-    // alignments larger than 16 are not supported
+    abort("alignments larger than 16 are not supported")
+  }
+  if t.dark != 0 || t.size > 16L || t.size == 0L {
+    // large/dark structs are replaced by a pointer (C rv64/abi.c)
     c.class_ = c.class_ | Cptr
     c.cls[0] = @types.Kl
     c.off[0] = 0
@@ -252,20 +306,21 @@ fn rv64_ldregs(st : Rv64AbiState, c : Rv64Class, mem : @types.Ref) -> Unit {
 fn rv64_sttmps(
   st : Rv64AbiState,
   tmp : Array[@types.Ref],
+  base : Int,
   ntmp : Int,
   c : Rv64Class,
   mem : @types.Ref,
 ) -> Unit {
   let store_ops = [@types.Storew, @types.Storel, @types.Stores, @types.Stored]
   for i in 0..<ntmp {
-    tmp[i] = rv64_newtmp(st, c.cls[i])
+    tmp[base + i] = rv64_newtmp(st, c.cls[i])
     let r = rv64_newtmp(st, @types.Kl)
     rv64_emit(
       st,
       store_ops[c.cls[i].code()],
       @types.Kw,
       @types.Ref::none(),
-      tmp[i],
+      tmp[base + i],
       r,
     )
     rv64_emit(
@@ -330,7 +385,20 @@ fn rv64_argsclass(
             let _ = rv64_typclass(st, c, t, false)
           }
         }
-        if c.nfp <= nfp {
+        // Assign the argument registers (C typclass 165-170); the reference
+        // typclass consumes gp/fp by value, so these offsets are pre-advance.
+        let mut tg = gpi
+        let mut tf = fpi
+        for j in 0..<c.nreg {
+          if c.cls[j].base() == 0 {
+            c.reg[j] = @types.A0 + tg
+            tg = tg + 1
+          } else {
+            c.reg[j] = @types.FA0 + tf
+            tf = tf + 1
+          }
+        }
+        if c.ngp <= ngp {
           ngp = ngp - c.ngp
           nfp = nfp - c.nfp
           gpi = gpi + c.ngp
@@ -357,7 +425,8 @@ fn rv64_argsclass(
     }
     a = a + 1
   }
-  (envc << 12) | ((gpi - (if retptr { 1 } else { 0 })) << 4) | (fpi << 8)
+  // C argsclass returns (gp-gpreg)<<4; gp already includes the retptr slot.
+  (envc << 12) | (gpi << 4) | (fpi << 8)
 }
 
 ///|
@@ -390,8 +459,35 @@ fn rv64_selret(st : Rv64AbiState, bid : Int) -> Unit {
   if j == @types.Jretc {
     let mut cr = Rv64Class::new()
     cr = rv64_typclass(st, cr, st.typs[st.fn_.ret_ty], true)
+    // Return registers start at A0/FA0 (C typclass with gpreg/fpreg)
+    let mut tg = 0
+    let mut tf = 0
+    for j in 0..<cr.nreg {
+      if cr.cls[j].base() == 0 {
+        cr.reg[j] = @types.A0 + tg
+        tg = tg + 1
+      } else {
+        cr.reg[j] = @types.FA0 + tf
+        tf = tf + 1
+      }
+    }
     if (cr.class_ & Cptr) != 0 {
-      rv64_blit(st, st.fn_.retr, r0, cr.typ.unwrap().size)
+      rv64_emit(
+        st,
+        @types.Blit1,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::rint(cr.typ.unwrap().size.to_int()),
+        @types.Ref::none(),
+      )
+      rv64_emit(
+        st,
+        @types.Blit0,
+        @types.Kw,
+        @types.Ref::none(),
+        r0,
+        st.fn_.retr,
+      )
       ca = 0
     } else {
       rv64_ldregs(st, cr, r0)
@@ -431,6 +527,7 @@ fn rv64_selcall(
   orig : Array[@types.Ins],
   i0 : Int,
   i1 : Int,
+  il : Array[@types.Ins],
 ) -> Unit {
   let nargs = i1 - i0
   let ca : Array[Rv64Class] = []
@@ -442,11 +539,37 @@ fn rv64_selcall(
   let mut cr = Rv64Class::new()
   if has_retty {
     cr = rv64_typclass(st, cr, st.typs[callins.arg2.typ_val()], true)
+    // Return registers start at A0/FA0 (C typclass with gpreg/fpreg)
+    let mut tg = 0
+    let mut tf = 0
+    for j in 0..<cr.nreg {
+      if cr.cls[j].base() == 0 {
+        cr.reg[j] = @types.A0 + tg
+        tg = tg + 1
+      } else {
+        cr.reg[j] = @types.FA0 + tf
+        tf = tf + 1
+      }
+    }
   }
 
   let cty = rv64_argsclass(st, orig, i0, i1, ca, (cr.class_ & Cptr) != 0)
   let mut stk = 0
   for a in 0..<nargs {
+    let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
+    // Replace a Cptr aggregate with a pointer to a caller-allocated blob
+    // (C rv64/abi.c 355-361).
+    if (ca[a].class_ & Cptr) != 0 {
+      i.arg1 = rv64_newtmp(st, @types.Kl)
+      rv64_stkblob(st, i.arg1, ca[a].typ.unwrap())
+      let blob = st.buf[st.buf.length() - 1]
+      ignore(st.buf.remove(st.buf.length() - 1))
+      il.push(blob)
+      i.op = @types.Arg
+    }
     if (ca[a].class_ & Cstk1) != 0 {
       stk = stk + 8
     }
@@ -467,8 +590,13 @@ fn rv64_selcall(
   }
 
   if has_retty {
+    // C rv64/abi.c: a struct-returning call always gets a caller-allocated
+    // blob, whether or not the result is returned via a hidden pointer.
+    rv64_stkblob(st, callins.to, cr.typ.unwrap())
+    let blob = st.buf[st.buf.length() - 1]
+    ignore(st.buf.remove(st.buf.length() - 1))
+    il.push(blob)
     if (cr.class_ & Cptr) != 0 {
-      rv64_stkblob(st, callins.to, cr.typ.unwrap())
       rv64_emit(
         st,
         @types.Copy,
@@ -479,7 +607,7 @@ fn rv64_selcall(
       )
     } else {
       let tmp : Array[@types.Ref] = Array::make(2, @types.Ref::none())
-      rv64_sttmps(st, tmp, cr.nreg, cr, callins.to)
+      rv64_sttmps(st, tmp, 0, cr.nreg, cr, callins.to)
       for j in 0..<cr.nreg {
         let r = @types.Ref::tmp(cr.reg[j])
         rv64_emit(st, @types.Copy, cr.cls[j], tmp[j], r, @types.Ref::none())
@@ -531,9 +659,25 @@ fn rv64_selcall(
     rv64_call_ref(cty2),
   )
 
+  // Hidden struct-return pointer: C rv64/abi.c emits copy A0, i1->to after the
+  // call; the prepending emit() places it before the call.
+  if has_retty && (cr.class_ & Cptr) != 0 {
+    rv64_emit(
+      st,
+      @types.Copy,
+      @types.Kl,
+      @types.Ref::tmp(@types.A0),
+      callins.to,
+      @types.Ref::none(),
+    )
+  }
+
   // Move arguments into registers
   for a in 0..<nargs {
     let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
     if (ca[a].class_ & Cstk1) != 0 {
       continue
     }
@@ -563,6 +707,35 @@ fn rv64_selcall(
     }
   }
 
+  // Cfpint arguments: cast the value into the abi temp (C selcall's second
+  // loop, emitted after the register copies).
+  for a in 0..<nargs {
+    let i = orig[i0 + a]
+    if (ca[a].class_ & Cfpint) != 0 && (ca[a].class_ & Cstk1) == 0 {
+      let k = if ca[a].cls[0].wide() != 0 { @types.Kl } else { @types.Kw }
+      rv64_emit(
+        st,
+        @types.Cast,
+        k,
+        @types.Ref::tmp(ca[a].reg[0]),
+        i.arg1,
+        @types.Ref::none(),
+      )
+    }
+    // Copy the original aggregate into the blob (C rv64/abi.c 423-426).
+    if (ca[a].class_ & Cptr) != 0 {
+      rv64_emit(
+        st,
+        @types.Blit1,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::rint(ca[a].typ.unwrap().size.to_int()),
+        @types.Ref::none(),
+      )
+      rv64_emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), i.arg2, i.arg1)
+    }
+  }
+
   if stk == 0 {
     return
   }
@@ -577,8 +750,17 @@ fn rv64_selcall(
     }
     if i.op == @types.Arg {
       let r1 = rv64_newtmp(st, @types.Kl)
-      let store_op = @types.Op::from_index(@types.Storew.index() + i.cls.code())
-      rv64_emit(st, store_op, @types.Kw, @types.Ref::none(), i.arg1, r1)
+      // C rv64/abi.c 438-450: word args are sign-extended and stored as longs.
+      if i.cls == @types.Kw {
+        let r0 = rv64_newtmp(st, @types.Kl)
+        rv64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, r1)
+        rv64_emit(st, @types.Extsw, @types.Kl, r0, i.arg1, @types.Ref::none())
+      } else {
+        let store_op = @types.Op::from_index(
+          @types.Storew.index() + i.cls.code(),
+        )
+        rv64_emit(st, store_op, @types.Kw, @types.Ref::none(), i.arg1, r1)
+      }
       rv64_emit(
         st,
         @types.Add,
@@ -636,7 +818,7 @@ fn rv64_selcall(
 
 ///|
 // Select parameter handling (C selpar)
-fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Int {
+fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Unit {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ca : Array[Rv64Class] = []
@@ -665,23 +847,50 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Int {
   let cty = rv64_argsclass(st, ins, 0, npar, ca, (cr.class_ & Cptr) != 0)
 
   // Allocate register-copied aggregates
+  let il : Array[@types.Ins] = []
+  let tmp : Array[@types.Ref] = Array::make(npar + 2, @types.Ref::none())
+  let mut t = 0
   for a in 0..<npar {
     let i = ins[a]
     if i.op != @types.Parc || (ca[a].class_ & Cptr) != 0 {
       continue
     }
     if ca[a].nreg != 0 {
-      let nt = ca[a].nreg
+      let mut nt = ca[a].nreg
       if (ca[a].class_ & Cstk2) != 0 {
         ca[a].cls[1] = @types.Kl
         ca[a].off[1] = 8
+        nt = 2
       }
-      let tmp : Array[@types.Ref] = Array::make(nt, @types.Ref::none())
-      rv64_sttmps(st, tmp, nt, ca[a], i.to)
+      rv64_sttmps(st, tmp, t, nt, ca[a], i.to)
+      t = t + nt
+      // Allocate the blob the parameter's registers are stored into
+      // (C rv64/abi.c selpar stkblob).
+      rv64_stkblob(st, i.to, ca[a].typ.unwrap())
+      let blob = st.buf[st.buf.length() - 1]
+      ignore(st.buf.remove(st.buf.length() - 1))
+      il.push(blob)
     }
   }
+  // Emit the collected blobs (C selpar emiti(il)) before the register moves.
+  for k in (il.length() - 1)>=..0 {
+    rv64_emiti(st, il[k])
+  }
 
+  // Cfpint casts are emitted before the register copies so that, after the
+  // reversed write-back, they appear last (C rv64/abi.c selpar).
+  let cfpint_abi : Array[@types.Ref] = Array::make(npar, @types.Ref::none())
+  for a in 0..<npar {
+    let i = ins[a]
+    if (ca[a].class_ & Cfpint) != 0 {
+      let fk = ca[a].cls[0]
+      let abi = rv64_newtmp(st, fk)
+      cfpint_abi[a] = abi
+      rv64_emit(st, @types.Cast, fk, i.to, abi, @types.Ref::none())
+    }
+  }
   let mut s = 2 + (if st.fn_.is_vararg { 8 } else { 0 })
+  t = 0
   for a in 0..<npar {
     let i = ins[a]
     if i.op == @types.Parc && (ca[a].class_ & Cptr) == 0 {
@@ -692,14 +901,20 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Int {
       }
       for j in 0..<ca[a].nreg {
         let r = @types.Ref::tmp(ca[a].reg[j])
+        rv64_emit(st, @types.Copy, ca[a].cls[j], tmp[t], r, @types.Ref::none())
+        t = t + 1
+      }
+      if (ca[a].class_ & Cstk2) != 0 {
         rv64_emit(
           st,
-          @types.Copy,
-          ca[a].cls[j],
-          @types.Ref::tmp(i.to.tmp_val() + j),
-          r,
+          @types.Load,
+          @types.Kl,
+          tmp[t],
+          @types.Ref::slot(-s),
           @types.Ref::none(),
         )
+        t = t + 1
+        s = s + 1
       }
     } else if (ca[a].class_ & Cstk1) != 0 {
       rv64_emit(
@@ -711,6 +926,17 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Int {
         @types.Ref::none(),
       )
       s = s + 1
+    } else if (ca[a].class_ & Cfpint) != 0 {
+      let fk = ca[a].cls[0]
+      let ik = if fk.wide() == 1 { @types.Kl } else { @types.Kw }
+      rv64_emit(
+        st,
+        @types.Copy,
+        ik,
+        cfpint_abi[a],
+        @types.Ref::tmp(ca[a].reg[0]),
+        @types.Ref::none(),
+      )
     } else {
       rv64_emit(
         st,
@@ -724,7 +950,39 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Int {
   }
 
   st.fn_.reg = rv64_call_ref(cty).rv64_argregs().0
-  cty | ((s * 4) << 12)
+  st.params.ngp = (cty >> 4) & 15
+  st.params.nfp = (cty >> 8) & 15
+  st.params.stk = s
+}
+
+///|
+// Expand va_arg (C rv64/abi.c selvaarg).
+fn rv64_selvaarg(st : Rv64AbiState, i : @types.Ins) -> Unit {
+  let ap = i.arg1
+  let loc = rv64_newtmp(st, @types.Kl)
+  let newloc = rv64_newtmp(st, @types.Kl)
+  rv64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), newloc, ap)
+  rv64_emit(st, @types.Add, @types.Kl, newloc, loc, rv64_getcon(st, 8L))
+  rv64_emit(st, @types.Load, i.cls, i.to, loc, @types.Ref::none())
+  rv64_emit(st, @types.Load, @types.Kl, loc, ap, @types.Ref::none())
+}
+
+///|
+// Expand va_start (C rv64/abi.c selvastart).
+fn rv64_selvastart(st : Rv64AbiState, ap : @types.Ref) -> Unit {
+  let p = st.params
+  let rsave = rv64_newtmp(st, @types.Kl)
+  rv64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), rsave, ap)
+  let vararg = if st.fn_.is_vararg { 1 } else { 0 }
+  let s = if p.stk > 2 + 8 * vararg { p.stk } else { 2 + p.ngp }
+  rv64_emit(
+    st,
+    @types.Addr,
+    @types.Kl,
+    rsave,
+    @types.Ref::slot(-s),
+    @types.Ref::none(),
+  )
 }
 
 ///|
@@ -752,7 +1010,7 @@ pub fn abi_rv64(
     }
     par_end = par_end + 1
   }
-  let _ = rv64_selpar(st, par_end)
+  rv64_selpar(st, par_end)
 
   // Rebuild the start block
   let emitted = rv64_emit_block(st)
@@ -770,6 +1028,9 @@ pub fn abi_rv64(
   }
 
   // Lower calls, returns, and vararg instructions
+  // Blob allocations for Cptr arguments/returns are collected here and
+  // emitted at the top of the start block (C rv64/abi.c il list).
+  let il : Array[@types.Ins] = []
   let mut i = 1
   while i < fn_.def_order.length() {
     let bid = fn_.def_order[i]
@@ -797,9 +1058,11 @@ pub fn abi_rv64(
             }
             i0 = i0 - 1
           }
-          rv64_selcall(st, orig, i0, j)
+          rv64_selcall(st, orig, i0, j, il)
           j = i0
         }
+        @types.Vastart => rv64_selvastart(st, ins.arg1)
+        @types.Vaarg => rv64_selvaarg(st, ins)
         @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
         _ => rv64_emiti(st, ins)
       }
@@ -833,14 +1096,20 @@ pub fn abi_rv64(
           }
           i0 = i0 - 1
         }
-        rv64_selcall(st, start_orig, i0, j)
+        rv64_selcall(st, start_orig, i0, j, il)
         j = i0
       }
-      @types.Vastart | @types.Vaarg => ()
+      @types.Vastart => rv64_selvastart(st, ins.arg1)
+      @types.Vaarg => rv64_selvaarg(st, ins)
       @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
       _ => rv64_emiti(st, ins)
     }
   }
+  // Emit the collected blob allocations at the start block (C 643-645).
+  for k in (il.length() - 1)>=..0 {
+    rv64_emiti(st, il[k])
+  }
+  il.clear()
   let nb = rv64_emit_block(st)
   start_b.ins.clear()
   for x in nb {
@@ -848,8 +1117,11 @@ pub fn abi_rv64(
   }
 
   if print_dbg {
+    // vendor/qbe rv64/abi.c: header then printfn(fn, stderr).
     let sb = StringBuilder()
-    sb.write_string("\n> After RISC-V ABI lowering:\n")
+    sb.write_string("\n> After ABI lowering:\n")
+    sb.write_string(@parser.printfn(fn_, interner, all_typs))
+    sb.write_string("\n")
     sb.to_string()
   } else {
     ""

@@ -31,6 +31,8 @@ pub(all) struct Fn {
   mut is_export : Bool
   mut is_vararg : Bool
   mut has_dynalloc : Bool
+  mut leaf : Bool // no call instructions (C fn->leaf)
+  mut salign : Int // alignment of the largest static alloc (C fn->salign)
 } derive(Debug)
 
 ///|
@@ -52,6 +54,8 @@ pub fn Fn::new(name : String) -> Fn {
     is_export: false,
     is_vararg: false,
     has_dynalloc: false,
+    leaf: true,
+    salign: 0,
   }
 }
 
@@ -101,8 +105,15 @@ pub fn Fn::add_tmp(self : Self, name : String, cls : Class) -> Int {
 // Pre-populate Tmp0 (64) register temporaries (matches C parse.c:779-783)
 // Called at the start of function parsing so register temps occupy indices 0..Tmp0-1
 pub fn Fn::init_regs(self : Self) -> Unit {
+  // Register temp classes follow the currently selected target's FPR range
+  // (C parse.c parsefn: T.fpr0 <= i < T.fpr0 + T.nfpr -> Kd).
   for i in 0..<Tmp0 {
-    let cls = if XMM0 <= i && i < XMM0 + NFPR { Kd } else { Kl }
+    let cls = if target_cfg.fpr_base <= i &&
+      i < target_cfg.fpr_base + target_cfg.nfpr {
+      Kd
+    } else {
+      Kl
+    }
     let tmp = Tmp::new("", cls)
     tmp.slot = -1
     tmp.nuse = 1

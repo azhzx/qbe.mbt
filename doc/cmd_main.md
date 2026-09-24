@@ -28,7 +28,7 @@ Usage: qbe [OPTIONS] {file.ssa, -}
 | --- | --- | --- |
 | `amd64_sysv` | x86-64 GAS assembly | Default; `-G e` (Linux `.L` labels) / `-G m` (macOS `L` + `_` prefix) selects GAS style |
 | `wasm` | WAT text | WebAssembly text format; skips register allocation |
-| `rv64` | RISC-V 64 GAS assembly | `-G` has no effect |
+| `rv64` | RISC-V 64 GAS assembly | ELF; supports `-G e` (`.L` labels), emits data + float pool |
 | `la64` | LoongArch64 GAS assembly | LP64D ABI; supports `-G e`/`-G m` labels |
 | `arm64` | AArch64 GAS assembly | AAPCS64 ELF; supports `-G e`/`-G m` labels |
 

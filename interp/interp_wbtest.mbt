@@ -37,7 +37,8 @@ test "interp: integer arithmetic and word truncation" {
       #|@start
       #|  %w =w add %a, %b
       #|  %l =l add %a, %b
-      #|  %p =l mul %w, %l
+      #|  %we =l extsw %w
+      #|  %p =l mul %we, %l
       #|  ret %p
       #|}
       #|
@@ -102,7 +103,7 @@ test "interp: float arithmetic and conversion" {
     #|@start
     #|  %h =d div %a, d_2.0
     #|  %i =w dtosi %h
-    #|  %j =d sltof %i
+    #|  %j =d swtof %i
     #|  ret %j
     #|}
     #|
@@ -120,8 +121,9 @@ test "interp: extension ops" {
     #|@start
     #|  %b =w extsb %a
     #|  %c =w extub %a
-    #|  %d =l sub %c, %b
-    #|  ret %d
+    #|  %d =w sub %c, %b
+    #|  %e =l extsw %d
+    #|  ret %e
     #|}
     #|
   // a=0x1ff: extsb=0xff(-1), extub=0xff(255) -> 255-(-1)=256

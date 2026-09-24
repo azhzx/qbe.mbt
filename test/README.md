@@ -16,19 +16,20 @@ The vendored submodule is the only reference implementation used by this
 repository. If its output differs from historical snapshots, update the
 expected baseline rather than maintaining a second reference tree.
 
-## ARM64 target
+## Cross-target verification
 
-The vendored binary also supports `arm64` (`vendor/qbe/qbe -t arm64`),
-which is the byte-level oracle for target-independent IR/debug behavior. Run:
+`compare.py` compares any of the three backends against the vendored
+reference:
 
-    python compare.py --target arm64              # IR/debug dumps, 5684/5684
+    python compare.py --target arm64              # arm64 debug dumps
+    python compare.py --target rv64 --asm         # rv64 assembly
 
-The port matches the reference for every corpus file, including the handful
-where the reference itself aborts (e.g. `dynalloc.ssa`). Assembly output is
-validated independently because the vendored fork has different prologue,
-label, and platform-emission policies than this port. The assembly gate is
-`python tools/check_arm64_asm.py`, which runs clang's aarch64 integrated
-assembler over the emitted output.
+The port is byte-for-byte identical to the reference on all three targets
+(amd64_sysv, arm64, rv64), for both the debug-dump differential suite
+(`compare.py`, every `-d` flag) and the emitted assembly
+(`compare.py --asm`) on every compilable test (336/336 per target).
+`tools/check_arm64_asm.py` and `tools/check_rv64_asm.py` additionally run
+clang's integrated assembler over the emitted output as an independent gate.
 
 ## Layout
 
@@ -47,12 +48,13 @@ assembler over the emitted output.
 
 From the repository root:
 
-    python compare.py                     # all debug flags x all tests (5684)
+    python compare.py                     # all debug flags x all tests
     python compare.py --cat programs      # only one category
     python compare.py --jobs 1            # single-worker (default 4)
     python compare.py test\programs\003_arr_max.ssa   # one file, all flags
 
-Expected baseline: 5684/5684 for the default debug differential suite.
+Expected baseline: every case passes for the default debug differential
+suite. `compare.py --asm` must also be byte-identical for each target.
 
 ## Regenerating generated tests
 

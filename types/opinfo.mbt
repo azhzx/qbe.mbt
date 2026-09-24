@@ -900,6 +900,183 @@ let optab : Array[OpInfo] = [
     false,
     (0, 0, 1),
   ),
+  mk(
+    "sel0",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "e", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "sel1",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselieq",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xseline",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselisge",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselisgt",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselisle",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselislt",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xseliuge",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xseliugt",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xseliule",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xseliult",
+    cls(["w", "l", "e", "e"]),
+    cls(["w", "l", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfeq",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfge",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfgt",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfle",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselflt",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfne",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfo",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "xselfuo",
+    cls(["e", "e", "s", "d"]),
+    cls(["e", "e", "s", "d"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "argv",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  // Architecture-specific operations (rv64 reqz/rnez)
+  mk(
+    "reqz",
+    cls(["w", "l", "e", "e"]),
+    cls(["x", "x", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "rnez",
+    cls(["w", "l", "e", "e"]),
+    cls(["x", "x", "e", "e"]),
+    false,
+    (0, 0, 0),
+  ),
+  // blit pseudo-ops (C ops.h blit0/blit1)
+  mk(
+    "blit0",
+    cls(["m", "e", "e", "e"]),
+    cls(["m", "e", "e", "e"]),
+    false,
+    (0, 1, 0),
+  ),
+  mk(
+    "blit1",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "e", "e", "e"]),
+    false,
+    (0, 1, 0),
+  ),
 ]
 
 ///|
@@ -1042,6 +1219,31 @@ pub fn Op::from_index(i : Int) -> Op {
     117 => Flagfne
     118 => Flagfo
     119 => Flagfuo
+    120 => Sel0
+    121 => Sel1
+    122 => Xselieq
+    123 => Xseline
+    124 => Xselisge
+    125 => Xselisgt
+    126 => Xselisle
+    127 => Xselislt
+    128 => Xseliuge
+    129 => Xseliugt
+    130 => Xseliule
+    131 => Xseliult
+    132 => Xselfeq
+    133 => Xselfge
+    134 => Xselfgt
+    135 => Xselfle
+    136 => Xselflt
+    137 => Xselfne
+    138 => Xselfo
+    139 => Xselfuo
+    140 => Argv
+    141 => Reqz
+    142 => Rnez
+    143 => Blit0
+    144 => Blit1
     _ => Oxxx
   }
 }
@@ -1170,5 +1372,30 @@ pub fn Op::index(self : Op) -> Int {
     Flagfne => 117
     Flagfo => 118
     Flagfuo => 119
+    Sel0 => 120
+    Sel1 => 121
+    Xselieq => 122
+    Xseline => 123
+    Xselisge => 124
+    Xselisgt => 125
+    Xselisle => 126
+    Xselislt => 127
+    Xseliuge => 128
+    Xseliugt => 129
+    Xseliule => 130
+    Xseliult => 131
+    Xselfeq => 132
+    Xselfge => 133
+    Xselfgt => 134
+    Xselfle => 135
+    Xselflt => 136
+    Xselfne => 137
+    Xselfo => 138
+    Xselfuo => 139
+    Argv => 140
+    Reqz => 141
+    Rnez => 142
+    Blit0 => 143
+    Blit1 => 144
   }
 }

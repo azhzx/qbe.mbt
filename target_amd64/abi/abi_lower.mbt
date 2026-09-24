@@ -149,7 +149,12 @@ fn selcall(
   }
 
   let envc = !st.env.is_none()
-  let varc = callins.op == @types.Vacall
+  let mut varc = false
+  for k in i0..<i1 {
+    if orig[k].op == @types.Argv {
+      varc = true
+    }
+  }
   if varc && envc {
     raise @util.QbeError::Ice("sysv abi does not support variadic env calls")
   }
@@ -197,6 +202,9 @@ fn selcall(
   }
   for a in 0..<nargs {
     let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
     if ac[a].inmem != 0 {
       continue
     }
@@ -221,6 +229,9 @@ fn selcall(
   let mut off = 0
   for a in 0..<nargs {
     let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
     if ac[a].inmem == 0 {
       continue
     }
@@ -228,7 +239,18 @@ fn selcall(
       if ac[a].align == 4 {
         off = off + (off & 15)
       }
-      blit(st, r, off, i.arg2, ac[a].size)
+      let r1 = abi_newtmp(st, @types.Kl)
+      // C sysv.c uses the aggregate type size, not the rounded block size.
+      emit(
+        st,
+        @types.Blit1,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::rint(st.typs[i.arg1.typ_val()].size.to_int()),
+        @types.Ref::none(),
+      )
+      emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), i.arg2, r1)
+      emit(st, @types.Add, @types.Kl, r1, r, getcon(st, off.to_int64()))
     } else {
       let r1 = abi_newtmp(st, @types.Kl)
       emit(st, @types.Storel, @types.Kw, @types.Ref::none(), i.arg1, r1)
@@ -288,12 +310,14 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
     }
     if ac[a].size > 8 {
       let r = abi_newtmp(st, @types.Kl)
-      let r1 = abi_newtmp(st, @types.Kl)
+      let c1 = if ac[a].cls[1] == @types.Kx { @types.Kl } else { ac[a].cls[1] }
+      let r1 = abi_newtmp(st, c1)
       emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r1, r)
       emit(st, @types.Add, @types.Kl, r, i.to, getcon(st, 8L))
       ac[a].r[1] = r1
     }
-    let r0 = abi_newtmp(st, @types.Kl)
+    let c0 = if ac[a].cls[0] == @types.Kx { @types.Kl } else { ac[a].cls[0] }
+    let r0 = abi_newtmp(st, c0)
     emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, i.to)
     ac[a].r[0] = r0
     let al = if ac[a].align >= 2 { ac[a].align - 2 } else { 0 }
@@ -350,10 +374,24 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
       _ => {
         let r = rarg(st, ac[a].cls[0], ni, ns)
         if i.op == @types.Parc {
-          emit(st, @types.Copy, @types.Kl, ac[a].r[0], r, @types.Ref::none())
+          emit(
+            st,
+            @types.Copy,
+            st.fn_.tmps[ac[a].r[0].tmp_val()].cls,
+            ac[a].r[0],
+            r,
+            @types.Ref::none(),
+          )
           if ac[a].size > 8 {
             let r2 = rarg(st, ac[a].cls[1], ni, ns)
-            emit(st, @types.Copy, @types.Kl, ac[a].r[1], r2, @types.Ref::none())
+            emit(
+              st,
+              @types.Copy,
+              st.fn_.tmps[ac[a].r[1].tmp_val()].cls,
+              ac[a].r[1],
+              r2,
+              @types.Ref::none(),
+            )
           }
         } else {
           emit(st, @types.Copy, i.cls, i.to, r, @types.Ref::none())

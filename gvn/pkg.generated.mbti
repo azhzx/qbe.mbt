@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/gvn"
+
+import {
+  "azhzx/qbe/types",
+  "azhzx/qbe/util",
+}
+
+// Values
+pub fn gcm(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+
+pub fn gvn(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+
+// Errors
+
+// Types and methods
+type ExtInfo
+
+type GState
+
+type GcmState
+
+// Type aliases
+
+// Traits

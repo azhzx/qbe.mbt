@@ -37,6 +37,15 @@ let arm64_cond : Array[String] = [
 ]
 
 ///|
+// Negated branch-condition suffixes (C ctoa[c][1] in arm64/emit.c). These are
+// not the suffixes of the negated comparison code for float conditions, so
+// they are encoded separately.
+let arm64_cond_neg : Array[String] = [
+  "ne", "eq", "lt", "le", "gt", "ge", "cc", "ls", "hi", "cs", "ne", "lt", "le", "hi",
+  "pl", "eq", "vs", "vc",
+]
+
+///|
 // Negation of a comparison code (C cmpneg / cmptab[..][0]).
 fn arm64_cmpneg(c : Int) -> Int {
   match c {
@@ -141,10 +150,11 @@ fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
   if s == -1 {
     16 + st.frame
   } else if s < 0 {
+    // C arm64/emit.c slot(): negative slots already carry a byte offset.
     if st.fn_.is_vararg {
-      16 + st.frame + 192 - (s + 2) * 8
+      16 + st.frame + 192 - (s + 2)
     } else {
-      16 + st.frame - (s + 2) * 8
+      16 + st.frame - (s + 2)
     }
   } else {
     16 + st.padding + 4 * s
@@ -196,6 +206,7 @@ let arm64_omap : Array[(Int, Int, String)] = [
   (@types.Extsw.index(), ARM64_KI, "sxtw %L=, %W0"),
   (@types.Extuw.index(), ARM64_KI, "mov %W=, %W0"),
   (@types.Exts.index(), @types.Kd.code(), "fcvt %=, %S0"),
+  (@types.Truncd.index(), @types.Ks.code(), "fcvt %=, %D0"),
   (@types.Cast.index(), @types.Kw.code(), "fmov %=, %S0"),
   (@types.Cast.index(), @types.Kl.code(), "fmov %=, %D0"),
   (@types.Cast.index(), @types.Ks.code(), "fmov %=, %W0"),
@@ -227,21 +238,27 @@ fn arm64_loadcon(
     if con.bits.i != 0L {
       off = "+" + con.bits.i.to_string()
     }
+    // Local (fp-constant) symbols are printed quoted, e.g. ".Lfp0".
+    let q = if con.is_local { "\"" } else { "" }
     sb.write_string("\tadrp\t")
     sb.write_string(rn)
     sb.write_string(", ")
+    sb.write_string(q)
     sb.write_string(p)
     sb.write_string(l)
     sb.write_string(off)
+    sb.write_string(q)
     sb.write_char('\n')
     sb.write_string("\tadd\t")
     sb.write_string(rn)
     sb.write_string(", ")
     sb.write_string(rn)
     sb.write_string(", #:lo12:")
+    sb.write_string(q)
     sb.write_string(p)
     sb.write_string(l)
     sb.write_string(off)
+    sb.write_string(q)
     sb.write_char('\n')
     return
   }
@@ -313,7 +330,7 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
         'D' => k = @types.Kd
         '?' =>
           if k.base() == 0 {
-            sb.write_string(arm64_rname(@types.ARM64_R18, k))
+            sb.write_string(arm64_rname(@types.ARM64_IP1, k))
           } else if k == @types.Ks {
             sb.write_string("s31")
           } else {
@@ -326,9 +343,13 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
           if r.is_tmp() {
             sb.write_string(arm64_rname(r.tmp_val(), k))
           } else if r.is_con() {
+            // C arm64/emit.c: use the full 64-bit value for bitmask immediates.
             let pc = st.fn_.cons[r.con_val()]
-            let n = arm64_u32(pc.raw_bits())
-            if (n & 0xFFF000L) != 0L {
+            let n = pc.bits.i.reinterpret_as_uint64()
+            if n >> 24 != 0UL {
+              sb.write_string("#")
+              sb.write_string(n.to_string())
+            } else if (n & 0xFFF000UL) != 0UL {
               sb.write_string("#")
               sb.write_string((n >> 12).to_string())
               sb.write_string(", lsl #12")
@@ -353,6 +374,11 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
           if r.is_tmp() {
             sb.write_string("[")
             sb.write_string(arm64_rname(r.tmp_val(), @types.Kl))
+            sb.write_string("]")
+          } else if r.is_slot() {
+            // C arm64/emit.c %M RSlot: [x29, slot]
+            sb.write_string("[x29, ")
+            sb.write_string(arm64_slot(st, r.slot_val()).to_string())
             sb.write_string("]")
           } else {
             raise @util.QbeError::Ice("todo (arm emit): unhandled ref")
@@ -418,6 +444,36 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       } else {
         raise @util.QbeError::Ice("invalid address")
       }
+    @types.Call =>
+      // Direct call to a global symbol (C arm64/emit.c case Ocall): emit
+      // `bl sym` when the target is an offset-zero address constant.
+      if i.arg1.is_con() {
+        let c = st.fn_.cons[i.arg1.con_val()]
+        if c.kind == @types.CAddr && c.bits.i == 0L && !c.is_local {
+          sb.write_string("\tbl\t")
+          sb.write_string(st.interner.get(c.label))
+          sb.write_char('\n')
+        } else {
+          arm64_emit_table(st, i)
+        }
+      } else {
+        arm64_emit_table(st, i)
+      }
+    @types.Salloc => {
+      // C arm64/emit.c: sub sp, sp, %0; mov %=, sp (when to != R).
+      sb.write_string("\tsub\tsp, sp, ")
+      if i.arg1.is_tmp() {
+        sb.write_string(arm64_rname(i.arg1.tmp_val(), @types.Kl))
+      } else {
+        raise @util.QbeError::Ice("unexpected salloc operand")
+      }
+      sb.write_char('\n')
+      if !i.to.is_none() {
+        sb.write_string("\tmov\t")
+        sb.write_string(arm64_rname(i.to.tmp_val(), @types.Kl))
+        sb.write_string(", sp\n")
+      }
+    }
     _ => arm64_emit_table(st, i)
   }
 }
@@ -441,7 +497,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   st.padding = 4 * (f - fn_.slot)
   st.frame = 4 * f + 8 * o
 
-  sb.write_string(".text\n")
+  sb.write_string(".text\n.balign 16\n")
   if fn_.is_export {
     sb.write_string(".globl ")
     sb.write_string(fn_.name)
@@ -449,6 +505,8 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   }
   sb.write_string(fn_.name)
   sb.write_string(":\n")
+  // BTI landing pad (C arm64_emitfn always emits it).
+  sb.write_string("\thint\t#34\n")
 
   if fn_.is_vararg {
     for n in 7>=..0 {
@@ -456,10 +514,15 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
       sb.write_string(n.to_string())
       sb.write_string(", [sp, -16]!\n")
     }
-    for n in 7>=..0 {
-      sb.write_string("\tstr\tx")
-      sb.write_string(n.to_string())
-      sb.write_string(", [sp, -8]!\n")
+    let mut gp = 7
+    while gp >= 0 {
+      // C: stp x(n-1), xn, [sp, -16]! for n = 7,5,3,1
+      sb.write_string("\tstp\tx")
+      sb.write_string((gp - 1).to_string())
+      sb.write_string(", x")
+      sb.write_string(gp.to_string())
+      sb.write_string(", [sp, -16]!\n")
+      gp = gp - 2
     }
   }
 
@@ -473,14 +536,14 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     sb.write_string((st.frame + 16).to_string())
     sb.write_string("]!\n")
   }
-  sb.write_string("\tadd\tx29, sp, 0\n")
+  sb.write_string("\tmov\tx29, sp\n")
   o = st.frame + 16
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       sb.write_string("\tstr\t")
       sb.write_string(arm64_rname(r, @types.Kx))
-      sb.write_string(", [sp, ")
+      sb.write_string(", [x29, ")
       sb.write_string(o.to_string())
       sb.write_string("]\n")
     }
@@ -508,10 +571,13 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
             o = o - 8
             sb.write_string("\tldr\t")
             sb.write_string(arm64_rname(r, @types.Kx))
-            sb.write_string(", [sp, ")
+            sb.write_string(", [x29, ")
             sb.write_string(o.to_string())
             sb.write_string("]\n")
           }
+        }
+        if fn_.has_dynalloc {
+          sb.write_string("\tmov sp, x29\n")
         }
         let mut oo = st.frame + 16
         if fn_.is_vararg {
@@ -540,21 +606,22 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
           lbl = false
         }
       _ => {
-        let mut c = b.jmp.kind.index() - @types.Jjfieq.index()
+        let c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c < 0 || c > 17 {
           raise @util.QbeError::Ice("unhandled jump")
         }
         let mut s1 = b.jmp.s1
         let mut s2 = b.jmp.s2
+        let mut neg = false
         if next == b.jmp.s2 {
           let t = s1
           s1 = s2
           s2 = t
         } else {
-          c = arm64_cmpneg(c)
+          neg = true
         }
         sb.write_string("\tb")
-        sb.write_string(arm64_cond[c])
+        sb.write_string(if neg { arm64_cond_neg[c] } else { arm64_cond[c] })
         sb.write_string("\t.L")
         sb.write_string((arm64_emit_id0[0] + fn_.blks[s2].rpo_id).to_string())
         sb.write_char('\n')
@@ -569,6 +636,14 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
   }
   arm64_emit_id0[0] = arm64_emit_id0[0] + fn_.rpo.length()
+  // C elf_emitfnfin emits the function type/size after each function.
+  sb.write_string(".type ")
+  sb.write_string(fn_.name)
+  sb.write_string(", @function\n.size ")
+  sb.write_string(fn_.name)
+  sb.write_string(", .-")
+  sb.write_string(fn_.name)
+  sb.write_char('\n')
 }
 
 ///|

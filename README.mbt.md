@@ -16,7 +16,12 @@
 ## Plan
 - (TODO) Add JIT interface (copy-and-patch approach)
 - (TODO) Add IR Debugger
-- (FIX) rv64 backend: `data` segment and floating-point constant rodata output, reference differential verification
+- (WIP) align with the frozen `vendor/qbe` reference (661ceb2):
+  `data` segment and floating-point constant rodata output are byte-identical to
+  `vendor/qbe` on amd64/arm64/rv64; the debug-dump differential suite
+  (`python compare.py`) passes 12096/12096 cases (12 debug flags x 3 targets) and
+  the emitted assembly is byte-identical on every compilable test
+  (336/336 per target, 1008/1008 total)
 
 ## Contributors
 <a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">
