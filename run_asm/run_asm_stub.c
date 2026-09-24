@@ -12,6 +12,18 @@
 
 /* ---- executable memory ------------------------------------------------ */
 
+/* The feature targets macOS/aarch64: the machine code is aarch64 and the
+ * toolchain invocation uses Mach-O (-dynamiclib/.dylib). Elsewhere the
+ * platform-specific tests skip. */
+MOONBIT_FFI_EXPORT
+int32_t mbt_run_asm_host_supported(void) {
+#if defined(__APPLE__) && defined(__aarch64__)
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 MOONBIT_FFI_EXPORT
 int64_t mbt_run_asm_alloc(int32_t size) {
   void *p = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE,

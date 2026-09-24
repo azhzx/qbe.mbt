@@ -1,9 +1,13 @@
 ///|
 // Self-contained (route B) end-to-end check: build a Mach-O object with
 // object/macho.mbt, link it with the system linker and run it.
+// aarch64 only (skipped elsewhere).
 
 ///|
 test "object: hand-built Mach-O object links and runs" {
+  if !host_ok() {
+    return
+  }
   let text = @object.words_to_bytes([
     @object.enc_add_imm(0, 0, 1),
     @object.enc_ret(),
@@ -39,6 +43,9 @@ test "object: hand-built Mach-O object links and runs" {
 
 ///|
 test "run-asm: execute in-memory arm64 code (self-contained)" {
+  if !host_ok() {
+    return
+  }
   let text = @object.words_to_bytes([
     @object.enc_add_imm(0, 0, 1),
     @object.enc_ret(),

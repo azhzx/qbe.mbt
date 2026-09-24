@@ -1,9 +1,17 @@
 ///|
-// P0 spike: prove that MoonBit can allocate executable memory, write machine
-// code into it, and call the resulting address.
+// P0 spike: MoonBit can allocate executable memory, write machine code into
+// it, and call the resulting address. aarch64 only (skipped elsewhere).
+
+///|
+fn host_ok() -> Bool {
+  mbt_run_asm_host_supported() != 0
+}
 
 ///|
 test "run-asm: mmap + write + call a hand-encoded aarch64 stub" {
+  if !host_ok() {
+    return
+  }
   // mov x0, #42 ; ret
   let code : Bytes = b"\x40\x05\x80\xd2\xc0\x03\x5f\xd6"
   let addr = mbt_run_asm_alloc(16)
@@ -25,6 +33,9 @@ test "run-asm: dlsym resolves a libc symbol" {
 ///|
 // route A: assembly text -> .o bytes
 test "run-asm: assemble text into a Mach-O object" {
+  if !host_ok() {
+    return
+  }
   let src =
     #|.text
     #|.balign 4
@@ -35,16 +46,18 @@ test "run-asm: assemble text into a Mach-O object" {
     #|
   let obj = assemble_object(src)
   assert_true(obj.length() > 0)
-  // Mach-O magic, little-endian MH_MAGIC_64 = 0xfeedfacf
-  assert_eq(obj[0].to_int(), 0xcf)
-  assert_eq(obj[1].to_int(), 0xfa)
-  assert_eq(obj[2].to_int(), 0xed)
-  assert_eq(obj[3].to_int(), 0xfe)
+  assert_eq(obj[0].to_int(), 0xCF)
+  assert_eq(obj[1].to_int(), 0xFA)
+  assert_eq(obj[2].to_int(), 0xED)
+  assert_eq(obj[3].to_int(), 0xFE)
 }
 
 ///|
 // route A: assembly text -> dylib -> call
 test "run-asm: load shared module and call a function" {
+  if !host_ok() {
+    return
+  }
   let src =
     #|.text
     #|.balign 4

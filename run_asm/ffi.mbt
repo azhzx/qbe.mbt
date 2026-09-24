@@ -5,6 +5,10 @@
 // arithmetic can stay in MoonBit.
 
 ///|
+// 1 on macOS/aarch64, the only host this backend targets.
+extern "c" fn mbt_run_asm_host_supported() -> Int = "mbt_run_asm_host_supported"
+
+///|
 extern "c" fn mbt_run_asm_alloc(size : Int) -> Int64 = "mbt_run_asm_alloc"
 
 ///|
