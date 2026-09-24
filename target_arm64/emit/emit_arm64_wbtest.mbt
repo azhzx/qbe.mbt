@@ -63,7 +63,7 @@ test "arm64 emit: simple add function" {
     #|}
     #|
   let (f, interner, typs) = arm64_emit_parse_pipeline(src)
-  let asm = emit_arm64(f, interner, typs)
+  let asm = emit_arm64(f, interner, typs, ".L", "", false)
   inspect(
     asm,
     content=(
@@ -103,7 +103,7 @@ test "arm64 emit: conditional branch and loop labels" {
     #|
     #|}
   let (f, interner, typs) = arm64_emit_parse_pipeline(src)
-  let asm = emit_arm64(f, interner, typs)
+  let asm = emit_arm64(f, interner, typs, ".L", "", false)
   inspect(
     asm,
     content=(
@@ -144,7 +144,7 @@ test "arm64 emit: vararg prologue saves the argument registers" {
     #|}
     #|
   let (f, interner, typs) = arm64_emit_parse_pipeline(src)
-  let asm = emit_arm64(f, interner, typs)
+  let asm = emit_arm64(f, interner, typs, ".L", "", false)
   assert_true(asm.contains("\tstr\tq7, [sp, -16]!\n"))
   assert_true(asm.contains("\tstp\tx0, x1, [sp, -16]!\n"))
   assert_true(asm.contains("\tmov\tx29, sp\n"))

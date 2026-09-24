@@ -68,9 +68,29 @@ DEFAULT_FLAGS = ["-dP", "-dM", "-dN", "-dC", "-dF", "-dA", "-dI", "-dL", "-dS", 
 _qbe_g_support = None
 
 
+# Port target name -> reference target for the Mach-O ("-G m") flavor.
+APPLE_TARGET = {
+    "amd64_sysv": "amd64_apple",
+    "arm64": "arm64_apple",
+}
+
+
+def target_of(fset):
+    """Return the target requested by a flagset, or None for the default."""
+    for i, a in enumerate(fset):
+        if a == "-t" and i + 1 < len(fset):
+            return fset[i + 1]
+    return None
+
+
 def ref_flavor_args(fset, qbe_ref):
     """Translate a flagset for the MoonBit binary into one the reference
-    binary understands (gas flavor selection differs across versions)."""
+    binary understands (gas flavor selection differs across versions).
+
+    The vendored reference has no -G option: the ELF flavor is its default and
+    the Mach-O flavor is selected with -t <target>_apple.  When the requested
+    target has no Mach-O variant (e.g. rv64) the comparison is impossible, so
+    None is returned and the caller skips it."""
     global _qbe_g_support
     if "-G" not in fset:
         return list(fset)
@@ -81,10 +101,14 @@ def ref_flavor_args(fset, qbe_ref):
         _qbe_g_support = ok_with_g
     if _qbe_g_support:
         return list(fset)
-    flavor = fset[fset.index("-G") + 1] if fset.index("-G") + 1 < len(fset) else "e"
-    translated = [a for i, a in enumerate(fset) if a != "-G" and (i == 0 or fset[i-1] != "-G")]
+    i = fset.index("-G")
+    flavor = fset[i + 1] if i + 1 < len(fset) else "e"
+    translated = [a for j, a in enumerate(fset) if a != "-G" and (j == 0 or fset[j-1] != "-G")]
     if flavor == "m":
-        translated += ["-t", "amd64_apple"]
+        apple = APPLE_TARGET.get(target_of(fset))
+        if apple is None:
+            return None
+        translated += ["-t", apple]
     return translated
 
 
@@ -110,10 +134,10 @@ def one(args):
     Debug dumps are written to stderr; generated assembly is written to
     stdout.  Compare the stream that the mode actually produces.
     """
-    fset, t, qbe_ref, asm = args
-    r1 = run([qbe_ref, *fset, t])
-    r2 = run([MINE, *fset, t])
-    label = (" ".join(fset) + " " if fset else "") + os.path.basename(t)
+    ref_fset, mine_fset, t, qbe_ref, asm = args
+    r1 = run([qbe_ref, *ref_fset, t])
+    r2 = run([MINE, *mine_fset, t])
+    label = (" ".join(mine_fset) + " " if mine_fset else "") + os.path.basename(t)
     if asm:
         return check(label, r1.stdout, r2.stdout)
     return check(label, r1.stderr, r2.stderr)
@@ -190,11 +214,14 @@ def main():
     # reference binary accordingly.
     ref_flagsets = {tuple(fs): ref_flavor_args(fs, QBE_REF) for fs in flagsets}
 
-    jobs_list = [
-        (ref_flagsets[tuple(fset)], t, QBE_REF, asm_mode)
-        for fset in flagsets
-        for t in tests
-    ]
+    jobs_list = []
+    for fset in flagsets:
+        ref_fset = ref_flagsets[tuple(fset)]
+        if ref_fset is None:
+            # e.g. -G m on a target with no Mach-O variant
+            continue
+        for t in tests:
+            jobs_list.append((ref_fset, fset, t, QBE_REF, asm_mode))
     total = len(jobs_list)
     fail = 0
     results = []

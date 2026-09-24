@@ -55,7 +55,7 @@ fn emit_parse_pipeline(
 fn emit_gas(src : String, gasloc : String, gassym : String) -> String raise {
   let (f, interner, typs) = emit_parse_pipeline(src)
   let sb = StringBuilder::StringBuilder()
-  emitfn(f, interner, gasloc, gassym, sb)
+  emitfn(f, interner, gasloc, gassym, false, sb)
   sb.to_string()
 }
 
@@ -133,7 +133,7 @@ test "emit: gasemitdat writes data items and gasemitfin closes the file" {
       break
     }
   }
-  gasemitfin(".L", sb)
+  gasemitfin(".L", false, sb)
   let out = sb.to_string()
   assert_true(out.contains(".data"))
   assert_true(out.contains(".ascii \"hi\""))

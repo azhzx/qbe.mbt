@@ -24,7 +24,7 @@ Usage: qbe [OPTIONS] {file.ssa, -}
 
 | 目标 | 输出 | 说明 |
 | --- | --- | --- |
-| `amd64_sysv` | x86-64 GAS 汇编 | 默认；`-G e`（Linux `.L` 标签）/ `-G m`（macOS `L` + `_` 前缀）选择 GAS 风格 |
+| `amd64_sysv` | x86-64 GAS 汇编 | 默认；`-G e`（Linux `.L` 标签）/ `-G m`（macOS `L` + `_` 前缀）选择 GAS 风格；两种风格均与参考逐字节一致（`-t amd64_sysv` / `-t amd64_apple`） |
 | `wasm` | WAT 文本 | WebAssembly 文本格式；跳过寄存器分配 |
 | `rv64` | RISC-V 64 GAS 汇编 | ELF；支持 `-G e`（`.L` 标签），输出数据段与浮点池 |
 
