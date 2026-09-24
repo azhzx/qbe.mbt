@@ -552,8 +552,8 @@ fn arm64_selcall(
     cty = cty | ((cr.nfp << 2) | cr.ngp)
     if (cr.class_ & Arm64Cptr) != 0 {
       // spill & rega expect calls to be followed by copies from regs,
-      // so we emit a dummy
-      cty = cty | (1 << 13)
+      // so we emit a dummy (C arm64/abi.c: cty |= 1 << 13 | 1)
+      cty = cty | (1 << 13) | 1
       arm64_emit(
         st,
         @types.Copy,

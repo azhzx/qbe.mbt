@@ -142,6 +142,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::none(),
         )
         emiti(st, i1)
+        let i1idx = st.buf.length() - 1
         emit(
           st,
           @types.Copy,
@@ -149,6 +150,13 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::tmp(@types.RCX),
           r0,
           @types.Ref::none(),
+        )
+        // C amd64/isel.c: fixarg(&i1->arg[0], argcls(&i, 0), i1, fn).
+        st.buf[i1idx].arg1 = fixarg(
+          st,
+          st.buf[i1idx].arg1,
+          argcls(i, 0),
+          Some(i.op),
         )
       }
     @types.Nop => ()
