@@ -382,8 +382,7 @@ test "e2e rv64: data section" {
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
           #|	add sp, sp, -16
-          #|	lla t6, buf
-          #|	lbu a0, 0(t6)
+          #|	lbu a0, buf
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -394,6 +393,7 @@ test "e2e rv64: data section" {
           #|
           #|.section .note.GNU-stack,"",@progbits
           #|
+
 
         ),
       )

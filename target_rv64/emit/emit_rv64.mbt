@@ -425,14 +425,14 @@ fn rv64_emit_load(
           rv64_emitaddr(st, con)
           st.sb.write_string(", t6\n")
         } else {
-          st.sb.write_string("\tlla t6, ")
-          rv64_emitaddr(st, con)
-          st.sb.write_char('\n')
+          // C %M: integer loads from a symbol use the bare "lw dst, sym" form.
           st.sb.write_string("\t")
           st.sb.write_string(ldname)
           st.sb.write_string(" ")
           st.sb.write_string(dst)
-          st.sb.write_string(", 0(t6)\n")
+          st.sb.write_string(", ")
+          rv64_emitaddr(st, con)
+          st.sb.write_char('\n')
         }
       }
       _ => abort("invalid load address")
@@ -442,14 +442,14 @@ fn rv64_emit_load(
     let m = st.fn_.mems[addr.mem_val()]
     match m.offset.kind {
       @types.CAddr => {
-        st.sb.write_string("\tlla t6, ")
-        rv64_emitaddr(st, m.offset)
-        st.sb.write_char('\n')
+        // fp-constant stash: float load with the scratch register.
         st.sb.write_string("\t")
         st.sb.write_string(ldname)
         st.sb.write_string(" ")
         st.sb.write_string(dst)
-        st.sb.write_string(", 0(t6)\n")
+        st.sb.write_string(", ")
+        rv64_emitaddr(st, m.offset)
+        st.sb.write_string(", t6\n")
       }
       _ => abort("invalid stash address")
     }
