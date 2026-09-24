@@ -107,11 +107,22 @@ fn obj_basename(file : String) -> String {
 }
 
 ///|
-// Create the output directory if it does not exist yet.
+// Create the output directory (and any missing parents) if needed.
 fn ensure_dir(dir : String) -> Unit raise {
-  if dir != "" && !@fs.path_exists(dir) {
-    @fs.create_dir(dir)
+  if dir == "" || @fs.path_exists(dir) {
+    return
   }
+  let mut i = 1
+  while i < dir.length() {
+    if dir[i] == '/' {
+      let prefix = dir[:i].to_owned()
+      if !@fs.path_exists(prefix) {
+        @fs.create_dir(prefix)
+      }
+    }
+    i = i + 1
+  }
+  @fs.create_dir(dir)
 }
 
 ///|
