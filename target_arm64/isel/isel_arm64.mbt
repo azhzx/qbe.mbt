@@ -319,6 +319,23 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     }
     return
   }
+  if i.op == @types.Alloc4 || i.op == @types.Alloc8 || i.op == @types.Alloc16 {
+    // C arm64/isel.c sel(): dynamic allocs lower via salloc().
+    st.fn_.has_dynalloc = true
+    let r0 = arm64_isel_newtmp(st, @types.Kl)
+    let r1 = arm64_isel_newtmp(st, @types.Kl)
+    let m16 = arm64_isel_getcon(st, -16L)
+    let c15 = arm64_isel_getcon(st, 15L)
+    arm64_isel_emit(
+      st,
+      @types.Ins::new(@types.Salloc, @types.Kl, i.to, r0, @types.Ref::none()),
+    )
+    arm64_isel_emit(st, @types.Ins::new(@types.And, @types.Kl, r0, r1, m16))
+    arm64_isel_emit(st, @types.Ins::new(@types.Add, @types.Kl, r1, i.arg1, c15))
+    let aidx = st.buf.length() - 1
+    st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
+    return
+  }
   if i.op == @types.Call && arm64_callable(i.arg1, st.fn_) {
     arm64_isel_emit(st, i)
     return

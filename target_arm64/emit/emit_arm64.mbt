@@ -446,6 +446,21 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       } else {
         arm64_emit_table(st, i)
       }
+    @types.Salloc => {
+      // C arm64/emit.c: sub sp, sp, %0; mov %=, sp (when to != R).
+      sb.write_string("\tsub\tsp, sp, ")
+      if i.arg1.is_tmp() {
+        sb.write_string(arm64_rname(i.arg1.tmp_val(), @types.Kl))
+      } else {
+        raise @util.QbeError::Ice("unexpected salloc operand")
+      }
+      sb.write_char('\n')
+      if !i.to.is_none() {
+        sb.write_string("\tmov\t")
+        sb.write_string(arm64_rname(i.to.tmp_val(), @types.Kl))
+        sb.write_string(", sp\n")
+      }
+    }
     _ => arm64_emit_table(st, i)
   }
 }
@@ -547,6 +562,9 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
             sb.write_string(o.to_string())
             sb.write_string("]\n")
           }
+        }
+        if fn_.has_dynalloc {
+          sb.write_string("\tmov sp, x29\n")
         }
         let mut oo = st.frame + 16
         if fn_.is_vararg {
