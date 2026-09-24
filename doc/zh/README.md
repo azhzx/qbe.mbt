@@ -117,6 +117,10 @@
                               out.wat (WAT 文本)
 ```
 
+`ir_builder` 跳过 `lexer`/`parser`，直接生成同一份 `types` IR；
+`@qbe.compile_ir_object` / `compile_ir_asm` / `compile_ir_bin_module` 随后运行
+完全相同的后端流水线。详见 [ir_builder.md](ir_builder.md)。
+
 每个带 `-d*` 标志的阶段在调试模式下会输出 IL 形式的快照到 stderr，参考 [cmd_main.md](cmd_main.md) 的标志表。
 
 三个差分目标（`amd64_sysv`、`arm64`、`rv64`）的每个调试标志输出与

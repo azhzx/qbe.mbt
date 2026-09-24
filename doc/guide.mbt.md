@@ -45,6 +45,8 @@ Provides MoonBit unit/blackbox/whitebox tests, maintaining core regression tests
 
 Provides README examples covering IL parsing, SSA construction, register allocation, assembly output, and target architecture selection.
 
+Provides a programmatic IR builder (`ir_builder`, Cranelift/LLVM-style) that constructs the same `Fn`/`Blk`/`Ins`/`Phi` IR the parser produces, with `@qbe.compile_ir_object` / `@qbe.compile_ir_asm` / `@qbe.compile_ir_bin_module` entries, plus a C ABI (`ir_builder_capi`, `include/qbe_builder.h`); see [ir_builder.md](ir_builder.md).
+
 # Quick Start
 
 `@qbe.compile` compiles an IL text to amd64 GAS assembly; `@qbe.compile_debug` returns dumps from each stage:
@@ -173,6 +175,8 @@ MoonBit packages organized by compilation pipeline stages (see [doc/](README.md)
 | Utilities | `util` | Error types, string interning (Interner), output, sorting |
 | Lexing | `lexer` | IL text → token sequence, errors collected to `err_msgs` instead of exceptions |
 | Parsing | `parser` | Token sequence → `Fn`/`Dat`/`Typ`, supports `type`/`data`/`function` three top-level definitions |
+| Programmatic Front End | `ir_builder` | Builder-based IL construction (functions, blocks, block parameters/phi, instructions, data); emits via `@qbe.compile_ir_object`/`compile_ir_asm`/`compile_ir_bin_module` |
+| C ABI | `ir_builder_capi` | `foreign_library` exporting the `qbe_*` builder symbols for C (`include/qbe_builder.h`) |
 | CFG Analysis | `cfg` | Reverse postorder, predecessors, dominator tree, dominance frontiers, loop depth, alias analysis, jump simplification |
 | SSA Construction | `ssa` | Use chains, memopt, phi insertion, block renaming, loadopt, copy propagation, validity checking |
 | Constant Folding | `fold` | Directly evaluates instructions whose operands are all constants and replaces with references |
@@ -365,5 +369,6 @@ Rewrites manual memory management from C code to MoonBit's safe data structures 
 - ✅ LoongArch 64 (la64) code generation (LP64D ABI, data + float pool, reusing spill/rega)
 - ✅ SSA interpreter (`interp` package, `--run` CLI flag, builtin runtime + external symbol hook)
 - ✅ rv64 `data` segment and floating-point constant rodata output (byte-identical to `vendor/qbe -t rv64`)
+- ✅ Programmatic IR builder (`ir_builder`) and C ABI (`ir_builder_capi`, `include/qbe_builder.h`): construct QBE IL without rendering/re-parsing `.ssa`, then emit assembly / Mach-O object / JIT image
 - rv64 full byte-parity under `python compare.py --target rv64`
 - Interface with mbtcc to verify full end-to-end feasibility

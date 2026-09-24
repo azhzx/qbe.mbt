@@ -121,6 +121,10 @@ Packages are listed in compilation pipeline order:
                                out.wat (WAT text)
 ```
 
+`ir_builder` skips `lexer`/`parser` and produces the same `types` IR directly;
+`@qbe.compile_ir_object` / `compile_ir_asm` / `compile_ir_bin_module` then run the
+identical backend pipeline. See [ir_builder.md](ir_builder.md).
+
 Each stage with a `-d*` flag outputs an IL-form snapshot to stderr in debug mode; see [cmd_main.md](cmd_main.md) for the flag table.
 
 All three differential targets (`amd64_sysv`, `arm64`, `rv64`) are
