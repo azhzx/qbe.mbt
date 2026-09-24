@@ -744,12 +744,12 @@ pub fn enc_fdiv_s(rd : Int, rn : Int, rm : Int) -> Int {
 ///|
 // FCMPE: like FCMP but signals on quiet NaNs (QBE emits the e form).
 pub fn enc_fcmpe_d(rn : Int, rm : Int) -> Int {
-  0x1E612010 | (r5(rm) << 16) | (r5(rn) << 5)
+  0x1E602010 | (r5(rm) << 16) | (r5(rn) << 5)
 }
 
 ///|
 pub fn enc_fcmpe_s(rn : Int, rm : Int) -> Int {
-  0x1E212010 | (r5(rm) << 16) | (r5(rn) << 5)
+  0x1E202010 | (r5(rm) << 16) | (r5(rn) << 5)
 }
 
 ///|

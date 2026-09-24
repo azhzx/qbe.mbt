@@ -178,11 +178,11 @@ async fn main {
       }
     _ => ()
   }
-  // --route b selects the self-contained (route B) arm64 backend for
-  // --run-asm and --emit obj instead of the clang-backed route A.
+  // --emit obj and --run-asm use the self-contained (route B) arm64 backend
+  // by default; --route a falls back to the clang-backed route A.
   let route_b = match parsed.values.get("route") {
-    Some(arr) if arr.length() > 0 => arr[0] == "b"
-    _ => false
+    Some(arr) if arr.length() > 0 => arr[0] != "a"
+    _ => true
   }
   let files = match parsed.values.get("file") {
     Some(arr) => arr

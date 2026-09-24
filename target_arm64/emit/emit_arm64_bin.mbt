@@ -278,7 +278,9 @@ fn arm64_bin_loadcon(
   }
   let rd = arm64_bin_reg(r)
   let li = arm64_bin_encode_logimm(n, sf)
-  if n == -1L || li.is_some() {
+  // The text emitter prints a single MOV when (n | 0xFFFF) == -1 (negative
+  // values with the low half set) or n is a logical immediate.
+  if (n | 0xFFFFL) == -1L || li.is_some() {
     // The text emitter prints one MOV for these; mirror GAS's encoding choice
     // (MOVZ, else MOVN, else the ORR bitmask immediate).
     match arm64_bin_movz_single(n, bits) {

@@ -124,6 +124,8 @@ test "arm64 enc: floating point" {
   check_word(enc_fdiv_s(0, 1, 2), 0x1E221820L)
   check_word(enc_fcmpe_d(0, 1), 0x1E612010L)
   check_word(enc_fcmpe_s(0, 1), 0x1E212010L)
+  check_word(enc_fcmpe_d(8, 0), 0x1E602110L)
+  check_word(enc_fcmpe_s(8, 0), 0x1E202110L)
   check_word(enc_fcvtzs_w_d(0, 0), 0x1E780000L)
   check_word(enc_fcvtzs_w_s(0, 0), 0x1E380000L)
   check_word(enc_fcvtzs_x_s(0, 0), 0x9E380000L)

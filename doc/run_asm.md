@@ -59,15 +59,18 @@ conversions and the floating-point rodata pool (`Lfp0`, `Lfp1`, ...).
 
 Object emission (`emit_arm64_object`) builds a multi-section Mach-O object with
 real relocations: `BRANCH26` for calls, `PAGE21`/`PAGEOFF12` for global
-addresses, over `__text`/`__data`/`__TEXT,__const`. `--emit obj --route b`
-writes it and it links with clang/ld (a native test links and runs one).
+addresses, over `__text`/`__data`/`__TEXT,__const`. `--emit obj` writes it and
+it links with clang/ld (a native test links and runs one).
 
-`--run-asm --route b` executes the same module image directly (no clang). Both
-routes agree on the demos.
+`--run-asm` executes the same module image directly (no clang).
+
+Both are now **route B by default**; `--route a` selects the older clang-backed
+route A. `python tools/check_route_b.py` reports 336/336 compilable arm64
+cases byte-identical to clang (the other 70 `test/` files are inputs that the
+frozen reference QBE rejects as well, so there is no assembly to compare).
 
 Remaining: external symbols in the JIT (libc calls need `dlsym`/`BRANCH26`
-resolution), byte-for-byte parity with clang on the full 406-case arm64 suite,
-and eventually making route B the default.
+resolution) and full support for the QBE vararg ABI.
 
 
 ## Running wasm (`--run-wasm`)
