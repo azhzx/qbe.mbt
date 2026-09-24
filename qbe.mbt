@@ -524,6 +524,58 @@ fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
 }
 
 ///|
+// Route B (self-contained): compile the module and return the binary arm64
+// instruction words of every function, in definition order. No assembler or
+// linker is involved; the words feed object/macho.mbt or the in-memory JIT.
+pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
+  @types.init_arm64_target()
+  let (funcs, _datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
+  @emit_arm64.arm64_emit_reset()
+  let res : Array[Array[Int]] = []
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    res.push(@emit_arm64.emit_arm64_bin_fn(fn_, interner, true))
+  }
+  res
+}
+
+///|
+// Route B (self-contained), linked: all functions in one contiguous text blob
+// with intra-module direct calls patched. This is what the in-memory JIT and
+// the future Mach-O writer consume.
+pub fn compile_arm64_bin_module(
+  text : String,
+) -> @emit_arm64.Arm64BinModule raise {
+  @types.init_arm64_target()
+  let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, true)
+}
+
+///|
+// Route B (self-contained) object emission: a Mach-O arm64 object built from
+// the binary emitter, with BRANCH26 / PAGE21 / PAGEOFF12 relocations. No clang.
+pub fn compile_arm64_object(text : String) -> Bytes raise {
+  @types.init_arm64_target()
+  let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_object(funcs, datas, interner, true)
+}
+
+///|
+pub type Arm64BinModule = @emit_arm64.Arm64BinModule
+
+///|
 // Convenience re-exports of the core IR types from `types`.
 // Use `@qbe.Fn`, `@qbe.Ref`, ... instead of reaching into `@types` when the
 // intent is "the module's public IR".

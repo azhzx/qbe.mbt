@@ -147,21 +147,33 @@ fn arm64_logimm(x : Int64, k : @types.Class) -> Bool {
 }
 
 ///|
-// Slot offset relative to the frame pointer (C slot in arm64/emit.c).
-fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
+// Slot offset relative to the frame pointer (C slot in arm64/emit.c). Split from
+// arm64_slot so the binary emitter can share the exact frame math.
+fn arm64_slot_off(
+  frame : Int,
+  padding : Int,
+  is_vararg : Bool,
+  apple : Bool,
+  s : Int,
+) -> Int {
   let s = if (s & (1 << 28)) != 0 { s - (1 << 29) } else { s }
   if s == -1 {
-    16 + st.frame
+    16 + frame
   } else if s < 0 {
     // C arm64/emit.c slot(): negative slots already carry a byte offset.
-    if st.fn_.is_vararg && !st.apple {
-      16 + st.frame + 192 - (s + 2)
+    if is_vararg && !apple {
+      16 + frame + 192 - (s + 2)
     } else {
-      16 + st.frame - (s + 2)
+      16 + frame - (s + 2)
     }
   } else {
-    16 + st.padding + 4 * s
+    16 + padding + 4 * s
   }
+}
+
+///|
+fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
+  arm64_slot_off(st.frame, st.padding, st.fn_.is_vararg, st.apple, s)
 }
 
 ///|

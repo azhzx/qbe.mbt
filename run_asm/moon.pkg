@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/encoding/utf8",
+  "azhzx/qbe",
   "azhzx/qbe/object",
   "azhzx/qbe/util",
 }

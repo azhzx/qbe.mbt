@@ -1,44 +1,74 @@
 # JIT 与目标文件生成
 
-qbe.mbt 可以把 .ssa 变成机器码，目前支持 **macOS / aarch64**，有两条路径：
+qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**完全自包含**的
+路线 B（不需要工具链），也可以用 `--route a` 回到借道 clang 的路线 A：
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # 生成 Mach-O .o
-    qbe --run-asm fib,10 demo/10_fibonacci.ssa           # 输出 55
+    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 输出 55
 
-两者都走同一条流水线（前端 -> arm64 ABI -> isel -> rega）和逐字节对齐的
-arm64 文本发射器。
+## 怎么体验
 
-## 路线 A - 借道系统工具链（默认）
+先构建一次（`moon build --target native`），然后：
 
-`run_asm/`（仅 native）调用系统工具链：
+    M=./_build/native/debug/build/cmd/main/main.exe
 
-- `--emit obj`：把 Mach-O 汇编写到临时 `.s`，再 `clang -c` 得到 `.o`。
-- `--run-asm FUNC[,ARG]`：把 Mach-O 汇编写到临时 `.s`，`clang -dynamiclib` 生成
-  dylib，`dlopen` 后用 `dlsym` 解析 `FUNC` 并调用。
+    # 进程内执行：mmap + mprotect + 直接调用，无 clang、无链接器
+    $M --run-asm fib,10 demo/10_fibonacci.ssa        # 55
+    $M --run-asm sum_to,100 demo/03_loop_phi.ssa     # 5050
+    $M --run-asm fact,10 demo/04_recursion.ssa       # 3628800
+    $M --run-asm global_demo demo/06_memory.ssa      # 1
+    $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295（-1 的 u32）
 
-MoonBit 自身无法表达的部分放在 `run_asm/run_asm_stub.c`，通过类型化 FFI
-（`run_asm/ffi.mbt`）暴露：`mmap`/`mprotect` 可执行内存、临时文件、进程启动、
-`dlopen`/`dlsym`、调用裸代码地址。
+    # 产出 Mach-O 目标文件，再用 ld/clang 链接
+    $M --emit obj -o fib.o demo/10_fibonacci.ssa
+    printf 'long fib(long);\nint main(void){ return fib(10)==55?0:1; }\n' > drv.c
+    clang -o fib fib.o drv.c && ./fib; echo $?       # 0
 
-优点：今天即可用、代码少、复用已验证的发射器。缺点：运行期依赖 Xcode/clang。
+`--run-asm` 需要 macOS/aarch64（要真正执行代码）；`--emit obj` 是纯 MoonBit，
+任何平台都能跑。`--route a` 可把两者切回 clang 路线。
 
-## 路线 B - 自包含（进行中）
+## 路线 B - 自包含（默认）
 
-目标（对齐 Cranelift）：不依赖工具链，进程内直接产出目标文件并执行。
+`target_arm64/emit/emit_arm64_bin.mbt` 直接消费同一份 post-`rega` IR，产出
+arm64 机器字：函数序言/尾声、整数与双精度运算、加载/存储、用 `cset` 的比较、
+常量物化（`MOVZ`/`MOVN`/`ORR` 逻辑立即数）、单精度运算、浮点转换与浮点常量池
+（`Lfp0`、`Lfp1`…）、并行复制 `swap`，以及函数内跳转回填。
 
-已完成并验证：
+模块发射器（`emit_arm64_bin_module`）把所有函数拼成一段 text，回填模块内 `bl`，
+把 `data` 段布局进同一镜像并回填全局 `adrp`/`add` 地址。`ExecBlock::load_module`
+负责映射镜像，并且只把代码段设为可执行（RX），数据段保持可写（RW）。
 
-- `object/macho.mbt` - Mach-O（`MH_OBJECT`，arm64）写入器：header、带 section
-  的 `LC_SEGMENT_64`、`LC_BUILD_VERSION`、`LC_SYMTAB`、`nlist_64` 与外部
-  重定位。手工构造的目标文件可被 `ld` 链接并运行。
-- `object/arm64_enc.mbt` - 编码器切片（`add` 立即数、`movz`、`movk`、`ret`），
-  与 `clang` 逐字节对拍通过。
-- `run_asm/module.mbt` - `ExecBlock`：`mmap` + 拷贝 + `mprotect` + 调用，内存中的
-  arm64 代码可直接执行。
+`target_arm64/emit/emit_arm64_obj.mbt` 构造多 section 的 Mach-O
+（`__text` / `__data` / `__TEXT,__const`），生成四类重定位：`PAGE21`/`PAGEOFF12`
+（全局地址）、`BRANCH26`（调用）、`UNSIGNED`（数据指针）。
 
-待完成：把文本发射器产生的全部 arm64 指令编码出来，并从同一份 post-`rega`
-IR 驱动（用二进制发射器替代字符串发射器），以及 `adrp`/`add`/`bl` 的重定位
-回填。
+`object/macho.mbt` 写目标文件；`object/arm64_enc.mbt` 是逐条与 `clang` 对拍过的
+编码器；`run_asm/run_asm_stub.c` 提供 MoonBit 自身无法表达的部分
+（`mmap`/`mprotect`、临时文件、进程启动、`dlopen`/`dlsym`、调用裸代码地址），
+通过类型化 FFI（`run_asm/ffi.mbt`）暴露。
+
+## 路线 A - 借道工具链（回退，`--route a`）
+
+`run_asm/`（仅 native）把 Mach-O 汇编写到临时 `.s`：`--emit obj` 调 `clang -c`；
+`--run-asm` 调 `clang -dynamiclib` 再 `dlopen`/`dlsym` 调用。运行期依赖
+Xcode/clang，主要作为参照与回退路径保留。
+
+## 验证
+
+    moon test --target native          # 315 个单元/白盒测试
+    python tools/check_route_b.py      # 336/336 个可编译 arm64 用例与 clang 逐字节一致
+
+`tools/check_route_b.py` 对 `test/` 下所有非 `_` 开头的用例，把路线 B 的 Mach-O
+`__text` 与「clang 汇编路线 A 文本」的结果逐字节比较。其余 70 个用例被冻结版参考
+QBE 同样拒绝，没有汇编可比。native 测试还会链接并运行一个路线 B 的目标文件，并
+解引用 `$r -> $t` 数据指针以覆盖 `UNSIGNED`。
+
+## 已知限制
+
+- JIT：尚未解析外部符号（libc `printf` 等），`--run-asm` 目前适用于自包含函数。
+- 未实现 QBE 可变参数 ABI（vararg 序言会被跳过）。
+- `--emit obj` 只写 `__text`/`__data`/`__TEXT,__const`；`__bss` 与
+  `__cstring` 合并进 `__data`。
 
 ## 运行 wasm（`--run-wasm`）
 
@@ -54,5 +84,6 @@ wasm 后端把 QBE 的 CFG 下沉为带 `br_table` 的分发循环，因此循�
 
 ## 测试
 
-    moon test --target native -p run_asm      # FFI、路线 A、路线 B 切片
-    moon test --target native -p object   # 编码器对拍、目标文件布局
+    moon test --target native -p run_asm      # FFI、路线 A、路线 B、目标文件链接
+    moon test --target native -p object       # 编码器对拍、目标文件布局
+    qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node

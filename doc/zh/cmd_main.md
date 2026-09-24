@@ -18,6 +18,14 @@ Usage: qbe [OPTIONS] {file.ssa, -}
                 amd64_sysv (default), wasm, rv64, la64, arm64
     -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
+    --emit obj  写出 Mach-O arm64 目标文件（arm64 目标）
+    --run-asm FUNC[,ARG]
+                编译到 arm64，用 mmap 装载并调用 FUNC（macOS/aarch64）
+    --run-wasm FUNC[,ARG]
+                编译到 wasm，在 node 下运行 FUNC
+    --route {a,b}
+                arm64 的 --emit obj / --run-asm 后端：
+                b = 自包含（默认），a = 借道 clang
 ```
 
 ### `-t` 目标选择
@@ -35,6 +43,20 @@ moon run cmd/main -- -t rv64 demo/01_arith.ssa
 moon run cmd/main -- -t wasm demo/05_float.ssa
 moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 ```
+
+### arm64 JIT / 目标文件（`--emit obj`、`--run-asm`）
+
+在 macOS/aarch64 上，arm64 后端可以不依赖工具链直接产出并运行机器码
+（路线 B，默认）：
+
+```
+moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
+```
+
+`--emit obj` 是纯 MoonBit，任何平台都能用。路线 B 的细节与限制见
+[run_asm.md](run_asm.md)。
 
 ### `-d` 调试标志
 

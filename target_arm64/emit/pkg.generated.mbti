@@ -11,9 +11,26 @@ pub fn arm64_emit_reset() -> Unit
 
 pub fn emit_arm64(@types.Fn, @util.Interner, Array[@types.Typ], String, String, Bool) -> String raise
 
+pub fn emit_arm64_bin_fn(@types.Fn, @util.Interner, Bool) -> Array[Int] raise
+
+pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise
+
+pub fn emit_arm64_bin_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Arm64BinModule raise
+
+pub fn emit_arm64_object(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Bytes raise
+
 // Errors
 
 // Types and methods
+pub(all) struct Arm64BinModule {
+  words : Array[Int]
+  data : Array[Int]
+  fns : Array[(String, Int)]
+  datas : Array[(String, Int)]
+  exports : Array[String]
+  code_bytes : Int
+}
+pub fn Arm64BinModule::image(Self) -> Bytes
 
 // Type aliases
 

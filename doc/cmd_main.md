@@ -20,6 +20,14 @@ Usage: qbe [OPTIONS] {file.ssa, -}
                 amd64_sysv (default), wasm, rv64, la64, arm64
     -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
+    --emit obj  write a Mach-O arm64 object file (arm64 target)
+    --run-asm FUNC[,ARG]
+                compile to arm64, mmap and call FUNC (macOS/aarch64)
+    --run-wasm FUNC[,ARG]
+                compile to wasm and run FUNC under node
+    --route {a,b}
+                backend for arm64 --emit obj / --run-asm:
+                b = self-contained (default), a = clang-backed
 ```
 
 ### `-t` Target Selection
@@ -42,6 +50,20 @@ moon run cmd/main -- -t arm64 demo/01_arith.ssa
 moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 moon run cmd/main -- --run main,42 demo/01_arith.ssa
 ```
+
+### arm64 JIT / object (`--emit obj`, `--run-asm`)
+
+On macOS/aarch64 the arm64 backend emits and runs machine code without a
+toolchain (route B, default):
+
+```
+moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 --route a demo/10_fibonacci.ssa
+```
+
+`--emit obj` is pure MoonBit and works on any host. See
+[run_asm.md](run_asm.md) for the route B details and limitations.
 
 ### `-d` Debug Flags
 
