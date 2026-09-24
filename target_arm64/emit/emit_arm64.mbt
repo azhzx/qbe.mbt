@@ -320,7 +320,7 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
         'D' => k = @types.Kd
         '?' =>
           if k.base() == 0 {
-            sb.write_string(arm64_rname(@types.ARM64_R18, k))
+            sb.write_string(arm64_rname(@types.ARM64_IP1, k))
           } else if k == @types.Ks {
             sb.write_string("s31")
           } else {
