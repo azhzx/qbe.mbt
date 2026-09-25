@@ -21,11 +21,13 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
     --emit obj  write a Mach-O arm64 object file (arm64 target)
+    --jit FUNC[,ARG]...
+                compile to arm64, mmap and call FUNC (macOS/aarch64, route B)
     --run-asm FUNC[,ARG]
-                compile to arm64, mmap and call FUNC (macOS/aarch64)
+                emit arm64 asm, assemble/link with clang and call FUNC (route A)
     --run-wasm FUNC[,ARG]
                 compile to wasm and run FUNC under node
-    --clang     use the clang-backed arm64 backend for --emit obj / --run-asm
+    --clang     use the clang-backed arm64 backend for --emit obj
                 (default: self-contained)
     --out-dir DIR
                 directory for --emit obj output (default: .qbe_build)
@@ -52,27 +54,32 @@ moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 moon run cmd/main -- --run main,42 demo/01_arith.ssa
 ```
 
-### arm64 JIT / object (`--emit obj`, `--run-asm`)
+### arm64 JIT / object (`--jit`, `--emit obj`, `--run-asm`)
 
 On macOS/aarch64 the arm64 backend emits and runs machine code without a
-toolchain (route B, default):
+toolchain (route B):
 
 ```
-moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
-moon run --target native cmd/main -- --run-asm add,2,3 demo/01_arith.ssa      # 5
-moon run --target native cmd/main -- --run-asm main demo/11_main.ssa          # Hello from qbe.mbt!
-moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
+moon run --target native cmd/main -- --jit fib,10 demo/10_fibonacci.ssa        # 55
+moon run --target native cmd/main -- --jit add,2,3 demo/01_arith.ssa           # 5
+moon run --target native cmd/main -- --jit main demo/11_main.ssa               # Hello from qbe.mbt!
+moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa          # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
-moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa     # clang route A
 ```
 
-`--run-asm FUNC[,ARG]...` dispatches on the function signature: 0..8
-all-integer or 0..8 all-float arguments, with the result printed accordingly.
-External symbols such as libc `putchar`/`sqrt` are resolved with `dlsym`
-(far calls go through in-image veneers), so programs with libc calls run
-directly. `--emit obj` is pure MoonBit and works on any host. See
-[run_asm.md](run_asm.md) for the route B details and limitations.
+`--jit FUNC[,ARG]...` compiles to in-process machine code and calls the
+function. It dispatches on the function signature: 0..8 all-integer or 0..8
+all-float arguments, with the result printed accordingly. External symbols
+such as libc `putchar`/`sqrt` are resolved with `dlsym` (far calls go through
+in-image veneers), so programs with libc calls run directly.
+
+`--run-asm FUNC[,ARG]` takes the toolchain route instead: emit arm64 assembly,
+assemble/link it with clang and call the function (route A).
+
+`--emit obj` is pure MoonBit and works on any host. See
+[run_asm.md](run_asm.md) for details and limitations.
 
 ### `-d` Debug Flags
 

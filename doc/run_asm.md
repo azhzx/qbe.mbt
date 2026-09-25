@@ -1,11 +1,11 @@
 # JIT and object emission
 
 qbe.mbt turns a `.ssa` file into arm64 machine code for **macOS / aarch64**
-without any toolchain (route B, the default), or by borrowing clang
-(route A, `--clang`):
+without any toolchain (route B), or by borrowing clang (route A):
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # Mach-O object file
-    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 55
+    qbe --jit fib,10 demo/10_fibonacci.ssa           # 55, in-process (route B)
+    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 55, via clang (route A)
 
 ## Trying it
 
@@ -14,11 +14,14 @@ Build once (`moon build --target native`), then:
     M=./_build/native/debug/build/cmd/main/main.exe
 
     # Run a function in-process: mmap + mprotect + call. No clang, no linker.
+    $M --jit fib,10 demo/10_fibonacci.ssa            # 55
+    $M --jit sum_to,100 demo/03_loop_phi.ssa         # 5050
+    $M --jit fact,10 demo/04_recursion.ssa           # 3628800
+    $M --jit global_demo demo/06_memory.ssa          # 1
+    $M --jit sign,-5 demo/08_compare.ssa             # 4294967295 (-1 as u32)
+
+    # Or borrow clang: emit assembly, assemble/link and call (route A).
     $M --run-asm fib,10 demo/10_fibonacci.ssa        # 55
-    $M --run-asm sum_to,100 demo/03_loop_phi.ssa     # 5050
-    $M --run-asm fact,10 demo/04_recursion.ssa       # 3628800
-    $M --run-asm global_demo demo/06_memory.ssa      # 1
-    $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295 (-1 as u32)
 
     # Emit a Mach-O object. Without -o it goes to .qbe_build/<name>.o.
     $M --emit obj demo/10_fibonacci.ssa                     # .qbe_build/10_fibonacci.o
@@ -31,9 +34,10 @@ Build once (`moon build --target native`), then:
     $M --emit obj demo/11_main.ssa
     gcc -o hello .qbe_build/11_main.o && ./hello    # Hello from qbe.mbt!
 
-`--run-asm` needs macOS/aarch64 (it executes the code); `--emit obj` is pure
-MoonBit and works on any host. `--clang` switches both back to the
-clang-backed route A.
+`--jit` needs macOS/aarch64 (it executes the code) and no toolchain.
+`--run-asm` uses clang to assemble/link and run instead (route A), and
+`--clang` selects the clang backend for `--emit obj`. `--emit obj` is pure
+MoonBit and works on any host.
 
 ## Route B - self contained (default)
 
@@ -61,12 +65,12 @@ instruction encoders, each validated byte-for-byte against `clang`.
 (`mmap`/`mprotect`, temp files, process spawn, `dlopen`/`dlsym`, calling a
 code address) behind a typed FFI (`run_asm/ffi.mbt`).
 
-## Route A - toolchain backed (fallback, `--clang`)
+## Route A - toolchain backed (`--run-asm`, `--clang`)
 
 `run_asm/` (native only) writes the Mach-O assembly to a temp `.s` and runs
-`clang -c` for `--emit obj`, or `clang -dynamiclib` + `dlopen`/`dlsym` for
-`--run-asm`. It needs Xcode/clang at run time and exists mainly as a reference
-and as a fallback.
+`clang -c` for `--emit obj --clang`, or `clang -dynamiclib` + `dlopen`/`dlsym`
+for `--run-asm`. It needs Xcode/clang at run time and exists mainly as a
+reference and as a fallback.
 
 ## Verification
 
@@ -85,11 +89,12 @@ another dereferences a `$r -> $t` data pointer to exercise `UNSIGNED`.
   resolved with a host-supplied table first, then `dlsym(RTLD_DEFAULT, ...)`.
   Far calls go through in-image veneers that materialize the full 64-bit
   address (`bl veneer; movz/movk x16; br x16`); external data addresses are
-  patched in place (`adrp/add`, +/-4GB). `--run-asm`, the `qbe_jit_*` C ABI
+  patched in place (`adrp/add`, +/-4GB). `--jit`, the `qbe_jit_*` C ABI
   (`qbe_jit_symbol_define` registers host callbacks) and the Rust
   `Module::jit` / `jit_with_symbols` / `JitModule::get_fn` all use this.
-- `--run-asm FUNC[,ARG]...` dispatches on the function signature: 0..8
-  all-integer or 0..8 all-float arguments, with the result printed accordingly.
+- `--jit FUNC[,ARG]...` dispatches on the function signature: 0..8 all-integer
+  or 0..8 all-float arguments, with the result printed accordingly.
+  `--run-asm FUNC[,ARG]` (route A) still takes at most one integer argument.
 - The QBE vararg ABI is not implemented (vararg prologues are skipped).
 - `--emit obj` writes `__text`/`__data`/`__TEXT,__const`; `__bss` and
   `__cstring` are folded into `__data`.

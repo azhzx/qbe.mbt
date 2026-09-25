@@ -1,10 +1,11 @@
 # JIT 与目标文件生成
 
-qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**完全自包含**的
-路线 B（不需要工具链），也可以用 `--clang` 回到借道 clang 的路线 A：
+qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：走**完全自包含**的
+路线 B（不需要工具链），也可以借道 clang（路线 A）：
 
     qbe --emit obj -o fib.o demo/10_fibonacci.ssa    # 生成 Mach-O .o
-    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 输出 55
+    qbe --jit fib,10 demo/10_fibonacci.ssa           # 输出 55（进程内，路线 B）
+    qbe --run-asm fib,10 demo/10_fibonacci.ssa       # 输出 55（借道 clang，路线 A）
 
 ## 怎么体验
 
@@ -13,11 +14,14 @@ qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**�
     M=./_build/native/debug/build/cmd/main/main.exe
 
     # 进程内执行：mmap + mprotect + 直接调用，无 clang、无链接器
+    $M --jit fib,10 demo/10_fibonacci.ssa            # 55
+    $M --jit sum_to,100 demo/03_loop_phi.ssa         # 5050
+    $M --jit fact,10 demo/04_recursion.ssa           # 3628800
+    $M --jit global_demo demo/06_memory.ssa          # 1
+    $M --jit sign,-5 demo/08_compare.ssa             # 4294967295（-1 的 u32）
+
+    # 或者借道 clang：发汇编、汇编/链接后调用（路线 A）
     $M --run-asm fib,10 demo/10_fibonacci.ssa        # 55
-    $M --run-asm sum_to,100 demo/03_loop_phi.ssa     # 5050
-    $M --run-asm fact,10 demo/04_recursion.ssa       # 3628800
-    $M --run-asm global_demo demo/06_memory.ssa      # 1
-    $M --run-asm sign,-5 demo/08_compare.ssa         # 4294967295（-1 的 u32）
 
     # 产出 Mach-O 目标文件；不加 -o 时默认写到 .qbe_build/<名字>.o
     $M --emit obj demo/10_fibonacci.ssa                     # .qbe_build/10_fibonacci.o
@@ -30,8 +34,9 @@ qbe.mbt 可以把 `.ssa` 变成 **macOS / aarch64** 的机器码：默认走**�
     $M --emit obj demo/11_main.ssa
     gcc -o hello .qbe_build/11_main.o && ./hello    # Hello from qbe.mbt!
 
-`--run-asm` 需要 macOS/aarch64（要真正执行代码）；`--emit obj` 是纯 MoonBit，
-任何平台都能跑。`--clang` 可把两者切回 clang 路线。
+`--jit` 需要 macOS/aarch64（要真正执行代码）且不需要工具链。`--run-asm` 则借道
+clang 汇编/链接后执行（路线 A）；`--clang` 只用于给 `--emit obj` 选择 clang 后端。
+`--emit obj` 是纯 MoonBit，任何平台都能跑。
 
 ## 路线 B - 自包含（默认）
 
@@ -53,10 +58,10 @@ arm64 机器字：函数序言/尾声、整数与双精度运算、加载/存储
 （`mmap`/`mprotect`、临时文件、进程启动、`dlopen`/`dlsym`、调用裸代码地址），
 通过类型化 FFI（`run_asm/ffi.mbt`）暴露。
 
-## 路线 A - 借道工具链（回退，`--clang`）
+## 路线 A - 借道工具链（`--run-asm`、`--clang`）
 
-`run_asm/`（仅 native）把 Mach-O 汇编写到临时 `.s`：`--emit obj` 调 `clang -c`；
-`--run-asm` 调 `clang -dynamiclib` 再 `dlopen`/`dlsym` 调用。运行期依赖
+`run_asm/`（仅 native）把 Mach-O 汇编写到临时 `.s`：`--emit obj --clang` 调
+`clang -c`；`--run-asm` 调 `clang -dynamiclib` 再 `dlopen`/`dlsym` 调用。运行期依赖
 Xcode/clang，主要作为参照与回退路径保留。
 
 ## 验证
@@ -74,10 +79,10 @@ QBE 同样拒绝，没有汇编可比。native 测试还会链接并运行一个
 - JIT：外部符号（libc `printf`/`putchar`/`malloc`/`sqrt` 等）先查宿主符号表，
   再走 `dlsym(RTLD_DEFAULT, ...)`；远距离调用经镜像内 veneer 构造完整 64 位地址
   （`bl veneer; movz/movk x16; br x16`），外部数据地址就地回填（`adrp/add`，±4GB）。
-  `--run-asm`、`qbe_jit_*` C ABI（`qbe_jit_symbol_define` 注册宿主回调）与 Rust 的
+  `--jit`、`qbe_jit_*` C ABI（`qbe_jit_symbol_define` 注册宿主回调）与 Rust 的
   `Module::jit` / `jit_with_symbols` / `JitModule::get_fn` 均走此路径。
-- `--run-asm FUNC[,ARG]...` 按函数签名分派：0..8 个全整数或 0..8 个全浮点实参，
-  结果按类型打印。
+- `--jit FUNC[,ARG]...` 按函数签名分派：0..8 个全整数或 0..8 个全浮点实参，
+  结果按类型打印。`--run-asm FUNC[,ARG]`（路线 A）仍至多接受一个整数实参。
 - 未实现 QBE 可变参数 ABI（vararg 序言会被跳过）。
 - `--emit obj` 只写 `__text`/`__data`/`__TEXT,__const`；`__bss` 与
   `__cstring` 合并进 `__data`。
