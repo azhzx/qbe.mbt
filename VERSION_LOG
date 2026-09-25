@@ -203,6 +203,8 @@
 
 2026.9.25: v1.0.0
     first stable release. release audit: fixed broken relative links in
-    doc/isel.md and the zh docs, aligned the CI MoonBit installer with the
-    current https://cli.moonbitlang.cn/install/unix.sh, filled in moon.mod
-    repository/description/keywords, and stopped tracking .idea/
+    doc/isel.md and the zh docs; the installers try the .cn mirror first and
+    fall back to .com (GitHub runners cannot always reach .cn, so CI keeps
+    .com); Windows uses Set-ExecutionPolicy RemoteSigned + the .cn
+    powershell.ps1; filled in moon.mod repository/description/keywords; stopped
+    tracking .idea/

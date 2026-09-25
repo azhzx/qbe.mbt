@@ -106,26 +106,47 @@ find_moon() {
   fi
 }
 
-# Official Unix installer (https://cli.moonbitlang.cn/install/unix.sh).
-moon_install_url="${MOON_INSTALL_URL:-https://cli.moonbitlang.cn/install/unix.sh}"
+# Official Unix installers. The .cn mirror is primary (the one the MoonBit
+# docs use); .com is a fallback for networks where .cn is unreachable (e.g.
+# GitHub runners). MOON_INSTALL_URL overrides the whole list.
+moon_install_urls="${MOON_INSTALL_URL:-https://cli.moonbitlang.cn/install/unix.sh https://cli.moonbitlang.com/install/unix.sh}"
+
+install_from_mirror() {
+  _url=$1
+  _script=$(mktemp)
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --connect-timeout 15 -o "$_script" "$_url" || {
+      rm -f "$_script"
+      return 1
+    }
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --timeout=15 -O "$_script" "$_url" || {
+      rm -f "$_script"
+      return 1
+    }
+  else
+    die "curl or wget is required to install MoonBit"
+  fi
+  bash "$_script"
+  _rc=$?
+  rm -f "$_script"
+  return $_rc
+}
 
 install_moon() {
   case "$(uname -s)" in
-    Darwin | Linux)
-      if command -v curl >/dev/null 2>&1; then
-        info "curl -fsSL $moon_install_url | bash"
-        curl -fsSL "$moon_install_url" | bash ||
-          die "MoonBit installation failed"
-      elif command -v wget >/dev/null 2>&1; then
-        info "wget -qO- $moon_install_url | bash"
-        wget -qO- "$moon_install_url" | bash ||
-          die "MoonBit installation failed"
-      else
-        die "curl or wget is required to install MoonBit"
-      fi
-      ;;
+    Darwin | Linux) ;;
     *) die "unsupported operating system; install MoonBit manually" ;;
   esac
+  _installed=0
+  for _url in $moon_install_urls; do
+    info "curl -fsSL $_url | bash"
+    if install_from_mirror "$_url"; then
+      _installed=1
+      break
+    fi
+  done
+  [ "$_installed" -eq 1 ] || die "MoonBit installation failed from all mirrors"
   moon_cmd=$(find_moon)
   [ -n "$moon_cmd" ] ||
     die "MoonBit was installed but 'moon' is not on PATH yet; open a new shell and retry"
