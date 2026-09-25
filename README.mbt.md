@@ -49,7 +49,9 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 ## Quick start
 
-Clone and bootstrap on macOS or Linux:
+`./scripts/bootstrap.sh` is an interactive installer (rustup-style): it asks
+how to get the MoonBit compiler, builds the native `qbe` binary and offers to
+put it on your `PATH`.
 
 ```sh
 git clone https://github.com/azhzx/qbe.mbt.git
@@ -57,17 +59,41 @@ cd qbe.mbt
 ./scripts/bootstrap.sh
 ```
 
-If MoonBit is already installed, use `--skip-install` to avoid installation attempts while still running smoke checks:
+```text
+  +--------------------------------------------+
+  |  qbe.mbt - QBE reimplemented in MoonBit    |
+  +--------------------------------------------+
 
-```sh
-./scripts/bootstrap.sh --skip-install
+[1/3] MoonBit compiler
+How should we get the MoonBit compiler?
+  1)  Use the moon on PATH      (/Users/you/.moon/bin/moon)
+  2)  Install MoonBit           (Homebrew / install.sh)
+  3)  Use a custom moon path
+  Choose [1]:
+
+[2/3] Building qbe
+    /Users/you/.moon/bin/moon build --target native
+ok  built _build/native/debug/build/cmd/main/main.exe
+
+[3/3] Shell integration
+Add qbe to your PATH (install to /Users/you/.local/bin) [Y/n]
+ok  installed /Users/you/.local/bin/qbe
+ok  added /Users/you/.local/bin to /Users/you/.zshrc
+
+qbe.mbt is ready.
 ```
 
-To allow automatic MoonBit installation when `moon` is missing:
+Non-interactive options:
 
 ```sh
-./scripts/bootstrap.sh --install-moon
+./scripts/bootstrap.sh --skip-install        # use the moon on PATH, never install
+./scripts/bootstrap.sh --install-moon        # install MoonBit, then build
+./scripts/bootstrap.sh --moon /opt/moon/bin/moon
+./scripts/bootstrap.sh --yes --no-path       # scripted build, leave PATH alone
+./scripts/bootstrap.sh --with-reference      # also build vendor/qbe (diff tests)
 ```
+
+Colors are used only on a TTY; set `NO_COLOR=1` to disable them.
 
 Documentation:
 
