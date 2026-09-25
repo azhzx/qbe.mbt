@@ -95,6 +95,20 @@ Non-interactive options:
 
 Colors are used only on a TTY; set `NO_COLOR=1` to disable them.
 
+On Windows, `scripts/bootstrap.ps1` follows the same three steps:
+
+```powershell
+git clone https://github.com/azhzx/qbe.mbt.git
+cd qbe.mbt
+./scripts/bootstrap.ps1
+```
+
+It accepts `-Moon PATH`, `-InstallMoon`, `-SkipInstall`, `-BinDir DIR`,
+`-NoPath`, `-WithReference`, `-Target native|wasm` and `-Yes`. The native
+`qbe.exe` (route B object/JIT) currently targets macOS/Linux because the native
+shim uses POSIX `mmap`/`dlfcn`; on Windows the installer falls back to the
+default target and skips the PATH step.
+
 Documentation:
 
 - [API documentation](doc/README.md)

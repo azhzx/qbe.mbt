@@ -186,3 +186,10 @@
     then it builds the native qbe binary and offers to install it to
     ~/.local/bin and update the shell rc. Non-interactive flags: --moon,
     --bin-dir, --no-path, --yes; vendor/qbe is now behind --with-reference
+
+2026.9.25: v0.22.2
+    add scripts/bootstrap.ps1, the Windows PowerShell counterpart of
+    bootstrap.sh: same rustup-style menu (-Moon/-InstallMoon/-SkipInstall),
+    -Target native|wasm, and -BinDir/-NoPath PATH handling via the user
+    environment; falls back to the default target when the POSIX-only native
+    build is unavailable on Windows
