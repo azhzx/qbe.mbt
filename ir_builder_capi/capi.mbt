@@ -315,6 +315,14 @@ pub fn qbe_data_bytes(
 }
 
 ///|
+// Serialize the constructed module to QBE IL text (UTF-8). The output is
+// accepted by the textual parser.
+#export_name("qbe_emit_il")
+pub fn qbe_emit_il(h : Int64) -> Bytes {
+  @utf8.encode(get_builder(h).emit_il())
+}
+
+///|
 // Emit arm64 assembly text (UTF-8). Empty on failure; see `qbe_last_error`.
 #export_name("qbe_emit_asm")
 pub fn qbe_emit_asm(h : Int64) -> Bytes {

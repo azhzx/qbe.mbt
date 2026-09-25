@@ -493,7 +493,9 @@ pub fn Builder::data_bytes(
   is_export : Bool,
   bytes : Bytes,
 ) -> Unit {
-  self.datas.push(@types.Dat::start())
+  let start = @types.Dat::start()
+  start.is_export = is_export
+  self.datas.push(start)
   self.datas.push(@types.Dat::name(name, is_export))
   for i in 0..<bytes.length() {
     self.datas.push(@types.Dat::byte(bytes[i].to_int().to_int64()))
@@ -510,7 +512,9 @@ pub fn Builder::data_string(
   is_export : Bool,
   s : String,
 ) -> Unit {
-  self.datas.push(@types.Dat::start())
+  let start = @types.Dat::start()
+  start.is_export = is_export
+  self.datas.push(start)
   self.datas.push(@types.Dat::name(name, is_export))
   self.datas.push(@types.Dat::string(s))
   self.datas.push(@types.Dat::end())
@@ -526,7 +530,9 @@ pub fn Builder::data_ref(
   target : String,
   offset : Int64,
 ) -> Unit {
-  self.datas.push(@types.Dat::start())
+  let start = @types.Dat::start()
+  start.is_export = is_export
+  self.datas.push(start)
   self.datas.push(@types.Dat::name(name, is_export))
   self.datas.push(@types.Dat::ref_to(target, offset))
   self.datas.push(@types.Dat::end())

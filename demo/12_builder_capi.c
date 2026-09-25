@@ -107,6 +107,16 @@ static qbe_builder_t make_tri(void) {
   return b;
 }
 
+static void print_il(qbe_builder_t b, const char *label) {
+  moonbit_bytes_t text = qbe_emit_il(b);
+  if (qbe_bytes_len(text) == 0) {
+    die("qbe_emit_il");
+  }
+  printf("/* QBE IL: %s */\n", label);
+  fwrite(text, 1, qbe_bytes_len(text), stdout);
+  printf("\n");
+}
+
 static void print_asm(qbe_builder_t b, const char *label) {
   moonbit_bytes_t text = qbe_emit_asm(b);
   if (qbe_bytes_len(text) == 0) {
@@ -143,6 +153,11 @@ int main(int argc, char **argv) {
   moonbit_init();
   const char *dir = argc > 1 ? argv[1] : ".";
 
+  /* Serialize the constructed IR back to QBE IL text. */
+  print_il(make_tri(), "$tri");
+  print_il(make_add(), "$add");
+
+  /* And compile it to arm64 assembly. */
   print_asm(make_tri(), "$tri");
   print_asm(make_add(), "$add");
 

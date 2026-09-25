@@ -12,8 +12,16 @@
 ## 同一份 IR，已校验
 
 构造器只是一个*前端*，不是第二套编译器。由构造器生成的 IR 所产出的汇编，
-与等价 `.ssa` 文本产出的汇编逐字节一致；三个 whitebox 测试分别覆盖算术、
-控制流和块参数（phi），通过两条路径编译并比较输出来验证。
+与等价 `.ssa` 文本产出的汇编逐字节一致：
+
+- 三个 whitebox 测试分别覆盖算术、控制流和块参数（phi），通过两条路径编译并比较输出；
+- `emit_il` 把构造出的 IR 打印回 `.ssa`，round-trip 测试重新解析该文本并校验汇编逐字节一致。
+
+```moonbit
+let b = @ir_builder.Builder::new()
+// ... 构造 `add` ...
+let il = b.emit_il()   // "export function w $add(w %p.1, w %p.2) { ... }"
+```
 
 ## MoonBit 接口
 
@@ -29,9 +37,10 @@ let c = b.param(f, 1)
 let r = b.arith(f, @types.Add, @types.Kw, a, c)
 b.ret(f, r)
 
-// 自包含 Mach-O arm64 目标文件，或汇编文本：
-let obj = b.emit_object()
-// let asm = b.emit_asm()
+// 打印回 QBE IL 文本，或编译：
+let il = b.emit_il()
+let asm = b.emit_asm()
+// let obj = b.emit_object()
 ```
 
 主要方法：
@@ -50,6 +59,7 @@ let obj = b.emit_object()
 | `ret(fid, v)` | 返回。 |
 | `emit_ins` / `emit_void` | 通用逃生口：任意 `@types.Op` + 显式 class。 |
 | `data_string` / `data_bytes` / `data_ref` | 数据段。 |
+| `emit_il` | 把构造出的 IR 序列化回 QBE IL 文本（可被文本解析器重新解析）。 |
 | `emit_asm` / `emit_object` / `emit_bin_module` | 编译。（`emit_bin_module` 交给 `run_asm.ExecBlock` 进程内执行。） |
 
 分支实参采用惰性绑定，因此块参数既可以在分支之前、也可以在分支之后声明
@@ -73,6 +83,7 @@ qbe_value_t a = qbe_func_param(b, f, 0);
 qbe_value_t c = qbe_func_param(b, f, 1);
 qbe_value_t r = qbe_emit(b, f, qbe_cstr("add"), QBE_W, QBE_W, a, c);
 qbe_ret(b, f, r);
+moonbit_bytes_t il  = qbe_emit_il(b);       /* QBE IL 文本 */
 moonbit_bytes_t obj = qbe_emit_object(b);   /* Mach-O arm64，无运行时依赖 */
 ```
 
@@ -118,4 +129,6 @@ MoonBit 侧，`moon test --target native ir_builder` 还会在进程内 JIT 由�
 - 目标文件/JIT 仅在 arm64（macOS/aarch64）下可用，与 route B 一致。
 - 聚合（`:type`）参数与返回值、可变参数调用、动态 `alloc` 尚未由 C ABI 封装；
   MoonBit 的 `emit_ins` 逃生口仍可表达。
-- `finalize` 会就地绑定分支实参，因此一个 `Builder` 在首次 `emit_*` 后即被消耗。
+- `emit_il` 会就地绑定分支实参，可在 `emit_asm`/`emit_object` 之前（或单独）调用；
+  编译类 emit 会运行后端 pass 并消耗 IR，因此一个 `Builder` 最多编译一次。
+- 浮点字面量按六位小数打印，因此 `emit_il` 对多数（而非全部）任意 `Double` 位型可精确 round-trip。

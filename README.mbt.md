@@ -13,8 +13,8 @@
 - WASM backend
 - Programmatic IR builder (`ir_builder`) plus a C ABI (`ir_builder_capi`,
   `include/qbe_builder.h`): construct QBE IL from MoonBit or C without
-  rendering/re-parsing `.ssa` text, then emit an assembly text, a Mach-O arm64
-  object, or a JIT-ready code image
+  rendering/re-parsing `.ssa` text, then print it back as QBE IL, or emit an
+  assembly text, a Mach-O arm64 object, or a JIT-ready code image
 
 ## Plan
 - Self-contained JIT / object emission for macOS-aarch64 (`object/`,

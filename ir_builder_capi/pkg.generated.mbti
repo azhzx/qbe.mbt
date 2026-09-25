@@ -30,6 +30,8 @@ pub fn qbe_emit(Int64, Int, Bytes, Int, Int, Int, Int) -> Int
 
 pub fn qbe_emit_asm(Int64) -> Bytes
 
+pub fn qbe_emit_il(Int64) -> Bytes
+
 pub fn qbe_emit_object(Int64) -> Bytes
 
 pub fn qbe_emit_void(Int64, Int, Bytes, Int, Int, Int) -> Unit

@@ -99,6 +99,8 @@ void qbe_data_string(qbe_builder_t b, moonbit_bytes_t name, int32_t is_export,
 void qbe_data_bytes(qbe_builder_t b, moonbit_bytes_t name, int32_t is_export,
                     moonbit_bytes_t data);
 
+/* QBE IL text for the constructed module (UTF-8, re-parseable). */
+moonbit_bytes_t qbe_emit_il(qbe_builder_t b);
 /* UTF-8 arm64 assembly text. */
 moonbit_bytes_t qbe_emit_asm(qbe_builder_t b);
 /* Self-contained Mach-O arm64 object. */
