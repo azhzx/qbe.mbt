@@ -43,6 +43,7 @@ pub fn Builder::emit_il(Self) -> String
 pub fn Builder::emit_ins(Self, Int, @types.Op, @types.Class, @types.Class, Int, Int) -> Int
 pub fn Builder::emit_object(Self) -> Bytes raise
 pub fn Builder::emit_void(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
+pub fn Builder::entry_block(Self, Int) -> Int
 pub fn Builder::fconst(Self, Int, Double) -> Int
 pub fn Builder::func_params(Self, Int) -> Array[Int]
 pub fn Builder::functions(Self) -> Array[@types.Fn]

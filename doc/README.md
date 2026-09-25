@@ -41,6 +41,7 @@ Packages are listed in compilation pipeline order:
 | ARM64 Assembly Output | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS text output (reference snapshot syntax) |
 | SSA Interpreter | `interp` | [interp.md](interp.md) | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | [cmd_main.md](cmd_main.md) | Command-line arguments and pipeline orchestration |
+| Bindings | `rust/` | [rust_bindings.md](rust_bindings.md) | Rust glue layer over the builder C ABI (Cranelift/inkwell-style) |
 
 ## Pipeline Overview
 

@@ -15,6 +15,8 @@
   `include/qbe_builder.h`): construct QBE IL from MoonBit or C without
   rendering/re-parsing `.ssa` text, then print it back as QBE IL, or emit an
   assembly text, a Mach-O arm64 object, or a JIT-ready code image
+- Rust glue layer (`rust/`, crate `qbe-builder`) over that C ABI, with a
+  Cranelift/inkwell-style API (`Context`/`Module`/`FunctionBuilder`/`ins()`)
 
 ## Plan
 - Self-contained JIT / object emission for macOS-aarch64 (`object/`,
@@ -66,6 +68,7 @@ Documentation:
 
 - [API documentation](doc/README.md)
 - [Programmatic IR builder and C ABI](doc/ir_builder.md)
+- [Rust bindings (`rust/`)](doc/rust_bindings.md)
 - [Developer guide](doc/guide.mbt.md)
 - [Command-line reference](doc/cmd_main.md)
 - [Demos](demo/README.md)

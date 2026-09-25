@@ -1,6 +1,6 @@
 # CI for qbe.mbt — a 1:1 MoonBit reimplementation of QBE.
 #
-# Four jobs:
+# Five jobs:
 #   check  — cross-platform sanity: formatting, generated interface (`.mbti`)
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every
@@ -8,6 +8,7 @@
 #            submodule (Ubuntu), plus independent assembly validation.
 #   capi   — the programmatic builder's C ABI: builds the foreign library and
 #            runs the C smoke test end to end (macOS arm64).
+#   rust   — the Rust glue layer over that C ABI (macOS arm64).
 #
 # The CI gates on every debug stage and on the emitted assembly, all of which
 # are byte-identical to the frozen reference on amd64/arm64/rv64.
@@ -103,6 +104,47 @@ jobs:
       # prints the generated assembly, emits Mach-O objects and runs them.
       - name: Build & run C builder demo
         run: bash scripts/run_builder_demo.sh
+
+  rust:
+    name: Rust bindings (macOS arm64)
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Toolchain versions
+        run: |
+          moon version --all
+          rustc --version
+          cargo --version
+
+      - name: Sync dependencies
+        run: moon update
+
+      # build.rs runs `moon build --target native ir_builder_capi` and links the
+      # object plus the MoonBit runtime into the crate.
+      - name: Check formatting
+        run: cargo fmt --manifest-path rust/Cargo.toml --check
+
+      - name: Build & test Rust bindings
+        run: cargo test --manifest-path rust/Cargo.toml
 
   diff:
     name: Byte-differential vs reference QBE

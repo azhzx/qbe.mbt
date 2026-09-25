@@ -1,0 +1,19 @@
+[package]
+name = "qbe-builder"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Rust glue layer over the qbe.mbt programmatic QBE IL builder C ABI"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "qbe_builder"
+path = "src/lib.rs"
+
+[[example]]
+name = "demo"
+path = "examples/demo.rs"
+
+[profile.dev]
+debug = true

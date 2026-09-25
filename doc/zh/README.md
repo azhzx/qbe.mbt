@@ -37,6 +37,7 @@
 | ARM64 汇编输出 | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS 文本输出（参考快照语法） |
 | SSA 解释器 | `interp` | [interp.md](interp.md) | 直接执行 pre-isel IR，内置可移植运行时 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
+| 语言绑定 | `rust/` | [rust_bindings.md](rust_bindings.md) | 基于构造器 C ABI 的 Rust 胶水层（Cranelift/inkwell 风格） |
 
 ## 流水线一览
 

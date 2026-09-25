@@ -209,6 +209,12 @@ pub fn Builder::current_block(self : Builder, fid : Int) -> Int {
 }
 
 ///|
+// The entry block id of a function.
+pub fn Builder::entry_block(self : Builder, fid : Int) -> Int {
+  self.funcs[fid].start_id
+}
+
+///|
 // Declare a block parameter (a phi node at the top of `bid`). Returns its
 // value handle; predecessors pass an argument for it via the jump helpers.
 pub fn Builder::block_param(

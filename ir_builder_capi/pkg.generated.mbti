@@ -36,6 +36,8 @@ pub fn qbe_emit_object(Int64) -> Bytes
 
 pub fn qbe_emit_void(Int64, Int, Bytes, Int, Int, Int) -> Unit
 
+pub fn qbe_entry_block(Int64, Int) -> Int
+
 pub fn qbe_func_param(Int64, Int, Int) -> Int
 
 pub fn qbe_global(Int64, Int, Bytes) -> Int
@@ -50,9 +52,13 @@ pub fn qbe_jmp3(Int64, Int, Int, Int, Int, Int) -> Unit
 
 pub fn qbe_jmp4(Int64, Int, Int, Int, Int, Int, Int) -> Unit
 
+pub fn qbe_jmp_n(Int64, Int, Int, Bytes) -> Unit
+
 pub fn qbe_jnz(Int64, Int, Int, Int, Int) -> Unit
 
 pub fn qbe_jnz1(Int64, Int, Int, Int, Int, Int, Int) -> Unit
+
+pub fn qbe_jnz_n(Int64, Int, Int, Int, Bytes, Int, Bytes) -> Unit
 
 pub fn qbe_last_error() -> Bytes
 
