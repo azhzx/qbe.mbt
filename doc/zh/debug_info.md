@@ -64,34 +64,27 @@ CFI 默认关闭，因此普通输出仍与上游逐字节一致（上游不发�
 
 ## 编译单元（`.debug_info`，`-g`）
 
-`-g` 还会发出一个最小 DWARF5 编译单元，让调试器能把代码地址映射回源文件/行号：
+`-g` 还会发出一个最小 DWARF4 编译单元，让调试器能把代码地址映射回源文件/行号：
 
     .section .debug_abbrev,"",@progbits   # Mach-O：__DWARF,__debug_abbrev
     ...
     .section .debug_info,"",@progbits
-        .long 37          # 单元长度
-        .short 5          # DWARF 版本
-        .byte 1           # DW_UT_compile
-        .byte 8           # 地址宽度
+        .long 46          # 单元长度
+        .short 4          # DWARF 版本
         .long 0           # abbrev 偏移
+        .byte 8           # 地址宽度
         .byte 0x01        # DW_TAG_compile_unit
         .asciz "qbe.mbt"  # producer
         .short 12         # DW_LANG_C99
         .asciz "hello.c"  # CU 名（第一个 dbgfile）
         .asciz "."        # comp_dir
-        .byte 0           # DW_AT_low_pc  -> addrx 0
-        .byte 1           # DW_AT_high_pc -> addrx 1
+        .quad main        # DW_AT_low_pc
+        .quad .Ldbgend    # DW_AT_high_pc（.text 末尾）
         .long 0           # DW_AT_stmt_list（汇编器生成的 .debug_line）
-        .long 8           # DW_AT_addr_base
-    .section .debug_addr,"",@progbits
-        ...
-        .quad main        # addrx 0
-        .quad .Ldbgend    # addrx 1（.text 末尾）
 
-CU 的 `DW_AT_low_pc`/`high_pc` 用 `DW_FORM_addrx`，地址放在 `.debug_addr`
-（与 clang 相同），因此 `.debug_info` 在 Mach-O 上不含重定位，链接器的
-debug map 会重定位 `.debug_addr`。ELF 用 `.debug_*,"",@progbits`，Mach-O
-用 `__DWARF,__debug_*`。
+用 DWARF4 而不是 5：Apple 的 lldb 不支持版本 5。CU 的 low/high PC 是普通的
+`DW_FORM_addr`，由链接器的 debug map 重定位。ELF 用 `.debug_*,"",@progbits`，
+Mach-O 用 `__DWARF,__debug_*`。
 
 macOS 上端到端可用（无需 dSYM，lldb 直接读目标的 debug map）：
 

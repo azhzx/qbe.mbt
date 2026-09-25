@@ -81,13 +81,12 @@ pub fn emit_dbgloc(line : Int, col : Int, sb : StringBuilder) -> Unit {
 }
 
 ///|
-// Emit a DWARF5 compilation unit that ties the assembler-generated line
-// table to the code, so a debugger can turn an address back into a file/line.
+// Emit a DWARF4 compilation unit that ties the assembler-generated line table
+// to the code, so a debugger can turn an address back into a file/line.
 //
-// A single CU covers [first_fn, end-of-text]. `DW_AT_low_pc`/`DW_AT_high_pc`
-// use DW_FORM_addrx, so the addresses live in `.debug_addr` (clang does the
-// same) and `.debug_info` carries no Mach-O relocations; the linker's debug
-// map relocates `.debug_addr`.
+// DWARF4, not 5: Apple's lldb rejects version 5. The CU's low/high PC are
+// plain DW_FORM_addr values in `.debug_info`, which the linker's debug map
+// relocates. A single CU covers [first_fn, end-of-text].
 pub fn emit_debug_info(
   gasloc : String,
   gassym : String,
@@ -98,18 +97,17 @@ pub fn emit_debug_info(
   sb : StringBuilder,
 ) -> Unit {
   let producer = "qbe.mbt"
-  // .debug_info content length, excluding the leading unit_length: header(8)
-  // + abbrev(1) + producer + language(2) + name + comp_dir + low_pc(1) +
-  // high_pc(1) + stmt_list(4) + addr_base(4).
-  let info_len = 8 +
+  // .debug_info content length, excluding the leading unit_length: header
+  // (version 2 + abbrev_offset 4 + address_size 1) + abbrev(1) + producer +
+  // language(2) + name + comp_dir + low_pc(8) + high_pc(8) + stmt_list(4).
+  let info_len = 7 +
     1 +
     (producer.length() + 1) +
     2 +
     (cu_name.length() + 1) +
     (comp_dir.length() + 1) +
-    1 +
-    1 +
-    4 +
+    8 +
+    8 +
     4
   let text_label = gasloc + "dbgend"
   // The end of the code range: the current end of .text.
@@ -127,10 +125,9 @@ pub fn emit_debug_info(
   sb.write_string("\t.byte 0x13\n\t.byte 0x05\n") // language, data2
   sb.write_string("\t.byte 0x03\n\t.byte 0x08\n") // name, string
   sb.write_string("\t.byte 0x1b\n\t.byte 0x08\n") // comp_dir, string
-  sb.write_string("\t.byte 0x11\n\t.byte 0x1b\n") // low_pc, addrx
-  sb.write_string("\t.byte 0x12\n\t.byte 0x1b\n") // high_pc, addrx
+  sb.write_string("\t.byte 0x11\n\t.byte 0x01\n") // low_pc, addr
+  sb.write_string("\t.byte 0x12\n\t.byte 0x01\n") // high_pc, addr
   sb.write_string("\t.byte 0x10\n\t.byte 0x17\n") // stmt_list, sec_offset
-  sb.write_string("\t.byte 0x73\n\t.byte 0x17\n") // addr_base, sec_offset
   sb.write_string("\t.byte 0x00\n\t.byte 0x00\n\t.byte 0x00\n")
   // .debug_info
   if apple {
@@ -141,7 +138,7 @@ pub fn emit_debug_info(
   sb.write_string("\t.long ")
   sb.write_string(info_len.to_string())
   sb.write_char('\n')
-  sb.write_string("\t.short 5\n\t.byte 1\n\t.byte 8\n\t.long 0\n")
+  sb.write_string("\t.short 4\n\t.long 0\n\t.byte 8\n")
   sb.write_string("\t.byte 0x01\n")
   sb.write_string("\t.asciz \"")
   sb.write_string(producer)
@@ -153,14 +150,6 @@ pub fn emit_debug_info(
   sb.write_string("\t.asciz \"")
   sb.write_string(comp_dir)
   sb.write_string("\"\n")
-  sb.write_string("\t.byte 0\n\t.byte 1\n\t.long 0\n\t.long 8\n")
-  // .debug_addr
-  if apple {
-    sb.write_string(".section __DWARF,__debug_addr,regular,debug\n")
-  } else {
-    sb.write_string(".section .debug_addr,\"\",@progbits\n")
-  }
-  sb.write_string("\t.long 20\n\t.short 5\n\t.byte 8\n\t.byte 0\n")
   sb.write_string("\t.quad ")
   sb.write_string(gassym)
   sb.write_string(first_fn)
@@ -168,4 +157,5 @@ pub fn emit_debug_info(
   sb.write_string("\t.quad ")
   sb.write_string(text_label)
   sb.write_char('\n')
+  sb.write_string("\t.long 0\n")
 }
