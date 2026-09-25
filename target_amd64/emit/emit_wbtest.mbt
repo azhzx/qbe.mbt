@@ -87,6 +87,36 @@ test "emit: add function to ELF GAS (snapshot)" {
 }
 
 ///|
+test "emit: -g adds DWARF CFI" {
+  let src =
+    #|function w $fact(w %n) {
+    #|@start
+    #|  jnz %n, @rec, @done
+    #|@rec
+    #|  %n2 =w sub %n, 1
+    #|  %r =w call $fact(w %n2)
+    #|  %m =w mul %n, %r
+    #|  ret %m
+    #|@done
+    #|  ret 1
+    #|}
+    #|
+  @util.set_debug_info(true)
+  let asm = emit_gas(src, ".L", "")
+  @util.set_debug_info(false)
+  assert_true(asm.contains("\t.cfi_startproc\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa_offset 16\n"))
+  assert_true(asm.contains("\t.cfi_offset %rbp, -16\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa_register %rbp\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa %rsp, 8\n"))
+  assert_true(asm.contains("\t.cfi_restore %rbp\n"))
+  assert_true(asm.contains("\t.cfi_endproc\n"))
+  // The default (flag off) output carries no CFI.
+  let plain = emit_gas(src, ".L", "")
+  assert_true(!plain.contains(".cfi_"))
+}
+
+///|
 test "emit: macho flavor prefixes symbols and uses plain local labels" {
   let src =
     #|function w $add(w %a, w %b) {

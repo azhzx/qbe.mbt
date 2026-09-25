@@ -16,6 +16,24 @@ let dbg_curfile : Array[Int] = Array::make(1, 0)
 let dbg_paths : Array[String] = []
 
 ///|
+// Whether the DWARF extensions (CFI, .debug_info) are enabled. Off by
+// default so plain output stays byte-identical to the reference; the CLI's
+// -g/--debug-info sets it.
+let dbg_info_on : Array[Bool] = Array::make(1, false)
+
+///|
+// Enable or disable the DWARF debug-info extensions.
+pub fn set_debug_info(on : Bool) -> Unit {
+  dbg_info_on[0] = on
+}
+
+///|
+// True when DWARF debug-info extensions are enabled.
+pub fn debug_info() -> Bool {
+  dbg_info_on[0]
+}
+
+///|
 // Reset the file table (called once per module compile).
 pub fn dbg_reset() -> Unit {
   dbg_nfile[0] = 0

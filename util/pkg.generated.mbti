@@ -8,6 +8,8 @@ import {
 // Values
 pub fn dbg_reset() -> Unit
 
+pub fn debug_info() -> Bool
+
 pub fn emit_dbgfile(String, StringBuilder) -> Unit
 
 pub fn emit_dbgloc(Int, Int, StringBuilder) -> Unit
@@ -21,6 +23,8 @@ pub async fn iprint(String) -> Unit
 pub fn lpad(String, Int) -> String
 
 pub fn rpad(Int, Int) -> String
+
+pub fn set_debug_info(Bool) -> Unit
 
 // Errors
 pub(all) suberror QbeError {

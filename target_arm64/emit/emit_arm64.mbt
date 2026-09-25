@@ -544,6 +544,14 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   sb.write_string(st.gassym)
   sb.write_string(fn_.name)
   sb.write_string(":\n")
+  // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
+  // reference, which emits no .cfi directives.
+  let dbg = @util.debug_info()
+  // Bytes the vararg prologue pushes before the frame (ELF only).
+  let voff = if fn_.is_vararg && !st.apple { 192 } else { 0 }
+  if dbg {
+    sb.write_string("\t.cfi_startproc\n")
+  }
   // BTI landing pad (C arm64_emitfn always emits it).
   sb.write_string("\thint\t#34\n")
 
@@ -569,22 +577,52 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     sb.write_string("\tsub\tsp, sp, #")
     sb.write_string(st.frame.to_string())
     sb.write_char('\n')
+    if dbg {
+      sb.write_string("\t.cfi_def_cfa_offset ")
+      sb.write_string((voff + st.frame).to_string())
+      sb.write_char('\n')
+    }
     sb.write_string("\tstp\tx29, x30, [sp, -16]!\n")
   } else {
     sb.write_string("\tstp\tx29, x30, [sp, -")
     sb.write_string((st.frame + 16).to_string())
     sb.write_string("]!\n")
   }
+  if dbg {
+    sb.write_string("\t.cfi_def_cfa_offset ")
+    sb.write_string((voff + st.frame + 16).to_string())
+    sb.write_char('\n')
+  }
   sb.write_string("\tmov\tx29, sp\n")
+  if dbg {
+    sb.write_string("\t.cfi_def_cfa_register w29\n")
+    sb.write_string("\t.cfi_offset w29, -")
+    sb.write_string((voff + st.frame + 16).to_string())
+    sb.write_char('\n')
+    sb.write_string("\t.cfi_offset w30, -")
+    sb.write_string((voff + st.frame + 8).to_string())
+    sb.write_char('\n')
+  }
   o = st.frame + 16
+  let mut ci = 0
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
+      ci = ci + 1
       sb.write_string("\tstr\t")
       sb.write_string(arm64_rname(r, @types.Kx))
       sb.write_string(", [x29, ")
       sb.write_string(o.to_string())
       sb.write_string("]\n")
+      if dbg {
+        // DWARF register numbers: x19.. -> 19.., d8.. -> 72.. (arm64_rname
+        // maps the internal tmp id to the ABI register name).
+        sb.write_string("\t.cfi_offset ")
+        sb.write_string(arm64_rname(r, @types.Kx))
+        sb.write_string(", -")
+        sb.write_string((voff + 8 * ci).to_string())
+        sb.write_char('\n')
+      }
     }
   }
 
@@ -613,6 +651,11 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
             sb.write_string(", [x29, ")
             sb.write_string(o.to_string())
             sb.write_string("]\n")
+            if dbg {
+              sb.write_string("\t.cfi_restore ")
+              sb.write_string(arm64_rname(r, @types.Kx))
+              sb.write_char('\n')
+            }
           }
         }
         if fn_.has_dynalloc {
@@ -631,6 +674,11 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
           sb.write_string("\tldp\tx29, x30, [sp], ")
           sb.write_string(oo.to_string())
           sb.write_char('\n')
+        }
+        if dbg {
+          sb.write_string("\t.cfi_def_cfa sp, 0\n")
+          sb.write_string("\t.cfi_restore w29\n")
+          sb.write_string("\t.cfi_restore w30\n")
         }
         sb.write_string("\tret\n")
       }
@@ -685,6 +733,9 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     sb.write_string(", .-")
     sb.write_string(fn_.name)
     sb.write_char('\n')
+  }
+  if dbg {
+    sb.write_string("\t.cfi_endproc\n")
   }
 }
 

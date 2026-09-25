@@ -33,6 +33,12 @@ let cmd : @argparse.Command = @argparse.Command(
       long="clang",
       about="use the clang-backed arm64 backend for --emit obj (default: self-contained)",
     ),
+    @argparse.FlagArg(
+      "debug-info",
+      short='g',
+      long="debug-info",
+      about="emit DWARF debug info (CFI) in the assembly",
+    ),
   ],
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
@@ -309,6 +315,13 @@ async fn main {
       return
     }
   }
+  // -g/--debug-info enables the DWARF extensions (CFI/.debug_info).
+  @util.set_debug_info(
+    match parsed.flags.get("debug-info") {
+      Some(true) => true
+      _ => false
+    },
+  )
   let mut flags = ""
   match parsed.values.get("debug") {
     Some(debugs) =>

@@ -141,3 +141,11 @@
     byte-identical to vendor/qbe on every debug flag; `dbgloc` is a no-op for
     --jit/--run-asm/--emit obj/the interpreter. New test/dbg corpus, parser and
     util unit tests, doc/debug_info.md (+zh)
+
+2026.9.25: v0.20.0
+    debug info (CFI): new -g/--debug-info flag emits DWARF call-frame
+    information for amd64 (push rbp/sub rsp/callee pushes, leave/add rsp) and
+    arm64 (stp x29,x30 frame, mov x29,sp, x19..x28/d8..d15 saves), so the
+    assembler produces .eh_frame/.debug_frame; off by default, so the plain
+    output stays byte-identical to the reference; arm64/amd64 emitter tests
+    and doc/debug_info.md (+zh) updated
