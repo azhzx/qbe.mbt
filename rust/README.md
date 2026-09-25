@@ -30,6 +30,10 @@ Run the full example:
 cargo run --example demo
 ```
 
+The standalone demo under [`demo/13_builder_rust/`](../demo/13_builder_rust/) (the
+Rust counterpart of `demo/12_builder_capi.c`) is run with
+`./scripts/run_builder_rust_demo.sh`.
+
 ## API shape
 
 - `Context::new()` / `Context::create_module()` - mirrors inkwell.

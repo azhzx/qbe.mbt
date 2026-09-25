@@ -146,6 +146,11 @@ jobs:
       - name: Build & test Rust bindings
         run: cargo test --manifest-path rust/Cargo.toml
 
+      # demo/13_builder_rust builds $add/$tri/$fib in Rust, prints the QBE IL
+      # and JITs the functions.
+      - name: Build & run Rust builder demo
+        run: cargo run --manifest-path demo/13_builder_rust/Cargo.toml
+
   diff:
     name: Byte-differential vs reference QBE
     runs-on: ubuntu-latest
