@@ -23,10 +23,10 @@ fn main() {
     let runtime = repo.join("_build/native/debug/build/libruntime.a");
 
     let capi_obj = locate_capi(&repo);
-    let run_asm_stub = repo.join("_build/native/debug/build/run_asm/run_asm_stub.o");
+    let run_asm_stub = repo.join("_build/native/debug/build/native/native_stub.o");
     assert!(
         run_asm_stub.exists(),
-        "missing {}; the JIT C ABI links run_asm's native stub",
+        "missing {}; the JIT C ABI links native's stub",
         run_asm_stub.display()
     );
 
@@ -92,7 +92,7 @@ fn main() {
         "cargo:rerun-if-changed={}",
         repo.join("ir_builder_capi").display()
     );
-    println!("cargo:rerun-if-changed={}", repo.join("run_asm").display());
+    println!("cargo:rerun-if-changed={}", repo.join("native").display());
 }
 
 fn locate_capi(repo: &Path) -> PathBuf {

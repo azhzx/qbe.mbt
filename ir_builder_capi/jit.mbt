@@ -4,7 +4,7 @@
 
 ///|
 // Process-wide JIT registry. A slot is None after qbe_jit_free.
-let jits : Array[@run_asm.JitModule?] = []
+let jits : Array[@jit.JitModule?] = []
 
 ///|
 // Host-callback symbols consulted before dlsym when qbe_jit_load resolves
@@ -12,7 +12,7 @@ let jits : Array[@run_asm.JitModule?] = []
 let jit_symbols : Array[(String, Int64)] = []
 
 ///|
-fn get_jit(h : Int64) -> @run_asm.JitModule {
+fn get_jit(h : Int64) -> @jit.JitModule {
   let i = h.to_int() - 1
   if i < 0 || i >= jits.length() {
     abort("qbe: invalid jit handle")
@@ -32,7 +32,7 @@ pub fn qbe_jit_load(h : Int64) -> Int64 {
   try {
     let (m, fx) = b.emit_bin_module_ex()
     jits.push(
-      Some(@run_asm.JitModule::from_bin_module_ex(m, fx, symbols=jit_symbols)),
+      Some(@jit.JitModule::from_bin_module_ex(m, fx, symbols=jit_symbols)),
     )
     jits.length().to_int64()
   } catch {

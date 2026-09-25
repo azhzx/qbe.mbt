@@ -11,20 +11,33 @@
 ## Extended features
 - LoongArch64 backend
 - WASM backend
+- In-memory **JIT** for macOS/aarch64 (`jit/`): compile to arm64 machine code,
+  map it executable, resolve libc with `dlsym` and host callbacks, and call it
+  through the C ABI (`qbe_jit_load`/`qbe_jit_symbol`/`qbe_jit_free`,
+  `qbe_jit_symbol_define`) or the Rust `Module::jit` / `JitModule::get_fn`
 - Programmatic IR builder (`ir_builder`) plus a C ABI (`ir_builder_capi`,
   `include/qbe_builder.h`): construct QBE IL from MoonBit or C without
   rendering/re-parsing `.ssa` text, then print it back as QBE IL, or emit an
   assembly text, a Mach-O arm64 object, or a JIT-ready code image
 - Rust glue layer (`rust/`, crate `qbe-builder`) over that C ABI, with a
   Cranelift/inkwell-style API (`Context`/`Module`/`FunctionBuilder`/`ins()`)
+- Layered runtime packages: a shared `native/` layer (executable memory,
+  symbol lookup, temp files, process spawn, dynamic linking) used by `jit/`
+  (in-memory execution) and `run_asm/` (clang-backed assemble/link/run and the
+  wasm runner)
 
 ## Plan
-- Self-contained JIT / object emission for macOS-aarch64 (`object/`,
-  `target_arm64/emit/`): `--emit obj` writes a Mach-O arm64 `.o` and
-  `--jit FUNC[,ARG]...` maps and calls the code in-process (external libc
-  symbols resolved with dlsym + veneers), both with no clang in the path;
-  `--run-asm FUNC[,ARG]` assembles/links with clang instead (route A). `python tools/check_route_b.py` shows byte-identical output to
+- arm64 execution split into three layers: `native/` (OS primitives + C shim)
+  below `jit/` (in-memory `ExecBlock`/`JitModule`) and `run_asm/`
+  (clang-backed assemble/link/run + wasm runner)
+- `--emit obj` writes a self-contained Mach-O arm64 `.o`;
+  `--jit FUNC[,ARG]...` maps and calls the code in-process (libc via `dlsym`
+  plus 64-bit veneers, host callbacks via `qbe_jit_symbol_define`), no clang in
+  the path; `--run-asm FUNC[,ARG]` assembles/links with clang instead
+  (route A). `python tools/check_route_b.py` shows byte-identical output to
   clang on all 336 compilable arm64 tests
+- Hosted runtimes: in-memory JIT via the C ABI and the Rust crate; the same
+  `native/` layer also drives the toolchain path and the wasm runner
 - `--run-wasm FUNC[,ARG]` runs the WASM backend end-to-end (node +
   `moon-wasm-opt`): loops/phi via a `br_table` dispatch loop, internal calls
   and recursion, floating-point comparisons, and `data` segments

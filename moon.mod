@@ -11,7 +11,7 @@
 
 name = "azhzx/qbe"
 
-version = "0.17.0"
+version = "0.18.0"
 
 readme = "README.mbt.md"
 

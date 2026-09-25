@@ -41,6 +41,9 @@ Packages are listed in compilation pipeline order:
 | ARM64 Assembly Output | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS text output (reference snapshot syntax) |
 | SSA Interpreter | `interp` | [interp.md](interp.md) | direct pre-isel IR execution with built-in runtime |
 | CLI Entry | `cmd/main` | [cmd_main.md](cmd_main.md) | Command-line arguments and pipeline orchestration |
+| Runtime Shims | `native` | [run_asm.md](run_asm.md) | Executable memory, symbol lookup, temp files, process spawn, dynamic linking |
+| In-memory JIT | `jit` | [run_asm.md](run_asm.md) | `ExecBlock`/`JitModule`: map and call arm64 code in-process |
+| Toolchain Run | `run_asm` | [run_asm.md](run_asm.md) | clang-backed assemble/link/run and the wasm runner |
 | Bindings | `rust/` | [rust_bindings.md](rust_bindings.md) | Rust glue layer over the builder C ABI (Cranelift/inkwell-style) |
 
 ## Pipeline Overview

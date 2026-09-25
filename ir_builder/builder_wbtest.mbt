@@ -88,11 +88,11 @@ test "builder: fib runs in-process" {
   let f2 = b.call(f, "fib", [], Word)
   let r = b.arith(f, @types.Add, @types.Kw, f1, f2)
   b.ret(f, r)
-  if !@run_asm.host_supported() {
+  if !@native.host_supported() {
     return
   }
   let m = b.emit_bin_module()
-  let exec = @run_asm.ExecBlock::load_module(m.image(), m.code_bytes)
+  let exec = @jit.ExecBlock::load_module(m.image(), m.code_bytes)
   let mut off = -1
   for p in m.fns {
     if p.0 == "fib" {

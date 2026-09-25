@@ -1,0 +1,10 @@
+import {
+  "azhzx/qbe",
+  "azhzx/qbe/native",
+  "azhzx/qbe/object",
+  "azhzx/qbe/util",
+}
+
+options(
+  targets: { "module.mbt": [ "native" ], "jit_wbtest.mbt": [ "native" ] },
+)

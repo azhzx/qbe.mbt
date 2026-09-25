@@ -46,7 +46,7 @@ arm64 机器字：函数序言/尾声、整数与双精度运算、加载/存储
 （`Lfp0`、`Lfp1`…）、并行复制 `swap`，以及函数内跳转回填。
 
 模块发射器（`emit_arm64_bin_module`）把所有函数拼成一段 text，回填模块内 `bl`，
-把 `data` 段布局进同一镜像并回填全局 `adrp`/`add` 地址。`ExecBlock::load_module`
+把 `data` 段布局进同一镜像并回填全局 `adrp`/`add` 地址。`jit/ExecBlock::load_module`
 负责映射镜像，并且只把代码段设为可执行（RX），数据段保持可写（RW）。
 
 `target_arm64/emit/emit_arm64_obj.mbt` 构造多 section 的 Mach-O
@@ -54,9 +54,10 @@ arm64 机器字：函数序言/尾声、整数与双精度运算、加载/存储
 （全局地址）、`BRANCH26`（调用）、`UNSIGNED`（数据指针）。
 
 `object/macho.mbt` 写目标文件；`object/arm64_enc.mbt` 是逐条与 `clang` 对拍过的
-编码器；`run_asm/run_asm_stub.c` 提供 MoonBit 自身无法表达的部分
+编码器；`native/native_stub.c` 提供 MoonBit 自身无法表达的部分
 （`mmap`/`mprotect`、临时文件、进程启动、`dlopen`/`dlsym`、调用裸代码地址），
-通过类型化 FFI（`run_asm/ffi.mbt`）暴露。
+通过类型化 FFI（`native/ffi.mbt`）暴露；`jit/` 在其上提供
+`ExecBlock`/`JitModule`，`run_asm/` 在其上提供 clang 路线。
 
 ## 路线 A - 借道工具链（`--run-asm`、`--clang`）
 
@@ -101,6 +102,6 @@ wasm 后端把 QBE 的 CFG 下沉为带 `br_table` 的分发循环，因此循�
 
 ## 测试
 
-    moon test --target native -p run_asm      # FFI、路线 A、路线 B、目标文件链接
+    moon test --target native -p native -p jit -p run_asm   # shim、JIT、路线 A
     moon test --target native -p object       # 编码器对拍、目标文件布局
     qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node

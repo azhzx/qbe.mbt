@@ -1,14 +1,13 @@
 import {
-  "moonbitlang/core/encoding/utf8",
   "azhzx/qbe",
+  "azhzx/qbe/native",
   "azhzx/qbe/object",
   "azhzx/qbe/util",
+  "moonbitlang/core/encoding/utf8",
 }
 
 options(
-  "native-stub": [ "run_asm_stub.c" ],
   targets: {
-    "ffi.mbt": [ "native" ],
     "module.mbt": [ "native" ],
     "run_asm_wbtest.mbt": [ "native" ],
     "macho_link_wbtest.mbt": [ "native" ],
