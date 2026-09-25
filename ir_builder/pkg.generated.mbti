@@ -23,6 +23,9 @@ pub struct Builder {
   rets : Array[Ret]
   params : Array[Array[Int]]
   order : Array[String]
+  mut dbg_name : String
+  mut dbg_dir : String
+  dbg_vars : Array[Array[@types.DbgVar]]
   // private fields
 }
 pub fn Builder::add_block(Self, Int, String) -> Int
@@ -37,6 +40,8 @@ pub fn Builder::data_bytes(Self, String, Bool, Bytes) -> Unit
 pub fn Builder::data_items(Self) -> Array[@types.Dat]
 pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
 pub fn Builder::data_string(Self, String, Bool, String) -> Unit
+pub fn Builder::dbg_loc(Self, Int, Int, Int) -> Unit
+pub fn Builder::dbg_var(Self, Int, String, @types.DbgType, Int) -> Unit
 pub fn Builder::emit_asm(Self, gas? : String) -> String raise
 pub fn Builder::emit_bin_module(Self) -> @emit.Arm64BinModule raise
 pub fn Builder::emit_bin_module_ex(Self) -> (@emit.Arm64BinModule, @emit.Arm64BinFixups) raise
@@ -58,6 +63,7 @@ pub fn Builder::new() -> Self
 pub fn Builder::param(Self, Int, Int) -> Int
 pub fn Builder::ret(Self, Int, Int) -> Unit
 pub fn Builder::sconst(Self, Int, Float) -> Int
+pub fn Builder::set_dbg_compile_unit(Self, String, String) -> Unit
 pub fn Builder::store(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
 pub fn Builder::switch_to(Self, Int, Int) -> Unit
 pub fn Builder::symbol(Self, String) -> Int

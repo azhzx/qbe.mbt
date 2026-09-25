@@ -2,11 +2,14 @@
 package "azhzx/qbe/target_la64/emit"
 
 import {
+  "azhzx/qbe/dwarf",
   "azhzx/qbe/types",
   "azhzx/qbe/util",
 }
 
 // Values
+pub fn debug_locs(@types.Fn, Bool) -> Array[@dwarf.DbgLoc]
+
 pub fn emit_la64(@types.Fn, @util.Interner, String, String, Array[@types.Typ]) -> String
 
 pub fn gasemitdat_la64(@types.Dat, String, String, StringBuilder) -> Unit

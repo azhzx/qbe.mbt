@@ -112,6 +112,32 @@ executable and returns a handle; `qbe_jit_symbol` resolves a function to its
 entry address. Like the compiling emitters it consumes the IR, so use a fresh
 builder (or call `qbe_emit_il` first, then `jit`).
 
+## Debug info
+
+QBE IL cannot name variables or types, so debug metadata is attached through
+the builder (the front end owns the language types, as in Cranelift):
+
+```mbt
+let b = Builder::new()
+b.set_dbg_compile_unit("demo.c", ".")
+let f = b.add_func("f", Word, [@types.Kw], true)
+let x = b.param(f, 0)
+let one = b.iconst(f, 1L)
+let sum = b.arith(f, @types.Add, @types.Kw, x, one)
+b.dbg_var(f, "sum", @types.DbgW, sum)   // name + type; location resolved later
+b.ret(f, sum)
+@util.set_debug_info(true)              // -g
+let asm = b.emit_asm(gas="m")
+```
+
+`dbg_var` records the value's final register or stack slot (a `DW_OP_regx` /
+`DW_OP_fbreg` `.debug_loc` entry), `dbg_loc` attaches an exact source line, and
+`set_dbg_compile_unit` names the CU and emits its `.file` directive. The C ABI
+exposes `qbe_dbg_enable` / `qbe_dbg_compile_unit` / `qbe_dbg_var` / `qbe_dbg_loc`,
+and the Rust crate `enable_debug_info` / `dbg_compile_unit` / `declare_var` /
+`set_source_loc` with a `DebugType` (`W`/`L`/`S`/`D`/`Ptr`/`Agg`). See
+[debug_info.md](debug_info.md).
+
 ## Smoke test
 
 `scripts/build_capi.sh` builds the foreign library, compiles

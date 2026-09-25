@@ -72,6 +72,22 @@ extern "C" {
     pub fn qbe_emit_asm(b: Builder) -> MbBytes;
     pub fn qbe_emit_object(b: Builder) -> MbBytes;
 
+    pub fn qbe_emit_asm_gas(b: Builder, gas: MbBytes) -> MbBytes;
+
+    // DWARF debug info.
+    pub fn qbe_dbg_enable(on: i32);
+    pub fn qbe_dbg_compile_unit(b: Builder, name: MbBytes, dir: MbBytes);
+    pub fn qbe_dbg_var(
+        b: Builder,
+        f: Func,
+        name: MbBytes,
+        ty: i32,
+        type_name: MbBytes,
+        size: i32,
+        val: Val,
+    );
+    pub fn qbe_dbg_loc(b: Builder, f: Func, line: i32, col: i32);
+
     // In-memory JIT (native).
     pub fn qbe_jit_load(b: Builder) -> i64;
     pub fn qbe_jit_symbol(jit: i64, name: MbBytes) -> i64;

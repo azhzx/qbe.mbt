@@ -764,3 +764,50 @@ pub fn emit_arm64(
   arm64_emitfn(st)
   sb.to_string()
 }
+
+///|
+// Resolve the debug variables declared by the builder to DWARF locations.
+// Called after register allocation: a value in a register maps to DW_OP_regx,
+// one in a stack slot to DW_OP_fbreg (relative to the CFA, which the
+// subprogram's DW_AT_frame_base names via DW_OP_call_frame_cfa).
+pub fn debug_locs(fn_ : @types.Fn, apple : Bool) -> Array[@dwarf.DbgLoc] {
+  let out : Array[@dwarf.DbgLoc] = []
+  if fn_.dbg_vars.length() == 0 {
+    return out
+  }
+  let mut o = 0
+  for r in @types.arm64_rclob {
+    if (fn_.reg & (1UL << r)) != 0UL {
+      o = o + 1
+    }
+  }
+  let mut f = fn_.slot
+  f = (f + 3) & -4
+  o = o + (o & 1)
+  let padding = 4 * (f - fn_.slot)
+  let frame = 4 * f + 8 * o
+  let voff = if fn_.is_vararg && !apple { 192 } else { 0 }
+  for v in fn_.dbg_vars {
+    let reg = if v.tmp < @types.Tmp0 { v.tmp } else { fn_.tmps[v.tmp].reg }
+    if reg != -1 {
+      let dr = if reg >= @types.ARM64_R0 && reg <= @types.ARM64_LR {
+        reg - @types.ARM64_R0
+      } else if reg >= @types.ARM64_V0 && reg <= @types.ARM64_V30 {
+        64 + (reg - @types.ARM64_V0)
+      } else {
+        -1
+      }
+      if dr >= 0 {
+        out.push(@dwarf.DbgLoc::{ name: v.name, ty: v.ty, kind: 0, value: dr, })
+      }
+    } else {
+      let slot = fn_.tmps[v.tmp].slot
+      if slot != -1 {
+        let off = arm64_slot_off(frame, padding, fn_.is_vararg, apple, slot) -
+          (frame + 16 + voff)
+        out.push(@dwarf.DbgLoc::{ name: v.name, ty: v.ty, kind: 1, value: off, })
+      }
+    }
+  }
+  out
+}

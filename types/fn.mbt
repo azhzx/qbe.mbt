@@ -33,6 +33,11 @@ pub(all) struct Fn {
   mut has_dynalloc : Bool
   mut leaf : Bool // no call instructions (C fn->leaf)
   mut salign : Int // alignment of the largest static alloc (C fn->salign)
+  // Debug info supplied by the programmatic builder: CU name/dir and the
+  // variables declared in this function.
+  mut dbg_name : String
+  mut dbg_dir : String
+  mut dbg_vars : Array[DbgVar]
 } derive(Debug)
 
 ///|
@@ -56,6 +61,9 @@ pub fn Fn::new(name : String) -> Fn {
     has_dynalloc: false,
     leaf: true,
     salign: 0,
+    dbg_name: "",
+    dbg_dir: "",
+    dbg_vars: [],
   }
 }
 

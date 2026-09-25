@@ -167,3 +167,15 @@
     lldb rejects version 5 (the macOS CI smoke test caught it). low/high PC are
     plain DW_FORM_addr values relocated by the linker debug map; .debug_addr is
     gone; verified with llvm-dwarfdump --verify on ELF and Mach-O
+
+2026.9.25: v0.22.0
+    debug info (variables and types): the programmatic builder can name a compile
+    unit (set_dbg_compile_unit), attach source locations (dbg_loc) and declare
+    variables with a language type (dbg_var, Cranelift-style value labels). -g
+    then emits DW_TAG_subprogram/DW_TAG_variable and base/pointer/aggregate type
+    DIEs plus a .debug_loc entry per variable (DW_OP_regx for a register,
+    DW_OP_fbreg for a stack slot, resolved after regalloc). Exposed through the
+    C ABI (qbe_dbg_enable/qbe_dbg_compile_unit/qbe_dbg_var/qbe_dbg_loc,
+    qbe_emit_asm_gas) and the Rust crate (DebugType, declare_var,
+    set_source_loc, emit_asm_with_gas). macOS lldb prints frame variables end to
+    end; scripts/run_dbg_vars_demo.sh gates it in CI

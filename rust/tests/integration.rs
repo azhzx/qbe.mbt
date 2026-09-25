@@ -1,6 +1,6 @@
 //! End-to-end tests for the Rust glue layer.
 
-use qbe_builder::{Context, IntCC, Signature, Type};
+use qbe_builder::{Context, DebugType, IntCC, Signature, Type};
 
 fn build_module() -> qbe_builder::Module {
     let ctx = Context::new();
@@ -228,4 +228,32 @@ fn jit_calls_host_function() {
         .unwrap();
     let use_host: extern "C" fn(i64, i64) -> i64 = jit.get_fn("use_host").unwrap();
     assert_eq!(use_host(6, 7), 42);
+}
+/// Debug info: the front end names a variable and its type, and the emitted
+/// assembly carries a DWARF compilation unit, subprogram and variable.
+#[test]
+fn debug_info_names_variables() {
+    let ctx = Context::new();
+    let mut module = ctx.create_module();
+    module.enable_debug_info(true);
+    module.dbg_compile_unit("t.c", "/tmp");
+    let f = module.add_function(
+        "add",
+        Signature::new([Type::I32, Type::I32], Some(Type::I32)),
+    );
+    {
+        let mut b = module.builder(f);
+        let a = b.params()[0];
+        let c = b.params()[1];
+        b.set_source_loc(1, 1);
+        let r = b.ins().iadd(a, c);
+        b.declare_var("sum", DebugType::W, r);
+        b.ins().return_(&[r]);
+    }
+    let asm = module.emit_asm().expect("emit_asm");
+    // emit_asm defaults to the ELF flavor; the sections are .debug_*.
+    assert!(asm.contains(".section .debug_info,\"\",@progbits"), "{asm}");
+    assert!(asm.contains(".section .debug_loc,\"\",@progbits"), "{asm}");
+    assert!(asm.contains("\t.asciz \"sum\""), "{asm}");
+    assert!(asm.contains("\t.asciz \"int\""), "{asm}");
 }

@@ -86,6 +86,10 @@ pub struct Builder {
   order : Array[String]
   // Branch edges awaiting phi-argument binding (see `finalize`).
   priv pending : Array[PendingEdge]
+  // Debug info: compilation-unit name/directory and per-function variables.
+  mut dbg_name : String
+  mut dbg_dir : String
+  dbg_vars : Array[Array[@types.DbgVar]]
 }
 
 ///|
@@ -103,6 +107,9 @@ pub fn Builder::new() -> Builder {
     params: [],
     order: [],
     pending: [],
+    dbg_name: "",
+    dbg_dir: "",
+    dbg_vars: [],
   }
 }
 
@@ -127,6 +134,65 @@ pub fn Builder::val_ref(self : Builder, v : Int) -> @types.Ref {
 // Intern a global symbol name and return its id.
 pub fn Builder::symbol(self : Builder, name : String) -> Int {
   self.interner.intern(name)
+}
+
+///|
+// Set the compilation-unit name and directory used by `-g` debug info.
+pub fn Builder::set_dbg_compile_unit(
+  self : Builder,
+  name : String,
+  dir : String,
+) -> Unit {
+  self.dbg_name = name
+  self.dbg_dir = dir
+  // Emit a `.file` directive: with -g the assembler otherwise invents its own
+  // (empty) compile unit for the assembly source and clashes with ours.
+  self.order.insert(0, "dbgfile:" + name)
+}
+
+///|
+// Declare a local variable `name : ty` bound to `val` in function `fid`.
+//
+// Cranelift-style value labels: the front end supplies the name/type, and the
+// value's final register or stack slot is resolved after register allocation
+// when the function is emitted with `-g`. Only tmp-valued handles are
+// recorded (a constant has no location to describe).
+
+///|
+// Attach a source location (a `dbgloc` instruction) at the current point.
+pub fn Builder::dbg_loc(
+  self : Builder,
+  fid : Int,
+  line : Int,
+  col : Int,
+) -> Unit {
+  let bid = self.cur[fid]
+  self.funcs[fid].blks[bid].ins.push(
+    @types.Ins::new_void(
+      @types.Dbgloc,
+      @types.Kw,
+      @types.Ref::rint(line),
+      @types.Ref::rint(col),
+    ),
+  )
+}
+
+///|
+// Declare a local variable `name : ty` bound to `val` in function `fid`.
+pub fn Builder::dbg_var(
+  self : Builder,
+  fid : Int,
+  name : String,
+  ty : @types.DbgType,
+  val : Int,
+) -> Unit {
+  let r = self.val_ref(val)
+  if r.is_tmp() {
+    while self.dbg_vars.length() <= fid {
+      self.dbg_vars.push([])
+    }
+    self.dbg_vars[fid].push(@types.DbgVar::{ name, ty, tmp: r.tmp_val(), })
+  }
 }
 
 ///|
@@ -441,6 +507,46 @@ fn Builder::finalize(self : Builder) -> Unit {
     }
   }
   self.pending.clear()
+  for i in 0..<self.funcs.length() {
+    if self.dbg_name != "" {
+      self.funcs[i].dbg_name = self.dbg_name
+    }
+    if self.dbg_dir != "" {
+      self.funcs[i].dbg_dir = self.dbg_dir
+    }
+    if i < self.dbg_vars.length() && self.dbg_vars[i].length() > 0 {
+      self.funcs[i].dbg_vars = self.dbg_vars[i]
+      // Ensure a line-table row at the function start so a debugger can
+      // associate the code with this compilation unit (the front end can add
+      // exact locations with `dbg_loc`).
+      let fn_ = self.funcs[i]
+      let mut has_loc = false
+      for blk in fn_.blks {
+        for ins in blk.ins {
+          if ins.op == @types.Dbgloc {
+            has_loc = true
+          }
+        }
+      }
+      if !has_loc {
+        // After the leading `Par` instructions, like a parsed `dbgloc`.
+        let start = fn_.blks[fn_.start_id]
+        let mut pos = 0
+        while pos < start.ins.length() && start.ins[pos].op.is_par() {
+          pos = pos + 1
+        }
+        start.ins.insert(
+          pos,
+          @types.Ins::new_void(
+            @types.Dbgloc,
+            @types.Kw,
+            @types.Ref::rint(1),
+            @types.Ref::rint(0),
+          ),
+        )
+      }
+    }
+  }
 }
 
 ///|

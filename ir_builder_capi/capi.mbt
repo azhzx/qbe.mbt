@@ -401,3 +401,69 @@ pub fn qbe_emit_object(h : Int64) -> Bytes {
     bytes => bytes
   }
 }
+
+///|
+// Enable (1) or disable (0) DWARF debug info for this builder's assembly.
+#export_name("qbe_dbg_enable")
+pub fn qbe_dbg_enable(on : Int) -> Unit {
+  @util.set_debug_info(on != 0)
+}
+
+///|
+// Set the compilation-unit name and directory used by debug info.
+#export_name("qbe_dbg_compile_unit")
+pub fn qbe_dbg_compile_unit(h : Int64, name : Bytes, dir : Bytes) -> Unit {
+  get_builder(h).set_dbg_compile_unit(
+    bytes_to_string(name),
+    bytes_to_string(dir),
+  )
+}
+
+///|
+// Declare a debug variable bound to a value handle.
+//
+// `ty` is 0=w, 1=l, 2=s, 3=d, 4=pointer, 5=aggregate (named by `type_name`,
+// sized by `size`).
+#export_name("qbe_dbg_var")
+pub fn qbe_dbg_var(
+  h : Int64,
+  fid : Int,
+  name : Bytes,
+  ty : Int,
+  type_name : Bytes,
+  size : Int,
+  val : Int,
+) -> Unit {
+  let t = match ty {
+    0 => @types.DbgW
+    1 => @types.DbgL
+    2 => @types.DbgS
+    3 => @types.DbgD
+    4 => @types.DbgPtr
+    _ => @types.DbgAgg(bytes_to_string(type_name), size)
+  }
+  get_builder(h).dbg_var(fid, bytes_to_string(name), t, val)
+}
+
+///|
+// Attach a source location (a `dbgloc` instruction) at the current point.
+#export_name("qbe_dbg_loc")
+pub fn qbe_dbg_loc(h : Int64, fid : Int, line : Int, col : Int) -> Unit {
+  get_builder(h).dbg_loc(fid, line, col)
+}
+
+///|
+// Emit arm64 assembly text for a gas flavor ("e" ELF, "m" Mach-O).
+#export_name("qbe_emit_asm_gas")
+pub fn qbe_emit_asm_gas(h : Int64, gas : Bytes) -> Bytes {
+  let b = get_builder(h)
+  let s = try b.emit_asm(gas=bytes_to_string(gas)) catch {
+    e => {
+      set_error("\{e}")
+      ""
+    }
+  } noraise {
+    s => s
+  }
+  @utf8.encode(s)
+}

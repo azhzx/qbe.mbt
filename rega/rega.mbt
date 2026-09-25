@@ -201,6 +201,8 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
   radd(st, m, t, r)
   sethint(st, t, r)
   st.fn_.tmps[t].visit = r
+  // Remember the final home of the value so debug info can describe variables.
+  st.fn_.tmps[t].reg = r
   let h = hint(st, t)
   if h != -1 && h != r {
     m.w[h] = t
@@ -698,6 +700,7 @@ pub fn rega(
     fn_.tmps[t].hint.r = if t < @types.Tmp0 { t } else { -1 }
     fn_.tmps[t].hint.w = st.cur_loop
     fn_.tmps[t].visit = -1
+    fn_.tmps[t].reg = -1
   }
   // sort blocks by loop nesting (C carve)
   let blk : Array[Int] = []

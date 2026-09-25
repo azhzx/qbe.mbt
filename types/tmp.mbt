@@ -115,6 +115,7 @@ pub(all) struct Tmp {
   mut bid : Int // Block id of the definition (C Tmp.bid)
   mut cost : Int
   mut slot : Int // Spill slot, -1 if unset
+  mut reg : Int // Allocated register id, -1 if in a slot/untracked
   mut cls : Class
   mut hint : RegHint
   mut is_phi : Int // 0 = no, >0 = phi class id
@@ -133,6 +134,7 @@ pub fn Tmp::new(name : String, cls : Class) -> Tmp {
     bid: -1,
     cost: 0,
     slot: -1,
+    reg: -1,
     cls,
     hint: RegHint::default(),
     is_phi: 0,

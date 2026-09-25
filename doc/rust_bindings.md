@@ -50,7 +50,8 @@ The crate build script (`rust/build.rs`):
 | `ins().call` | `qbe_arg` + `qbe_call` |
 | `ins().jump/brif` | `qbe_jmp_n` / `qbe_jnz_n` |
 | `ins().return_` | `qbe_ret` |
-| `emit_il` / `emit_asm` / `emit_object` | `qbe_emit_il` / `qbe_emit_asm` / `qbe_emit_object` |
+| `emit_il` / `emit_asm` / `emit_asm_with_gas` / `emit_object` | `qbe_emit_il` / `qbe_emit_asm` / `qbe_emit_asm_gas` / `qbe_emit_object` |
+| `enable_debug_info` / `dbg_compile_unit` / `dbg_var` / `set_source_loc` | `qbe_dbg_enable` / `qbe_dbg_compile_unit` / `qbe_dbg_var` / `qbe_dbg_loc` |
 | `Module::jit` / `JitModule::get_fn` | `qbe_jit_load` / `qbe_jit_symbol` |
 | `Module::jit_with_symbols` | `qbe_jit_symbol_define` / `qbe_jit_symbol_clear` |
 | `JitModule::get_data_ptr` | `qbe_jit_global` |

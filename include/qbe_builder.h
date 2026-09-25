@@ -125,6 +125,23 @@ moonbit_bytes_t qbe_emit_asm(qbe_builder_t b);
 /* Self-contained Mach-O arm64 object. */
 moonbit_bytes_t qbe_emit_object(qbe_builder_t b);
 
+/* UTF-8 arm64 assembly text for a gas flavor ("e" ELF, "m" Mach-O). */
+moonbit_bytes_t qbe_emit_asm_gas(qbe_builder_t b, moonbit_bytes_t gas);
+/* Enable (1) or disable (0) DWARF debug info in qbe_emit_asm output. */
+void qbe_dbg_enable(int32_t on);
+/* Set the compilation-unit name and directory. */
+void qbe_dbg_compile_unit(qbe_builder_t b, moonbit_bytes_t name,
+                          moonbit_bytes_t dir);
+/*
+ * Declare a debug variable bound to value `val` in function `f`.
+ * `ty` is 0=w, 1=l, 2=s, 3=d, 4=pointer, 5=aggregate (named by `type_name`,
+ * sized by `size`).
+ */
+void qbe_dbg_var(qbe_builder_t b, qbe_func_t f, moonbit_bytes_t name,
+                 int32_t ty, moonbit_bytes_t type_name, int32_t size,
+                 qbe_value_t val);
+/* Attach a source location (line, column) at the current point. */
+void qbe_dbg_loc(qbe_builder_t b, qbe_func_t f, int32_t line, int32_t col);
 #ifdef __cplusplus
 }
 #endif
