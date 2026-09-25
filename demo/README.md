@@ -98,6 +98,7 @@ clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
 | [09_bitwise.ssa](09_bitwise.ssa) | 位运算 | `and`/`or`/`xor`、`sar`/`shr`/`shl` |
 | [10_fibonacci.ssa](10_fibonacci.ssa) | 综合示例 | 迭代斐波那契，phi + 循环 + 长 |
 | [11_main.ssa](11_main.ssa) | 可执行 main | `export main`、调用 libc `putchar`、字符串 data、`.o` 直接链接 |
+| [12_builder_capi.c](12_builder_capi.c) | C API 构造器 | 在 C 中通过 `qbe_*` 构造 `$tri`（循环 + phi）和 `$add`，输出 arm64 汇编与 Mach-O `.o` |
 
 ## IL 语法速查
 
@@ -113,7 +114,15 @@ clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
 
 ## 程序化构造（不使用 .ssa）
 
-除文本 IL 之外，也可以用 `ir_builder` 直接构造与解析器完全相同的 IR，再生成汇编、
-Mach-O 目标文件或 JIT 代码镜像。C 侧示例见
-[`examples/capi/`](../examples/capi/README.md)；接口说明见
-[`doc/ir_builder.md`](../doc/ir_builder.md)（[中文](../doc/zh/ir_builder.md)）。
+除文本 IL 之外，也可以用 `ir_builder` 直接构造与解析器完全相同的 IR。C 侧完整示例：
+[12_builder_capi.c](12_builder_capi.c) 通过 [`include/qbe_builder.h`](../include/qbe_builder.h)
+的 `qbe_*` ABI 构造 `$tri`（带块参数/phi 的循环）与 `$add`，打印 arm64 汇编并写出
+自包含 Mach-O 对象；[12_builder_capi_driver.c](12_builder_capi_driver.c) 链接这些对象并调用：
+
+```bash
+./scripts/run_builder_demo.sh
+# tri(10)=55 add(20,22)=42
+```
+
+接口说明见 [`doc/ir_builder.md`](../doc/ir_builder.md)（[中文](../doc/zh/ir_builder.md)），
+更小的入门示例见 [`examples/capi/`](../examples/capi/README.md)。

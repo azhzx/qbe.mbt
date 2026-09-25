@@ -99,6 +99,11 @@ jobs:
       - name: Build & run C ABI smoke test
         run: bash scripts/build_capi.sh
 
+      # demo/12_builder_capi.c builds a phi loop ($tri) and $add from C,
+      # prints the generated assembly, emits Mach-O objects and runs them.
+      - name: Build & run C builder demo
+        run: bash scripts/run_builder_demo.sh
+
   diff:
     name: Byte-differential vs reference QBE
     runs-on: ubuntu-latest

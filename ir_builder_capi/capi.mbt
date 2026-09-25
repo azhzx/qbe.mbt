@@ -230,6 +230,25 @@ pub fn qbe_jmp1(h : Int64, fid : Int, dest : Int, a0 : Int) -> Unit {
 }
 
 ///|
+#export_name("qbe_jmp2")
+pub fn qbe_jmp2(h : Int64, fid : Int, dest : Int, a0 : Int, a1 : Int) -> Unit {
+  get_builder(h).jmp(fid, dest, [a0, a1])
+}
+
+///|
+#export_name("qbe_jmp3")
+pub fn qbe_jmp3(
+  h : Int64,
+  fid : Int,
+  dest : Int,
+  a0 : Int,
+  a1 : Int,
+  a2 : Int,
+) -> Unit {
+  get_builder(h).jmp(fid, dest, [a0, a1, a2])
+}
+
+///|
 #export_name("qbe_jmp4")
 pub fn qbe_jmp4(
   h : Int64,

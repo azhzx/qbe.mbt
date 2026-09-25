@@ -82,6 +82,10 @@ qbe_value_t qbe_call(qbe_builder_t b, qbe_func_t f, moonbit_bytes_t callee,
 void qbe_ret(qbe_builder_t b, qbe_func_t f, qbe_value_t val);
 void qbe_jmp(qbe_builder_t b, qbe_func_t f, qbe_block_t dest);
 void qbe_jmp1(qbe_builder_t b, qbe_func_t f, qbe_block_t dest, qbe_value_t a0);
+void qbe_jmp2(qbe_builder_t b, qbe_func_t f, qbe_block_t dest, qbe_value_t a0,
+              qbe_value_t a1);
+void qbe_jmp3(qbe_builder_t b, qbe_func_t f, qbe_block_t dest, qbe_value_t a0,
+              qbe_value_t a1, qbe_value_t a2);
 void qbe_jmp4(qbe_builder_t b, qbe_func_t f, qbe_block_t dest, qbe_value_t a0,
               qbe_value_t a1, qbe_value_t a2, qbe_value_t a3);
 void qbe_jnz(qbe_builder_t b, qbe_func_t f, qbe_value_t cond, qbe_block_t then_blk,
