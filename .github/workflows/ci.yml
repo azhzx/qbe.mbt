@@ -238,3 +238,11 @@ jobs:
       # reference rejects are skipped, so a real backend gap fails the job.
       - name: "Cross-backend validity gate (all five targets)"
         run: python tools/check_all_backends.py
+
+      # The two reference-less backends are also gated individually, so a
+      # failure points straight at the target instead of the matrix summary.
+      - name: "LoongArch64 assemblability (clang)"
+        run: python tools/check_la64_asm.py
+
+      - name: "WASM validation (moon-wasm-opt)"
+        run: python tools/check_wasm.py
