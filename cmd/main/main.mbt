@@ -16,7 +16,14 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.OptionArg("debug", short='d'),
     @argparse.OptionArg("run"),
     @argparse.OptionArg("emit"),
-    @argparse.OptionArg("run-asm"),
+    @argparse.OptionArg(
+      "jit",
+      about="compile to in-process arm64 machine code and call FUNC[,ARG]... (route B, no toolchain)",
+    ),
+    @argparse.OptionArg(
+      "run-asm",
+      about="emit arm64 assembly, assemble/link it with clang and call FUNC[,ARG] (route A)",
+    ),
     @argparse.OptionArg("run-wasm"),
     @argparse.OptionArg("out-dir"),
   ],
@@ -24,7 +31,7 @@ let cmd : @argparse.Command = @argparse.Command(
     @argparse.FlagArg(
       "clang",
       long="clang",
-      about="use the clang-backed arm64 backend for --emit obj / --run-asm (default: self-contained)",
+      about="use the clang-backed arm64 backend for --emit obj (default: self-contained)",
     ),
   ],
   positionals=[
@@ -186,6 +193,115 @@ async fn process_file(
 }
 
 ///|
+// --jit: compile to in-process arm64 code and call the function (route B).
+async fn run_jit(
+  source : String,
+  entry : String,
+  args : Array[@interp.InterpValue],
+) -> Unit {
+  // External symbols (libc printf/putchar/...) are resolved with dlsym and
+  // calls are routed through 64-bit veneers.
+  let (binmod, fixups) = @qbe.compile_arm64_bin_module_ex(source) catch {
+    e => {
+      @util.eprint("jit error: \{Repr(e)}\n")
+      return
+    }
+  }
+  let jm = @run_asm.JitModule::from_bin_module_ex(binmod, fixups) catch {
+    e => {
+      @util.eprint("jit error: \{Repr(e)}\n")
+      return
+    }
+  }
+  let (pcodes, rcode) = @qbe.arm64_function_signature(source, entry) catch {
+    e => {
+      @util.eprint("jit error: \{Repr(e)}\n")
+      jm.close()
+      return
+    }
+  }
+  if pcodes.length() != args.length() {
+    @util.eprint(
+      "jit error: '{entry}' expects \{pcodes.length()} argument(s)\n",
+    )
+    jm.close()
+    return
+  }
+  let mut all_int = rcode == 0 || rcode == 1
+  let mut all_float = rcode == 2 || rcode == 3
+  for c in pcodes {
+    if c != 0 && c != 1 {
+      all_int = false
+    }
+    if c != 2 && c != 3 {
+      all_float = false
+    }
+  }
+  let ints : Array[Int64] = []
+  let floats : Array[Double] = []
+  for a in args {
+    match a {
+      @interp.VInt(v) => ints.push(v)
+      @interp.VFloat(f) => floats.push(f.to_double())
+      @interp.VDouble(d) => floats.push(d)
+      _ => ()
+    }
+  }
+  if all_int && ints.length() == args.length() {
+    let r = jm.call_i64(entry, ints) catch {
+      e => {
+        @util.eprint("jit error: \{Repr(e)}\n")
+        jm.close()
+        return
+      }
+    }
+    @util.iprint("\{r}\n")
+  } else if all_float && floats.length() == args.length() {
+    let r = jm.call_f64(entry, floats) catch {
+      e => {
+        @util.eprint("jit error: \{Repr(e)}\n")
+        jm.close()
+        return
+      }
+    }
+    @util.iprint("\{r}\n")
+  } else {
+    @util.eprint(
+      "jit error: unsupported signature for '{entry}' (all-integer or all-float only)\n",
+    )
+  }
+  jm.close()
+}
+
+///|
+// --run-asm: emit arm64 assembly, assemble/link it with clang and call it.
+async fn run_asm(
+  source : String,
+  file : String,
+  entry : String,
+  a0 : Int64,
+) -> Unit {
+  match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
+    Ok(asm) => {
+      let m = @run_asm.RunAsmModule::load_shared(asm) catch {
+        e => {
+          @util.eprint("run-asm error: \{Repr(e)}\n")
+          return
+        }
+      }
+      let r = m.call1(entry, a0) catch {
+        e => {
+          @util.eprint("run-asm error: \{Repr(e)}\n")
+          return
+        }
+      }
+      @util.iprint("\{r}\n")
+    }
+    Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+  }
+}
+
+///|
 async fn main {
   let parsed = cmd.parse() catch {
     e => {
@@ -322,7 +438,31 @@ async fn main {
     }
     _ => ()
   }
-  // --run-asm mode: compile to arm64 Mach-O assembly, load it and call `func`.
+  // --jit mode: compile to in-process machine code and call `func` (route B).
+  match parsed.values.get("jit") {
+    Some(specs) if specs.length() > 0 => {
+      let (entry, jit_args) = match parse_run_spec(specs[0]) {
+        Ok(spec) => spec
+        Err(msg) => {
+          @util.eprint("error: \{msg}\n")
+          return
+        }
+      }
+      for file in files {
+        let source = read_source(file) catch {
+          e => {
+            @util.eprint("error: \{e}\n")
+            continue
+          }
+        }
+        run_jit(source, entry, jit_args)
+      }
+      return
+    }
+    _ => ()
+  }
+  // --run-asm mode: emit arm64 assembly, assemble/link it with clang and call
+  // `func` (route A; needs the toolchain).
   match parsed.values.get("run-asm") {
     Some(specs) if specs.length() > 0 => {
       let (entry, asm_args) = match parse_run_spec(specs[0]) {
@@ -332,15 +472,19 @@ async fn main {
           return
         }
       }
-      // The clang-backed path still takes at most one integer argument; the
-      // self-contained JIT dispatches on the function signature below.
-      let a0 = if asm_args.length() == 1 {
+      let a0 = if asm_args.length() == 0 {
+        0L
+      } else if asm_args.length() == 1 {
         match asm_args[0] {
           @interp.VInt(v) => v
-          _ => 0L
+          _ => {
+            @util.eprint("error: --run-asm takes a single integer argument\n")
+            return
+          }
         }
       } else {
-        0L
+        @util.eprint("error: --run-asm takes at most one argument\n")
+        return
       }
       for file in files {
         let source = read_source(file) catch {
@@ -349,105 +493,7 @@ async fn main {
             continue
           }
         }
-        if self_contained {
-          // External symbols (libc printf/putchar/...) are resolved with dlsym
-          // and calls are routed through veneers.
-          let (module, fixups) = @qbe.compile_arm64_bin_module_ex(source) catch {
-            e => {
-              @util.eprint("run-asm error: \{Repr(e)}\n")
-              continue
-            }
-          }
-          let jm = @run_asm.JitModule::from_bin_module_ex(module, fixups) catch {
-            e => {
-              @util.eprint("run-asm error: \{Repr(e)}\n")
-              continue
-            }
-          }
-          let (pcodes, rcode) = @qbe.arm64_function_signature(source, entry) catch {
-            e => {
-              @util.eprint("run-asm error: \{Repr(e)}\n")
-              jm.close()
-              continue
-            }
-          }
-          if pcodes.length() != asm_args.length() {
-            @util.eprint(
-              "run-asm error: '{entry}' expects \{pcodes.length()} argument(s)\n",
-            )
-            jm.close()
-            continue
-          }
-          let mut all_int = rcode == 0 || rcode == 1
-          let mut all_float = rcode == 2 || rcode == 3
-          for c in pcodes {
-            if c != 0 && c != 1 {
-              all_int = false
-            }
-            if c != 2 && c != 3 {
-              all_float = false
-            }
-          }
-          let ints : Array[Int64] = []
-          let floats : Array[Double] = []
-          for a in asm_args {
-            match a {
-              @interp.VInt(v) => ints.push(v)
-              @interp.VFloat(f) => floats.push(f.to_double())
-              @interp.VDouble(d) => floats.push(d)
-              _ => ()
-            }
-          }
-          if all_int && ints.length() == asm_args.length() {
-            let r = jm.call_i64(entry, ints) catch {
-              e => {
-                @util.eprint("run-asm error: \{Repr(e)}\n")
-                jm.close()
-                continue
-              }
-            }
-            @util.iprint("\{r}\n")
-          } else if all_float && floats.length() == asm_args.length() {
-            let r = jm.call_f64(entry, floats) catch {
-              e => {
-                @util.eprint("run-asm error: \{Repr(e)}\n")
-                jm.close()
-                continue
-              }
-            }
-            @util.iprint("\{r}\n")
-          } else {
-            @util.eprint(
-              "run-asm error: unsupported signature for '{entry}' (all-integer or all-float only)\n",
-            )
-          }
-          jm.close()
-        } else {
-          if asm_args.length() > 1 {
-            @util.eprint(
-              "error: --clang --run-asm takes at most one argument\n",
-            )
-            continue
-          }
-          match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
-            Ok(asm) => {
-              let m = @run_asm.RunAsmModule::load_shared(asm) catch {
-                e => {
-                  @util.eprint("run-asm error: \{Repr(e)}\n")
-                  continue
-                }
-              }
-              let r = m.call1(entry, a0) catch {
-                e => {
-                  @util.eprint("run-asm error: \{Repr(e)}\n")
-                  continue
-                }
-              }
-              @util.iprint("\{r}\n")
-            }
-            Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
-          }
-        }
+        run_asm(source, file, entry, a0)
       }
       return
     }

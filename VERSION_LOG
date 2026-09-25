@@ -112,3 +112,8 @@
     adrp range is checked
     --run-asm dispatches on the function signature (0..8 integer or 0..8 float
     arguments, result printed by type)
+
+2026.9.25: v0.17.0
+    CLI split: --jit is the in-memory JIT (route B, no toolchain, resolves libc
+    and host callbacks); --run-asm now assembles/links with clang and runs
+    (route A); --clang only selects the clang backend for --emit obj

@@ -19,12 +19,13 @@ Usage: qbe [OPTIONS] {file.ssa, -}
     -G {e,m}    generate gas (e) or osx (m) asm (amd64_sysv only)
     -d <flags>  dump debug information
     --emit obj  写出 Mach-O arm64 目标文件（arm64 目标）
+    --jit FUNC[,ARG]...
+                编译到 arm64，用 mmap 装载并调用 FUNC（macOS/aarch64，路线 B）
     --run-asm FUNC[,ARG]
-                编译到 arm64，用 mmap 装载并调用 FUNC（macOS/aarch64）
+                发 arm64 汇编，用 clang 汇编/链接后调用 FUNC（路线 A）
     --run-wasm FUNC[,ARG]
                 编译到 wasm，在 node 下运行 FUNC
-    --clang     用借道 clang 的 arm64 后端跑 --emit obj / --run-asm
-                （默认：自包含）
+    --clang     用借道 clang 的 arm64 后端跑 --emit obj（默认：自包含）
     --out-dir DIR
                 --emit obj 的输出目录（默认 .qbe_build）
 ```
@@ -45,25 +46,29 @@ moon run cmd/main -- -t wasm demo/05_float.ssa
 moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 ```
 
-### arm64 JIT / 目标文件（`--emit obj`、`--run-asm`）
+### arm64 JIT / 目标文件（`--jit`、`--emit obj`、`--run-asm`）
 
 在 macOS/aarch64 上，arm64 后端可以不依赖工具链直接产出并运行机器码
 （路线 B，默认）：
 
 ```
-moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
-moon run --target native cmd/main -- --run-asm add,2,3 demo/01_arith.ssa      # 5
-moon run --target native cmd/main -- --run-asm main demo/11_main.ssa          # Hello from qbe.mbt!
-moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
+moon run --target native cmd/main -- --jit fib,10 demo/10_fibonacci.ssa        # 55
+moon run --target native cmd/main -- --jit add,2,3 demo/01_arith.ssa           # 5
+moon run --target native cmd/main -- --jit main demo/11_main.ssa               # Hello from qbe.mbt!
+moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa          # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
-moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
+moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa     # 借道 clang 的路线 A
 ```
 
-`--run-asm FUNC[,ARG]...` 按函数签名分派：0..8 个全整数或 0..8 个全浮点实参，
-结果按类型打印。libc `putchar`/`sqrt` 等外部符号通过 `dlsym` 解析
-（远距离调用经镜像内 veneer），因此带 libc 调用的程序可直接运行。
-`--emit obj` 是纯 MoonBit，任何平台都能用。路线 B 的细节与限制见
+`--jit FUNC[,ARG]...` 在内存里编译并调用函数，按签名分派：0..8 个全整数或
+0..8 个全浮点实参，结果按类型打印。libc `putchar`/`sqrt` 等外部符号通过
+`dlsym` 解析（远距离调用经镜像内 veneer），因此带 libc 调用的程序可直接运行。
+
+`--run-asm FUNC[,ARG]` 走工具链路线：发 arm64 汇编，用 clang 汇编/链接后调用
+（路线 A）。
+
+`--emit obj` 是纯 MoonBit，任何平台都能用。细节与限制见
 [run_asm.md](run_asm.md)。
 
 ### `-d` 调试标志
