@@ -8,6 +8,17 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 M="$ROOT/_build/native/debug/build/cmd/main/main.exe"
 
+# lldb ships with Xcode; on CI it may only be reachable through xcrun.
+LLDB=()
+if command -v lldb >/dev/null 2>&1; then
+  LLDB=(lldb)
+elif command -v xcrun >/dev/null 2>&1 && xcrun -f lldb >/dev/null 2>&1; then
+  LLDB=(xcrun lldb)
+else
+  echo "SKIP: lldb not available"
+  exit 0
+fi
+
 moon build --target native >/dev/null
 
 WORK="$(mktemp -d)"
@@ -42,7 +53,8 @@ clang "$WORK/demo.o" -o "$WORK/demo_prog"
 # A stale debug map bundle would shadow the object lldb reads.
 rm -rf "$WORK/demo_prog.dSYM"
 
-OUT="$(lldb -b -o 'breakpoint set --file one.c --line 3' -o run -o bt -o quit "$WORK/demo_prog" 2>&1)"
+echo "=== lldb ==="
+OUT="$("${LLDB[@]}" -b -o 'breakpoint set --file one.c --line 3' -o run -o bt -o quit "$WORK/demo_prog" 2>&1 || true)"
 echo "$OUT"
 echo "$OUT" | grep -q 'stop reason = breakpoint' || {
   echo "FAIL: lldb did not stop at the breakpoint" >&2
