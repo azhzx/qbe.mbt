@@ -13,9 +13,18 @@ through a stable `qbe_*` symbol set declared in
 ## Identical IR, verified
 
 The builder is a *front end*, not a second compiler. Assembly emitted from
-builder-built IR is byte-identical to assembly from the equivalent `.ssa` text;
-three whitebox tests assert this by compiling both ways and comparing the
-output (arithmetic, control flow, and block parameters/phi).
+builder-built IR is byte-identical to assembly from the equivalent `.ssa` text:
+
+- three whitebox tests build a program from `.ssa` text and from the builder and
+  compare the assembly (arithmetic, control flow, block parameters/phi);
+- `emit_il` prints the constructed IR back to `.ssa`, and a round-trip test
+  re-parses that text and checks the assembly is byte-identical.
+
+```moonbit
+let b = @ir_builder.Builder::new()
+// ... build `add` ...
+let il = b.emit_il()   // "export function w $add(w %p.1, w %p.2) { ... }"
+```
 
 ## MoonBit API
 
@@ -31,9 +40,10 @@ let c = b.param(f, 1)
 let r = b.arith(f, @types.Add, @types.Kw, a, c)
 b.ret(f, r)
 
-// Self-contained Mach-O arm64 object, or assembly text:
-let obj = b.emit_object()
-// let asm = b.emit_asm()
+// Print the constructed IR back as QBE IL, or compile it:
+let il = b.emit_il()
+let asm = b.emit_asm()
+// let obj = b.emit_object()
 ```
 
 Building blocks:
@@ -52,6 +62,7 @@ Building blocks:
 | `ret(fid, v)` | Return. |
 | `emit_ins` / `emit_void` | Generic escape hatch: any `@types.Op` with explicit classes. |
 | `data_string` / `data_bytes` / `data_ref` | Data sections. |
+| `emit_il` | Serialize the constructed IR back to QBE IL text (re-parseable by the textual parser). |
 | `emit_asm` / `emit_object` / `emit_bin_module` | Compile. (`emit_bin_module` feeds `run_asm.ExecBlock` for in-process execution.) |
 
 Branch arguments are bound lazily, so a block may declare its parameters either
@@ -75,6 +86,7 @@ qbe_value_t a = qbe_func_param(b, f, 0);
 qbe_value_t c = qbe_func_param(b, f, 1);
 qbe_value_t r = qbe_emit(b, f, qbe_cstr("add"), QBE_W, QBE_W, a, c);
 qbe_ret(b, f, r);
+moonbit_bytes_t il  = qbe_emit_il(b);       /* QBE IL text */
 moonbit_bytes_t obj = qbe_emit_object(b);   /* Mach-O arm64, no runtime deps */
 ```
 
@@ -121,5 +133,8 @@ builder-built `fib` in-process and checks `fib(10) == 55`, `fib(20) == 6765`.
 - Aggregate (`:type`) parameters and returns, variadic calls, and dynamic
   `alloc` are not wrapped by the C ABI yet; the MoonBit `emit_ins` escape
   hatch can still express them.
-- `finalize` binds branch arguments in place, so a `Builder` is consumed by its
-  first `emit_*` call.
+- `emit_il` binds branch arguments in place and can be called before (or without)
+  `emit_asm`/`emit_object`; the compiling emitters run the backend passes and
+  consume the IR, so a `Builder` compiles at most once.
+- Float literals are printed with six fractional digits, so `emit_il` round-trips
+  most, but not every, arbitrary `Double` bit pattern exactly.

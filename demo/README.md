@@ -116,8 +116,8 @@ clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
 
 除文本 IL 之外，也可以用 `ir_builder` 直接构造与解析器完全相同的 IR。C 侧完整示例：
 [12_builder_capi.c](12_builder_capi.c) 通过 [`include/qbe_builder.h`](../include/qbe_builder.h)
-的 `qbe_*` ABI 构造 `$tri`（带块参数/phi 的循环）与 `$add`，打印 arm64 汇编并写出
-自包含 Mach-O 对象；[12_builder_capi_driver.c](12_builder_capi_driver.c) 链接这些对象并调用：
+的 `qbe_*` ABI 构造 `$tri`（带块参数/phi 的循环）与 `$add`，打印可再次解析的 QBE IL
+文本与 arm64 汇编，并写出自包含 Mach-O 对象；[12_builder_capi_driver.c](12_builder_capi_driver.c) 链接这些对象并调用：
 
 ```bash
 ./scripts/run_builder_demo.sh

@@ -104,3 +104,77 @@ test "builder: fib runs in-process" {
   assert_eq(exec.call1_at(off, 0L), 0L)
   assert_eq(exec.call1_at(off, 20L), 6765L)
 }
+
+///|
+// Build `add`, a data string, a phi loop (`tri`) and a recursive `fib`, then
+// check that printing the IL, re-parsing it and compiling yields exactly the
+// assembly produced directly from the builder IR.
+test "builder: emit_il round-trips through the parser" {
+  let b = Builder::new()
+
+  // export function w $add(w %a, w %b)
+  let fa = b.add_func("add", Word, [@types.Kw, @types.Kw], true)
+  let a = b.param(fa, 0)
+  let c = b.param(fa, 1)
+  b.ret(fa, b.arith(fa, @types.Add, @types.Kw, a, c))
+
+  b.data_string("msg", true, "hi")
+
+  // export function w $tri(w %n): 1 + 2 + ... + n, phi loop
+  let ft = b.add_func("tri", Word, [@types.Kw], true)
+  let n = b.param(ft, 0)
+  let init = b.add_block(ft, "init")
+  let zero = b.add_block(ft, "zero")
+  let lp = b.add_block(ft, "loop")
+  let body = b.add_block(ft, "body")
+  let end = b.add_block(ft, "end")
+  let one = b.iconst(ft, 1L)
+  let z = b.iconst(ft, 0L)
+  let c0 = b.cmp(ft, @types.Csgtw, @types.Kw, n, z)
+  b.jnz(ft, c0, init, [], zero, [])
+  b.switch_to(ft, init)
+  b.jmp(ft, lp, [one, z])
+  b.switch_to(ft, zero)
+  b.ret(ft, z)
+  b.switch_to(ft, lp)
+  let i = b.block_param(ft, lp, @types.Kw)
+  let s = b.block_param(ft, lp, @types.Kw)
+  let s2 = b.arith(ft, @types.Add, @types.Kw, s, i)
+  let i2 = b.arith(ft, @types.Add, @types.Kw, i, one)
+  let cc = b.cmp(ft, @types.Cslew, @types.Kw, i2, n)
+  b.jnz(ft, cc, body, [], end, [])
+  b.switch_to(ft, body)
+  b.jmp(ft, lp, [i2, s2])
+  b.switch_to(ft, end)
+  b.ret(ft, s2)
+
+  // export function w $fib(w %n): recursive, exercises call printing
+  let ff = b.add_func("fib", Word, [@types.Kw], true)
+  let base = b.add_block(ff, "base")
+  let rec = b.add_block(ff, "rec")
+  let nn = b.param(ff, 0)
+  let one2 = b.iconst(ff, 1L)
+  let cond = b.cmp(ff, @types.Cslew, @types.Kw, nn, one2)
+  b.jnz(ff, cond, base, [], rec, [])
+  b.switch_to(ff, base)
+  b.ret(ff, nn)
+  b.switch_to(ff, rec)
+  let n1 = b.arith(ff, @types.Sub, @types.Kw, nn, one2)
+  let f1 = b.call(ff, "fib", [(@types.Kw, n1)], Word)
+  let two = b.iconst(ff, 2L)
+  let n2 = b.arith(ff, @types.Sub, @types.Kw, nn, two)
+  let f2 = b.call(ff, "fib", [(@types.Kw, n2)], Word)
+  b.ret(ff, b.arith(ff, @types.Add, @types.Kw, f1, f2))
+
+  let il = b.emit_il()
+  assert_true(il.contains("export function w $add(w %"))
+  assert_true(il.contains("phi @init"))
+  assert_true(il.contains("call $fib(w %"))
+  assert_true(il.contains("export data $msg = { b \"hi\" }"))
+  let direct = b.emit_asm()
+  let parsed = match @qbe.compile_arm64(il) {
+    Ok(s) => s
+    Err(e) => fail("re-parse failed: \{Repr(e)}\n--- IL ---\n\{il}")
+  }
+  assert_eq(direct, parsed)
+}

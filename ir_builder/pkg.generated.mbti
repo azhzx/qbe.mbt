@@ -39,6 +39,7 @@ pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
 pub fn Builder::data_string(Self, String, Bool, String) -> Unit
 pub fn Builder::emit_asm(Self, gas? : String) -> String raise
 pub fn Builder::emit_bin_module(Self) -> @emit.Arm64BinModule raise
+pub fn Builder::emit_il(Self) -> String
 pub fn Builder::emit_ins(Self, Int, @types.Op, @types.Class, @types.Class, Int, Int) -> Int
 pub fn Builder::emit_object(Self) -> Bytes raise
 pub fn Builder::emit_void(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
@@ -71,6 +72,7 @@ pub(all) enum Ret {
 pub fn Ret::cls(Self) -> @types.Class
 pub fn Ret::from_code(Int) -> Self
 pub fn Ret::jump_kind(Self) -> @types.JumpKind
+pub fn Ret::text(Self) -> String
 
 // Type aliases
 
