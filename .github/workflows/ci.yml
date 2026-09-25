@@ -1,6 +1,6 @@
 # CI for qbe.mbt — a 1:1 MoonBit reimplementation of QBE.
 #
-# Five jobs:
+# Four jobs:
 #   check  — cross-platform sanity: formatting, generated interface (`.mbti`)
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every

@@ -123,3 +123,8 @@
     shim: mmap/mprotect, symbol lookup, temp files, process spawn, dynamic
     linking), jit/ (ExecBlock/JitModule), and run_asm/ (clang route A + wasm
     runner); no behaviour change, tests moved to the matching package
+
+2026.9.25: v0.18.1
+    condense the README into a features/status/roadmap list and drop the stale
+    differential counters; fix the literal '{entry}' placeholder in the --jit
+    argument-count error message

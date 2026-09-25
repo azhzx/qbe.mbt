@@ -1,53 +1,35 @@
 # Qbe.mbt
-> Rewrite Qbe in MoonBit with additional features
+> A QBE reimplementation in MoonBit — the upstream compiler plus a programmatic
+> IR builder, an in-memory JIT, and LoongArch64/WASM backends
 
-## What we implement (same as upstream Qbe)
-- IR optimizer
-- RISC-V 64 backend
-- amd64 (x86-64) backend
-- arm64 (AArch64) backend — byte-exact output compared against `vendor/qbe/qbe -t arm64`
-  (IR: 5684/5684, assembly: 406/406)
+## Features
+- **Byte-faithful QBE core**: the optimizer pipeline and the amd64 / arm64 /
+  rv64 backends, checked byte-for-byte against the pinned `vendor/qbe`
+  reference (661ceb2) — every debug stage and the emitted assembly (406/406
+  per target)
+- **Extra backends**: LoongArch64 and WASM
+- **Programmatic IR builder** (`ir_builder`, C ABI `ir_builder_capi`,
+  `include/qbe_builder.h`): construct QBE IL from MoonBit or C with no `.ssa`
+  round-trip, print it back, or emit assembly text, a Mach-O arm64 object, or a
+  JIT-ready code image
+- **In-memory JIT** for macOS/aarch64 (`jit/`): map and call arm64 machine code
+  with no toolchain in the path, resolving libc via `dlsym` and host callbacks;
+  usable from the C ABI or Rust
+- **Rust glue layer** (`rust/`, crate `qbe-builder`): Cranelift/inkwell-style
+  `Context` / `Module` / `FunctionBuilder` / `ins()`, including `Module::jit`
+- **Layered runtime**: `native/` (executable memory, symbol lookup, temp files,
+  process spawn, dynamic linking) shared by `jit/` and `run_asm/`
 
-## Extended features
-- LoongArch64 backend
-- WASM backend
-- In-memory **JIT** for macOS/aarch64 (`jit/`): compile to arm64 machine code,
-  map it executable, resolve libc with `dlsym` and host callbacks, and call it
-  through the C ABI (`qbe_jit_load`/`qbe_jit_symbol`/`qbe_jit_free`,
-  `qbe_jit_symbol_define`) or the Rust `Module::jit` / `JitModule::get_fn`
-- Programmatic IR builder (`ir_builder`) plus a C ABI (`ir_builder_capi`,
-  `include/qbe_builder.h`): construct QBE IL from MoonBit or C without
-  rendering/re-parsing `.ssa` text, then print it back as QBE IL, or emit an
-  assembly text, a Mach-O arm64 object, or a JIT-ready code image
-- Rust glue layer (`rust/`, crate `qbe-builder`) over that C ABI, with a
-  Cranelift/inkwell-style API (`Context`/`Module`/`FunctionBuilder`/`ins()`)
-- Layered runtime packages: a shared `native/` layer (executable memory,
-  symbol lookup, temp files, process spawn, dynamic linking) used by `jit/`
-  (in-memory execution) and `run_asm/` (clang-backed assemble/link/run and the
-  wasm runner)
+## Status
+- amd64 / arm64 / rv64 debug dumps and assembly are byte-identical to
+  `vendor/qbe`; the self-contained arm64 object matches clang on all 336
+  compilable cases (`python tools/check_route_b.py`)
+- `--jit FUNC[,ARG]...` runs code in-process; `--run-asm FUNC[,ARG]` does the
+  same through clang; `--run-wasm FUNC[,ARG]` runs the WASM backend under node;
+  `--emit obj` writes a self-contained Mach-O arm64 `.o`
 
-## Plan
-- arm64 execution split into three layers: `native/` (OS primitives + C shim)
-  below `jit/` (in-memory `ExecBlock`/`JitModule`) and `run_asm/`
-  (clang-backed assemble/link/run + wasm runner)
-- `--emit obj` writes a self-contained Mach-O arm64 `.o`;
-  `--jit FUNC[,ARG]...` maps and calls the code in-process (libc via `dlsym`
-  plus 64-bit veneers, host callbacks via `qbe_jit_symbol_define`), no clang in
-  the path; `--run-asm FUNC[,ARG]` assembles/links with clang instead
-  (route A). `python tools/check_route_b.py` shows byte-identical output to
-  clang on all 336 compilable arm64 tests
-- Hosted runtimes: in-memory JIT via the C ABI and the Rust crate; the same
-  `native/` layer also drives the toolchain path and the wasm runner
-- `--run-wasm FUNC[,ARG]` runs the WASM backend end-to-end (node +
-  `moon-wasm-opt`): loops/phi via a `br_table` dispatch loop, internal calls
-  and recursion, floating-point comparisons, and `data` segments
-- (TODO) Add IR Debugger
-- (WIP) align with the frozen `vendor/qbe` reference (661ceb2):
-  `data` segment and floating-point constant rodata output are byte-identical to
-  `vendor/qbe` on amd64/arm64/rv64; the debug-dump differential suite
-  (`python compare.py`) passes 12096/12096 cases (12 debug flags x 3 targets) and
-  the emitted assembly is byte-identical on every compilable test
-  (336/336 per target, 1008/1008 total)
+## Roadmap
+- (TODO) IR debugger
 
 ## Contributors
 <a href="https://github.com/azhzx/qbe.mbt/graphs/contributors">
