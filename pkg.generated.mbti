@@ -9,6 +9,8 @@ import {
 }
 
 // Values
+pub fn arm64_function_signature(String, String) -> (Array[Int], Int) raise
+
 pub fn compile(String, gas? : String) -> Result[String, @util.QbeError]
 
 pub fn compile_arm64(String, gas? : String) -> Result[String, @util.QbeError]

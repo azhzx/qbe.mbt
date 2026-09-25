@@ -278,53 +278,82 @@ pub fn JitModule::from_bin_module(m : @qbe.Arm64BinModule) -> JitModule raise {
 }
 
 ///|
-// Map a linked image, resolve external symbols with dlsym, patch the veneers
-// and data addresses, then protect the code region.
+// Resolve a JIT symbol: a caller-provided table first (host callbacks), then
+// dlsym(RTLD_DEFAULT).
+fn jit_resolve(symbols : Array[(String, Int64)], name : String) -> Int64 {
+  for p in symbols {
+    if p.0 == name {
+      return p.1
+    }
+  }
+  mbt_run_asm_sym(cstr(name))
+}
+
+///|
+// Map a linked image, resolve external symbols, patch the veneers and data
+// addresses, then protect the code region. `symbols` overrides dlsym for host
+// callbacks.
 pub fn JitModule::from_bin_module_ex(
   m : @qbe.Arm64BinModule,
   fx : @qbe.Arm64BinFixups,
+  symbols? : Array[(String, Int64)] = [],
 ) -> JitModule raise {
   let exec = ExecBlock::load_module_rw(m.image(), m.code_bytes)
   let base = exec.base()
-  // External calls: fill each veneer with adrp x16 / add x16 / br x16.
+  // External calls: each 20-byte veneer materializes the full 64-bit address
+  // with movz/movk x16 and jumps with br x16 (so any distance works).
   for v in fx.ext_calls {
     let (vw, sym) = v
-    let addr = mbt_run_asm_sym(cstr(sym))
+    let addr = jit_resolve(symbols, sym)
     if addr == 0L {
       raise @util.QbeError::CompileError("jit: unresolved symbol: " + sym)
     }
-    let pc = base + (vw * 4).to_int64()
-    let page = ((addr >> 12) - (pc >> 12)).to_int()
+    let w = vw * 4
     mbt_run_asm_write_u32(
       base,
-      vw * 4,
-      @object.enc_adrp(17, page).reinterpret_as_uint(),
+      w,
+      @object.enc_movz_sf(true, 17, (addr & 0xFFFFL).to_int(), 0).reinterpret_as_uint(),
     )
     mbt_run_asm_write_u32(
       base,
-      vw * 4 + 4,
-      @object.enc_add_imm(17, 17, (addr & 0xFFF).to_int()).reinterpret_as_uint(),
+      w + 4,
+      @object.enc_movk_sf(true, 17, ((addr >> 16) & 0xFFFFL).to_int(), 1).reinterpret_as_uint(),
     )
     mbt_run_asm_write_u32(
       base,
-      vw * 4 + 8,
+      w + 8,
+      @object.enc_movk_sf(true, 17, ((addr >> 32) & 0xFFFFL).to_int(), 2).reinterpret_as_uint(),
+    )
+    mbt_run_asm_write_u32(
+      base,
+      w + 12,
+      @object.enc_movk_sf(true, 17, ((addr >> 48) & 0xFFFFL).to_int(), 3).reinterpret_as_uint(),
+    )
+    mbt_run_asm_write_u32(
+      base,
+      w + 16,
       @object.enc_br(17).reinterpret_as_uint(),
     )
   }
-  // External data addresses: patch adrp/add in place.
+  // External data addresses: patch adrp/add in place (adrp reaches +/-4GB).
   for a in fx.ext_addrs {
     let (adrp_w, add_w, rd, sym, addend) = a
-    let addr = mbt_run_asm_sym(cstr(sym))
+    let addr = jit_resolve(symbols, sym)
     if addr == 0L {
       raise @util.QbeError::CompileError("jit: unresolved symbol: " + sym)
     }
     let target = addr + addend.to_int64()
     let pc = base + (adrp_w * 4).to_int64()
-    let page = ((target >> 12) - (pc >> 12)).to_int()
+    let page = (target >> 12) - (pc >> 12)
+    if page < -1048576L || page > 1048575L {
+      raise @util.QbeError::CompileError(
+        "jit: data symbol out of adrp range: " + sym,
+      )
+    }
     mbt_run_asm_write_u32(
       base,
       adrp_w * 4,
-      @object.enc_adrp(rd, page).reinterpret_as_uint(),
+      @object.enc_adrp(rd, page.to_int()).reinterpret_as_uint(),
     )
     mbt_run_asm_write_u32(
       base,
@@ -376,6 +405,118 @@ pub fn JitModule::call_i64_1(
   a0 : Int64,
 ) -> Int64 raise {
   mbt_run_asm_call_i64_1(self.symbol(name), a0)
+}
+
+///|
+// Call an integer-argument, integer-returning function by name (0..8 args).
+pub fn JitModule::call_i64(
+  self : JitModule,
+  name : String,
+  args : Array[Int64],
+) -> Int64 raise {
+  let addr = self.symbol(name)
+  match args.length() {
+    0 => mbt_run_asm_call_i64_0(addr)
+    1 => mbt_run_asm_call_i64_1(addr, args[0])
+    2 => mbt_run_asm_call_i64_2(addr, args[0], args[1])
+    3 => mbt_run_asm_call_i64_3(addr, args[0], args[1], args[2])
+    4 => mbt_run_asm_call_i64_4(addr, args[0], args[1], args[2], args[3])
+    5 =>
+      mbt_run_asm_call_i64_5(addr, args[0], args[1], args[2], args[3], args[4])
+    6 =>
+      mbt_run_asm_call_i64_6(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+      )
+    7 =>
+      mbt_run_asm_call_i64_7(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[6],
+      )
+    8 =>
+      mbt_run_asm_call_i64_8(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[6],
+        args[7],
+      )
+    _ =>
+      raise @util.QbeError::CompileError(
+        "jit: call_i64 supports at most 8 arguments",
+      )
+  }
+}
+
+///|
+// Call a double-argument, double-returning function by name (0..8 args).
+pub fn JitModule::call_f64(
+  self : JitModule,
+  name : String,
+  args : Array[Double],
+) -> Double raise {
+  let addr = self.symbol(name)
+  match args.length() {
+    0 => mbt_run_asm_call_f64_0(addr)
+    1 => mbt_run_asm_call_f64_1(addr, args[0])
+    2 => mbt_run_asm_call_f64_2(addr, args[0], args[1])
+    3 => mbt_run_asm_call_f64_3(addr, args[0], args[1], args[2])
+    4 => mbt_run_asm_call_f64_4(addr, args[0], args[1], args[2], args[3])
+    5 =>
+      mbt_run_asm_call_f64_5(addr, args[0], args[1], args[2], args[3], args[4])
+    6 =>
+      mbt_run_asm_call_f64_6(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+      )
+    7 =>
+      mbt_run_asm_call_f64_7(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[6],
+      )
+    8 =>
+      mbt_run_asm_call_f64_8(
+        addr,
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[6],
+        args[7],
+      )
+    _ =>
+      raise @util.QbeError::CompileError(
+        "jit: call_f64 supports at most 8 arguments",
+      )
+  }
 }
 
 ///|

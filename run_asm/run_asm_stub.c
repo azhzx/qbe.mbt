@@ -46,6 +46,26 @@ void mbt_run_asm_free(int64_t addr, int32_t size) {
   if (addr) munmap((void *)(uintptr_t)addr, (size_t)size);
 }
 
+
+/* ---- typed JIT call stubs: N integer or N float arguments ------------- */
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_0(int64_t a) { return ((int64_t (*)(void))a)(); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_2(int64_t a, int64_t a0, int64_t a1) { return ((int64_t (*)(int64_t, int64_t))a)(a0, a1); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_3(int64_t a, int64_t a0, int64_t a1, int64_t a2) { return ((int64_t (*)(int64_t, int64_t, int64_t))a)(a0, a1, a2); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_4(int64_t a, int64_t a0, int64_t a1, int64_t a2, int64_t a3) { return ((int64_t (*)(int64_t, int64_t, int64_t, int64_t))a)(a0, a1, a2, a3); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_5(int64_t a, int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4) { return ((int64_t (*)(int64_t, int64_t, int64_t, int64_t, int64_t))a)(a0, a1, a2, a3, a4); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_6(int64_t a, int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) { return ((int64_t (*)(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t))a)(a0, a1, a2, a3, a4, a5); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_7(int64_t a, int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) { return ((int64_t (*)(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t))a)(a0, a1, a2, a3, a4, a5, a6); }
+MOONBIT_FFI_EXPORT int64_t mbt_run_asm_call_i64_8(int64_t a, int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) { return ((int64_t (*)(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t))a)(a0, a1, a2, a3, a4, a5, a6, a7); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_0(int64_t a) { return ((double (*)())a)(); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_1(int64_t a, double d0) { return ((double (*)(double))a)(d0); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_2(int64_t a, double d0, double d1) { return ((double (*)(double, double))a)(d0, d1); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_3(int64_t a, double d0, double d1, double d2) { return ((double (*)(double, double, double))a)(d0, d1, d2); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_4(int64_t a, double d0, double d1, double d2, double d3) { return ((double (*)(double, double, double, double))a)(d0, d1, d2, d3); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_5(int64_t a, double d0, double d1, double d2, double d3, double d4) { return ((double (*)(double, double, double, double, double))a)(d0, d1, d2, d3, d4); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_6(int64_t a, double d0, double d1, double d2, double d3, double d4, double d5) { return ((double (*)(double, double, double, double, double, double))a)(d0, d1, d2, d3, d4, d5); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_7(int64_t a, double d0, double d1, double d2, double d3, double d4, double d5, double d6) { return ((double (*)(double, double, double, double, double, double, double))a)(d0, d1, d2, d3, d4, d5, d6); }
+MOONBIT_FFI_EXPORT double mbt_run_asm_call_f64_8(int64_t a, double d0, double d1, double d2, double d3, double d4, double d5, double d6, double d7) { return ((double (*)(double, double, double, double, double, double, double, double))a)(d0, d1, d2, d3, d4, d5, d6, d7); }
+
 /* Flush the instruction cache after writing code (a no-op on x86-64). */
 MOONBIT_FFI_EXPORT
 void mbt_run_asm_icache_flush(int64_t addr, int32_t size) {

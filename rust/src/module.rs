@@ -186,7 +186,20 @@ impl Module {
     /// This consumes the IR (the backend passes run once), so call it after
     /// emit_il / emit_asm.
     pub fn jit(&mut self) -> Result<JitModule, Error> {
+        self.jit_with_symbols(&[])
+    }
+
+    /// Like jit, but resolves the given host callback symbols first (name to
+    /// function address), falling back to dlsym for the rest.
+    pub fn jit_with_symbols(&mut self, symbols: &[(&str, usize)]) -> Result<JitModule, Error> {
+        unsafe { ffi::qbe_jit_symbol_clear() };
+        for (name, addr) in symbols {
+            ffi::with_bytes(name.as_bytes(), |nb| unsafe {
+                ffi::qbe_jit_symbol_define(nb, *addr as i64)
+            });
+        }
         let h = unsafe { ffi::qbe_jit_load(self.handle) };
+        unsafe { ffi::qbe_jit_symbol_clear() };
         if h <= 0 {
             Err(self.last_error())
         } else {

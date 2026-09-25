@@ -198,3 +198,34 @@ fn jit_calls_libc() {
     let my_sqrt: extern "C" fn(f64) -> f64 = jit.get_fn("my_sqrt").unwrap();
     assert_eq!(my_sqrt(16.0), 4.0);
 }
+extern "C" fn host_mul(a: i64, b: i64) -> i64 {
+    a * b
+}
+
+#[test]
+fn jit_calls_host_function() {
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        return;
+    }
+    let ctx = Context::new();
+    let mut module = ctx.create_module();
+    let f = module.add_function(
+        "use_host",
+        Signature::new([Type::I64, Type::I64], Some(Type::I64)),
+    );
+    {
+        let mut b = module.builder(f);
+        let x = b.params()[0];
+        let y = b.params()[1];
+        let r = b
+            .ins()
+            .call_by_name("host_mul", Some(Type::I64), &[x, y])
+            .unwrap();
+        b.ins().return_(&[r]);
+    }
+    let jit = module
+        .jit_with_symbols(&[("host_mul", host_mul as usize)])
+        .unwrap();
+    let use_host: extern "C" fn(i64, i64) -> i64 = jit.get_fn("use_host").unwrap();
+    assert_eq!(use_host(6, 7), 42);
+}

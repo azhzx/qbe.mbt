@@ -77,6 +77,8 @@ extern "C" {
     pub fn qbe_jit_symbol(jit: i64, name: MbBytes) -> i64;
     pub fn qbe_jit_global(jit: i64, name: MbBytes) -> i64;
     pub fn qbe_jit_free(jit: i64);
+    pub fn qbe_jit_symbol_define(name: MbBytes, addr: i64);
+    pub fn qbe_jit_symbol_clear();
 }
 
 /// Create a MoonBit Bytes value, run `f` with it, then release it.

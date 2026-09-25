@@ -7,6 +7,11 @@
 let jits : Array[@run_asm.JitModule?] = []
 
 ///|
+// Host-callback symbols consulted before dlsym when qbe_jit_load resolves
+// external symbols. Populate with qbe_jit_symbol_define, then load.
+let jit_symbols : Array[(String, Int64)] = []
+
+///|
 fn get_jit(h : Int64) -> @run_asm.JitModule {
   let i = h.to_int() - 1
   if i < 0 || i >= jits.length() {
@@ -26,7 +31,9 @@ pub fn qbe_jit_load(h : Int64) -> Int64 {
   let b = get_builder(h)
   try {
     let (m, fx) = b.emit_bin_module_ex()
-    jits.push(Some(@run_asm.JitModule::from_bin_module_ex(m, fx)))
+    jits.push(
+      Some(@run_asm.JitModule::from_bin_module_ex(m, fx, symbols=jit_symbols)),
+    )
     jits.length().to_int64()
   } catch {
     e => {
@@ -66,6 +73,20 @@ pub fn qbe_jit_global(h : Int64, name : Bytes) -> Int64 {
   } noraise {
     a => a
   }
+}
+
+///|
+// Register a host callback symbol for subsequent qbe_jit_load calls.
+#export_name("qbe_jit_symbol_define")
+pub fn qbe_jit_symbol_define(name : Bytes, addr : Int64) -> Unit {
+  jit_symbols.push((bytes_to_string(name), addr))
+}
+
+///|
+// Clear the host callback symbol table.
+#export_name("qbe_jit_symbol_clear")
+pub fn qbe_jit_symbol_clear() -> Unit {
+  jit_symbols.clear()
 }
 
 ///|
