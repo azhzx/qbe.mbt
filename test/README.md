@@ -27,7 +27,7 @@ reference:
 The port is byte-for-byte identical to the reference on all three targets
 (amd64_sysv, arm64, rv64), for both the debug-dump differential suite
 (`compare.py`, every `-d` flag) and the emitted assembly
-(`compare.py --asm`) on every compilable test (336/336 per target).
+(`compare.py --asm`) on all 406 tests (406/406 per target).
 `tools/check_arm64_asm.py` and `tools/check_rv64_asm.py` additionally run
 clang's integrated assembler over the emitted output as an independent gate.
 
