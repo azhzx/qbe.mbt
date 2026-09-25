@@ -50,7 +50,7 @@ local branch fixups.
 
 The module emitter (`emit_arm64_bin_module`) links all functions into one text
 blob, patches intra-module `bl` calls, lays out the `data` section in the same
-image and patches global `adrp`/`add` addresses. `ExecBlock::load_module`
+image and patches global `adrp`/`add` addresses. `jit/ExecBlock::load_module`
 maps the image and marks only the code region executable (RX), so globals stay
 writable (RW).
 
@@ -61,9 +61,10 @@ writable (RW).
 
 `object/macho.mbt` writes the object; `object/arm64_enc.mbt` holds the
 instruction encoders, each validated byte-for-byte against `clang`.
-`run_asm/run_asm_stub.c` supplies the pieces MoonBit cannot express itself
+`native/native_stub.c` supplies the pieces MoonBit cannot express itself
 (`mmap`/`mprotect`, temp files, process spawn, `dlopen`/`dlsym`, calling a
-code address) behind a typed FFI (`run_asm/ffi.mbt`).
+code address) behind a typed FFI (`native/ffi.mbt`); `jit/` layers
+`ExecBlock`/`JitModule` on top of it, and `run_asm/` layers the clang route.
 
 ## Route A - toolchain backed (`--run-asm`, `--clang`)
 
@@ -114,6 +115,6 @@ variadic calls are not emitted yet.
 
 ## Tests
 
-    moon test --target native -p run_asm      # FFI, route A, route B, object linkage
+    moon test --target native -p native -p jit -p run_asm   # shim, JIT, route A
     moon test --target native -p object       # encoder vs clang, object layout
     qbe --run-wasm add,2,3 demo/01_arith.ssa  # wasm via node

@@ -207,7 +207,7 @@ async fn run_jit(
       return
     }
   }
-  let jm = @run_asm.JitModule::from_bin_module_ex(binmod, fixups) catch {
+  let jm = @jit.JitModule::from_bin_module_ex(binmod, fixups) catch {
     e => {
       @util.eprint("jit error: \{Repr(e)}\n")
       return
@@ -542,7 +542,7 @@ async fn main {
           }
           dir + "/" + obj_basename(file)
         }
-        @run_asm.write_file(path, obj) catch {
+        @native.write_file(path, obj) catch {
           e => {
             @util.eprint("run-asm error: \{Repr(e)}\n")
             continue

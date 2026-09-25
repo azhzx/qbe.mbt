@@ -5,5 +5,10 @@ import {
 }
 
 import {
-  "azhzx/qbe/run_asm",
+  "azhzx/qbe/jit",
+  "azhzx/qbe/native",
 } for "wbtest"
+
+options(
+  targets: { "jit_wbtest.mbt": [ "native" ] },
+)

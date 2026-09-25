@@ -5,7 +5,7 @@
 
 ///|
 test "object: hand-built Mach-O object links and runs" {
-  if !host_ok() {
+  if !@native.host_supported() {
     return
   }
   let text = @object.words_to_bytes([
@@ -30,27 +30,13 @@ test "object: hand-built Mach-O object links and runs" {
     #|long add1(long);
     #|int main(void) { return add1(41) == 42 ? 0 : 1; }
     #|
-  write_file("/tmp/qbe_macho_link.o", obj)
-  write_file("/tmp/qbe_macho_driver.c", @utf8.encode(driver))
+  @native.write_file("/tmp/qbe_macho_link.o", obj)
+  @native.write_file("/tmp/qbe_macho_driver.c", @utf8.encode(driver))
   assert_eq(
-    run_command(
+    @native.run_command(
       "clang -o /tmp/qbe_macho_exe /tmp/qbe_macho_link.o /tmp/qbe_macho_driver.c",
     ),
     0,
   )
-  assert_eq(run_command("/tmp/qbe_macho_exe"), 0)
-}
-
-///|
-test "run-asm: execute in-memory arm64 code (self-contained)" {
-  if !host_ok() {
-    return
-  }
-  let text = @object.words_to_bytes([
-    @object.enc_add_imm(0, 0, 1),
-    @object.enc_ret(),
-  ])
-  let m = ExecBlock::load_text(text)
-  assert_eq(m.call1(41L), 42L)
-  assert_eq(m.call1(0L), 1L)
+  assert_eq(@native.run_command("/tmp/qbe_macho_exe"), 0)
 }

@@ -37,6 +37,9 @@
 | ARM64 汇编输出 | `target_arm64/emit` | [emit_arm64.md](emit_arm64.md) | AArch64 GAS 文本输出（参考快照语法） |
 | SSA 解释器 | `interp` | [interp.md](interp.md) | 直接执行 pre-isel IR，内置可移植运行时 |
 | CLI 入口 | `cmd/main` | [cmd_main.md](cmd_main.md) | 命令行参数与流水线调度 |
+| 运行时 shim | `native` | [run_asm.md](run_asm.md) | 可执行内存、符号查找、临时文件、进程启动、动态链接 |
+| 内存 JIT | `jit` | [run_asm.md](run_asm.md) | `ExecBlock`/`JitModule`：进程内映射并调用 arm64 代码 |
+| 工具链执行 | `run_asm` | [run_asm.md](run_asm.md) | 借道 clang 的汇编/链接/运行与 wasm runner |
 | 语言绑定 | `rust/` | [rust_bindings.md](rust_bindings.md) | 基于构造器 C ABI 的 Rust 胶水层（Cranelift/inkwell 风格） |
 
 ## 流水线一览

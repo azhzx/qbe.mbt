@@ -117,3 +117,9 @@
     CLI split: --jit is the in-memory JIT (route B, no toolchain, resolves libc
     and host callbacks); --run-asm now assembles/links with clang and runs
     (route A); --clang only selects the clang backend for --emit obj
+
+2026.9.25: v0.18.0
+    split the arm64 runtime into three packages: native/ (OS primitives + C
+    shim: mmap/mprotect, symbol lookup, temp files, process spawn, dynamic
+    linking), jit/ (ExecBlock/JitModule), and run_asm/ (clang route A + wasm
+    runner); no behaviour change, tests moved to the matching package

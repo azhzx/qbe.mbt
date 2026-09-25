@@ -2,7 +2,7 @@ pkgtype(kind: "foreign_library")
 
 import {
   "azhzx/qbe/ir_builder",
-  "azhzx/qbe/run_asm",
+  "azhzx/qbe/jit",
   "azhzx/qbe/types",
   "moonbitlang/core/encoding/utf8",
 }
