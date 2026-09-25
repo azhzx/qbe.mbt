@@ -1,8 +1,9 @@
 # Debug information
 
 qbe.mbt carries source locations through the IL and emits the assembler
-directives a debugger needs. The directives are the ones the frozen reference
-QBE already defines, so debug output is byte-identical to `vendor/qbe` too.
+directives a debugger needs. The line directives are the ones the frozen
+reference QBE already defines, so their output is byte-identical to
+`vendor/qbe` as well.
 
 ## IL syntax (already part of QBE)
 
@@ -26,9 +27,10 @@ Example:
 `dbgfile` may appear anywhere between functions/data; repeated paths are
 deduplicated and numbered in first-appearance order. `dbgloc` is an
 instruction with no result: it flows through the SSA passes and is ignored by
-code generation.
+code generation. A `dbgfile` must precede the first `dbgloc`: with no current
+file the reference also emits `.loc 0`, which assemblers reject.
 
-## What is emitted
+## Line tables
 
 Every GAS-text backend (amd64, arm64, rv64, la64) emits:
 
@@ -41,10 +43,39 @@ Every GAS-text backend (amd64, arm64, rv64, la64) emits:
 The assembler turns these into a DWARF `.debug_line` section. `--jit`,
 `--run-asm`, `--emit obj` and the interpreter skip `dbgloc` (metadata only).
 
+## Unwinding (CFI, `-g`)
+
+`-g` / `--debug-info` additionally emits DWARF call-frame information for
+amd64 and arm64; the assembler turns it into `.eh_frame` (and `.debug_frame`):
+
+    fact:
+        .cfi_startproc
+        endbr64
+        pushq %rbp
+        .cfi_def_cfa_offset 16
+        .cfi_offset %rbp, -16
+        movq %rsp, %rbp
+        .cfi_def_cfa_register %rbp
+        ...
+        leave
+        .cfi_def_cfa %rsp, 8
+        .cfi_restore %rbp
+        .cfi_endproc
+
+arm64 emits the analogous `w29`/`w30` and callee-saved register offsets
+(`x19..`, `d8..`). CFI is off by default so the plain output stays
+byte-identical to the reference (which emits none). rv64/la64 do not emit CFI
+yet.
+
 ## Verification
 
-    python compare.py test/dbg           # byte-identical to vendor/qbe
+    python compare.py test/dbg           # byte-identical to vendor/qbe (no -g)
     moon test -p parser -p util          # parser + directive tests
+
+    M=./_build/native/debug/build/cmd/main/main.exe
+    $M -g -t arm64 -G m demo/04_recursion.ssa > out.s
+    clang -c -g out.s -o out.o
+    llvm-dwarfdump --eh-frame out.o      # CFA rules per PC
 
 `test/dbg/` holds line-info cases (ordering, file dedup, column, multiple
 files); the three differential targets pass under every debug flag.
@@ -58,11 +89,11 @@ files); the three differential targets pass under every debug flag.
 
 ## Limitations and roadmap
 
-- Line tables only. There is no DWARF `.debug_info` yet, so:
+- Line tables plus CFI on amd64/arm64. There is no DWARF `.debug_info` yet, so:
   - on ELF (Linux) `lldb`/`gdb` already do source breakpoints and stepping;
   - on macOS the linker builds its DWARF debug map only when an object carries
     a compilation unit, so a terminal `lldb` session needs the `.debug_info`
     milestone below. The `.file`/`.loc` output itself is unchanged.
-- No CFI (`.cfi_*`) yet, so unwinding of optimized frames is not guaranteed.
-- Planned: CFI/`.eh_frame`, then a minimal `.debug_info` compilation unit, then
+- Planned: a minimal DWARF `.debug_info` compilation unit (DWARF5 with
+  `.debug_addr`, so `.debug_info` carries no relocations on Mach-O), then
   builder-side variable/type metadata (`ir_builder` + C ABI + Rust).

@@ -601,18 +601,34 @@ pub fn emitfn(
     st.sb.write_string(".globl \{gassym}\{fn_.name}\n")
   }
   st.sb.write_string("\{gassym}\{fn_.name}:\n")
+  // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
+  // reference, which emits no .cfi directives.
+  let dbg = @util.debug_info()
+  if dbg {
+    st.sb.write_string("\t.cfi_startproc\n")
+  }
   // CET landing pad (C amd64_sysv_emitfn always emits it).
   st.sb.write_string("\tendbr64\n")
   // Leaf functions without varargs/dynalloc address locals off %rsp (C).
   let use_fp = !fn_.leaf || fn_.is_vararg || fn_.has_dynalloc
   st.fp = if use_fp { "%rbp" } else { "%rsp" }
   if use_fp {
-    st.sb.write_string("\tpushq %rbp\n\tmovq %rsp, %rbp\n")
+    st.sb.write_string("\tpushq %rbp\n")
+    if dbg {
+      st.sb.write_string("\t.cfi_def_cfa_offset 16\n\t.cfi_offset %rbp, -16\n")
+    }
+    st.sb.write_string("\tmovq %rsp, %rbp\n")
+    if dbg {
+      st.sb.write_string("\t.cfi_def_cfa_register %rbp\n")
+    }
   }
   let mut fs = framesz(st)
   st.fsz = fs
   if fs != 0 {
     st.sb.write_string("\tsubq $\{fs}, %rsp\n")
+    if dbg && !use_fp {
+      st.sb.write_string("\t.cfi_def_cfa_offset \{fs + 8}\n")
+    }
   }
   if fn_.is_vararg {
     let mut o = -176
@@ -637,6 +653,13 @@ pub fn emitfn(
       emitf(st, "pushq %L0", itmp)
       fs = fs + 8
       st.nclob = st.nclob + 1
+      if dbg && use_fp {
+        st.sb.write_string("\t.cfi_offset %")
+        st.sb.write_string(rname[r][0])
+        st.sb.write_string(", -")
+        st.sb.write_string((16 + 8 * st.nclob).to_string())
+        st.sb.write_string("\n")
+      }
     }
   }
 
@@ -678,12 +701,23 @@ pub fn emitfn(
               @types.Ref::none(),
             )
             emitf(st, "popq %L0", itmp)
+            if dbg {
+              st.sb.write_string("\t.cfi_restore %")
+              st.sb.write_string(rname[@types.rclob[ri]][0])
+              st.sb.write_string("\n")
+            }
           }
         }
         if use_fp {
           st.sb.write_string("\tleave\n")
+          if dbg {
+            st.sb.write_string("\t.cfi_def_cfa %rsp, 8\n\t.cfi_restore %rbp\n")
+          }
         } else if st.fsz != 0 {
           st.sb.write_string("\taddq $\{st.fsz}, %rsp\n")
+          if dbg {
+            st.sb.write_string("\t.cfi_def_cfa_offset 8\n")
+          }
         }
         st.sb.write_string("\tret\n")
       }
@@ -729,6 +763,9 @@ pub fn emitfn(
   if !apple {
     st.sb.write_string(".type \{gassym}\{fn_.name}, @function\n")
     st.sb.write_string(".size \{gassym}\{fn_.name}, .-\{gassym}\{fn_.name}\n")
+  }
+  if dbg {
+    st.sb.write_string("\t.cfi_endproc\n")
   }
 }
 

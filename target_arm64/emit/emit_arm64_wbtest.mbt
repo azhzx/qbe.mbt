@@ -215,3 +215,30 @@ test "arm64 bin: loop branches match clang" {
      0xD65F03C0L, // ret
   ])
 }
+
+///|
+test "arm64 emit: -g adds DWARF CFI" {
+  let src =
+    #|export
+    #|function w $add(w %a, w %b) {
+    #|@start
+    #|  %s =w add %a, %b
+    #|  ret %s
+    #|}
+    #|
+  let (f, interner, typs) = arm64_emit_parse_pipeline(src)
+  @util.set_debug_info(true)
+  let asm = emit_arm64(f, interner, typs, ".L", "", false)
+  @util.set_debug_info(false)
+  assert_true(asm.contains("\t.cfi_startproc\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa_offset 16\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa_register w29\n"))
+  assert_true(asm.contains("\t.cfi_offset w29, -16\n"))
+  assert_true(asm.contains("\t.cfi_offset w30, -8\n"))
+  assert_true(asm.contains("\t.cfi_def_cfa sp, 0\n"))
+  assert_true(asm.contains("\t.cfi_restore w29\n"))
+  assert_true(asm.contains("\t.cfi_endproc\n"))
+  // The default (flag off) output carries no CFI.
+  let plain = emit_arm64(f, interner, typs, ".L", "", false)
+  assert_true(!plain.contains(".cfi_"))
+}
