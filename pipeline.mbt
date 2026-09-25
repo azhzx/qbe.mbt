@@ -242,6 +242,27 @@ fn parse_module(
 }
 
 ///|
+// The (name, directory) a debugger should use for the module: the first
+// `dbgfile` path, split at the last slash.
+fn dbg_cu_info(order : Array[String]) -> (String, String) {
+  for item in order {
+    if item.has_prefix("dbgfile:") {
+      let path = item[8:].to_owned()
+      let mut i = path.length() - 1
+      while i >= 0 {
+        if path[i] == '/' {
+          let dir = if i == 0 { "/" } else { path[:i].to_owned() }
+          return (path[i + 1:].to_owned(), dir)
+        }
+        i = i - 1
+      }
+      return (path, ".")
+    }
+  }
+  ("<input>", ".")
+}
+
+///|
 // Translate the GAS flavor string into (gasloc, gassym, apple), matching
 // QBE's -G. "m" is the Mach-O flavor.
 fn gas_setting(gas : String) -> (String, String, Bool) raise {
@@ -293,6 +314,18 @@ fn emit_module(
         }
       }
     }
+  }
+  if @util.debug_info() && funcs.length() > 0 {
+    let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
+    @util.emit_debug_info(
+      gasloc,
+      gassym,
+      funcs[0].name,
+      dbg_cu_name,
+      dbg_cu_dir,
+      apple,
+      sb,
+    )
   }
   @emit_amd64.gasemitfin(gasloc, apple, sb)
 }
@@ -413,6 +446,18 @@ fn emit_rv64_module(
       }
     }
   }
+  if @util.debug_info() && funcs.length() > 0 {
+    let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
+    @util.emit_debug_info(
+      gasloc,
+      gassym,
+      funcs[0].name,
+      dbg_cu_name,
+      dbg_cu_dir,
+      false,
+      sb,
+    )
+  }
   @emit_rv64.gasemitfin_rv64(gasloc, sb)
 }
 
@@ -490,6 +535,18 @@ fn emit_la64_module(
         }
       }
     }
+  }
+  if @util.debug_info() && funcs.length() > 0 {
+    let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
+    @util.emit_debug_info(
+      gasloc,
+      gassym,
+      funcs[0].name,
+      dbg_cu_name,
+      dbg_cu_dir,
+      false,
+      sb,
+    )
   }
   @emit_la64.gasemitfin_la64(gasloc, sb)
 }
@@ -575,6 +632,18 @@ fn emit_arm64_module(
         }
       }
     }
+  }
+  if @util.debug_info() && funcs.length() > 0 {
+    let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
+    @util.emit_debug_info(
+      gasloc,
+      gassym,
+      funcs[0].name,
+      dbg_cu_name,
+      dbg_cu_dir,
+      apple,
+      sb,
+    )
   }
   @emit_amd64.gasemitfin(gasloc, apple, sb)
 }
