@@ -42,7 +42,7 @@ pub fn Parser::get_order(Self) -> Array[String]
 pub fn Parser::interner_ref(Self) -> @util.Interner
 ```
 
-典型用法（参考 [cmd/main/main.mbt](../cmd/main/main.mbt)）：
+典型用法（参考 [cmd/main/main.mbt](../../cmd/main/main.mbt)）：
 
 ```moonbit
 let lexer = @lexer.Lexer::new(source, file)

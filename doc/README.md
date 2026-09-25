@@ -44,6 +44,7 @@ Packages are listed in compilation pipeline order:
 | Runtime Shims | `native` | [run_asm.md](run_asm.md) | Executable memory, symbol lookup, temp files, process spawn, dynamic linking |
 | In-memory JIT | `jit` | [run_asm.md](run_asm.md) | `ExecBlock`/`JitModule`: map and call arm64 code in-process |
 | Toolchain Run | `run_asm` | [run_asm.md](run_asm.md) | clang-backed assemble/link/run and the wasm runner |
+| Debug Info | `dwarf` | [debug_info.md](debug_info.md) | DWARF4 compilation unit (subprograms, variables, types, `.debug_loc`) for builder debug info |
 | Bindings | `rust/` | [rust_bindings.md](rust_bindings.md) | Rust glue layer over the builder C ABI (Cranelift/inkwell-style) |
 
 ## Pipeline Overview

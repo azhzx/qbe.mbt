@@ -16,7 +16,7 @@
 | `fillalias(@types.Fn) -> Unit` | 别名分析，为每个临时变量填 `alias_info` |
 | `simpljmp(@types.Fn) -> Unit` | 跳转简化：把跳到下一块 (RPO) 的 `jnz`/`jmp` 合并 |
 
-典型调用顺序（参考 [cmd/main/main.mbt](../cmd/main/main.mbt)）：
+典型调用顺序（参考 [cmd/main/main.mbt](../../cmd/main/main.mbt)）：
 
 ```moonbit
 @cfg.fillrpo(fn_)       // 1. 反向后序

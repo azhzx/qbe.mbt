@@ -90,7 +90,7 @@ moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa     
 
 ## 编译流水线
 
-参考 [cmd/main/main.mbt](../cmd/main/main.mbt) 中的 `run_passes`：
+参考 [cmd/main/main.mbt](../../cmd/main/main.mbt) 中的 `run_passes`：
 
 ```
 parse → fillrpo → fillpreds → filluse → memopt

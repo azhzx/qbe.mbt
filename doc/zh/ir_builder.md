@@ -6,7 +6,7 @@
 `compile_ir_asm` / `compile_ir_bin_module`）。
 
 `ir_builder_capi`（`pkgtype(kind: "foreign_library")`）通过
-[`include/qbe_builder.h`](../include/qbe_builder.h) 中声明的稳定 `qbe_*`
+[`include/qbe_builder.h`](../../include/qbe_builder.h) 中声明的稳定 `qbe_*`
 符号集，把该构造器暴露给 C。
 
 ## 同一份 IR，已校验
