@@ -14,6 +14,8 @@ pub fn emit_dbgfile(String, StringBuilder) -> Unit
 
 pub fn emit_dbgloc(Int, Int, StringBuilder) -> Unit
 
+pub fn emit_debug_info(String, String, String, String, String, Bool, StringBuilder) -> Unit
+
 pub async fn eprint(String) -> Unit
 
 pub fn fmt_fixed(Double, Int) -> String
