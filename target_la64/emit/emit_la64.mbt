@@ -24,8 +24,11 @@ const KS : Int = 2
 const KD : Int = 3
 
 ///|
-// Map a class code to the "w/l/s/d" suffix (C clschr).
-let clschr : Array[String] = ["w", "l", "s", "d"]
+// Map a class code to the LoongArch "w/d/s/d" suffix. LoongArch spells
+// 64-bit operands ".d" (doubleword), not QBE's internal ".l" (long); using the
+// C clschr table verbatim emitted "add.l"/"sub.l"/... which no assembler
+// accepts.
+let clschr : Array[String] = ["w", "d", "s", "d"]
 
 ///|
 // Sign-extend a 29-bit slot value (C struct { int i:29; }).
@@ -35,6 +38,17 @@ fn sign_ext29(s : Int) -> Int {
   } else {
     s
   }
+}
+
+///|
+// Module-global base for block labels (C la64/emit.c static id0); advances by
+// fn->nblk after each function so labels stay unique across the module.
+let la64_id0 : Array[Int] = [0]
+
+///|
+// Reset the block-label base (called once per module).
+pub fn la64_emit_reset() -> Unit {
+  la64_id0[0] = 0
 }
 
 ///|
@@ -91,8 +105,8 @@ let la64_omap : Array[(Int, Int, String)] = [
   ),
   (@types.Cles.index(), KI, "fcmp.cle.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Clts.index(), KI, "fcmp.clt.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
-  (@types.Cges.index(), KI, "fcmp.cge.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
-  (@types.Cgts.index(), KI, "fcmp.cgt.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
+  (@types.Cges.index(), KI, "fcmp.cle.s $fcc0, %1, %0\n\tmovcf2gr %=, $fcc0"),
+  (@types.Cgts.index(), KI, "fcmp.clt.s $fcc0, %1, %0\n\tmovcf2gr %=, $fcc0"),
   (@types.Cos.index(), KI, "fcmp.cor.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Cuos.index(), KI, "fcmp.cun.s $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Ceqd.index(), KI, "fcmp.ceq.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
@@ -103,8 +117,8 @@ let la64_omap : Array[(Int, Int, String)] = [
   ),
   (@types.Cled.index(), KI, "fcmp.cle.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Cltd.index(), KI, "fcmp.clt.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
-  (@types.Cged.index(), KI, "fcmp.cge.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
-  (@types.Cgtd.index(), KI, "fcmp.cgt.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
+  (@types.Cged.index(), KI, "fcmp.cle.d $fcc0, %1, %0\n\tmovcf2gr %=, $fcc0"),
+  (@types.Cgtd.index(), KI, "fcmp.clt.d $fcc0, %1, %0\n\tmovcf2gr %=, $fcc0"),
   (@types.Cod.index(), KI, "fcmp.cor.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Cuod.index(), KI, "fcmp.cun.d $fcc0, %0, %1\n\tmovcf2gr %=, $fcc0"),
   (@types.Extsb.index(), KI, "ext.w.b %=, %0"),
@@ -115,12 +129,15 @@ let la64_omap : Array[(Int, Int, String)] = [
   (@types.Extuw.index(), KL, "slli.d %=, %0, 32\n\tsrli.d %=, %=, 32"),
   (@types.Truncd.index(), KS, "fcvt.s.d %=, %0"),
   (@types.Exts.index(), KD, "fcvt.d.s %=, %0"),
-  (@types.Stosi.index(), KW, "ftintrz.w.s %=, %0"),
-  (@types.Stosi.index(), KL, "ftintrz.l.s %=, %0"),
-  (@types.Dtosi.index(), KW, "ftintrz.w.d %=, %0"),
-  (@types.Dtosi.index(), KL, "ftintrz.l.d %=, %0"),
-  (@types.Swtof.index(), KA, "ffint.%k.w %=, %0"),
-  (@types.Sltof.index(), KA, "ffint.%k.l %=, %0"),
+  // ftintrz leaves its result in an FPR; move it to a GPR afterwards.
+  (@types.Stosi.index(), KW, "ftintrz.w.s $ft15, %0\n\tmovfr2gr.s %=, $ft15"),
+  (@types.Stosi.index(), KL, "ftintrz.l.s $ft15, %0\n\tmovfr2gr.d %=, $ft15"),
+  (@types.Dtosi.index(), KW, "ftintrz.w.d $ft15, %0\n\tmovfr2gr.s %=, $ft15"),
+  (@types.Dtosi.index(), KL, "ftintrz.l.d $ft15, %0\n\tmovfr2gr.d %=, $ft15"),
+  // LoongArch ffint reads its integer operand from an FPR, so move the GPR
+  // into the scratch float register first.
+  (@types.Swtof.index(), KA, "movgr2fr.w %?, %0\n\tffint.%k.w %=, %?"),
+  (@types.Sltof.index(), KA, "movgr2fr.d %?, %0\n\tffint.%k.l %=, %?"),
   (@types.Cast.index(), KW, "movfr2gr.s %=, %0"),
   (@types.Cast.index(), KL, "movfr2gr.d %=, %0"),
   (@types.Cast.index(), KS, "movgr2fr.w %=, %0"),
@@ -342,7 +359,35 @@ fn la64_emit_store(
 
 ///|
 // Format and emit an instruction (C emitf).
+// Whether a Ref is a CBits constant that must be materialized for a
+// register-only instruction format.
+fn la64_is_cbits_con(st : La64EmitState, r : @types.Ref) -> Bool {
+  if r.is_con() {
+    match st.fn_.cons[r.con_val()].kind {
+      @types.CBits => true
+      _ => false
+    }
+  } else {
+    false
+  }
+}
+
+///|
 fn la64_emitf(st : La64EmitState, fmt : String, i : @types.Ins) -> Unit {
+  // LoongArch integer ALU instructions take register operands, unlike RISC-V
+  // where `add rd, rs, imm` is a valid pseudo. Materialize a constant operand
+  // into the reserved scratch register $t8 first.
+  let c1 = la64_is_cbits_con(st, i.arg1)
+  let c2 = la64_is_cbits_con(st, i.arg2)
+  if c2 {
+    st.sb.write_string("\tli.d $t8, ")
+    st.sb.write_string(st.fn_.cons[i.arg2.con_val()].bits.i.to_string())
+    st.sb.write_char('\n')
+  } else if c1 {
+    st.sb.write_string("\tli.d $t8, ")
+    st.sb.write_string(st.fn_.cons[i.arg1.con_val()].bits.i.to_string())
+    st.sb.write_char('\n')
+  }
   st.sb.write_char('\t')
   let mut idx = 0
   while idx < fmt.length() {
@@ -375,23 +420,19 @@ fn la64_emitf(st : La64EmitState, fmt : String, i : @types.Ins) -> Unit {
         if i.arg1.is_tmp() {
           st.sb.write_string("$")
           st.sb.write_string(@types.la64_reg_name(i.arg1.tmp_val()))
+        } else if c1 {
+          st.sb.write_string("$t8")
         } else if i.arg1.is_con() {
-          let con = st.fn_.cons[i.arg1.con_val()]
-          match con.kind {
-            @types.CBits => st.sb.write_string(con.bits.i.to_string())
-            _ => abort("invalid constant for immediate")
-          }
+          abort("invalid constant for immediate")
         }
       '1' =>
         if i.arg2.is_tmp() {
           st.sb.write_string("$")
           st.sb.write_string(@types.la64_reg_name(i.arg2.tmp_val()))
+        } else if c2 {
+          st.sb.write_string("$t8")
         } else if i.arg2.is_con() {
-          let con = st.fn_.cons[i.arg2.con_val()]
-          match con.kind {
-            @types.CBits => st.sb.write_string(con.bits.i.to_string())
-            _ => abort("invalid constant for immediate")
-          }
+          abort("invalid constant for immediate")
         }
       _ => ()
     }
@@ -646,11 +687,16 @@ fn la64_emitfn(st : La64EmitState) -> Unit {
   }
 
   let mut lbl = false
-  for bid in fn_.def_order {
+  // Emit in RPO order and use the module-global label base, exactly like the
+  // rv64 backend: numbering by per-function block id duplicated ".L1" across
+  // functions and mis-tracked fall-through.
+  for idx in 0..<fn_.rpo.length() {
+    let bid = fn_.rpo[idx]
     let b = fn_.blks[bid]
+    let next = if idx + 1 < fn_.rpo.length() { fn_.rpo[idx + 1] } else { -1 }
     if lbl || b.npred > 1 {
       st.sb.write_string(st.gasloc)
-      st.sb.write_string(bid.to_string())
+      st.sb.write_string((la64_id0[0] + b.rpo_id).to_string())
       st.sb.write_string(":\n")
     }
     for i in b.ins {
@@ -690,10 +736,12 @@ fn la64_emitfn(st : La64EmitState) -> Unit {
         st.sb.write_string("\tret\n")
       }
       @types.Jjmp =>
-        if b.jmp.s1 >= 0 && b.jmp.s1 != bid + 1 {
+        if b.jmp.s1 >= 0 && b.jmp.s1 != next {
           st.sb.write_string("\tb ")
           st.sb.write_string(st.gasloc)
-          st.sb.write_string(b.jmp.s1.to_string())
+          st.sb.write_string(
+            (la64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string(),
+          )
           st.sb.write_char('\n')
         } else {
           lbl = false
@@ -701,9 +749,11 @@ fn la64_emitfn(st : La64EmitState) -> Unit {
       @types.Jjnz =>
         if b.jmp.arg.is_tmp() {
           let rn = "$" + @types.la64_reg_name(b.jmp.arg.tmp_val())
-          let l1 = "\{st.gasloc}\{b.jmp.s1}"
-          let l2 = "\{st.gasloc}\{b.jmp.s2}"
-          if b.jmp.s2 >= 0 && b.jmp.s2 == bid + 1 {
+          let l1 = st.gasloc +
+            (la64_id0[0] + fn_.blks[b.jmp.s1].rpo_id).to_string()
+          let l2 = st.gasloc +
+            (la64_id0[0] + fn_.blks[b.jmp.s2].rpo_id).to_string()
+          if b.jmp.s2 >= 0 && b.jmp.s2 == next {
             // the false target is the next block: branch on true and
             // fall through
             st.sb.write_string("\tbnez ")
@@ -717,7 +767,7 @@ fn la64_emitfn(st : La64EmitState) -> Unit {
             st.sb.write_string(", ")
             st.sb.write_string(l2)
             st.sb.write_char('\n')
-            if !(b.jmp.s1 >= 0 && b.jmp.s1 == bid + 1) {
+            if !(b.jmp.s1 >= 0 && b.jmp.s1 == next) {
               // the true target is not the next block: jump to it
               st.sb.write_string("\tb ")
               st.sb.write_string(l1)
@@ -736,6 +786,8 @@ fn la64_emitfn(st : La64EmitState) -> Unit {
   st.sb.write_string(st.gassym)
   st.sb.write_string(fn_.name)
   st.sb.write_char('\n')
+  // C: id0 += fn->nblk (the reachable block count after fillrpo).
+  la64_id0[0] = la64_id0[0] + fn_.rpo.length()
 }
 
 ///|

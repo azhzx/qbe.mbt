@@ -45,6 +45,9 @@ fn la64_emit_parse_pipeline(
   @cfg.simpljmp(f)
   @cfg.fillrpo(f)
   @cfg.fillpreds(f)
+  // Block labels are numbered from a module-global base; reset it so direct
+  // emitter tests are independent of each other.
+  la64_emit_reset()
   (f, interner, typs)
 }
 

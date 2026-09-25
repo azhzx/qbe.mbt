@@ -198,7 +198,7 @@ arm64 (AArch64, AAPCS64 ELF):
 
 arm64 shares `spill`/`rega` with the other targets via `types.target_cfg`.
 It is validated byte-for-byte against `vendor/qbe/qbe -t arm64`: every debug
-dump and the assembly for all 406 test cases, in both the ELF (`-G e`) and
+dump and the assembly for all 408 test cases, in both the ELF (`-G e`) and
 Mach-O (`-G m`) flavors. The pinned reference's unsupported features (dynamic `alloc`,
 `truncd`, ...) fail identically on both sides.
 

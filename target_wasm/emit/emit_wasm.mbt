@@ -8,6 +8,13 @@ priv struct WatEmitState {
   sb : StringBuilder
   // Resolved addresses of global data labels (name -> linear-memory offset).
   dats : Array[(String, Int)]
+  // Names of module functions that return no value; a call to one must not be
+  // followed by local.set even if the IL names a result.
+  void_fns : Array[String]
+  // Declared parameter types of each module function (name -> wasm types),
+  // used to pad or drop call arguments so wasm's fixed arity is satisfied.
+  fn_params : Array[(String, Array[String])]
+  mut pending_args : Int
   mut indent : Int
 }
 
@@ -17,8 +24,29 @@ fn wat_emit_new(
   interner : @util.Interner,
   sb : StringBuilder,
   dats : Array[(String, Int)],
+  void_fns : Array[String],
+  fn_params : Array[(String, Array[String])],
 ) -> WatEmitState {
-  WatEmitState::{ fn_, interner, sb, dats, indent: 0, }
+  WatEmitState::{
+    fn_,
+    interner,
+    sb,
+    dats,
+    void_fns,
+    fn_params,
+    pending_args: 0,
+    indent: 0,
+  }
+}
+
+///|
+fn zero_const(t : String) -> String {
+  match t {
+    "i64" => "i64.const 0"
+    "f32" => "f32.const 0"
+    "f64" => "f64.const 0"
+    _ => "i32.const 0"
+  }
 }
 
 ///|
@@ -61,6 +89,7 @@ fn return_class(st : WatEmitState) -> @types.Class? {
       @types.Jretl => return Some(@types.Kl)
       @types.Jrets => return Some(@types.Ks)
       @types.Jretd => return Some(@types.Kd)
+      @types.Jretc => return Some(@types.Kl)
       _ => ()
     }
   }
@@ -277,7 +306,12 @@ fn emit_ref(st : WatEmitState, r : @types.Ref, k : @types.Class) -> Unit {
         }
       @types.CAddr => {
         let addr = wat_data_addr(st, st.interner.get(con.label)) + con.bits.i
-        wat_writeln(st, "i32.const \{addr}")
+        // A data address is an i64 value when used as a QBE `l` operand.
+        if k == @types.Kl {
+          wat_writeln(st, "i64.const \{addr}")
+        } else {
+          wat_writeln(st, "i32.const \{addr}")
+        }
       }
       _ => wat_writeln(st, "i32.const 0")
     }
@@ -287,24 +321,93 @@ fn emit_ref(st : WatEmitState, r : @types.Ref, k : @types.Class) -> Unit {
 }
 
 ///|
+// Emit a memory index (i32 on wasm32). QBE pointers are `l` (i64) values,
+// so a register address is wrapped; constant data addresses are already i32.
+fn emit_addr32(st : WatEmitState, r : @types.Ref) -> Unit {
+  if r.is_tmp() {
+    let tid = r.tmp_val()
+    wat_writeln(st, "local.get $t\{tid}")
+    if st.fn_.tmps[tid].cls.wide() == 1 {
+      wat_writeln(st, "i32.wrap_i64")
+    }
+  } else if r.is_con() {
+    emit_ref(st, r, @types.Kw)
+  } else if r.is_slot() {
+    wat_writeln(st, "local.get $s\{r.slot_val()}")
+  }
+}
+
+///|
+// Emit an operand of class `k`, truncating a wider integer temp to i32.
+fn emit_operand(st : WatEmitState, r : @types.Ref, k : @types.Class) -> Unit {
+  if r.is_tmp() &&
+    st.fn_.tmps[r.tmp_val()].cls.wide() == 1 &&
+    k != @types.Kl &&
+    k != @types.Kd {
+    wat_writeln(st, "local.get $t\{r.tmp_val()}")
+    wat_writeln(st, "i32.wrap_i64")
+  } else {
+    emit_ref(st, r, k)
+  }
+}
+
+// Store the value currently on the wasm stack into the destination local.
+
+///|
+fn set_dest(st : WatEmitState, ins : @types.Ins) -> Unit {
+  if ins.to.is_tmp() {
+    wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
+  }
+}
+
+///|
+fn store_class(op : @types.Op) -> @types.Class {
+  match op {
+    @types.Storel => @types.Kl
+    @types.Stores => @types.Ks
+    @types.Stored => @types.Kd
+    _ => @types.Kw
+  }
+}
+
+///|
 fn emit_store(st : WatEmitState, ins : @types.Ins) -> Unit {
-  emit_ref(st, ins.arg2, @types.Kw)
-  emit_ref(st, ins.arg1, ins.cls)
-  wat_writeln(st, @types.wasm_store_op(ins.cls))
+  emit_addr32(st, ins.arg2)
+  let k = store_class(ins.op)
+  emit_ref(st, ins.arg1, k)
+  wat_writeln(st, @types.wasm_store_op(k))
 }
 
 ///|
 fn emit_load(st : WatEmitState, ins : @types.Ins) -> Unit {
-  emit_ref(st, ins.arg1, @types.Kw)
+  emit_addr32(st, ins.arg1)
   wat_writeln(st, @types.wasm_load_op(ins.cls))
 }
 
 ///|
 fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
   match ins.op {
-    @types.Nop | @types.Par | @types.Parc | @types.Pare | @types.Argc => ()
+    @types.Nop | @types.Par | @types.Parc | @types.Pare => ()
     // Call arguments: push the value so the following call consumes it.
-    @types.Arg | @types.Arge => emit_ref(st, ins.arg1, ins.cls)
+    @types.Arg | @types.Arge => {
+      emit_ref(st, ins.arg1, ins.cls)
+      st.pending_args = st.pending_args + 1
+    }
+    // Aggregate argument: pass the aggregate's memory address as an i64
+    // pointer, matching the i64 Parc parameter.
+    @types.Argc => {
+      emit_addr32(st, ins.arg2)
+      wat_writeln(st, "i64.extend_i32_u")
+      st.pending_args = st.pending_args + 1
+    }
+    // Varargs: wasm32 has no variadic ABI, so a va_arg yields a typed zero and
+    // va_start is a no-op. This keeps the module valid; the values are not the
+    // caller's actual varargs.
+    @types.Vastart => ()
+    @types.Vaarg => {
+      wat_writeln(st, zero_const(wasm_type(ins.cls)))
+      set_dest(st, ins)
+    }
     @types.Copy => {
       emit_ref(st, ins.arg1, ins.cls)
       if ins.to.is_tmp() {
@@ -330,14 +433,45 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
     | @types.Stores
     | @types.Stored => emit_store(st, ins)
     @types.Call | @types.Vacall => {
+      let mut target = ""
       if ins.arg1.is_con() {
         let cid = ins.arg1.con_val()
         let con = st.fn_.cons[cid]
         if con.kind == @types.CAddr {
-          wat_writeln(st, "call $\{st.interner.get(con.label)}")
+          target = st.interner.get(con.label)
         }
       }
-      if ins.to.is_tmp() {
+      // Reconcile the pushed argument count with the callee's fixed arity:
+      // drop extra varargs, or pad missing arguments with zeroes.
+      let mut params : Array[String] = []
+      let mut found = false
+      for p in st.fn_params {
+        if p.0 == target {
+          params = p.1
+          found = true
+        }
+      }
+      if found {
+        while st.pending_args > params.length() {
+          wat_writeln(st, "drop")
+          st.pending_args = st.pending_args - 1
+        }
+        while st.pending_args < params.length() {
+          wat_writeln(st, zero_const(params[st.pending_args]))
+          st.pending_args = st.pending_args + 1
+        }
+      }
+      st.pending_args = 0
+      if target != "" {
+        wat_writeln(st, "call $" + target)
+      }
+      let mut is_void = false
+      for n in st.void_fns {
+        if n == target {
+          is_void = true
+        }
+      }
+      if ins.to.is_tmp() && !is_void {
         wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
       }
     }
@@ -348,84 +482,136 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
         @types.Alloc16 => 16
         _ => 4
       }
+      // to = (i64) sp
       wat_writeln(st, "global.get $sp")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      wat_writeln(st, "i64.extend_i32_u")
+      set_dest(st, ins)
+      // sp = (sp + size + align-1) & -align  (i32 arithmetic)
       wat_writeln(st, "global.get $sp")
-      emit_ref(st, ins.arg1, ins.cls)
-      wat_writeln(st, "i32.const \{align - 1}")
+      emit_addr32(st, ins.arg1)
       wat_writeln(st, "i32.add")
       wat_writeln(st, "i32.const \{align - 1}")
-      wat_writeln(st, "i32.xor")
+      wat_writeln(st, "i32.add")
+      wat_writeln(st, "i32.const \{-align}")
+      wat_writeln(st, "i32.and")
       wat_writeln(st, "global.set $sp")
     }
     @types.Extsb => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_ref(st, ins.arg1, @types.Kw)
       wat_writeln(st, "i32.extend8_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      set_dest(st, ins)
     }
     @types.Extsh => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_ref(st, ins.arg1, @types.Kw)
       wat_writeln(st, "i32.extend16_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      set_dest(st, ins)
+    }
+    @types.Extub => {
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(st, "i32.const 255")
+      wat_writeln(st, "i32.and")
+      set_dest(st, ins)
+    }
+    @types.Extuh => {
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(st, "i32.const 65535")
+      wat_writeln(st, "i32.and")
+      set_dest(st, ins)
+    }
+    @types.Extsw => {
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(st, "i64.extend_i32_s")
+      set_dest(st, ins)
+    }
+    @types.Extuw => {
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(st, "i64.extend_i32_u")
+      set_dest(st, ins)
     }
     @types.Exts => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_ref(st, ins.arg1, @types.Ks)
       wat_writeln(st, "f64.promote_f32")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      set_dest(st, ins)
     }
     @types.Truncd => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_ref(st, ins.arg1, @types.Kd)
       wat_writeln(st, "f32.demote_f64")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      set_dest(st, ins)
     }
     @types.Swtof => {
-      emit_ref(st, ins.arg1, ins.cls)
-      wat_writeln(st, "f32.convert_i32_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kd {
+          "f64.convert_i32_s"
+        } else {
+          "f32.convert_i32_s"
+        },
+      )
+      set_dest(st, ins)
     }
     @types.Sltof => {
-      emit_ref(st, ins.arg1, ins.cls)
-      wat_writeln(st, "f64.convert_i64_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      emit_ref(st, ins.arg1, @types.Kl)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Ks {
+          "f32.convert_i64_s"
+        } else {
+          "f64.convert_i64_s"
+        },
+      )
+      set_dest(st, ins)
     }
     @types.Stosi => {
-      emit_ref(st, ins.arg1, ins.cls)
-      wat_writeln(st, "i32.trunc_f32_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      emit_ref(st, ins.arg1, @types.Ks)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kl {
+          "i64.trunc_f32_s"
+        } else {
+          "i32.trunc_f32_s"
+        },
+      )
+      set_dest(st, ins)
     }
     @types.Dtosi => {
-      emit_ref(st, ins.arg1, ins.cls)
-      wat_writeln(st, "i32.trunc_f64_s")
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
-      }
+      emit_ref(st, ins.arg1, @types.Kd)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kl {
+          "i64.trunc_f64_s"
+        } else {
+          "i32.trunc_f64_s"
+        },
+      )
+      set_dest(st, ins)
     }
     @types.Cast => {
-      emit_ref(st, ins.arg1, ins.cls)
-      if ins.to.is_tmp() {
-        wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
+      // Bitcast between same-width integer and float representations.
+      let arg_k = match ins.cls {
+        @types.Kw => @types.Ks
+        @types.Kl => @types.Kd
+        @types.Ks => @types.Kw
+        @types.Kd => @types.Kl
+        _ => @types.Kw
       }
+      emit_ref(st, ins.arg1, arg_k)
+      let op = match ins.cls {
+        @types.Kw => "i32.reinterpret_f32"
+        @types.Kl => "i64.reinterpret_f64"
+        @types.Ks => "f32.reinterpret_i32"
+        @types.Kd => "f64.reinterpret_i64"
+        _ => "nop"
+      }
+      if op != "nop" {
+        wat_writeln(st, op)
+      }
+      set_dest(st, ins)
     }
     _ => {
       let k = operand_class(ins.op, ins.cls)
-      emit_ref(st, ins.arg1, k)
-      emit_ref(st, ins.arg2, k)
+      emit_operand(st, ins.arg1, k)
+      emit_operand(st, ins.arg2, k)
       wat_writeln(st, wasm_op_name(ins.op, ins.cls))
       if ins.to.is_tmp() {
         wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
@@ -451,8 +637,9 @@ fn emit_params(st : WatEmitState) -> Unit {
         st.sb.write_string(
           " (param $t\{ins.to.tmp_val()} \{wasm_type(ins.cls)})",
         )
-      } else if ins.op == @types.Parc && ins.to.is_tmp() {
-        st.sb.write_string(" (param $t\{ins.to.tmp_val()} i32)")
+      } else if (ins.op == @types.Parc || ins.op == @types.Pare) &&
+        ins.to.is_tmp() {
+        st.sb.write_string(" (param $t\{ins.to.tmp_val()} i64)")
       }
     }
   }
@@ -631,6 +818,7 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
         @types.Jretl => @types.Kl
         @types.Jrets => @types.Ks
         @types.Jretd => @types.Kd
+        @types.Jretc => @types.Kl
         _ => @types.Kw
       }
       emit_ref(st, blk.jmp.arg, k)
@@ -772,8 +960,10 @@ pub fn emit_fn(
   interner : @util.Interner,
   sb : StringBuilder,
   dats? : Array[(String, Int)] = [],
+  void_fns? : Array[String] = [],
+  fn_params? : Array[(String, Array[String])] = [],
 ) -> Unit {
-  let st = wat_emit_new(fn_, interner, sb, dats)
+  let st = wat_emit_new(fn_, interner, sb, dats, void_fns, fn_params)
   sb.write_string("  (func $\{fn_.name}")
   emit_params(st)
   match return_class(st) {
@@ -788,6 +978,76 @@ pub fn emit_fn(
 }
 
 ///|
+// Collect calls to functions that are not defined in this module so they can
+// be declared as wasm imports. Parameter types are recovered from the Arg /
+// Arge / Argc instructions that precede each call.
+fn collect_extern_calls(
+  funcs : Array[@types.Fn],
+  interner : @util.Interner,
+) -> Array[(String, Array[String], String)] {
+  let out : Array[(String, Array[String], String)] = []
+  for f in funcs {
+    for bid in f.def_order {
+      let b = f.blks[bid]
+      let mut i = 0
+      while i < b.ins.length() {
+        let ins = b.ins[i]
+        if ins.op == @types.Call || ins.op == @types.Vacall {
+          let mut target = ""
+          if ins.arg1.is_con() {
+            let con = f.cons[ins.arg1.con_val()]
+            if con.kind == @types.CAddr {
+              target = interner.get(con.label)
+            }
+          }
+          if target != "" {
+            let mut is_def = false
+            for g in funcs {
+              if g.name == target {
+                is_def = true
+              }
+            }
+            if !is_def {
+              let params : Array[String] = []
+              let mut j = i
+              while j > 0 {
+                let p = b.ins[j - 1]
+                if p.op == @types.Arg {
+                  params.push(wasm_type(p.cls))
+                } else if p.op == @types.Arge || p.op == @types.Argc {
+                  params.push("i64")
+                } else {
+                  break
+                }
+                j = j - 1
+              }
+              let rparams : Array[String] = []
+              let mut k = params.length()
+              while k > 0 {
+                k = k - 1
+                rparams.push(params[k])
+              }
+              let ret = if ins.to.is_tmp() { wasm_type(ins.cls) } else { "" }
+              let mut found = false
+              for e in out {
+                if e.0 == target {
+                  found = true
+                }
+              }
+              if !found {
+                out.push((target, rparams, ret))
+              }
+            }
+          }
+        }
+        i = i + 1
+      }
+    }
+  }
+  out
+}
+
+///|
 pub fn emit_wat_module(
   funcs : Array[@types.Fn],
   _datas : Array[@types.Dat],
@@ -796,6 +1056,24 @@ pub fn emit_wat_module(
   sb : StringBuilder,
 ) -> Unit {
   sb.write_string("(module\n")
+  let imports = collect_extern_calls(funcs, _interner)
+  if imports.length() > 0 {
+    sb.write_string("  ;; Imports\n")
+    for entry in imports {
+      let name = entry.0
+      let params = entry.1
+      let ret = entry.2
+      sb.write_string("  (import \"env\" \"" + name + "\" (func $" + name)
+      for p in params {
+        sb.write_string(" (param " + p + ")")
+      }
+      if ret != "" {
+        sb.write_string(" (result " + ret + ")")
+      }
+      sb.write_string("))\n")
+    }
+    sb.write_string("\n")
+  }
   sb.write_string("  ;; Memory\n")
   sb.write_string(
     "  (memory (export \"memory\") \{@types.WASM_MEMORY_PAGES})\n",
@@ -814,9 +1092,40 @@ pub fn emit_wat_module(
     )
     sb.write_string("\n")
   }
+  // Functions that return no value: their calls must not local.set.
+  let void_fns : Array[String] = []
+  for fn_ in funcs {
+    let mut has_ret = false
+    for bid in fn_.def_order {
+      match fn_.blks[bid].jmp.kind {
+        @types.Jretw
+        | @types.Jretl
+        | @types.Jrets
+        | @types.Jretd
+        | @types.Jretc => has_ret = true
+        _ => ()
+      }
+    }
+    if !has_ret {
+      void_fns.push(fn_.name)
+    }
+  }
+  // Declared parameter types per function, in signature order.
+  let fn_params : Array[(String, Array[String])] = []
+  for fn_ in funcs {
+    let ps : Array[String] = []
+    for ins in fn_.blks[fn_.start_id].ins {
+      match ins.op {
+        @types.Par => ps.push(wasm_type(ins.cls))
+        @types.Parc | @types.Pare => ps.push("i64")
+        _ => ()
+      }
+    }
+    fn_params.push((fn_.name, ps))
+  }
   sb.write_string("  ;; Functions\n")
   for fn_ in funcs {
-    emit_fn(fn_, _interner, sb, dats~)
+    emit_fn(fn_, _interner, sb, dats~, void_fns~, fn_params~)
     sb.write_string("\n")
   }
   sb.write_string("  ;; Exports\n")

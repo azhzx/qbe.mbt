@@ -5,9 +5,11 @@
 ## Features
 - **Byte-faithful QBE core**: the optimizer pipeline and the amd64 / arm64 /
   rv64 backends, checked byte-for-byte against the pinned `vendor/qbe`
-  reference (661ceb2) — every debug stage and the emitted assembly (406/406
+  reference (661ceb2) — every debug stage and the emitted assembly (408/408
   per target)
-- **Extra backends**: LoongArch64 and WASM
+- **Extra backends**: LoongArch64 and WASM, verified on every
+  reference-compilable input with clang's LoongArch assembler and
+  `moon-wasm-opt` respectively (`python tools/check_all_backends.py`)
 - **Programmatic IR builder** (`ir_builder`, C ABI `ir_builder_capi`,
   `include/qbe_builder.h`): construct QBE IL from MoonBit or C with no `.ssa`
   round-trip, print it back, or emit assembly text, a Mach-O arm64 object, or a
@@ -29,6 +31,9 @@
 - amd64 / arm64 / rv64 debug dumps and assembly are byte-identical to
   `vendor/qbe`; the self-contained arm64 object matches clang on all 336
   compilable cases (`python tools/check_route_b.py`)
+- la64 emits assemblable GNU-as LoongArch for all 338 reference-compilable
+  tests (`python tools/check_la64_asm.py`); wasm emits validator-clean WAT for
+  all 338 (`python tools/check_wasm.py`)
 - `--jit FUNC[,ARG]...` runs code in-process; `--run-asm FUNC[,ARG]` does the
   same through clang; `--run-wasm FUNC[,ARG]` runs the WASM backend under node;
   `--emit obj` writes a self-contained Mach-O arm64 `.o`

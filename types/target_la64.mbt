@@ -302,10 +302,17 @@ pub let la64_rclob : Array[Int] = [
 ]
 
 ///|
-// LoongArch globally live registers bitmask (FP | SP | TP | RA).
+// LoongArch globally live registers bitmask (FP | SP | TP | RA) plus the
+// emitter's fixed scratch registers (t8 and ft15), which rega must never
+// allocate: the emitter writes them for far slots, swaps and conversions.
 pub fn la64_rglob_mask() -> UInt64 {
   let one : UInt64 = 1
-  (one << LA_FP) | (one << LA_SP) | (one << LA_TP) | (one << LA_RA)
+  (one << LA_FP) |
+  (one << LA_SP) |
+  (one << LA_TP) |
+  (one << LA_RA) |
+  (one << LA_T8) |
+  (one << LA_FT15)
 }
 
 ///|

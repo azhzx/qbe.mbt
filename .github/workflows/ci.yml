@@ -5,13 +5,17 @@
 #            freshness, native build and unit tests (Ubuntu).
 #   diff   — the core verification: byte-for-byte differential testing of every
 #            debug flag against the reference C QBE built from the vendored
-#            submodule (Ubuntu), plus independent assembly validation.
+#            submodule (Ubuntu), plus an independent validity gate for all five
+#            backends (clang assembler for amd64/arm64/rv64/la64, moon-wasm-opt
+#            for wasm).
 #   capi   — the programmatic builder's C ABI: builds the foreign library and
 #            runs the C smoke test end to end (macOS arm64).
 #   rust   — the Rust glue layer over that C ABI (macOS arm64).
 #
 # The CI gates on every debug stage and on the emitted assembly, all of which
-# are byte-identical to the frozen reference on amd64/arm64/rv64.
+# are byte-identical to the frozen reference on amd64/arm64/rv64. The extra
+# la64 and wasm backends have no reference, so they are gated on assemblability
+# (clang loongarch64) and wasm validity (moon-wasm-opt) over every test input.
 
 name: CI
 
@@ -229,8 +233,8 @@ jobs:
       - name: "Differential: Mach-O flavor (arm64)"
         run: python compare.py --target arm64 --asm -G m
 
-      - name: "ARM64 assemblability (clang)"
-        run: python tools/check_arm64_asm.py
-
-      - name: "RISC-V64 assemblability (clang)"
-        run: python tools/check_rv64_asm.py
+      # Independent validity gate for every backend: amd64/arm64/rv64/la64 are
+      # assembled with clang, wasm is validated with moon-wasm-opt. Inputs the
+      # reference rejects are skipped, so a real backend gap fails the job.
+      - name: "Cross-backend validity gate (all five targets)"
+        run: python tools/check_all_backends.py

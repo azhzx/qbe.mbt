@@ -2,7 +2,7 @@
 
 This directory holds the `.ssa` inputs used by `compare.py` to verify the
 MoonBit QBE implementation against the vendored reference C QBE.
-All 406 non-underscore files must compile identically on both implementations
+All 408 non-underscore files must compile identically on both implementations
 for the default `amd64_sysv` target.
 
 ## Reference binary
@@ -18,8 +18,8 @@ expected baseline rather than maintaining a second reference tree.
 
 ## Cross-target verification
 
-`compare.py` compares any of the three backends against the vendored
-reference:
+`compare.py` compares any of the three reference-backed backends against the
+vendored reference:
 
     python compare.py --target arm64              # arm64 debug dumps
     python compare.py --target rv64 --asm         # rv64 assembly
@@ -27,15 +27,23 @@ reference:
 The port is byte-for-byte identical to the reference on all three targets
 (amd64_sysv, arm64, rv64), for both the debug-dump differential suite
 (`compare.py`, every `-d` flag) and the emitted assembly
-(`compare.py --asm`) on all 406 tests (406/406 per target).
-`tools/check_arm64_asm.py` and `tools/check_rv64_asm.py` additionally run
-clang's integrated assembler over the emitted output as an independent gate.
+(`compare.py --asm`) on all 408 tests (408/408 per target).
+
+The two extra backends have no reference target, so they are gated on
+independent validity tools instead:
+
+    python tools/check_la64_asm.py   # clang's LoongArch64 assembler
+    python tools/check_wasm.py       # moon-wasm-opt (wat2wasm + validator)
+
+`tools/check_all_backends.py` runs all five gates in one pass (clang for
+amd64/arm64/rv64/la64, moon-wasm-opt for wasm) and skips inputs the reference
+itself rejects. All 338 reference-compilable inputs pass on every backend.
 
 ## Layout
 
 - `*.ssa` — the 32 upstream QBE examples at the repository root.
 - `core/` — generated arithmetic/compare/memory/conversion/constant tests
-  (`arith` 86, `compare` 56, `mem` 18, `conv` 14, `const` 24).
+  (`arith` 86, `compare` 56, `mem` 2, `conv` 14, `const` 24).
 - `fold/` — constant-folding / dead-code tests (23).
 - `abi/` — argument/return ABI and call conventions (48).
 - `isel/` — instruction-selection shapes (34).
@@ -43,6 +51,7 @@ clang's integrated assembler over the emitted output as an independent gate.
 - `emit/` — output emission shapes, incl. float constants (15).
 - `programs/` — 55 hand-written realistic programs (number theory, sorting,
   strings, floats, recursion, nested loops).
+- `dbg/` — `dbgfile`/`dbgloc` line-table inputs (2).
 
 ## Running
 

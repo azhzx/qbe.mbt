@@ -8,3 +8,6 @@ target
 .zcode/
 skill/
 .idea/
+
+# Python bytecode
+__pycache__/

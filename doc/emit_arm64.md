@@ -44,7 +44,7 @@ with functions.
 ## Notes
 
 - Validated byte-for-byte against `vendor/qbe/qbe -t arm64` for both the
-  ELF (`-G e`) and Mach-O (`-G m`, `-t arm64_apple`) flavors (406/406 each):
+  ELF (`-G e`) and Mach-O (`-G m`, `-t arm64_apple`) flavors (408/408 each):
   labels, `sym@page`/`@pageoff`, `.balign 4`, `_` prefixes, Mach-O literal
   sections, the Apple ABI (4-byte stack slots for non-wide scalars,
   `apple_selvastart`/`apple_selvaarg`) and no ELF directives. The reference's

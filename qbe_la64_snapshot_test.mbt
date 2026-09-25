@@ -116,14 +116,14 @@ test "e2e la64: call and branch" {
           #|	li.d $t1, 1
           #|	slt $t0, $t0, $a0
           #|	xor $t0, $t0, $t1
-          #|	beqz $t0, .L2
+          #|	bnez $t0, .L2
           #|.L1:
-          #|	li.d $a0, 0
-          #|	b .L3
-          #|.L2:
           #|	li.d $t0, 1
           #|	sub.w $a0, $a0, $t0
           #|	bl rec
+          #|	b .L3
+          #|.L2:
+          #|	li.d $a0, 0
           #|.L3:
           #|	addi.d $sp, $fp, 16
           #|	ld.d $ra, $fp, 8
@@ -169,23 +169,18 @@ test "e2e la64: loop with phi" {
           #|	st.d $ra, $sp, -8
           #|	addi.d $fp, $sp, -16
           #|	addi.d $sp, $sp, -16
-          #|	b .L3
-          #|.L1:
+          #|	li.d $t3, 0
+          #|	li.d $t1, 0
+          #|.L2:
           #|	or $t2, $t3, $zero
           #|	or $t0, $t1, $zero
           #|	li.d $t1, 1
           #|	add.w $t1, $t0, $t1
           #|	add.w $t3, $t0, $t2
           #|	slt $t4, $t1, $a0
-          #|	bnez $t4, .L1
-          #|.L2:
-          #|	add.w $a0, $t0, $t2
-          #|	b .L4
+          #|	bnez $t4, .L2
           #|.L3:
-          #|	li.d $t3, 0
-          #|	li.d $t1, 0
-          #|	b .L1
-          #|.L4:
+          #|	add.w $a0, $t0, $t2
           #|	addi.d $sp, $fp, 16
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0

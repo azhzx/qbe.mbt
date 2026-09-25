@@ -16,6 +16,8 @@ pub fn gasemitdat_la64(@types.Dat, String, String, StringBuilder) -> Unit
 
 pub fn gasemitfin_la64(String, StringBuilder) -> Unit
 
+pub fn la64_emit_reset() -> Unit
+
 // Errors
 
 // Types and methods

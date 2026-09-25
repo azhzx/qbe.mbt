@@ -23,13 +23,6 @@ fn wasm_process_block(_st : WasmAbiState, blk : @types.Blk) -> Unit {
       // emitter pushes each argument value so the following call consumes
       // them from the wasm operand stack. Argc only carries a type payload,
       // which the wasm call does not need.
-      @types.Argc =>
-        blk.ins[i] = @types.Ins::new_void(
-          @types.Nop,
-          ins.cls,
-          @types.Ref::none(),
-          @types.Ref::none(),
-        )
       @types.Call | @types.Vacall =>
         blk.ins[i] = @types.Ins::new(
           ins.op,
