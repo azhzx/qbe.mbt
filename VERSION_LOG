@@ -179,3 +179,10 @@
     qbe_emit_asm_gas) and the Rust crate (DebugType, declare_var,
     set_source_loc, emit_asm_with_gas). macOS lldb prints frame variables end to
     end; scripts/run_dbg_vars_demo.sh gates it in CI
+
+2026.9.25: v0.22.1
+    bootstrap.sh is now an interactive rustup-style installer: a colored
+    numbered menu picks the MoonBit compiler (PATH / install / custom path),
+    then it builds the native qbe binary and offers to install it to
+    ~/.local/bin and update the shell rc. Non-interactive flags: --moon,
+    --bin-dir, --no-path, --yes; vendor/qbe is now behind --with-reference
