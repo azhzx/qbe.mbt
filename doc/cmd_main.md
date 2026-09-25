@@ -59,13 +59,19 @@ toolchain (route B, default):
 
 ```
 moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --run-asm add,2,3 demo/01_arith.ssa      # 5
+moon run --target native cmd/main -- --run-asm main demo/11_main.ssa          # Hello from qbe.mbt!
 moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
 ```
 
-`--emit obj` is pure MoonBit and works on any host. See
+`--run-asm FUNC[,ARG]...` dispatches on the function signature: 0..8
+all-integer or 0..8 all-float arguments, with the result printed accordingly.
+External symbols such as libc `putchar`/`sqrt` are resolved with `dlsym`
+(far calls go through in-image veneers), so programs with libc calls run
+directly. `--emit obj` is pure MoonBit and works on any host. See
 [run_asm.md](run_asm.md) for the route B details and limitations.
 
 ### `-d` Debug Flags

@@ -71,8 +71,16 @@ let msg: *mut u8 = jit.get_data_ptr("msg")?;   // global data
 ```
 
 External symbols (libc `putchar`, `sqrt`, ...) are resolved with
-`dlsym(RTLD_DEFAULT, ...)`; far calls are routed through in-image veneers and
-external data addresses are patched in place, so JIT functions can call libc.
+`dlsym(RTLD_DEFAULT, ...)`; far calls go through in-image veneers that
+materialize the full 64-bit address and external data addresses are patched in
+place, so JIT functions can call libc.
+
+Host callbacks are registered per load:
+
+```rust
+extern "C" fn host_mul(a: i64, b: i64) -> i64 { a * b }
+let jit = module.jit_with_symbols(&[("host_mul", host_mul as usize)])?;
+```
 
 ## Building and testing
 

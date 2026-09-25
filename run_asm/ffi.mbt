@@ -65,3 +65,152 @@ extern "c" fn mbt_run_asm_call_i64_1(addr : Int64, a0 : Int64) -> Int64 = "mbt_r
 
 ///|
 extern "c" fn mbt_run_asm_icache_flush(addr : Int64, size : Int) = "mbt_run_asm_icache_flush"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_0(addr : Int64) -> Int64 = "mbt_run_asm_call_i64_0"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_2(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_2"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_3(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_3"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_4(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+  a3 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_4"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_5(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+  a3 : Int64,
+  a4 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_5"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_6(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+  a3 : Int64,
+  a4 : Int64,
+  a5 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_6"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_7(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+  a3 : Int64,
+  a4 : Int64,
+  a5 : Int64,
+  a6 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_7"
+
+///|
+extern "c" fn mbt_run_asm_call_i64_8(
+  addr : Int64,
+  a0 : Int64,
+  a1 : Int64,
+  a2 : Int64,
+  a3 : Int64,
+  a4 : Int64,
+  a5 : Int64,
+  a6 : Int64,
+  a7 : Int64,
+) -> Int64 = "mbt_run_asm_call_i64_8"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_0(addr : Int64) -> Double = "mbt_run_asm_call_f64_0"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_1(addr : Int64, d0 : Double) -> Double = "mbt_run_asm_call_f64_1"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_2(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+) -> Double = "mbt_run_asm_call_f64_2"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_3(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+) -> Double = "mbt_run_asm_call_f64_3"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_4(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+  d3 : Double,
+) -> Double = "mbt_run_asm_call_f64_4"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_5(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+  d3 : Double,
+  d4 : Double,
+) -> Double = "mbt_run_asm_call_f64_5"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_6(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+  d3 : Double,
+  d4 : Double,
+  d5 : Double,
+) -> Double = "mbt_run_asm_call_f64_6"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_7(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+  d3 : Double,
+  d4 : Double,
+  d5 : Double,
+  d6 : Double,
+) -> Double = "mbt_run_asm_call_f64_7"
+
+///|
+extern "c" fn mbt_run_asm_call_f64_8(
+  addr : Int64,
+  d0 : Double,
+  d1 : Double,
+  d2 : Double,
+  d3 : Double,
+  d4 : Double,
+  d5 : Double,
+  d6 : Double,
+  d7 : Double,
+) -> Double = "mbt_run_asm_call_f64_8"

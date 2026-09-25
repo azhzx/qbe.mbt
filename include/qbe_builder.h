@@ -113,6 +113,9 @@ moonbit_bytes_t qbe_emit_il(qbe_builder_t b);
  * (0 on failure; see qbe_last_error). Resolve symbols with qbe_jit_symbol /
  * qbe_jit_global and release the mapping with qbe_jit_free. */
 qbe_jit_t qbe_jit_load(qbe_builder_t b);
+/* Register a host callback symbol, consulted before dlsym at load time. */
+void qbe_jit_symbol_define(moonbit_bytes_t name, int64_t addr);
+void qbe_jit_symbol_clear(void);
 int64_t qbe_jit_symbol(qbe_jit_t jit, moonbit_bytes_t name);
 int64_t qbe_jit_global(qbe_jit_t jit, moonbit_bytes_t name);
 void qbe_jit_free(qbe_jit_t jit);

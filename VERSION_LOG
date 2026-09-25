@@ -104,3 +104,11 @@
     place; --run-asm and the C-ABI/Rust JIT all use it
     binary/object/JIT string data now decodes assembler escapes (\n, \t, ...),
     so route B matches route A and demo 11 runs under the JIT
+
+2026.9.25: v0.16.0
+    arm64 JIT: external calls use 64-bit veneers (movz/movk x16 + br), removing
+    the +/-4GB limit; host callbacks (qbe_jit_symbol_define / Rust
+    jit_with_symbols) let JIT code call back into the host; external data
+    adrp range is checked
+    --run-asm dispatches on the function signature (0..8 integer or 0..8 float
+    arguments, result printed by type)

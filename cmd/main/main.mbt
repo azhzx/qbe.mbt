@@ -332,19 +332,15 @@ async fn main {
           return
         }
       }
-      let a0 = if asm_args.length() == 0 {
-        0L
-      } else if asm_args.length() == 1 {
+      // The clang-backed path still takes at most one integer argument; the
+      // self-contained JIT dispatches on the function signature below.
+      let a0 = if asm_args.length() == 1 {
         match asm_args[0] {
           @interp.VInt(v) => v
-          _ => {
-            @util.eprint("error: --run-asm takes a single integer argument\n")
-            return
-          }
+          _ => 0L
         }
       } else {
-        @util.eprint("error: --run-asm takes at most one argument\n")
-        return
+        0L
       }
       for file in files {
         let source = read_source(file) catch {
@@ -368,15 +364,71 @@ async fn main {
               continue
             }
           }
-          let r = jm.call_i64_1(entry, a0) catch {
+          let (pcodes, rcode) = @qbe.arm64_function_signature(source, entry) catch {
             e => {
               @util.eprint("run-asm error: \{Repr(e)}\n")
+              jm.close()
               continue
             }
           }
-          @util.iprint("\{r}\n")
+          if pcodes.length() != asm_args.length() {
+            @util.eprint(
+              "run-asm error: '{entry}' expects \{pcodes.length()} argument(s)\n",
+            )
+            jm.close()
+            continue
+          }
+          let mut all_int = rcode == 0 || rcode == 1
+          let mut all_float = rcode == 2 || rcode == 3
+          for c in pcodes {
+            if c != 0 && c != 1 {
+              all_int = false
+            }
+            if c != 2 && c != 3 {
+              all_float = false
+            }
+          }
+          let ints : Array[Int64] = []
+          let floats : Array[Double] = []
+          for a in asm_args {
+            match a {
+              @interp.VInt(v) => ints.push(v)
+              @interp.VFloat(f) => floats.push(f.to_double())
+              @interp.VDouble(d) => floats.push(d)
+              _ => ()
+            }
+          }
+          if all_int && ints.length() == asm_args.length() {
+            let r = jm.call_i64(entry, ints) catch {
+              e => {
+                @util.eprint("run-asm error: \{Repr(e)}\n")
+                jm.close()
+                continue
+              }
+            }
+            @util.iprint("\{r}\n")
+          } else if all_float && floats.length() == asm_args.length() {
+            let r = jm.call_f64(entry, floats) catch {
+              e => {
+                @util.eprint("run-asm error: \{Repr(e)}\n")
+                jm.close()
+                continue
+              }
+            }
+            @util.iprint("\{r}\n")
+          } else {
+            @util.eprint(
+              "run-asm error: unsupported signature for '{entry}' (all-integer or all-float only)\n",
+            )
+          }
           jm.close()
         } else {
+          if asm_args.length() > 1 {
+            @util.eprint(
+              "error: --clang --run-asm takes at most one argument\n",
+            )
+            continue
+          }
           match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
             Ok(asm) => {
               let m = @run_asm.RunAsmModule::load_shared(asm) catch {

@@ -559,6 +559,59 @@ pub fn compile_arm64_bin_module(
 }
 
 ///|
+// Parameter class codes (0=w, 1=l, 2=s, 3=d) and the return class code (-1 for
+// void) of a function in IL text, for CLI JIT call dispatch. Called before the
+// backend passes, which consume the Par instructions.
+pub fn arm64_function_signature(
+  text : String,
+  name : String,
+) -> (Array[Int], Int) raise {
+  @types.init_arm64_target()
+  let (funcs, _, _, _, _) = parse_module(text, "<input>")
+  for fn_ in funcs {
+    if fn_.name == name {
+      let params : Array[Int] = []
+      let start = fn_.blks[fn_.start_id]
+      for ins in start.ins {
+        if ins.op == @types.Par {
+          params.push(ins.cls.code())
+        } else {
+          break
+        }
+      }
+      let mut ret = -1
+      for id in fn_.def_order {
+        match fn_.blks[id].jmp.kind {
+          @types.Jretw => {
+            ret = 0
+            break
+          }
+          @types.Jretl => {
+            ret = 1
+            break
+          }
+          @types.Jrets => {
+            ret = 2
+            break
+          }
+          @types.Jretd => {
+            ret = 3
+            break
+          }
+          @types.Jretc => {
+            ret = -2
+            break
+          }
+          _ => ()
+        }
+      }
+      return (params, ret)
+    }
+  }
+  raise @util.QbeError::CompileError("no function named " + name)
+}
+
+///|
 // Like compile_arm64_bin_module but keeps external (undefined) symbols as
 // fixups, for the in-memory JIT loader.
 pub fn compile_arm64_bin_module_ex(

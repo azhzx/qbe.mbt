@@ -1302,15 +1302,17 @@ fn emit_arm64_bin_module_build(
   }
   // External calls go through a veneer island appended to the text. libc lives
   // far outside the +/-128MB bl range, so redirect each call to a nearby
-  // 12-byte veneer: bl veneer; adrp x16, page; add x16, x16, off; br x16.
+  // 20-byte veneer that materializes the full 64-bit address:
+  //   bl veneer; movz x16,#a0; movk x16,#a1,lsl 16; movk x16,#a2,lsl 32;
+  //   movk x16,#a3,lsl 48; br x16.
   // (x16 is IP0, a caller-saved scratch register; lr already holds the return
   // address and br keeps it.)
   let ext_calls : Array[(Int, String)] = []
   for c in ext_pending {
     let vw = words.length()
-    words.push(0)
-    words.push(0)
-    words.push(0)
+    for _ in 0..<5 {
+      words.push(0)
+    }
     words[c.0] = @object.enc_bl((vw - c.0) * 4)
     ext_calls.push((vw, c.1))
   }

@@ -52,12 +52,17 @@ moon run cmd/main -- -t amd64_sysv -G m -o out.s demo/01_arith.ssa
 
 ```
 moon run --target native cmd/main -- --run-asm fib,10 demo/10_fibonacci.ssa   # 55
+moon run --target native cmd/main -- --run-asm add,2,3 demo/01_arith.ssa      # 5
+moon run --target native cmd/main -- --run-asm main demo/11_main.ssa          # Hello from qbe.mbt!
 moon run --target native cmd/main -- --emit obj demo/10_fibonacci.ssa         # .qbe_build/10_fibonacci.o
 moon run --target native cmd/main -- --emit obj --out-dir build demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --emit obj -o fib.o demo/10_fibonacci.ssa
 moon run --target native cmd/main -- --run-asm fib,10 --clang demo/10_fibonacci.ssa
 ```
 
+`--run-asm FUNC[,ARG]...` 按函数签名分派：0..8 个全整数或 0..8 个全浮点实参，
+结果按类型打印。libc `putchar`/`sqrt` 等外部符号通过 `dlsym` 解析
+（远距离调用经镜像内 veneer），因此带 libc 调用的程序可直接运行。
 `--emit obj` 是纯 MoonBit，任何平台都能用。路线 B 的细节与限制见
 [run_asm.md](run_asm.md)。
 

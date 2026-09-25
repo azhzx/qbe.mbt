@@ -71,11 +71,13 @@ QBE 同样拒绝，没有汇编可比。native 测试还会链接并运行一个
 
 ## 已知限制
 
-- JIT：外部符号（libc `printf`/`putchar`/`malloc`/`sqrt` 等）通过
-  `dlsym(RTLD_DEFAULT, ...)` 解析；远距离调用经镜像内 veneer
-  （`adrp x16; add x16; br x16`）跳转，外部数据地址就地回填。`--run-asm`、
-  `qbe_jit_*` C ABI 与 Rust 的 `Module::jit` / `JitModule::get_fn` 均走此路径。
-  `--run-asm` 目前仍至多接受一个整数实参。
+- JIT：外部符号（libc `printf`/`putchar`/`malloc`/`sqrt` 等）先查宿主符号表，
+  再走 `dlsym(RTLD_DEFAULT, ...)`；远距离调用经镜像内 veneer 构造完整 64 位地址
+  （`bl veneer; movz/movk x16; br x16`），外部数据地址就地回填（`adrp/add`，±4GB）。
+  `--run-asm`、`qbe_jit_*` C ABI（`qbe_jit_symbol_define` 注册宿主回调）与 Rust 的
+  `Module::jit` / `jit_with_symbols` / `JitModule::get_fn` 均走此路径。
+- `--run-asm FUNC[,ARG]...` 按函数签名分派：0..8 个全整数或 0..8 个全浮点实参，
+  结果按类型打印。
 - 未实现 QBE 可变参数 ABI（vararg 序言会被跳过）。
 - `--emit obj` 只写 `__text`/`__data`/`__TEXT,__const`；`__bss` 与
   `__cstring` 合并进 `__data`。
