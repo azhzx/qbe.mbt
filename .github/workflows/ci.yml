@@ -69,6 +69,15 @@ jobs:
       - name: Unit tests (native)
         run: moon test --target native
 
+      # PowerShell is preinstalled on the runner; parse-check the Windows
+      # installer so a syntax error cannot land unnoticed.
+      - name: Check PowerShell installer syntax
+        run: |
+          if command -v pwsh >/dev/null 2>&1; then
+            pwsh -NoProfile -Command '$t=$null; $e=$null; [void][System.Management.Automation.Language.Parser]::ParseFile("scripts/bootstrap.ps1",[ref]$t,[ref]$e); if($e){ $e | ForEach-Object { $_.Message }; exit 1 }'
+          else
+            echo "pwsh not available; skipping"
+          fi
   capi:
     name: C ABI builder (macOS arm64)
     runs-on: macos-14
