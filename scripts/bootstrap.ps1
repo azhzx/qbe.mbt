@@ -19,7 +19,7 @@ param(
     [string]$Moon = '',
     [switch]$InstallMoon,
     [switch]$SkipInstall,
-    [string]$BinDir = (Join-Path $env:USERPROFILE '.qbe\bin'),
+    [string]$BinDir = '',
     [switch]$NoPath,
     [switch]$WithReference,
     [ValidateSet('native', 'wasm')]
@@ -176,6 +176,12 @@ function Install-QbeToPath($exe) {
 }
 
 # --------------------------------------------------------------------- main
+if ([string]::IsNullOrEmpty($BinDir)) {
+    $homeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
+    if ([string]::IsNullOrEmpty($homeDir)) { $homeDir = '.' }
+    $BinDir = Join-Path $homeDir '.qbe\bin'
+}
+
 Show-Banner
 
 Write-Step '1/3' 'MoonBit compiler'
