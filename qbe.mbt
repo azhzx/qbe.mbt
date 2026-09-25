@@ -559,6 +559,22 @@ pub fn compile_arm64_bin_module(
 }
 
 ///|
+// Like compile_arm64_bin_module but keeps external (undefined) symbols as
+// fixups, for the in-memory JIT loader.
+pub fn compile_arm64_bin_module_ex(
+  text : String,
+) -> (@emit_arm64.Arm64BinModule, @emit_arm64.Arm64BinFixups) raise {
+  @types.init_arm64_target()
+  let (funcs, datas, _order, typs, interner) = parse_module(text, "<input>")
+  let out = StringBuilder::StringBuilder()
+  @types.fp_stash_reset()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_bin_module_ex(funcs, datas, interner, true)
+}
+
+///|
 // Route B (self-contained) object emission: a Mach-O arm64 object built from
 // the binary emitter, with BRANCH26 / PAGE21 / PAGEOFF12 relocations. No clang.
 pub fn compile_arm64_object(text : String) -> Bytes raise {
@@ -610,6 +626,24 @@ pub fn compile_ir_bin_module(
 }
 
 ///|
+// Like compile_ir_bin_module but keeps external (undefined) calls and data
+// addresses as fixups, for the in-memory JIT loader.
+pub fn compile_ir_bin_module_ex(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  typs : Array[@types.Typ],
+  interner : @util.Interner,
+) -> (@emit_arm64.Arm64BinModule, @emit_arm64.Arm64BinFixups) raise {
+  @types.init_arm64_target()
+  @types.fp_stash_reset()
+  let out = StringBuilder::StringBuilder()
+  for fn_ in funcs {
+    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+  }
+  @emit_arm64.emit_arm64_bin_module_ex(funcs, datas, interner, true)
+}
+
+///|
 // Compile an already-constructed module to arm64 assembly text. `order`
 // interleaves "f" (function) and "d" (data section) in definition order.
 pub fn compile_ir_asm(
@@ -631,6 +665,9 @@ pub fn compile_ir_asm(
 
 ///|
 pub type Arm64BinModule = @emit_arm64.Arm64BinModule
+
+///|
+pub type Arm64BinFixups = @emit_arm64.Arm64BinFixups
 
 ///|
 // Convenience re-exports of the core IR types from `types`.

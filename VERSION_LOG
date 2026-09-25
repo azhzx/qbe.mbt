@@ -96,3 +96,11 @@
     Rust glue layer (rust/, crate qbe-builder) over the C ABI, with a
     Cranelift/inkwell-style API, including an in-memory JIT
     (qbe_jit_load/symbol/global/free; Module::jit / JitModule::get_fn)
+
+2026.9.25: v0.15.0
+    in-memory JIT resolves external symbols (libc printf/putchar/malloc/sqrt)
+    with dlsym(RTLD_DEFAULT); far calls go through in-image veneers
+    (adrp x16; add x16; br x16) and external data addresses are patched in
+    place; --run-asm and the C-ABI/Rust JIT all use it
+    binary/object/JIT string data now decodes assembler escapes (\n, \t, ...),
+    so route B matches route A and demo 11 runs under the JIT

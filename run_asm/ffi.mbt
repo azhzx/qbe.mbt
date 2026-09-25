@@ -62,3 +62,6 @@ extern "c" fn mbt_run_asm_sym(name : Bytes) -> Int64 = "mbt_run_asm_sym"
 
 ///|
 extern "c" fn mbt_run_asm_call_i64_1(addr : Int64, a0 : Int64) -> Int64 = "mbt_run_asm_call_i64_1"
+
+///|
+extern "c" fn mbt_run_asm_icache_flush(addr : Int64, size : Int) = "mbt_run_asm_icache_flush"

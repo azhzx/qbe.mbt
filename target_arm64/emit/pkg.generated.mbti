@@ -17,11 +17,19 @@ pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool) -> (Array[Int], Arr
 
 pub fn emit_arm64_bin_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Arm64BinModule raise
 
+pub fn emit_arm64_bin_module_ex(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> (Arm64BinModule, Arm64BinFixups) raise
+
 pub fn emit_arm64_object(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Bytes raise
 
 // Errors
 
 // Types and methods
+pub(all) struct Arm64BinFixups {
+  ext_calls : Array[(Int, String)]
+  ext_addrs : Array[(Int, Int, Int, String, Int)]
+}
+pub fn Arm64BinFixups::empty() -> Self
+
 pub(all) struct Arm64BinModule {
   words : Array[Int]
   data : Array[Int]

@@ -25,8 +25,8 @@ fn get_jit(h : Int64) -> @run_asm.JitModule {
 pub fn qbe_jit_load(h : Int64) -> Int64 {
   let b = get_builder(h)
   try {
-    let m = b.emit_bin_module()
-    jits.push(Some(@run_asm.JitModule::from_bin_module(m)))
+    let (m, fx) = b.emit_bin_module_ex()
+    jits.push(Some(@run_asm.JitModule::from_bin_module_ex(m, fx)))
     jits.length().to_int64()
   } catch {
     e => {

@@ -70,8 +70,9 @@ assert_eq!(tri(10), 55);
 let msg: *mut u8 = jit.get_data_ptr("msg")?;   // global data
 ```
 
-The image is self-contained (no linker involved). External symbols such as
-libc calls are not resolved yet, so JIT functions must be self-contained.
+External symbols (libc `putchar`, `sqrt`, ...) are resolved with
+`dlsym(RTLD_DEFAULT, ...)`; far calls are routed through in-image veneers and
+external data addresses are patched in place, so JIT functions can call libc.
 
 ## Building and testing
 

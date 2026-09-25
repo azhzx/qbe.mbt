@@ -138,8 +138,8 @@ builder-built `fib` in-process and checks `fib(10) == 55`, `fib(20) == 6765`.
 ## Limitations
 
 - Object/JIT emission is arm64 (macOS/aarch64) only, matching route B.
-- The JIT is self-contained: external symbols (libc `printf` et al.) are not
-  resolved yet, so JIT functions must not call them.
+- The JIT resolves external symbols with `dlsym` and routes far calls through
+  in-image veneers, so JIT functions may call libc.
 - Aggregate (`:type`) parameters and returns, variadic calls, and dynamic
   `alloc` are not wrapped by the C ABI yet; the MoonBit `emit_ins` escape
   hatch can still express them.

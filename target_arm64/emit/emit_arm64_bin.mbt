@@ -1063,9 +1063,47 @@ fn arm64_bin_dat_width(kind : @types.DatKind) -> Int {
 }
 
 ///|
+// Decode the escapes an assembler would interpret in a b "..." data string
+// (\n, \t, \r, \0, \\, \"), so the self-contained data image (object and JIT)
+// matches the route A text that goes through clang. Multi-byte UTF-8 never
+// contains 0x5C, so byte-level scanning is safe.
+fn arm64_bin_str_bytes(s : String) -> Array[Int] {
+  let b = @utf8.encode(s)
+  let out : Array[Int] = []
+  let mut i = 0
+  while i < b.length() {
+    let c = b[i].to_int()
+    if c == 92 && i + 1 < b.length() {
+      let e = b[i + 1].to_int()
+      let decoded : Int = match e {
+        110 => 10 // n
+        116 => 9 // t
+        114 => 13 // r
+        48 => 0 // 0
+        98 => 8 // b
+        102 => 12 // f
+        118 => 11 // v
+        97 => 7 // a
+        92 => 92 // backslash
+        34 => 34 // quote
+        _ => -1
+      }
+      if decoded >= 0 {
+        out.push(decoded)
+        i = i + 2
+        continue
+      }
+    }
+    out.push(c)
+    i = i + 1
+  }
+  out
+}
+
+///|
 fn arm64_bin_dat_size(d : @types.Dat) -> Int {
   if d.is_str {
-    @utf8.encode(d.str).length()
+    arm64_bin_str_bytes(d.str).length()
   } else {
     arm64_bin_dat_width(d.kind)
   }
@@ -1108,9 +1146,9 @@ fn arm64_bin_layout_data(
       _ => {
         let w = arm64_bin_dat_size(d)
         if d.is_str {
-          let b = @utf8.encode(d.str)
+          let b = arm64_bin_str_bytes(d.str)
           for i in 0..<b.length() {
-            buf[cur + i] = b[i].to_int()
+            buf[cur + i] = b[i]
           }
         } else if d.is_ref {
           refs.push((cur, d.ref_name, w))
@@ -1202,12 +1240,30 @@ pub fn Arm64BinModule::image(self : Arm64BinModule) -> Bytes {
 }
 
 ///|
-pub fn emit_arm64_bin_module(
+// Unresolved (external) relocations left in a linked image. Both the JIT loader
+// and the Mach-O object emitter consume the same per-function calls/addrs; this
+// carries the ones the in-memory linker could not resolve.
+pub(all) struct Arm64BinFixups {
+  // (veneer word index, symbol): the call site branches to a 12-byte veneer
+  // whose adrp/add/br must be filled in with the resolved address.
+  ext_calls : Array[(Int, String)]
+  // (adrp word, add word, rd, symbol, addend): patch adrp/add with the address.
+  ext_addrs : Array[(Int, Int, Int, String, Int)]
+}
+
+///|
+pub fn Arm64BinFixups::empty() -> Arm64BinFixups {
+  { ext_calls: [], ext_addrs: [], }
+}
+
+///|
+fn emit_arm64_bin_module_build(
   funcs : Array[@types.Fn],
   datas : Array[@types.Dat],
   interner : @util.Interner,
   apple : Bool,
-) -> Arm64BinModule raise {
+  allow_external : Bool,
+) -> (Arm64BinModule, Arm64BinFixups) raise {
   arm64_emit_reset()
   let words : Array[Int] = []
   let fns : Array[(String, Int)] = []
@@ -1227,6 +1283,8 @@ pub fn emit_arm64_bin_module(
       pending_addrs.push((off + a.0, off + a.1, a.2, a.3, a.4))
     }
   }
+  // Resolve intra-module calls; collect the rest as externals.
+  let ext_pending : Array[(Int, String)] = []
   for c in pending {
     let mut target = -1
     for f in fns {
@@ -1234,10 +1292,27 @@ pub fn emit_arm64_bin_module(
         target = f.1
       }
     }
-    if target < 0 {
+    if target >= 0 {
+      words[c.0] = @object.enc_bl((target - c.0) * 4)
+    } else if allow_external {
+      ext_pending.push(c)
+    } else {
       raise @util.QbeError::Ice("arm64 bin: call to undefined symbol " + c.1)
     }
-    words[c.0] = @object.enc_bl((target - c.0) * 4)
+  }
+  // External calls go through a veneer island appended to the text. libc lives
+  // far outside the +/-128MB bl range, so redirect each call to a nearby
+  // 12-byte veneer: bl veneer; adrp x16, page; add x16, x16, off; br x16.
+  // (x16 is IP0, a caller-saved scratch register; lr already holds the return
+  // address and br keeps it.)
+  let ext_calls : Array[(Int, String)] = []
+  for c in ext_pending {
+    let vw = words.length()
+    words.push(0)
+    words.push(0)
+    words.push(0)
+    words[c.0] = @object.enc_bl((vw - c.0) * 4)
+    ext_calls.push((vw, c.1))
   }
   let (datas_map0, data_bytes0, _data_refs) = arm64_bin_layout_data(datas)
   // Append the floating-point constant stash (fpN) after the data section.
@@ -1264,6 +1339,7 @@ pub fn emit_arm64_bin_module(
     text_bytes
   }
   let data_start = code_bytes
+  let ext_addrs : Array[(Int, Int, Int, String, Int)] = []
   for a in pending_addrs {
     let mut base = -1
     for p in datas_map {
@@ -1271,13 +1347,16 @@ pub fn emit_arm64_bin_module(
         base = p.1
       }
     }
-    if base < 0 {
+    if base >= 0 {
+      let target = data_start + base + a.4
+      let pc = a.0 * 4
+      words[a.0] = @object.enc_adrp(a.2, (target >> 12) - (pc >> 12))
+      words[a.1] = @object.enc_add_imm(a.2, a.2, target & 0xFFF)
+    } else if allow_external {
+      ext_addrs.push(a)
+    } else {
       raise @util.QbeError::Ice("arm64 bin: undefined data symbol " + a.3)
     }
-    let target = data_start + base + a.4
-    let pc = a.0 * 4
-    words[a.0] = @object.enc_adrp(a.2, (target >> 12) - (pc >> 12))
-    words[a.1] = @object.enc_add_imm(a.2, a.2, target & 0xFFF)
   }
   let exports : Array[String] = []
   for fn_ in funcs {
@@ -1285,7 +1364,7 @@ pub fn emit_arm64_bin_module(
       exports.push(fn_.name)
     }
   }
-  Arm64BinModule::{
+  let m = Arm64BinModule::{
     words,
     data: data_bytes,
     fns,
@@ -1293,4 +1372,28 @@ pub fn emit_arm64_bin_module(
     exports,
     code_bytes,
   }
+  (m, Arm64BinFixups::{ ext_calls, ext_addrs, })
+}
+
+///|
+pub fn emit_arm64_bin_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  interner : @util.Interner,
+  apple : Bool,
+) -> Arm64BinModule raise {
+  let (m, _) = emit_arm64_bin_module_build(funcs, datas, interner, apple, false)
+  m
+}
+
+///|
+// Like emit_arm64_bin_module but keeps external (undefined) calls and data
+// addresses as fixups instead of raising, for the in-memory JIT loader.
+pub fn emit_arm64_bin_module_ex(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  interner : @util.Interner,
+  apple : Bool,
+) -> (Arm64BinModule, Arm64BinFixups) raise {
+  emit_arm64_bin_module_build(funcs, datas, interner, apple, true)
 }

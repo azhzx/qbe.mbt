@@ -81,10 +81,12 @@ another dereferences a `$r -> $t` data pointer to exercise `UNSIGNED`.
 
 ## Limitations
 
-- JIT: external symbols (libc `printf` et al.) are not resolved yet, so
-  `--run-asm` is limited to self-contained functions. The builder C ABI
-  (`qbe_jit_load`/`qbe_jit_symbol`/`qbe_jit_global`/`qbe_jit_free`) and the
-  Rust bindings (`Module::jit` / `JitModule::get_fn`) share this limitation.
+- JIT: external symbols (libc `printf`/`putchar`/`malloc`/`sqrt` ...) are
+  resolved with `dlsym(RTLD_DEFAULT, ...)`; far calls are routed through
+  in-image veneers (`adrp x16; add x16; br x16`) and external data addresses
+  are patched in place. `--run-asm`, the `qbe_jit_*` C ABI and the Rust
+  `Module::jit` / `JitModule::get_fn` all use this. `--run-asm` still takes at
+  most one integer argument.
 - The QBE vararg ABI is not implemented (vararg prologues are skipped).
 - `--emit obj` writes `__text`/`__data`/`__TEXT,__const`; `__bss` and
   `__cstring` are folded into `__data`.

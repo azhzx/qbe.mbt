@@ -163,3 +163,38 @@ fn object_links_and_runs() {
     assert!(text.contains("42 55 55"), "unexpected output: {text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+#[test]
+fn jit_calls_libc() {
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        return;
+    }
+    let ctx = Context::new();
+    let mut module = ctx.create_module();
+
+    // putchar: prints its argument and returns it.
+    let f = module.add_function("emit", Signature::new([Type::I32], Some(Type::I32)));
+    {
+        let mut b = module.builder(f);
+        let c = b.params()[0];
+        let r = b
+            .ins()
+            .call_by_name("putchar", Some(Type::I32), &[c])
+            .unwrap();
+        b.ins().return_(&[r]);
+    }
+
+    // sqrt (libm): double -> double.
+    let f = module.add_function("my_sqrt", Signature::new([Type::F64], Some(Type::F64)));
+    {
+        let mut b = module.builder(f);
+        let x = b.params()[0];
+        let r = b.ins().call_by_name("sqrt", Some(Type::F64), &[x]).unwrap();
+        b.ins().return_(&[r]);
+    }
+
+    let jit = module.jit().unwrap();
+    let emit: extern "C" fn(i32) -> i32 = jit.get_fn("emit").unwrap();
+    assert_eq!(emit(65), 65);
+    let my_sqrt: extern "C" fn(f64) -> f64 = jit.get_fn("my_sqrt").unwrap();
+    assert_eq!(my_sqrt(16.0), 4.0);
+}

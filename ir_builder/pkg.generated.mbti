@@ -39,6 +39,7 @@ pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
 pub fn Builder::data_string(Self, String, Bool, String) -> Unit
 pub fn Builder::emit_asm(Self, gas? : String) -> String raise
 pub fn Builder::emit_bin_module(Self) -> @emit.Arm64BinModule raise
+pub fn Builder::emit_bin_module_ex(Self) -> (@emit.Arm64BinModule, @emit.Arm64BinFixups) raise
 pub fn Builder::emit_il(Self) -> String
 pub fn Builder::emit_ins(Self, Int, @types.Op, @types.Class, @types.Class, Int, Int) -> Int
 pub fn Builder::emit_object(Self) -> Bytes raise

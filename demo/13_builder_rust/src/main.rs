@@ -85,12 +85,22 @@ fn build_fib(module: &mut Module) {
     b.ins().return_(&[r]);
 }
 
+// export function d $my_sqrt(d %x): calls libc sqrt (an external symbol).
+fn build_sqrt(module: &mut Module) {
+    let f = module.add_function("my_sqrt", Signature::new([Type::F64], Some(Type::F64)));
+    let mut b = module.builder(f);
+    let x = b.params()[0];
+    let r = b.ins().call_by_name("sqrt", Some(Type::F64), &[x]).unwrap();
+    b.ins().return_(&[r]);
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = Context::new();
     let mut module = ctx.create_module();
     build_add(&mut module);
     build_tri(&mut module);
     build_fib(&mut module);
+    build_sqrt(&mut module);
 
     // Print the constructed IR as QBE IL.
     print!("{}", module.emit_il());
@@ -102,9 +112,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let add: extern "C" fn(i32, i32) -> i32 = jit.get_fn("add")?;
         let tri: extern "C" fn(i32) -> i32 = jit.get_fn("tri")?;
         let fib: extern "C" fn(i32) -> i32 = jit.get_fn("fib")?;
+        let my_sqrt: extern "C" fn(f64) -> f64 = jit.get_fn("my_sqrt")?;
         println!("JIT: add(20,22)={}", add(20, 22));
         println!("JIT: tri(10)={}", tri(10));
         println!("JIT: fib(10)={}", fib(10));
+        println!("JIT: my_sqrt(16.0)={}  (libc sqrt)", my_sqrt(16.0));
     }
 
     // Elsewhere, emit arm64 assembly text instead (the JIT runs arm64 code).
