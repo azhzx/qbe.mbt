@@ -19,6 +19,8 @@
   `Context` / `Module` / `FunctionBuilder` / `ins()`, including `Module::jit`
 - **Layered runtime**: `native/` (executable memory, symbol lookup, temp files,
   process spawn, dynamic linking) shared by `jit/` and `run_asm/`
+- **Debug info**: the IL `dbgfile`/`dbgloc` statements emit `.file`/`.loc` DWARF
+  line tables, byte-identical to the reference ([doc/debug_info.md](doc/debug_info.md))
 
 ## Status
 - amd64 / arm64 / rv64 debug dumps and assembly are byte-identical to
@@ -27,8 +29,12 @@
 - `--jit FUNC[,ARG]...` runs code in-process; `--run-asm FUNC[,ARG]` does the
   same through clang; `--run-wasm FUNC[,ARG]` runs the WASM backend under node;
   `--emit obj` writes a self-contained Mach-O arm64 `.o`
+- `dbgfile`/`dbgloc` line info is emitted for amd64/arm64/rv64/la64 and matches
+  `vendor/qbe` on every debug flag
 
 ## Roadmap
+- Debug info: CFI/`.eh_frame` and a DWARF `.debug_info` compilation unit
+  ([doc/debug_info.md](doc/debug_info.md))
 - (TODO) IR debugger
 
 ## Contributors

@@ -59,3 +59,23 @@ test "QbeError constructors are distinct" {
   assert_true(c is QbeError::CompileError("oops"))
   assert_true(i is QbeError::Ice("ice"))
 }
+
+///|
+test "emit_dbgfile dedups and numbers files" {
+  dbg_reset()
+  let sb = StringBuilder::StringBuilder()
+  emit_dbgfile("a.c", sb)
+  emit_dbgfile("a.c", sb)
+  emit_dbgfile("b.c", sb)
+  assert_eq(sb.to_string(), ".file 1 \"a.c\"\n.file 2 \"b.c\"\n")
+}
+
+///|
+test "emit_dbgloc uses the current file number" {
+  dbg_reset()
+  let sb = StringBuilder::StringBuilder()
+  emit_dbgfile("a.c", sb)
+  emit_dbgloc(7, 0, sb)
+  emit_dbgloc(9, 3, sb)
+  assert_eq(sb.to_string(), ".file 1 \"a.c\"\n\t.loc 1 7\n\t.loc 1 9 3\n")
+}

@@ -335,6 +335,26 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
     TId => {
       // Instruction without result (store, call, vastart)
       let name = self.tokens[self.pos - 1].raw
+      if name == "dbgloc" {
+        // Debug location: dbgloc LINE[, COL] (C parse.c case Odbgloc).
+        self.expect(TInt)
+        let line = parse_int64(self.tokens[self.pos - 1].raw)
+        let mut col : Int64 = 0L
+        if self.peek_kind() == TCom {
+          let _ = self.next()
+          self.expect(TInt)
+          col = parse_int64(self.tokens[self.pos - 1].raw)
+        }
+        let ins = @types.Ins::new_void(
+          @types.Dbgloc,
+          @types.Kw,
+          @types.Ref::rint(line.to_int()),
+          @types.Ref::rint(col.to_int()),
+        )
+        fn_.blks[self.curblk].ins.push(ins)
+        self.expect(TNl)
+        return PIns
+      }
       if @types.Op::from_string(name).is_store() {
         // Store instruction: storew value, addr
         let op = @types.Op::from_string(name)

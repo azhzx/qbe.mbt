@@ -197,3 +197,67 @@ test "parse multiple functions preserves module order" {
   assert_eq(funcs[0].name, "first")
   assert_eq(funcs[1].name, "second")
 }
+
+///|
+test "dbgfile markers keep top-level order" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  ret 0
+    #|}
+    #|dbgfile "a.c"
+    #|function w $g() {
+    #|@start
+    #|  ret 0
+    #|}
+    #|dbgfile "a.c"
+    #|dbgfile "b.c"
+    #|
+  let p = Parser::new(@lexer.Lexer::new(src, "test").tokenize(), "test")
+  p.parse()
+  let order = p.get_order()
+  // Repeated paths are kept in the order list; the emitter dedups and numbers
+  // them (C emit.c emitdbgfile).
+  assert_eq(order.length(), 5)
+  assert_eq(order[0], "f")
+  assert_eq(order[1], "dbgfile:a.c")
+  assert_eq(order[2], "f")
+  assert_eq(order[3], "dbgfile:a.c")
+  assert_eq(order[4], "dbgfile:b.c")
+}
+
+///|
+test "dbgloc parses line and column" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  dbgloc 7
+    #|  dbgloc 9, 3
+    #|  ret 0
+    #|}
+    #|
+  let (funcs, _, _, _) = parse_all(src)
+  let ins = funcs[0].blks[0].ins
+  assert_eq(ins[0].op, @types.Dbgloc)
+  assert_eq(ins[0].arg1.rint_val(), 7)
+  assert_eq(ins[0].arg2.rint_val(), 0)
+  assert_eq(ins[1].op, @types.Dbgloc)
+  assert_eq(ins[1].arg1.rint_val(), 9)
+  assert_eq(ins[1].arg2.rint_val(), 3)
+}
+
+///|
+test "printfn prints dbgloc" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  dbgloc 7
+    #|  dbgloc 9, 3
+    #|  ret 0
+    #|}
+    #|
+  let (funcs, _, _, interner) = parse_all(src)
+  let printed = printfn(funcs[0], interner, [])
+  assert_true(printed.contains("\tdbgloc 7, 0\n"))
+  assert_true(printed.contains("\tdbgloc 9, 3\n"))
+}

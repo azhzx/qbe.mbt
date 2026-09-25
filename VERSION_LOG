@@ -133,3 +133,11 @@
     docs: replace the stale 5684/5684 debug-dump counter (measured with 14
     flags) with flag-independent wording in doc/README, doc/guide, doc/abi_arm64
     and their zh versions; test/README: --asm covers 406/406, not 336/336
+
+2026.9.25: v0.19.0
+    debug info (line tables): implement the upstream `dbgfile "path"` and
+    `dbgloc LINE[,COL]` IL statements; emit `.file <n> "path"` (dedup +
+    numbering) and `.loc` in the amd64/arm64/rv64/la64 GAS backends. Output is
+    byte-identical to vendor/qbe on every debug flag; `dbgloc` is a no-op for
+    --jit/--run-asm/--emit obj/the interpreter. New test/dbg corpus, parser and
+    util unit tests, doc/debug_info.md (+zh)

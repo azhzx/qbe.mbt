@@ -16,6 +16,7 @@ pub(all) enum TokenKind {
   TType // type
   TExport // export
   TPhi // phi
+  Tdbgfile // dbgfile
 
   // Jump keywords
   TJmp // jmp
@@ -82,6 +83,7 @@ pub fn Token::kind_str(self : Token) -> String {
     TType => "type"
     TExport => "export"
     TPhi => "phi"
+    Tdbgfile => "dbgfile"
     TJmp => "jmp"
     TJnz => "jnz"
     TRet => "ret"
@@ -123,6 +125,7 @@ pub fn TokenKind::to_string(self : TokenKind) -> String {
     TType => "type"
     TExport => "export"
     TPhi => "phi"
+    Tdbgfile => "dbgfile"
     TJmp => "jmp"
     TJnz => "jnz"
     TRet => "ret"

@@ -114,7 +114,7 @@ pub fn simplcfg(
     js2[id] = b.jmp.s2
     let mut e = b.phi.length() == 0
     for i in b.ins {
-      if i.op != @types.Nop {
+      if i.op != @types.Nop && i.op != @types.Dbgloc {
         e = false
         break
       }

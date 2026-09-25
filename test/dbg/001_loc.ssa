@@ -1,0 +1,9 @@
+dbgfile "one.c"
+function w $main() {
+@start
+	dbgloc 3
+	%a =w add 1, 2
+	dbgloc 5, 9
+	%b =w mul %a, 3
+	ret %b
+}

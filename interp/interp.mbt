@@ -314,6 +314,8 @@ fn Interp::enter_block(
             "interpreter: vaarg is not supported",
           )
         @types.Nop => ()
+        // Debug info is metadata only.
+        @types.Dbgloc => ()
         _ => {
           // compute and store the result
           let v = self.eval_ins(frame, ins)

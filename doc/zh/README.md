@@ -2,6 +2,8 @@
 
 本目录提供 qbe.mbt 编译后端各 MoonBit 包的接口说明，依据各包的 `pkg.generated.mbti`（`moon info` 生成）以及源码注释。
 
+调试信息（`dbgfile`/`dbgloc` → `.file`/`.loc`）：[debug_info.md](debug_info.md)。
+
 ## 包一览
 
 按编译流水线阶段顺序排列：

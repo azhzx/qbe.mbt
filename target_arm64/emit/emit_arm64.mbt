@@ -454,6 +454,8 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
   }
   match i.op {
     @types.Nop => ()
+    @types.Dbgloc =>
+      @util.emit_dbgloc(i.arg1.rint_val(), i.arg2.rint_val(), st.sb)
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()

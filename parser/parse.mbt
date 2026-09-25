@@ -30,6 +30,12 @@ pub fn Parser::parse(self : Self) -> Unit raise {
         self.parsedat(false)
       }
       TType => self.parsetyp()
+      Tdbgfile => {
+        // Debug file marker. The path is recorded in top-level order so the
+        // emitter can emit `.file <n> <path>` at this point in the output.
+        self.expect(TStr)
+        self.order.push("dbgfile:" + self.tokens[self.pos - 1].raw)
+      }
       _ => raise self.error("top-level definition expected")
     }
   }

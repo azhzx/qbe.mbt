@@ -105,6 +105,9 @@ pub(all) enum Op {
   Vastart
   Copy
 
+  // === Debug info (C Odbgloc) ===
+  Dbgloc
+
   // === INTERNAL OPERATIONS ===
   Nop
   Addr
@@ -338,6 +341,7 @@ pub fn Op::from_string(s : String) -> Op {
     "vaarg" => Vaarg
     "vastart" => Vastart
     "copy" => Copy
+    "dbgloc" => Dbgloc
     "call" => Call
     "argv" => Argv
     _ => Oxxx
