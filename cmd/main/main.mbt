@@ -222,7 +222,7 @@ async fn run_jit(
   }
   if pcodes.length() != args.length() {
     @util.eprint(
-      "jit error: '{entry}' expects \{pcodes.length()} argument(s)\n",
+      "jit error: '\{entry}' expects \{pcodes.length()} argument(s)\n",
     )
     jm.close()
     return
@@ -267,7 +267,7 @@ async fn run_jit(
     @util.iprint("\{r}\n")
   } else {
     @util.eprint(
-      "jit error: unsupported signature for '{entry}' (all-integer or all-float only)\n",
+      "jit error: unsupported signature for '\{entry}' (all-integer or all-float only)\n",
     )
   }
   jm.close()
