@@ -510,6 +510,8 @@ fn rv64_emit_store(
 fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
   match i.op {
     @types.Nop => ()
+    @types.Dbgloc =>
+      @util.emit_dbgloc(i.arg1.rint_val(), i.arg2.rint_val(), st.sb)
     @types.Copy => {
       if i.to.eq(i.arg1) {
         return

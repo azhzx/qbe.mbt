@@ -389,6 +389,8 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
     | @types.Loaduw => sel_emit(st, i)
     // No-op
     @types.Nop => ()
+    // Debug info: pass through to the emitter.
+    @types.Dbgloc => sel_emit(st, i)
     // Internal ops - skip (amd64-specific)
     @types.Swap
     | @types.Sign

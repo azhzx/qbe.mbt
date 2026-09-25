@@ -138,6 +138,7 @@ every debug flag and for the emitted assembly.
 ## Project Links
 
 - Overview: [README.mbt.md](../README.mbt.md)
+- Debug information (`dbgfile`/`dbgloc`): [debug_info.md](debug_info.md)
 - Demo examples: [demo/](../demo/README.md)
 - Regression tests: [test/](../test/)
 - Coding conventions: [AGENTS.md](../AGENTS.md)

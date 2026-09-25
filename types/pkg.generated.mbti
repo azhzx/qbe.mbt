@@ -953,6 +953,7 @@ pub(all) enum Op {
   Vaarg
   Vastart
   Copy
+  Dbgloc
   Nop
   Addr
   Blit0

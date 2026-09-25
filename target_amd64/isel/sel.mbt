@@ -178,7 +178,8 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
       i1.arg2 = seladdr(st, i1.arg2)
       sel_emit(st, i1)
     }
-    @types.Call
+    @types.Dbgloc
+    | @types.Call
     | @types.Salloc
     | @types.Copy
     | @types.Add

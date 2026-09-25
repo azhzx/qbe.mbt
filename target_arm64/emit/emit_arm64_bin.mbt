@@ -790,6 +790,8 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
   }
   match i.op {
     @types.Nop => ()
+    // Debug info carries no machine code.
+    @types.Dbgloc => ()
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()

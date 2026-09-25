@@ -1077,6 +1077,14 @@ let optab : Array[OpInfo] = [
     false,
     (0, 1, 0),
   ),
+  // debug info (C ops.h dbgloc)
+  mk(
+    "dbgloc",
+    cls(["w", "e", "e", "e"]),
+    cls(["w", "e", "e", "e"]),
+    false,
+    (0, 0, 1),
+  ),
 ]
 
 ///|
@@ -1244,6 +1252,7 @@ pub fn Op::from_index(i : Int) -> Op {
     142 => Rnez
     143 => Blit0
     144 => Blit1
+    145 => Dbgloc
     _ => Oxxx
   }
 }
@@ -1397,5 +1406,6 @@ pub fn Op::index(self : Op) -> Int {
     Rnez => 142
     Blit0 => 143
     Blit1 => 144
+    Dbgloc => 145
   }
 }

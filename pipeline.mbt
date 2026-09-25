@@ -267,9 +267,15 @@ fn emit_module(
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
+  @util.dbg_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
+    if item.has_prefix("dbgfile:") {
+      // Debug file marker: `.file <n> "<path>"` at this input position.
+      @util.emit_dbgfile(item[8:].to_owned(), sb)
+      continue
+    }
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1
@@ -323,6 +329,7 @@ fn emit_wasm_module(
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
+  @util.dbg_reset()
   for fn_ in funcs {
     run_passes_wasm(fn_, interner, typs, DbFlags::new(), sb)
   }
@@ -376,10 +383,16 @@ fn emit_rv64_module(
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
+  @util.dbg_reset()
   @emit_rv64.rv64_emit_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
+    if item.has_prefix("dbgfile:") {
+      // Debug file marker: `.file <n> "<path>"` at this input position.
+      @util.emit_dbgfile(item[8:].to_owned(), sb)
+      continue
+    }
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1
@@ -451,9 +464,15 @@ fn emit_la64_module(
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
+  @util.dbg_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
+    if item.has_prefix("dbgfile:") {
+      // Debug file marker: `.file <n> "<path>"` at this input position.
+      @util.emit_dbgfile(item[8:].to_owned(), sb)
+      continue
+    }
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1
@@ -527,10 +546,16 @@ fn emit_arm64_module(
   sb : StringBuilder,
 ) -> Unit raise {
   @types.fp_stash_reset()
+  @util.dbg_reset()
   @emit_arm64.arm64_emit_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
+    if item.has_prefix("dbgfile:") {
+      // Debug file marker: `.file <n> "<path>"` at this input position.
+      @util.emit_dbgfile(item[8:].to_owned(), sb)
+      continue
+    }
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1

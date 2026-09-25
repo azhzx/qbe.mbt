@@ -1,0 +1,25 @@
+dbgfile "a.c"
+function w $f() {
+@start
+	dbgloc 1
+	ret 0
+}
+function w $g() {
+@start
+	dbgloc 2, 4
+	%x =w add 1, 1
+	jnz %x, @then, @else
+@then
+	dbgloc 7
+	ret %x
+@else
+	dbgloc 8
+	ret 0
+}
+dbgfile "a.c"
+dbgfile "b.c"
+function w $h() {
+@start
+	dbgloc 10
+	ret 0
+}

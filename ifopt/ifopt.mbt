@@ -95,7 +95,10 @@ fn pinned(i : @types.Ins) -> Bool {
 fn okbranch(b : @types.Blk) -> Bool {
   let mut n = 0
   for i in b.ins {
-    // The reference skips Odbgloc here; this port has no such op.
+    // The reference skips Odbgloc here.
+    if i.op == @types.Dbgloc {
+      continue
+    }
     if pinned(i) {
       return false
     }

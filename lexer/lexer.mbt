@@ -126,6 +126,7 @@ fn keyword_of(id : StringView) -> TokenKind? {
     "data" => Some(TData)
     "type" => Some(TType)
     "export" => Some(TExport)
+    "dbgfile" => Some(Tdbgfile)
     "phi" => Some(TPhi)
     "jmp" => Some(TJmp)
     "jnz" => Some(TJnz)

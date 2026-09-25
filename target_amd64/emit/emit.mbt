@@ -465,6 +465,8 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
   }
   match ins.op {
     @types.Nop => ()
+    @types.Dbgloc =>
+      @util.emit_dbgloc(ins.arg1.rint_val(), ins.arg2.rint_val(), st.sb)
     @types.Mul => {
       if ins.arg2.is_con() {
         let r = ins.arg1
