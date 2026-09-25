@@ -2,7 +2,8 @@
 # Debug-info smoke test: emit arm64 assembly with -g, assemble and link it
 # with clang, then check that lldb can set a source breakpoint and unwind.
 # Runs on macOS (lldb is part of the toolchain).
-set -euo pipefail
+set -Eeuo pipefail
+trap 'echo "ERROR: run_dbg_demo.sh failed at line $LINENO" >&2' ERR
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -19,7 +20,9 @@ else
   exit 0
 fi
 
+echo "=== moon build ==="
 moon build --target native >/dev/null
+echo "=== moon build ok ==="
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
