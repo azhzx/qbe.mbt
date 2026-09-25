@@ -71,8 +71,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     build_tri(&mut module);
     build_fib(&mut module);
 
+    // Print the constructed IR.
     print!("{}", module.emit_il());
-    let asm = module.emit_asm()?;
-    println!("(assembly: {} bytes)", asm.len());
+
+    // Compile to executable memory and call the functions directly
+    // (Cranelift-style get_finalized_function).
+    let jit = module.jit()?;
+    let add: extern "C" fn(i32, i32) -> i32 = jit.get_fn("add")?;
+    let tri: extern "C" fn(i32) -> i32 = jit.get_fn("tri")?;
+    let fib: extern "C" fn(i32) -> i32 = jit.get_fn("fib")?;
+    println!(
+        "add(20,22)={} tri(10)={} fib(10)={}",
+        add(20, 22),
+        tri(10),
+        fib(10)
+    );
     Ok(())
 }

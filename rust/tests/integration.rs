@@ -108,6 +108,23 @@ fn emit_object_is_macho() {
 }
 
 #[test]
+fn jit_calls_functions() {
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        return;
+    }
+    let mut module = build_module();
+    let jit = module.jit().unwrap();
+    let add: extern "C" fn(i32, i32) -> i32 = jit.get_fn("add").unwrap();
+    let tri: extern "C" fn(i32) -> i32 = jit.get_fn("tri").unwrap();
+    let fib: extern "C" fn(i32) -> i32 = jit.get_fn("fib").unwrap();
+    assert_eq!(add(20, 22), 42);
+    assert_eq!(tri(10), 55);
+    assert_eq!(fib(10), 55);
+    assert_eq!(fib(20), 6765);
+    assert_eq!(tri(0), 0);
+}
+
+#[test]
 fn object_links_and_runs() {
     if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
         return;

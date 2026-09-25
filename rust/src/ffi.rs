@@ -71,6 +71,12 @@ extern "C" {
     pub fn qbe_emit_il(b: Builder) -> MbBytes;
     pub fn qbe_emit_asm(b: Builder) -> MbBytes;
     pub fn qbe_emit_object(b: Builder) -> MbBytes;
+
+    // In-memory JIT (native).
+    pub fn qbe_jit_load(b: Builder) -> i64;
+    pub fn qbe_jit_symbol(jit: i64, name: MbBytes) -> i64;
+    pub fn qbe_jit_global(jit: i64, name: MbBytes) -> i64;
+    pub fn qbe_jit_free(jit: i64);
 }
 
 /// Create a MoonBit Bytes value, run `f` with it, then release it.

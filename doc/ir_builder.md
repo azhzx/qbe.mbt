@@ -106,6 +106,12 @@ program start, before the first `qbe_*` call. A Cranelift/inkwell-style Rust
 wrapper over this ABI lives in [`rust/`](../rust/README.md) (see
 [rust_bindings.md](rust_bindings.md)).
 
+An in-memory JIT is exposed as `qbe_jit_load` / `qbe_jit_symbol` /
+`qbe_jit_global` / `qbe_jit_free`: `qbe_jit_load` compiles the module, maps it
+executable and returns a handle; `qbe_jit_symbol` resolves a function to its
+entry address. Like the compiling emitters it consumes the IR, so use a fresh
+builder (or call `qbe_emit_il` first, then `jit`).
+
 ## Smoke test
 
 `scripts/build_capi.sh` builds the foreign library, compiles
@@ -132,6 +138,8 @@ builder-built `fib` in-process and checks `fib(10) == 55`, `fib(20) == 6765`.
 ## Limitations
 
 - Object/JIT emission is arm64 (macOS/aarch64) only, matching route B.
+- The JIT is self-contained: external symbols (libc `printf` et al.) are not
+  resolved yet, so JIT functions must not call them.
 - Aggregate (`:type`) parameters and returns, variadic calls, and dynamic
   `alloc` are not wrapped by the C ABI yet; the MoonBit `emit_ins` escape
   hatch can still express them.

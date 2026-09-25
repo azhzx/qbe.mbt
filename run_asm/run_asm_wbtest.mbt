@@ -388,3 +388,38 @@ test "route B: a main-bearing object links and runs" {
   assert_eq(run_command("cc -o /tmp/qbe_rb_main /tmp/qbe_rb_main.o"), 0)
   assert_eq(run_command("/tmp/qbe_rb_main"), 0)
 }
+
+///|
+// JitModule: map a linked image and resolve/call a function by name.
+test "jit module resolves and calls functions" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|export
+    #|function w $sum_to(w %n) {
+    #|@start
+    #|  %i =w copy 0
+    #|  %s =w copy 0
+    #|@loop
+    #|  %i2 =w phi @start %i, @body %i3
+    #|  %s2 =w phi @start %s, @body %s3
+    #|  %c =w cslew %i2, %n
+    #|  jnz %c, @body, @end
+    #|@body
+    #|  %s3 =w add %s2, %i2
+    #|  %i3 =w add %i2, 1
+    #|  jmp @loop
+    #|@end
+    #|  ret %s2
+    #|}
+    #|
+  let m = @qbe.compile_arm64_bin_module(src)
+  let jm = JitModule::from_bin_module(m)
+  let names = jm.function_names()
+  assert_true(names.length() == 1)
+  assert_true(names[0] == "sum_to")
+  assert_eq(jm.call_i64_1("sum_to", 10L), 55L)
+  assert_eq(jm.call_i64_1("sum_to", 100L), 5050L)
+  jm.close()
+}

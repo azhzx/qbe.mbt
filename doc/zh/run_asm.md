@@ -72,6 +72,8 @@ QBE 同样拒绝，没有汇编可比。native 测试还会链接并运行一个
 ## 已知限制
 
 - JIT：尚未解析外部符号（libc `printf` 等），`--run-asm` 目前适用于自包含函数。
+  builder C ABI（`qbe_jit_load`/`qbe_jit_symbol`/`qbe_jit_global`/`qbe_jit_free`）
+  与 Rust 绑定（`Module::jit` / `JitModule::get_fn`）同样受此限制。
 - 未实现 QBE 可变参数 ABI（vararg 序言会被跳过）。
 - `--emit obj` 只写 `__text`/`__data`/`__TEXT,__const`；`__bss` 与
   `__cstring` 合并进 `__data`。

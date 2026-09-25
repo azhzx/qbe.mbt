@@ -228,3 +228,82 @@ pub fn RunAsmModule::call1(
 ) -> Int64 raise {
   mbt_run_asm_call_i64_1(self.lookup(name), a0)
 }
+
+///|
+// The base address of the mapped image.
+pub fn ExecBlock::base(self : ExecBlock) -> Int64 {
+  self.addr
+}
+
+///|
+// Unmap the image. Call at most once.
+pub fn ExecBlock::close(self : ExecBlock) -> Unit {
+  if self.addr != 0L {
+    mbt_run_asm_free(self.addr, self.size)
+  }
+}
+
+///|
+// A JIT-loaded module: the code image mapped executable, plus the symbol
+// tables needed to resolve functions and globals.
+pub struct JitModule {
+  exec : ExecBlock
+  fns : Array[(String, Int)] // function name -> word offset in the text
+  datas : Array[(String, Int)] // global name -> byte offset in the data image
+  code_bytes : Int // size of the (page-aligned) code region
+}
+
+///|
+// Map a linked image into executable memory (Route B, no linker).
+pub fn JitModule::from_bin_module(m : @qbe.Arm64BinModule) -> JitModule raise {
+  let exec = ExecBlock::load_module(m.image(), m.code_bytes)
+  { exec, fns: m.fns, datas: m.datas, code_bytes: m.code_bytes, }
+}
+
+///|
+// Resolve a function to its entry address.
+pub fn JitModule::symbol(self : JitModule, name : String) -> Int64 raise {
+  for p in self.fns {
+    if p.0 == name {
+      return self.exec.base() + (p.1 * 4).to_int64()
+    }
+  }
+  raise @util.QbeError::CompileError("jit: no such function: " + name)
+}
+
+///|
+// Resolve a global to its address (the data image starts after the code).
+pub fn JitModule::global(self : JitModule, name : String) -> Int64 raise {
+  for p in self.datas {
+    if p.0 == name {
+      return self.exec.base() + self.code_bytes.to_int64() + p.1.to_int64()
+    }
+  }
+  raise @util.QbeError::CompileError("jit: no such global: " + name)
+}
+
+///|
+// Function names in the module.
+pub fn JitModule::function_names(self : JitModule) -> Array[String] {
+  let names : Array[String] = []
+  for p in self.fns {
+    names.push(p.0)
+  }
+  names
+}
+
+///|
+// Call a one-argument i64 function by name.
+pub fn JitModule::call_i64_1(
+  self : JitModule,
+  name : String,
+  a0 : Int64,
+) -> Int64 raise {
+  mbt_run_asm_call_i64_1(self.symbol(name), a0)
+}
+
+///|
+// Unmap the code image.
+pub fn JitModule::close(self : JitModule) -> Unit {
+  self.exec.close()
+}

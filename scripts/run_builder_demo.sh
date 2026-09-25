@@ -27,6 +27,7 @@ MOON_LIB="${MOON_HOME:-$HOME/.moon}/lib"
 cc -I"$ROOT/include" -I"$MOON_INC" -Wall -Wextra \
   -c demo/12_builder_capi.c -o "$OUT/demo.o"
 cc -o "$OUT/demo" "$OUT/demo.o" "$OBJ" \
+  _build/native/debug/build/run_asm/run_asm_stub.o \
   "$MOON_LIB/libmoonbitrun.o" _build/native/debug/build/libruntime.a \
   -lm "$MOON_LIB/libbacktrace.a"
 

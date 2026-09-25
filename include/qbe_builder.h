@@ -30,6 +30,7 @@ extern "C" {
 #define QBE_VOID (-1)
 
 typedef int64_t qbe_builder_t;
+typedef int64_t qbe_jit_t;
 typedef int32_t qbe_func_t;
 typedef int32_t qbe_block_t;
 typedef int32_t qbe_value_t;
@@ -108,6 +109,14 @@ void qbe_data_bytes(qbe_builder_t b, moonbit_bytes_t name, int32_t is_export,
 
 /* QBE IL text for the constructed module (UTF-8, re-parseable). */
 moonbit_bytes_t qbe_emit_il(qbe_builder_t b);
+/* In-memory JIT: compile the module, map it executable and return a handle
+ * (0 on failure; see qbe_last_error). Resolve symbols with qbe_jit_symbol /
+ * qbe_jit_global and release the mapping with qbe_jit_free. */
+qbe_jit_t qbe_jit_load(qbe_builder_t b);
+int64_t qbe_jit_symbol(qbe_jit_t jit, moonbit_bytes_t name);
+int64_t qbe_jit_global(qbe_jit_t jit, moonbit_bytes_t name);
+void qbe_jit_free(qbe_jit_t jit);
+
 /* UTF-8 arm64 assembly text. */
 moonbit_bytes_t qbe_emit_asm(qbe_builder_t b);
 /* Self-contained Mach-O arm64 object. */

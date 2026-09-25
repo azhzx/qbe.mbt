@@ -101,6 +101,11 @@ cc -I include -I "$HOME/.moon/include" my_prog.c \
 程序启动时、首次调用 `qbe_*` 之前，需调用一次
 `moonbit_runtime_init(argc, argv)`，再调用 `moonbit_init()`。
 
+内存 JIT 通过 `qbe_jit_load` / `qbe_jit_symbol` / `qbe_jit_global` /
+`qbe_jit_free` 暴露：`qbe_jit_load` 编译模块、映射为可执行内存并返回句柄；
+`qbe_jit_symbol` 把函数解析为入口地址。它与编译类 emit 一样会消耗 IR，
+因此需用新的 builder（或先 `qbe_emit_il` 再 `jit`）。
+
 ## 冒烟测试
 
 `scripts/build_capi.sh` 会构建该 foreign library，编译
@@ -127,6 +132,7 @@ MoonBit 侧，`moon test --target native ir_builder` 还会在进程内 JIT 由�
 ## 限制
 
 - 目标文件/JIT 仅在 arm64（macOS/aarch64）下可用，与 route B 一致。
+- JIT 为自包含：尚未解析外部符号（libc `printf` 等），因此 JIT 函数不能调用它们。
 - 聚合（`:type`）参数与返回值、可变参数调用、动态 `alloc` 尚未由 C ABI 封装；
   MoonBit 的 `emit_ins` 逃生口仍可表达。
 - `emit_il` 会就地绑定分支实参，可在 `emit_asm`/`emit_object` 之前（或单独）调用；
