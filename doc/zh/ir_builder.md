@@ -132,7 +132,7 @@ MoonBit 侧，`moon test --target native ir_builder` 还会在进程内 JIT 由�
 ## 限制
 
 - 目标文件/JIT 仅在 arm64（macOS/aarch64）下可用，与 route B 一致。
-- JIT 为自包含：尚未解析外部符号（libc `printf` 等），因此 JIT 函数不能调用它们。
+- JIT 通过 `dlsym` 解析外部符号，远距离调用经镜像内 veneer 跳转，因此 JIT 函数可以调用 libc。
 - 聚合（`:type`）参数与返回值、可变参数调用、动态 `alloc` 尚未由 C ABI 封装；
   MoonBit 的 `emit_ins` 逃生口仍可表达。
 - `emit_il` 会就地绑定分支实参，可在 `emit_asm`/`emit_object` 之前（或单独）调用；

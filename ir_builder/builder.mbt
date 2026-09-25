@@ -591,3 +591,18 @@ pub fn Builder::emit_bin_module(self : Builder) -> @qbe.Arm64BinModule raise {
   self.finalize()
   @qbe.compile_ir_bin_module(self.funcs, self.datas, self.typs, self.interner)
 }
+
+///|
+// Like emit_bin_module but keeps external (undefined) symbols as fixups so the
+// JIT loader can resolve them (dlsym + veneers).
+pub fn Builder::emit_bin_module_ex(
+  self : Builder,
+) -> (@qbe.Arm64BinModule, @qbe.Arm64BinFixups) raise {
+  self.finalize()
+  @qbe.compile_ir_bin_module_ex(
+    self.funcs,
+    self.datas,
+    self.typs,
+    self.interner,
+  )
+}

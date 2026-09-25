@@ -99,7 +99,7 @@ clang -o /tmp/hello .qbe_build/11_main.o && /tmp/hello
 | [10_fibonacci.ssa](10_fibonacci.ssa) | 综合示例 | 迭代斐波那契，phi + 循环 + 长 |
 | [11_main.ssa](11_main.ssa) | 可执行 main | `export main`、调用 libc `putchar`、字符串 data、`.o` 直接链接 |
 | [12_builder_capi.c](12_builder_capi.c) | C API 构造器 | 在 C 中通过 `qbe_*` 构造 `$tri`（循环 + phi）和 `$add`，输出 arm64 汇编与 Mach-O `.o` |
-| [13_builder_rust/](13_builder_rust/) | Rust 构造器 | 用 `qbe-builder` crate 在 Rust 中构造 `$add`/`$tri`/`$fib`，打印 QBE IL 并 JIT 调用 |
+| [13_builder_rust/](13_builder_rust/) | Rust 构造器 | 用 `qbe-builder` crate 在 Rust 中构造 `$add`/`$tri`/`$fib`/`$my_sqrt`，打印 QBE IL、JIT 调用并解析 libc `sqrt` |
 
 ## IL 语法速查
 

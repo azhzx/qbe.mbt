@@ -83,11 +83,11 @@ pub struct ExecBlock {
 }
 
 ///|
-// Copy a route-B module image into memory: the first code_bytes are made
-// executable (RX) while any global data that follows stays writable (RW).
-pub fn ExecBlock::load_module(
+// Copy a route-B module image into writable memory, leaving the code region RW
+// so the JIT loader can patch relocations before protecting it.
+pub fn ExecBlock::load_module_rw(
   image : Bytes,
-  code_bytes : Int,
+  _code_bytes : Int,
 ) -> ExecBlock raise {
   let n = image.length()
   if n == 0 {
@@ -98,10 +98,28 @@ pub fn ExecBlock::load_module(
     abort("run-asm: mmap failed")
   }
   mbt_run_asm_write_bytes(addr, 0, image)
-  if mbt_run_asm_protect(addr, code_bytes) != 0 {
+  { addr, size: n, }
+}
+
+///|
+// Make the first code_bytes executable (RX); the data that follows stays RW.
+pub fn ExecBlock::protect(self : ExecBlock, code_bytes : Int) -> Unit raise {
+  if mbt_run_asm_protect(self.addr, code_bytes) != 0 {
     abort("run-asm: mprotect failed")
   }
-  { addr, size: n, }
+  mbt_run_asm_icache_flush(self.addr, code_bytes)
+}
+
+///|
+// Copy a route-B module image into memory: the first code_bytes are made
+// executable (RX) while any global data that follows stays writable (RW).
+pub fn ExecBlock::load_module(
+  image : Bytes,
+  code_bytes : Int,
+) -> ExecBlock raise {
+  let exec = ExecBlock::load_module_rw(image, code_bytes)
+  exec.protect(code_bytes)
+  exec
 }
 
 ///|
@@ -256,7 +274,65 @@ pub struct JitModule {
 ///|
 // Map a linked image into executable memory (Route B, no linker).
 pub fn JitModule::from_bin_module(m : @qbe.Arm64BinModule) -> JitModule raise {
-  let exec = ExecBlock::load_module(m.image(), m.code_bytes)
+  JitModule::from_bin_module_ex(m, @qbe.Arm64BinFixups::empty())
+}
+
+///|
+// Map a linked image, resolve external symbols with dlsym, patch the veneers
+// and data addresses, then protect the code region.
+pub fn JitModule::from_bin_module_ex(
+  m : @qbe.Arm64BinModule,
+  fx : @qbe.Arm64BinFixups,
+) -> JitModule raise {
+  let exec = ExecBlock::load_module_rw(m.image(), m.code_bytes)
+  let base = exec.base()
+  // External calls: fill each veneer with adrp x16 / add x16 / br x16.
+  for v in fx.ext_calls {
+    let (vw, sym) = v
+    let addr = mbt_run_asm_sym(cstr(sym))
+    if addr == 0L {
+      raise @util.QbeError::CompileError("jit: unresolved symbol: " + sym)
+    }
+    let pc = base + (vw * 4).to_int64()
+    let page = ((addr >> 12) - (pc >> 12)).to_int()
+    mbt_run_asm_write_u32(
+      base,
+      vw * 4,
+      @object.enc_adrp(17, page).reinterpret_as_uint(),
+    )
+    mbt_run_asm_write_u32(
+      base,
+      vw * 4 + 4,
+      @object.enc_add_imm(17, 17, (addr & 0xFFF).to_int()).reinterpret_as_uint(),
+    )
+    mbt_run_asm_write_u32(
+      base,
+      vw * 4 + 8,
+      @object.enc_br(17).reinterpret_as_uint(),
+    )
+  }
+  // External data addresses: patch adrp/add in place.
+  for a in fx.ext_addrs {
+    let (adrp_w, add_w, rd, sym, addend) = a
+    let addr = mbt_run_asm_sym(cstr(sym))
+    if addr == 0L {
+      raise @util.QbeError::CompileError("jit: unresolved symbol: " + sym)
+    }
+    let target = addr + addend.to_int64()
+    let pc = base + (adrp_w * 4).to_int64()
+    let page = ((target >> 12) - (pc >> 12)).to_int()
+    mbt_run_asm_write_u32(
+      base,
+      adrp_w * 4,
+      @object.enc_adrp(rd, page).reinterpret_as_uint(),
+    )
+    mbt_run_asm_write_u32(
+      base,
+      add_w * 4,
+      @object.enc_add_imm(rd, rd, (target & 0xFFF).to_int()).reinterpret_as_uint(),
+    )
+  }
+  exec.protect(m.code_bytes)
   { exec, fns: m.fns, datas: m.datas, code_bytes: m.code_bytes, }
 }
 

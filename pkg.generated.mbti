@@ -17,6 +17,8 @@ pub fn compile_arm64_bin(String) -> Array[Array[Int]] raise
 
 pub fn compile_arm64_bin_module(String) -> @emit.Arm64BinModule raise
 
+pub fn compile_arm64_bin_module_ex(String) -> (@emit.Arm64BinModule, @emit.Arm64BinFixups) raise
+
 pub fn compile_arm64_debug(String, String) -> Result[String, @util.QbeError]
 
 pub fn compile_arm64_object(String) -> Bytes raise
@@ -26,6 +28,8 @@ pub fn compile_debug(String, String) -> Result[String, @util.QbeError]
 pub fn compile_ir_asm(Array[@types.Fn], Array[@types.Dat], Array[String], Array[@types.Typ], @util.Interner, gas? : String) -> String raise
 
 pub fn compile_ir_bin_module(Array[@types.Fn], Array[@types.Dat], Array[@types.Typ], @util.Interner) -> @emit.Arm64BinModule raise
+
+pub fn compile_ir_bin_module_ex(Array[@types.Fn], Array[@types.Dat], Array[@types.Typ], @util.Interner) -> (@emit.Arm64BinModule, @emit.Arm64BinFixups) raise
 
 pub fn compile_ir_object(Array[@types.Fn], Array[@types.Dat], Array[@types.Typ], @util.Interner) -> Bytes raise
 
@@ -59,6 +63,8 @@ pub(all) enum Target {
 }
 
 // Type aliases
+pub using @emit {type Arm64BinFixups}
+
 pub using @emit {type Arm64BinModule}
 
 pub using @types {type BSet}

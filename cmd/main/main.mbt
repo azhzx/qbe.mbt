@@ -354,38 +354,28 @@ async fn main {
           }
         }
         if self_contained {
-          let module = @qbe.compile_arm64_bin_module(source) catch {
+          // External symbols (libc printf/putchar/...) are resolved with dlsym
+          // and calls are routed through veneers.
+          let (module, fixups) = @qbe.compile_arm64_bin_module_ex(source) catch {
             e => {
               @util.eprint("run-asm error: \{Repr(e)}\n")
               continue
             }
           }
-          let mut off = -1
-          for f in module.fns {
-            if f.0 == entry {
-              off = f.1
-            }
-          }
-          if off < 0 {
-            @util.eprint("run-asm error: no function '\{entry}'\n")
-            continue
-          }
-          let blk = @run_asm.ExecBlock::load_module(
-            module.image(),
-            module.code_bytes,
-          ) catch {
+          let jm = @run_asm.JitModule::from_bin_module_ex(module, fixups) catch {
             e => {
               @util.eprint("run-asm error: \{Repr(e)}\n")
               continue
             }
           }
-          let r = blk.call1_at(off, a0) catch {
+          let r = jm.call_i64_1(entry, a0) catch {
             e => {
               @util.eprint("run-asm error: \{Repr(e)}\n")
               continue
             }
           }
           @util.iprint("\{r}\n")
+          jm.close()
         } else {
           match @qbe.compile_target(source, @qbe.Target::Arm64, gas="m") {
             Ok(asm) => {

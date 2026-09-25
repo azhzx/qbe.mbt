@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <dlfcn.h>
+#if defined(__APPLE__)
+#include <libkern/OSCacheControl.h>
+#endif
 
 /* ---- executable memory ------------------------------------------------ */
 
@@ -41,6 +44,20 @@ int32_t mbt_run_asm_protect(int64_t addr, int32_t size) {
 MOONBIT_FFI_EXPORT
 void mbt_run_asm_free(int64_t addr, int32_t size) {
   if (addr) munmap((void *)(uintptr_t)addr, (size_t)size);
+}
+
+/* Flush the instruction cache after writing code (a no-op on x86-64). */
+MOONBIT_FFI_EXPORT
+void mbt_run_asm_icache_flush(int64_t addr, int32_t size) {
+#if defined(__APPLE__)
+  sys_icache_invalidate((void *)(uintptr_t)addr, (size_t)size);
+#elif defined(__GNUC__)
+  __builtin___clear_cache((char *)(uintptr_t)addr,
+                          (char *)(uintptr_t)addr + size);
+#else
+  (void)addr;
+  (void)size;
+#endif
 }
 
 MOONBIT_FFI_EXPORT

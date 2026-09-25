@@ -423,3 +423,25 @@ test "jit module resolves and calls functions" {
   assert_eq(jm.call_i64_1("sum_to", 100L), 5050L)
   jm.close()
 }
+
+///|
+// JitModule resolves external symbols (libc putchar) through a veneer.
+test "jit module calls libc" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|export
+    #|function w $emit(w %c) {
+    #|@start
+    #|  %r =w call $putchar(w %c)
+    #|  ret %r
+    #|}
+    #|
+  let (m, fx) = @qbe.compile_arm64_bin_module_ex(src) catch {
+    e => abort("compile failed: {Repr(e)}")
+  }
+  let jm = JitModule::from_bin_module_ex(m, fx)
+  assert_eq(jm.call_i64_1("emit", 65L), 65L)
+  jm.close()
+}
