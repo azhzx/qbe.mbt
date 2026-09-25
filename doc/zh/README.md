@@ -42,6 +42,7 @@
 | 运行时 shim | `native` | [run_asm.md](run_asm.md) | 可执行内存、符号查找、临时文件、进程启动、动态链接 |
 | 内存 JIT | `jit` | [run_asm.md](run_asm.md) | `ExecBlock`/`JitModule`：进程内映射并调用 arm64 代码 |
 | 工具链执行 | `run_asm` | [run_asm.md](run_asm.md) | 借道 clang 的汇编/链接/运行与 wasm runner |
+| 调试信息 | `dwarf` | [debug_info.md](debug_info.md) | 为 builder 调试信息生成 DWARF4 编译单元（subprogram/变量/类型/`.debug_loc`） |
 | 语言绑定 | `rust/` | [rust_bindings.md](rust_bindings.md) | 基于构造器 C ABI 的 Rust 胶水层（Cranelift/inkwell 风格） |
 
 ## 流水线一览
@@ -134,10 +135,10 @@
 
 ## 项目相关
 
-- 总体介绍：[README.mbt.md](../README.mbt.md)
-- 演示样例：[demo/](../demo/README.md)
-- 回归测试：[test/](../test/)
-- 编码规范：[AGENTS.md](../AGENTS.md)
+- 总体介绍：[README.mbt.md](../../README.mbt.md)
+- 演示样例：[demo/](../../demo/README.md)
+- 回归测试：[test/](../../test/)
+- 编码规范：[AGENTS.md](../../AGENTS.md)
 
 ### RISC-V 64 流水线
 

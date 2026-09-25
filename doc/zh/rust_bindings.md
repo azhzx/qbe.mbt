@@ -1,9 +1,9 @@
 # Rust 胶水层（qbe-builder）
 
-`rust/` 是一个基于 [`include/qbe_builder.h`](../include/qbe_builder.h) C ABI 的
+`rust/` 是一个基于 [`include/qbe_builder.h`](../../include/qbe_builder.h) C ABI 的
 Rust 胶水层，接口风格对齐 Cranelift/inkwell。
 
-完整指南见 [`rust/README.md`](../rust/README.md)。摘要：
+完整指南见 [`rust/README.md`](../../rust/README.md)。摘要：
 
 ```rust
 use qbe_builder::{Context, Signature, Type};

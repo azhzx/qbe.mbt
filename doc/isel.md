@@ -19,7 +19,7 @@ pub fn isel(
 
 `isel()` performs the following work (major items only):
 
-1. **Immediate optimization**: Converts instructions like `%r = add %x, c` (c is constant) to amd64 immediate form (avoiding occupying a register). Corresponds to regression tests like `_test/isel/001_imm_add_*.ssa`.
+1. **Immediate optimization**: Converts instructions like `%r = add %x, c` (c is constant) to amd64 immediate form (avoiding occupying a register). Corresponds to regression tests like `test/isel/001_imm_add_*.ssa`.
 2. **Address mode**: Combines `add` chains into `[base + index*scale + offset]` addressing, directly feeding load/store. Implemented in `addr.mbt`.
 3. **Division constant magic numbers**: Converts `div`/`rem` (especially constant divisors) to magic number multiply + shift form, avoiding division instructions. Corresponds to `001_div_c_w_7` test cases.
 4. **Comparison patterns**: Converts `ceq`/`cslt` etc. comparison + `jnz` patterns to amd64 conditional jumps (`je`/`jl`/...). Implemented in `cmp.mbt`.
@@ -30,9 +30,9 @@ Return value follows `ssa.copy`/`abi.abi` convention: debug mode (`Bool = true`)
 
 ## Internal Modules
 
-File [isel/addr.mbt](../isel/addr.mbt) implements address mode recognition;
-File [isel/cmp.mbt](../isel/cmp.mbt) implements compare + jump pattern recognition;
-File [isel/sel.mbt](../isel/sel.mbt) implements main selection logic;
+File [isel/addr.mbt](../target_amd64/isel/addr.mbt) implements address mode recognition;
+File [isel/cmp.mbt](../target_amd64/isel/cmp.mbt) implements compare + jump pattern recognition;
+File [isel/sel.mbt](../target_amd64/isel/sel.mbt) implements main selection logic;
 File [target_amd64/isel](../target_amd64/isel) is the entry point.
 
 ## Typical Calls

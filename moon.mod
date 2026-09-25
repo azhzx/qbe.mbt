@@ -11,19 +11,19 @@
 
 name = "azhzx/qbe"
 
-version = "0.22.3"
+version = "1.0.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://github.com/azhzx/qbe.mbt"
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "qbe", "compiler", "jit", "ssa" ]
 
 preferred_target = "wasm"
 
-description = ""
+description = "QBE reimplemented in MoonBit: the optimizer pipeline plus a programmatic IR builder, an in-memory aarch64 JIT, and LoongArch64/WASM backends"
 
 import {
   "moonbitlang/x@0.5.5",

@@ -78,7 +78,7 @@ pub fn clsmerge(@ref.Ref[Int], Int) -> Bool     // 类合并辅助
 - 调试模式 (`Bool = true`)：返回要输出到 stderr 的文本；
 - 非调试模式：返回空字符串。
 
-调用方在 [cmd/main/main.mbt](../cmd/main/main.mbt) 中用 `@util.eprint(...)` 输出，所以非调试模式下相当于无操作。
+调用方在 [cmd/main/main.mbt](../../cmd/main/main.mbt) 中用 `@util.eprint(...)` 输出，所以非调试模式下相当于无操作。
 
 ## 依赖
 

@@ -17,7 +17,7 @@ pub fn isel(
 
 `isel()` 完成以下工作（仅列举主要项）：
 
-1. **立即数优化**：把形如 `%r = add %x, c`（c 为常量）的指令转为 amd64 的立即数形式（避免占用一个寄存器）。对应 `_test/isel/001_imm_add_*.ssa` 等回归测试。
+1. **立即数优化**：把形如 `%r = add %x, c`（c 为常量）的指令转为 amd64 的立即数形式（避免占用一个寄存器）。对应 `test/isel/001_imm_add_*.ssa` 等回归测试。
 2. **地址模式**：把 `add` 链组合为 `[base + index*scale + offset]` 寻址，直接喂给 load/store。对应 `addr.mbt`。
 3. **除法常量魔法数**：把 `div`/`rem`（特别是常量除数）转换为乘以魔法数 + 移位的形式，避免除法指令。对应 `001_div_c_w_7` 等用例。
 4. **比较模式**：把 `ceq`/`cslt` 等比较 + `jnz` 模式转为 amd64 条件跳转（`je`/`jl`/...）。对应 `cmp.mbt`。
@@ -28,10 +28,10 @@ pub fn isel(
 
 ## 内部模块
 
-文件 [isel/addr.mbt](../isel/addr.mbt) 实现地址模式识别；
-文件 [isel/cmp.mbt](../isel/cmp.mbt) 实现比较 + 跳转模式识别；
-文件 [isel/sel.mbt](../isel/sel.mbt) 实现主要选择逻辑；
-文件 [target_amd64/isel](../target_amd64/isel) 为入口。
+文件 [isel/addr.mbt](../../target_amd64/isel/addr.mbt) 实现地址模式识别；
+文件 [isel/cmp.mbt](../../target_amd64/isel/cmp.mbt) 实现比较 + 跳转模式识别；
+文件 [isel/sel.mbt](../../target_amd64/isel/sel.mbt) 实现主要选择逻辑；
+文件 [target_amd64/isel](../../target_amd64/isel) 为入口。
 
 ## 典型调用
 

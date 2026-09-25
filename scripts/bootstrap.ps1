@@ -84,13 +84,26 @@ function Find-Moon {
 function Install-Moon {
     Write-Info 'Set-ExecutionPolicy RemoteSigned -Scope CurrentUser'
     Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -ErrorAction SilentlyContinue
-    Write-Info "irm $MoonInstallerUrl | iex"
-    try {
-        $scriptText = (Invoke-WebRequest -UseBasicParsing -Uri $MoonInstallerUrl).Content
-        Invoke-Expression $scriptText
-    } catch {
-        Die "MoonBit installation failed: $($_.Exception.Message)"
+
+    # .cn is primary; .com is a fallback where .cn is unreachable.
+    $urls = @($MoonInstallerUrl)
+    if ($MoonInstallerUrl -notmatch 'moonbitlang\.com') {
+        $urls += 'https://cli.moonbitlang.com/install/powershell.ps1'
     }
+    $ok = $false
+    foreach ($u in $urls) {
+        Write-Info "irm $u | iex"
+        try {
+            $scriptText = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 30 -Uri $u).Content
+            Invoke-Expression $scriptText
+            $ok = $true
+            break
+        } catch {
+            Write-WarnLine "installer from $u failed: $($_.Exception.Message)"
+        }
+    }
+    if (-not $ok) { Die 'MoonBit installation failed from all mirrors' }
+
     $installed = Find-Moon
     if (-not $installed) {
         Die "MoonBit was installed but 'moon' is not on PATH yet; open a new terminal and retry"
