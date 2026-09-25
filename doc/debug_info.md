@@ -69,34 +69,27 @@ yet.
 
 ## Compilation unit (`.debug_info`, `-g`)
 
-`-g` also emits a minimal DWARF5 compilation unit, so a debugger can turn a
+`-g` also emits a minimal DWARF4 compilation unit, so a debugger can turn a
 code address back into a source file/line:
 
     .section .debug_abbrev,"",@progbits   # Mach-O: __DWARF,__debug_abbrev
     ...
     .section .debug_info,"",@progbits
-        .long 37          # unit length
-        .short 5          # DWARF version
-        .byte 1           # DW_UT_compile
-        .byte 8           # address size
+        .long 46          # unit length
+        .short 4          # DWARF version
         .long 0           # abbrev offset
+        .byte 8           # address size
         .byte 0x01        # DW_TAG_compile_unit
         .asciz "qbe.mbt"  # producer
         .short 12         # DW_LANG_C99
         .asciz "hello.c"  # CU name (first dbgfile)
         .asciz "."        # comp_dir
-        .byte 0           # DW_AT_low_pc  -> addrx 0
-        .byte 1           # DW_AT_high_pc -> addrx 1
+        .quad main        # DW_AT_low_pc
+        .quad .Ldbgend    # DW_AT_high_pc (end of .text)
         .long 0           # DW_AT_stmt_list (the assembler's .debug_line)
-        .long 8           # DW_AT_addr_base
-    .section .debug_addr,"",@progbits
-        ...
-        .quad main        # addrx 0
-        .quad .Ldbgend    # addrx 1 (end of .text)
 
-The CU's `DW_AT_low_pc`/`high_pc` use `DW_FORM_addrx`, so the addresses live in
-`.debug_addr` (as clang does); `.debug_info` therefore carries no Mach-O
-relocations, and the linker's debug map relocates `.debug_addr`. ELF uses
+DWARF4 rather than 5: Apple's lldb rejects version 5. The CU's low/high PC are
+plain `DW_FORM_addr` values that the linker's debug map relocates. ELF uses
 `.debug_*,"",@progbits`, Mach-O uses `__DWARF,__debug_*`.
 
 Working end to end on macOS (no dSYM needed - lldb reads the object debug map):
@@ -125,6 +118,9 @@ files); the three differential targets pass under every debug flag.
     $M -t arm64 -G m test/dbg/001_loc.ssa > out.s
     clang -c -g out.s -o out.o        # -> __debug_line in the object
     llvm-dwarfdump --debug-line out.o
+
+`scripts/run_dbg_demo.sh` does the whole flow (emit `-g`, link, set a breakpoint
+under `lldb`) and is part of the macOS CI job.
 
 ## Limitations and roadmap
 
