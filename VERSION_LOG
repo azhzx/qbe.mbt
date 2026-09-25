@@ -128,3 +128,8 @@
     condense the README into a features/status/roadmap list and drop the stale
     differential counters; fix the literal '{entry}' placeholder in the --jit
     argument-count error message
+
+2026.9.25: v0.18.2
+    docs: replace the stale 5684/5684 debug-dump counter (measured with 14
+    flags) with flag-independent wording in doc/README, doc/guide, doc/abi_arm64
+    and their zh versions; test/README: --asm covers 406/406, not 336/336

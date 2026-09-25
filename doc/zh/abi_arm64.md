@@ -41,8 +41,8 @@ pub fn abi_arm64(
 
 ## 说明
 
-- 字节级裁判为 `vendor/qbe/qbe -t arm64`；IR dump（5684/5684）与 ELF
-  汇编（406/406，`-G e`）均逐字节一致；Mach-O（`-G m`，参考中为
+- 字节级裁判为 `vendor/qbe/qbe -t arm64`；每个 debug flag 的 IR dump 与
+  ELF 汇编（406/406，`-G e`）均逐字节一致；Mach-O（`-G m`，参考中为
   `-t arm64_apple`）同样逐字节一致：已实现非宽标量 4 字节栈槽与 Apple 变参
   处理（`apple_selvastart`/`apple_selvaarg`）；`apple_extsb` 在本移植中
   不需要，因为没有窄参数 `parsb..paruh`/`argsb..arguh` 形式。

@@ -184,8 +184,8 @@ arm64（AArch64，AAPCS64 ELF）：
 ```
 
 arm64 通过 `types.target_cfg` 与其它目标共享 `spill`/`rega`，并对照
-`vendor/qbe/qbe -t arm64` 逐字节验证：IR dump 5684/5684、ELF 汇编 406/406
-（`-G e`）与 Mach-O（`-G m`）两种风格（各 406/406）。参考快照未实现的
+`vendor/qbe/qbe -t arm64` 逐字节验证：每个 debug flag 的 IR dump，以及全部
+406 个用例的汇编（`-G e`）与 Mach-O（`-G m`）两种风格（各 406/406）。参考快照未实现的
 功能（动态 `alloc`、`truncd` 等）在两端同样失败。
 
 ```
