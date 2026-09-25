@@ -156,6 +156,11 @@ jobs:
       - name: Build & run Rust builder demo
         run: cargo run --manifest-path demo/13_builder_rust/Cargo.toml
 
+      # Declares a variable through the Rust debug API, links the -g assembly
+      # and checks that lldb can show it (DWARF .debug_info + .debug_loc).
+      - name: Debug variables (lldb) smoke test
+        run: bash scripts/run_dbg_vars_demo.sh
+
   diff:
     name: Byte-differential vs reference QBE
     runs-on: ubuntu-latest

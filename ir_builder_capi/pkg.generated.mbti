@@ -26,9 +26,19 @@ pub fn qbe_data_bytes(Int64, Bytes, Int, Bytes) -> Unit
 
 pub fn qbe_data_string(Int64, Bytes, Int, Bytes) -> Unit
 
+pub fn qbe_dbg_compile_unit(Int64, Bytes, Bytes) -> Unit
+
+pub fn qbe_dbg_enable(Int) -> Unit
+
+pub fn qbe_dbg_loc(Int64, Int, Int, Int) -> Unit
+
+pub fn qbe_dbg_var(Int64, Int, Bytes, Int, Bytes, Int, Int) -> Unit
+
 pub fn qbe_emit(Int64, Int, Bytes, Int, Int, Int, Int) -> Int
 
 pub fn qbe_emit_asm(Int64) -> Bytes
+
+pub fn qbe_emit_asm_gas(Int64, Bytes) -> Bytes
 
 pub fn qbe_emit_il(Int64) -> Bytes
 

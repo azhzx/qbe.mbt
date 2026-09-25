@@ -4,6 +4,7 @@ import {
   "azhzx/qbe/ir_builder",
   "azhzx/qbe/jit",
   "azhzx/qbe/types",
+  "azhzx/qbe/util",
   "moonbitlang/core/encoding/utf8",
 }
 

@@ -756,6 +756,21 @@ pub(all) enum DatKind {
   DZ
 } derive(Eq, @debug.Debug)
 
+pub(all) enum DbgType {
+  DbgW
+  DbgL
+  DbgS
+  DbgD
+  DbgPtr
+  DbgAgg(String, Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct DbgVar {
+  name : String
+  ty : DbgType
+  tmp : Int
+} derive(@debug.Debug)
+
 pub(all) struct Field {
   kind : FieldType
   len : Int
@@ -794,6 +809,9 @@ pub(all) struct Fn {
   mut has_dynalloc : Bool
   mut leaf : Bool
   mut salign : Int
+  mut dbg_name : String
+  mut dbg_dir : String
+  mut dbg_vars : Array[DbgVar]
 } derive(@debug.Debug)
 pub fn Fn::add_blk(Self, String) -> Int
 pub fn Fn::add_con(Self, Con) -> Int
@@ -1123,6 +1141,7 @@ pub(all) struct Tmp {
   mut bid : Int
   mut cost : Int
   mut slot : Int
+  mut reg : Int
   mut cls : Class
   mut hint : RegHint
   mut is_phi : Int

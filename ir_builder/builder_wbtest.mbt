@@ -137,3 +137,26 @@ test "builder: emit_il round-trips through the parser" {
   }
   assert_eq(direct, parsed)
 }
+
+///|
+test "builder: -g emits DWARF for declared variables" {
+  let b = Builder::new()
+  b.set_dbg_compile_unit("t.c", "/tmp")
+  let f = b.add_func("add", Word, [@types.Kw, @types.Kw], true)
+  let a = b.param(f, 0)
+  let c = b.param(f, 1)
+  let r = b.arith(f, @types.Add, @types.Kw, a, c)
+  b.dbg_var(f, "sum", @types.DbgW, r)
+  b.ret(f, r)
+  @util.set_debug_info(true)
+  let asm = b.emit_asm(gas="m")
+  @util.set_debug_info(false)
+  assert_true(asm.contains(".section __DWARF,__debug_info,regular,debug\n"))
+  assert_true(asm.contains(".section __DWARF,__debug_loc,regular,debug\n"))
+  assert_true(asm.contains("\t.asciz \"add\"\n"))
+  assert_true(asm.contains("\t.asciz \"sum\"\n"))
+  assert_true(asm.contains("\t.asciz \"int\"\n"))
+  // Without -g the assembly stays unchanged.
+  let plain = b.emit_asm(gas="m")
+  assert_true(!plain.contains(".debug_info"))
+}

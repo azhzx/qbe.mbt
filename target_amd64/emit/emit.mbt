@@ -895,3 +895,12 @@ pub fn gasemitfin(gasloc : String, apple : Bool, sb : StringBuilder) -> Unit {
     sb.write_string(".section .note.GNU-stack,\"\",@progbits\n")
   }
 }
+
+///|
+// Resolve builder debug variables to DWARF locations (this target does not
+// emit variable locations yet; the subprogram DIEs are still emitted).
+pub fn debug_locs(fn_ : @types.Fn, apple : Bool) -> Array[@dwarf.DbgLoc] {
+  let _ = fn_
+  let _ = apple
+  []
+}

@@ -152,9 +152,61 @@ impl Module {
         String::from_utf8_lossy(&ffi::take_bytes(b)).into_owned()
     }
 
+    /// Enable or disable DWARF debug info in the emitted assembly.
+    pub fn enable_debug_info(&mut self, on: bool) {
+        unsafe { ffi::qbe_dbg_enable(on as i32) };
+    }
+
+    /// Set the compilation-unit name and directory used by debug info.
+    pub fn dbg_compile_unit(&mut self, name: &str, dir: &str) {
+        ffi::with_bytes(name.as_bytes(), |nb| {
+            ffi::with_bytes(dir.as_bytes(), |db| unsafe {
+                ffi::qbe_dbg_compile_unit(self.handle, nb, db)
+            })
+        });
+    }
+
+    /// Declare a debug variable bound to `value` in function `f`.
+    pub fn dbg_var(
+        &mut self,
+        f: FunctionId,
+        name: &str,
+        ty: crate::debug::DebugType,
+        value: Value,
+    ) {
+        let fid = self.funcs[f.0].fid;
+        let (code, tname, size) = match ty {
+            crate::debug::DebugType::W => (0, String::new(), 0),
+            crate::debug::DebugType::L => (1, String::new(), 0),
+            crate::debug::DebugType::S => (2, String::new(), 0),
+            crate::debug::DebugType::D => (3, String::new(), 0),
+            crate::debug::DebugType::Ptr => (4, String::new(), 0),
+            crate::debug::DebugType::Agg(n, s) => (5, n, s as i32),
+        };
+        ffi::with_bytes(name.as_bytes(), |nb| {
+            ffi::with_bytes(tname.as_bytes(), |tb| unsafe {
+                ffi::qbe_dbg_var(self.handle, fid, nb, code, tb, size, value.id())
+            })
+        });
+    }
+
     /// Emit arm64 assembly text.
     pub fn emit_asm(&mut self) -> Result<String, Error> {
         let b = unsafe { ffi::qbe_emit_asm(self.handle) };
+        let v = ffi::take_bytes(b);
+        if v.is_empty() {
+            Err(self.last_error())
+        } else {
+            self.compiled = true;
+            Ok(String::from_utf8_lossy(&v).into_owned())
+        }
+    }
+
+    /// Emit arm64 assembly for a gas flavor ("e" ELF, "m" Mach-O).
+    pub fn emit_asm_with_gas(&mut self, gas: &str) -> Result<String, Error> {
+        let b = ffi::with_bytes(gas.as_bytes(), |gb| unsafe {
+            ffi::qbe_emit_asm_gas(self.handle, gb)
+        });
         let v = ffi::take_bytes(b);
         if v.is_empty() {
             Err(self.last_error())

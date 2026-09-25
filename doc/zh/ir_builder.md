@@ -106,6 +106,31 @@ cc -I include -I "$HOME/.moon/include" my_prog.c \
 `qbe_jit_symbol` 把函数解析为入口地址。它与编译类 emit 一样会消耗 IR，
 因此需用新的 builder（或先 `qbe_emit_il` 再 `jit`）。
 
+## 调试信息
+
+QBE IL 无法表达变量和类型，因此调试元数据通过 builder 附加（类型归前端，与
+Cranelift 相同）：
+
+```mbt
+let b = Builder::new()
+b.set_dbg_compile_unit("demo.c", ".")
+let f = b.add_func("f", Word, [@types.Kw], true)
+let x = b.param(f, 0)
+let one = b.iconst(f, 1L)
+let sum = b.arith(f, @types.Add, @types.Kw, x, one)
+b.dbg_var(f, "sum", @types.DbgW, sum)   // 名字 + 类型；位置稍后解析
+b.ret(f, sum)
+@util.set_debug_info(true)              // -g
+let asm = b.emit_asm(gas="m")
+```
+
+`dbg_var` 记录值最终的寄存器或栈槽（一条 `DW_OP_regx` / `DW_OP_fbreg` 的
+`.debug_loc` 项），`dbg_loc` 附加精确源码行，`set_dbg_compile_unit` 命名 CU 并
+发出其 `.file`。C ABI 对应 `qbe_dbg_enable` / `qbe_dbg_compile_unit` /
+`qbe_dbg_var` / `qbe_dbg_loc`；Rust crate 对应 `enable_debug_info` /
+`dbg_compile_unit` / `declare_var` / `set_source_loc` 与 `DebugType`
+（`W`/`L`/`S`/`D`/`Ptr`/`Agg`）。详见 [debug_info.md](debug_info.md)。
+
 ## 冒烟测试
 
 `scripts/build_capi.sh` 会构建该 foreign library，编译

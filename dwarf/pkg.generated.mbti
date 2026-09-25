@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/dwarf"
+
+import {
+  "azhzx/qbe/types",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn emit_debug_info(String, String, String, Bool, StringBuilder) -> Unit
+
+pub fn has_info() -> Bool
+
+pub fn record_fn(String, String, String, Array[DbgLoc]) -> Unit
+
+pub fn reset() -> Unit
+
+// Errors
+
+// Types and methods
+type DbgFn
+
+pub(all) struct DbgLoc {
+  name : String
+  ty : @types.DbgType
+  kind : Int
+  value : Int
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits

@@ -15,6 +15,7 @@ import {
   "azhzx/qbe/target_amd64/emit" @emit_amd64,
   "azhzx/qbe/types",
   "azhzx/qbe/util",
+  "azhzx/qbe/dwarf",
   "azhzx/qbe/target_wasm/abi" @abi_wasm,
   "azhzx/qbe/target_wasm/isel" @isel_wasm,
   "azhzx/qbe/target_wasm/emit" @emit_wasm,

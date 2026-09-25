@@ -47,7 +47,9 @@ Rust counterpart of `demo/12_builder_capi.c`) is run with
   `load/store`, `iconst/f32const/f64const`, `global`, `call`, `return_`,
   `jump`, `brif`, `extend_*`, `promote_f32`, `demote_f64`, `bitcast`,
   `alloc4/8/16`, and the `raw(op, cls, res, a1, a2)` escape hatch.
-- `Module::data_string` / `data_bytes`; `emit_il` / `emit_asm` / `emit_object`.
+- `Module::data_string` / `data_bytes`; `emit_il` / `emit_asm` / `emit_asm_with_gas` / `emit_object`.
+- `Module::enable_debug_info` / `dbg_compile_unit` / `dbg_var`, and
+  `FunctionBuilder::declare_var(name, DebugType, value)` / `set_source_loc`.
 
 Values carry their `Type`, so arithmetic and comparisons pick the right QBE
 class automatically (for example `icmp(IntCC::Equal, a, b)` becomes `ceqw` or
@@ -81,6 +83,32 @@ Host callbacks are registered per load:
 extern "C" fn host_mul(a: i64, b: i64) -> i64 { a * b }
 let jit = module.jit_with_symbols(&[("host_mul", host_mul as usize)])?;
 ```
+
+## Debug info
+
+QBE IL has no variable/type model, so debug variables come from the front end
+(the Cranelift `ValueLabel` split). Enable debug info, name the compilation
+unit, and declare variables:
+
+```rust
+module.enable_debug_info(true);
+module.dbg_compile_unit("demo.c", ".");
+{
+    let mut b = module.builder(f);
+    b.set_source_loc(1, 1);                    // optional exact line
+    let sum = b.ins().iadd(x, one);
+    b.declare_var("sum", DebugType::W, sum);   // location resolved later
+    b.ins().return_(&[sum]);
+}
+let asm = module.emit_asm_with_gas("m")?;      // Mach-O assembly with DWARF
+```
+
+`DebugType` is `W` / `L` / `S` / `D` / `Ptr` / `Agg(name, size)`. Under `-g`
+the emitter writes a `DW_TAG_subprogram` per function and a `DW_TAG_variable`
+per variable with a `.debug_loc` location (`DW_OP_regx` for a register,
+`DW_OP_fbreg` for a stack slot, resolved after register allocation).
+`scripts/run_dbg_vars_demo.sh` links the result and checks `frame variable`
+under lldb.
 
 ## Building and testing
 

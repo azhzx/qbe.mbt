@@ -753,3 +753,12 @@ pub fn emit_la64(
   la64_emitfn(st)
   sb.to_string()
 }
+
+///|
+// Resolve builder debug variables to DWARF locations (this target does not
+// emit variable locations yet; the subprogram DIEs are still emitted).
+pub fn debug_locs(fn_ : @types.Fn, apple : Bool) -> Array[@dwarf.DbgLoc] {
+  let _ = fn_
+  let _ = apple
+  []
+}

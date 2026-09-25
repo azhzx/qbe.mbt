@@ -99,6 +99,38 @@ Working end to end on macOS (no dSYM needed - lldb reads the object debug map):
     clang demo.o -o demo_prog
     lldb -o 'b one.c:3' -o run -o bt ./demo_prog
 
+## Variables and types (`-g`, builder / C ABI / Rust)
+
+Line info comes from the IL, but QBE IL cannot express variables or types, so
+they are supplied by the **programmatic builder** (the same split Cranelift
+uses: the embedder owns the language types):
+
+    let mut module = ctx.create_module();
+    module.enable_debug_info(true);
+    module.dbg_compile_unit("demo.c", ".");
+    // ... builder for `f` ...
+    {
+        let mut b = module.builder(f);
+        let sum = b.ins().iadd(x, one);
+        b.declare_var("sum", DebugType::W, sum);
+    }
+
+The emitter then writes, under `-g`:
+
+- `DW_TAG_subprogram` per function (name, low/high PC, `DW_AT_frame_base`);
+- `DW_TAG_variable` per declared variable (name, `DW_AT_type`);
+- base/pointer/aggregate `DW_TAG_*_type` DIEs;
+- a `.debug_loc` entry per variable giving its `DW_AT_location` over the
+  function - `DW_OP_regx` for a register value or `DW_OP_fbreg` for a stack
+  slot, resolved after register allocation.
+
+`declare_var` is the Cranelift `ValueLabel` role: the front end names a value
+and its type; the final register/slot is derived from the backend. `dbg_loc` /
+`set_source_loc` attach exact source locations; the builder inserts a default
+line-1 location at each function start so the debugger can associate the code
+with the CU. The C ABI mirrors this as `qbe_dbg_enable`, `qbe_dbg_compile_unit`,
+`qbe_dbg_var` and `qbe_dbg_loc`.
+
 ## Verification
 
     python compare.py test/dbg           # byte-identical to vendor/qbe (no -g)
@@ -124,10 +156,15 @@ under `lldb`) and is part of the macOS CI job.
 
 ## Limitations and roadmap
 
-- Line tables, a minimal DWARF5 compilation unit and (amd64/arm64) CFI. There
-  are no variable/type DIEs yet: a debugger shows files/lines and can unwind,
-  but `frame variable` is empty.
+- Line tables, a DWARF4 compilation unit with subprograms/variables/types, and
+  (amd64/arm64) CFI. `frame variable` works for builder-declared variables.
+- Locations are one range per function (the whole subprogram), not per lexical
+  scope: a register recorded for a variable may be reused later in the
+  function, so the value is only reliable while it is live. Per-scope ranges
+  (`ValueLabel` ranges) are the next step, as is `DW_TAG_formal_parameter`.
+- Variable locations are emitted for arm64; amd64/rv64/la64 record the
+  subprogram but not the variable location yet.
 - On macOS, delete any stale `*.dSYM` before debugging an assembly-only build:
   an empty dSYM shadows the object debug map lldb would otherwise use.
-- Planned: builder-side variable/type metadata (`ir_builder` + C ABI + Rust),
-  CFI for rv64/la64, and DWARF in the self-contained object / JIT path.
+- Planned: per-scope ranges, CFI for rv64/la64, and DWARF in the
+  self-contained object / JIT path.

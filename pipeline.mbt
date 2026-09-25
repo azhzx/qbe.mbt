@@ -303,6 +303,16 @@ fn emit_module(
       run_passes(fn_, interner, typs, DbFlags::new(), sb)
       @emit_amd64.emitfn(fn_, interner, gasloc, gassym, apple, sb)
       sb.write_string("/* end function \{fn_.name} */\n\n")
+      if @util.debug_info() {
+        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        sb.write_string(dbg_lbl + ":\n")
+        @dwarf.record_fn(
+          fn_.name,
+          gassym + fn_.name,
+          dbg_lbl,
+          @emit_amd64.debug_locs(fn_, apple),
+        )
+      }
     } else {
       while di < datas.length() {
         let d = datas[di]
@@ -315,17 +325,19 @@ fn emit_module(
       }
     }
   }
-  if @util.debug_info() && funcs.length() > 0 {
+  if @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
-    @util.emit_debug_info(
-      gasloc,
-      gassym,
-      funcs[0].name,
-      dbg_cu_name,
-      dbg_cu_dir,
-      apple,
-      sb,
-    )
+    let cu_name = if funcs[0].dbg_name != "" {
+      funcs[0].dbg_name
+    } else {
+      dbg_cu_name
+    }
+    let cu_dir = if funcs[0].dbg_dir != "" {
+      funcs[0].dbg_dir
+    } else {
+      dbg_cu_dir
+    }
+    @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, apple, sb)
   }
   @emit_amd64.gasemitfin(gasloc, apple, sb)
 }
@@ -434,6 +446,16 @@ fn emit_rv64_module(
         @emit_rv64.emit_rv64(fn_, interner, gasloc, gassym, false, typs),
       )
       sb.write_string("/* end function \{fn_.name} */\n\n")
+      if @util.debug_info() {
+        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        sb.write_string(dbg_lbl + ":\n")
+        @dwarf.record_fn(
+          fn_.name,
+          gassym + fn_.name,
+          dbg_lbl,
+          @emit_rv64.debug_locs(fn_, false),
+        )
+      }
     } else {
       while di < datas.length() {
         let d = datas[di]
@@ -446,17 +468,19 @@ fn emit_rv64_module(
       }
     }
   }
-  if @util.debug_info() && funcs.length() > 0 {
+  if @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
-    @util.emit_debug_info(
-      gasloc,
-      gassym,
-      funcs[0].name,
-      dbg_cu_name,
-      dbg_cu_dir,
-      false,
-      sb,
-    )
+    let cu_name = if funcs[0].dbg_name != "" {
+      funcs[0].dbg_name
+    } else {
+      dbg_cu_name
+    }
+    let cu_dir = if funcs[0].dbg_dir != "" {
+      funcs[0].dbg_dir
+    } else {
+      dbg_cu_dir
+    }
+    @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, false, sb)
   }
   @emit_rv64.gasemitfin_rv64(gasloc, sb)
 }
@@ -524,6 +548,16 @@ fn emit_la64_module(
       run_passes_la64(fn_, interner, typs, DbFlags::new(), sb)
       sb.write_string(@emit_la64.emit_la64(fn_, interner, gasloc, gassym, typs))
       sb.write_string("/* end function \{fn_.name} */\n\n")
+      if @util.debug_info() {
+        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        sb.write_string(dbg_lbl + ":\n")
+        @dwarf.record_fn(
+          fn_.name,
+          gassym + fn_.name,
+          dbg_lbl,
+          @emit_la64.debug_locs(fn_, false),
+        )
+      }
     } else {
       while di < datas.length() {
         let d = datas[di]
@@ -536,17 +570,19 @@ fn emit_la64_module(
       }
     }
   }
-  if @util.debug_info() && funcs.length() > 0 {
+  if @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
-    @util.emit_debug_info(
-      gasloc,
-      gassym,
-      funcs[0].name,
-      dbg_cu_name,
-      dbg_cu_dir,
-      false,
-      sb,
-    )
+    let cu_name = if funcs[0].dbg_name != "" {
+      funcs[0].dbg_name
+    } else {
+      dbg_cu_name
+    }
+    let cu_dir = if funcs[0].dbg_dir != "" {
+      funcs[0].dbg_dir
+    } else {
+      dbg_cu_dir
+    }
+    @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, false, sb)
   }
   @emit_la64.gasemitfin_la64(gasloc, sb)
 }
@@ -621,6 +657,16 @@ fn emit_arm64_module(
         @emit_arm64.emit_arm64(fn_, interner, typs, gasloc, gassym, apple),
       )
       sb.write_string("/* end function \{fn_.name} */\n\n")
+      if @util.debug_info() {
+        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        sb.write_string(dbg_lbl + ":\n")
+        @dwarf.record_fn(
+          fn_.name,
+          gassym + fn_.name,
+          dbg_lbl,
+          @emit_arm64.debug_locs(fn_, apple),
+        )
+      }
     } else {
       while di < datas.length() {
         let d = datas[di]
@@ -633,17 +679,19 @@ fn emit_arm64_module(
       }
     }
   }
-  if @util.debug_info() && funcs.length() > 0 {
+  if @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
-    @util.emit_debug_info(
-      gasloc,
-      gassym,
-      funcs[0].name,
-      dbg_cu_name,
-      dbg_cu_dir,
-      apple,
-      sb,
-    )
+    let cu_name = if funcs[0].dbg_name != "" {
+      funcs[0].dbg_name
+    } else {
+      dbg_cu_name
+    }
+    let cu_dir = if funcs[0].dbg_dir != "" {
+      funcs[0].dbg_dir
+    } else {
+      dbg_cu_dir
+    }
+    @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, apple, sb)
   }
   @emit_amd64.gasemitfin(gasloc, apple, sb)
 }

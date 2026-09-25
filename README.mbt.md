@@ -20,8 +20,9 @@
 - **Layered runtime**: `native/` (executable memory, symbol lookup, temp files,
   process spawn, dynamic linking) shared by `jit/` and `run_asm/`
 - **Debug info**: the IL `dbgfile`/`dbgloc` statements emit `.file`/`.loc` DWARF
-  line tables (byte-identical to the reference); `-g` adds a DWARF5 compilation
-  unit and CFI/`.eh_frame`, giving source-level `lldb` debugging
+  line tables (byte-identical to the reference); `-g` adds a DWARF4 compilation
+  unit, variables/types from the builder, and CFI/`.eh_frame`, giving
+  source-level `lldb` debugging with `frame variable`
   ([doc/debug_info.md](doc/debug_info.md))
 
 ## Status
@@ -32,12 +33,12 @@
   same through clang; `--run-wasm FUNC[,ARG]` runs the WASM backend under node;
   `--emit obj` writes a self-contained Mach-O arm64 `.o`
 - `dbgfile`/`dbgloc` line info is emitted for amd64/arm64/rv64/la64 and matches
-  `vendor/qbe` on every debug flag; `-g` adds a DWARF5 CU + CFI (`.eh_frame`) and
-  is verified end to end under `lldb`
+  `vendor/qbe` on every debug flag; `-g` adds a DWARF4 CU (subprograms, variables,
+  types, `.debug_loc`) + CFI (`.eh_frame`), verified end to end under `lldb`
 
 ## Roadmap
-- Debug info: variable/type DIEs (builder metadata), rv64/la64 CFI, and DWARF in
-  the self-contained object / JIT path ([doc/debug_info.md](doc/debug_info.md))
+- Debug info: per-scope variable ranges, rv64/la64 CFI, and DWARF in the
+  self-contained object / JIT path ([doc/debug_info.md](doc/debug_info.md))
 - (TODO) IR debugger
 
 ## Contributors

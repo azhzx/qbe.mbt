@@ -93,6 +93,33 @@ macOS 上端到端可用（无需 dSYM，lldb 直接读目标的 debug map）：
     clang demo.o -o demo_prog
     lldb -o 'b one.c:3' -o run -o bt ./demo_prog
 
+## 变量与类型（`-g`，builder / C ABI / Rust）
+
+行号来自 IL，但 QBE IL 表达不了变量和类型，所以由**程序化 builder** 提供
+（与 Cranelift 分工一致：类型归前端）：
+
+    let mut module = ctx.create_module();
+    module.enable_debug_info(true);
+    module.dbg_compile_unit("demo.c", ".");
+    {
+        let mut b = module.builder(f);
+        let sum = b.ins().iadd(x, one);
+        b.declare_var("sum", DebugType::W, sum);
+    }
+
+`-g` 时发射器会写出：
+
+- 每个函数的 `DW_TAG_subprogram`（名字、low/high PC、`DW_AT_frame_base`）；
+- 每个变量的 `DW_TAG_variable`（名字、`DW_AT_type`）；
+- 基础/指针/聚合类型 DIE；
+- 每个变量一条 `.debug_loc`，给出函数范围内的 `DW_AT_location`：寄存器用
+  `DW_OP_regx`，栈槽用 `DW_OP_fbreg`，由寄存器分配后的结果决定。
+
+`declare_var` 对应 Cranelift 的 `ValueLabel`：前端给出值与类型，最终寄存器/槽位
+由后端确定。`dbg_loc` / `set_source_loc` 可指定精确位置；builder 会在每个函数
+入口插入默认 line 1 的位置，便于调试器把代码关联到 CU。C ABI 对应
+`qbe_dbg_enable`、`qbe_dbg_compile_unit`、`qbe_dbg_var`、`qbe_dbg_loc`。
+
 ## 验证
 
     python compare.py test/dbg           # 与 vendor/qbe 逐字节一致（不带 -g）
@@ -118,9 +145,12 @@ macOS 上端到端可用（无需 dSYM，lldb 直接读目标的 debug map）：
 
 ## 局限与路线图
 
-- 目前是行号表 + 最小 DWARF5 编译单元 + amd64/arm64 的 CFI。还没有变量/类型
-  的 DIE：调试器能显示文件/行号、能展开栈，但 `frame variable` 为空。
+- 目前是行号表 + 带 subprogram/variable/type 的 DWARF4 编译单元 + amd64/arm64
+  的 CFI；builder 声明的变量可以用 `frame variable` 查看。
+- 变量的位置范围是整个函数，而非词法作用域：寄存器可能被后续复用，所以只在
+  其活跃期内可靠。按作用域的范围（`ValueLabel` ranges）与
+  `DW_TAG_formal_parameter` 是下一步。
+- 变量位置目前只在 arm64 发出；amd64/rv64/la64 只记录 subprogram。
 - 在 macOS 上调试纯汇编构建前先删掉旧的 `*.dSYM`：空的 dSYM 会遮住 lldb 本来
   会使用的目标文件 debug map。
-- 计划：builder 侧的变量/类型元数据（`ir_builder` + C ABI + Rust）、rv64/la64
-  的 CFI，以及自包含 `.o` / JIT 路径的 DWARF。
+- 计划：按作用域的位置范围、rv64/la64 的 CFI、自包含 `.o` / JIT 路径的 DWARF。

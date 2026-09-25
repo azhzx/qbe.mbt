@@ -65,6 +65,19 @@ impl<'m> FunctionBuilder<'m> {
         self.module.handle
     }
 
+    /// Declare a local variable bound to `value` (Cranelift-style value label).
+    /// Debug info must be enabled on the module before emitting.
+    pub fn declare_var(&mut self, name: &str, ty: crate::debug::DebugType, value: Value) {
+        let f = self.f;
+        self.module.dbg_var(f, name, ty, value);
+    }
+
+    /// Attach a source location at the current point.
+    pub fn set_source_loc(&mut self, line: u32, col: u32) {
+        let fid = self.module.funcs[self.f.0].fid;
+        unsafe { ffi::qbe_dbg_loc(self.module.handle, fid, line as i32, col as i32) };
+    }
+
     /// The function parameters as SSA values.
     pub fn params(&self) -> &[Value] {
         &self.module.funcs[self.f.0].params

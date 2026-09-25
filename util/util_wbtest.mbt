@@ -79,28 +79,3 @@ test "emit_dbgloc uses the current file number" {
   emit_dbgloc(9, 3, sb)
   assert_eq(sb.to_string(), ".file 1 \"a.c\"\n\t.loc 1 7\n\t.loc 1 9 3\n")
 }
-
-///|
-test "emit_debug_info writes a DWARF4 CU" {
-  let sb = StringBuilder::StringBuilder()
-  emit_debug_info(".L", "", "main", "t.c", ".", false, sb)
-  let s = sb.to_string()
-  // ELF section directives.
-  assert_true(s.contains(".section .debug_abbrev,\"\",@progbits\n"))
-  assert_true(s.contains(".section .debug_info,\"\",@progbits\n"))
-  // Unit length: header 7 + abbrev 1 + producer 8 + lang 2 + name 4 + dir 2 +
-  // low/high addr 16 + stmt_list 4 = 44.
-  assert_true(s.contains("\t.long 44\n"))
-  assert_true(s.contains("\t.short 4\n"))
-  assert_true(s.contains(".asciz \"qbe.mbt\"\n"))
-  assert_true(s.contains(".asciz \"t.c\"\n"))
-  // The CU references the code range directly.
-  assert_true(s.contains("\t.quad main\n"))
-  assert_true(s.contains("\t.quad .Ldbgend\n"))
-  // Mach-O uses the __DWARF segment form.
-  let sb2 = StringBuilder::StringBuilder()
-  emit_debug_info("L", "_", "main", "t.c", ".", true, sb2)
-  assert_true(
-    sb2.to_string().contains(".section __DWARF,__debug_info,regular,debug\n"),
-  )
-}
