@@ -106,22 +106,19 @@ find_moon() {
   fi
 }
 
+# Official Unix installer (https://cli.moonbitlang.cn/install/unix.sh).
+moon_install_url="${MOON_INSTALL_URL:-https://cli.moonbitlang.cn/install/unix.sh}"
+
 install_moon() {
   case "$(uname -s)" in
-    Darwin)
-      command -v brew >/dev/null 2>&1 ||
-        die "Homebrew is required to install MoonBit on macOS"
-      info "brew install moonbit"
-      brew install moonbit || die "MoonBit installation failed"
-      ;;
-    Linux)
+    Darwin | Linux)
       if command -v curl >/dev/null 2>&1; then
-        info "curl -fsSL https://moonbitlang.com/install.sh | sh"
-        curl -fsSL https://moonbitlang.com/install.sh | sh ||
+        info "curl -fsSL $moon_install_url | bash"
+        curl -fsSL "$moon_install_url" | bash ||
           die "MoonBit installation failed"
       elif command -v wget >/dev/null 2>&1; then
-        info "wget -qO- https://moonbitlang.com/install.sh | sh"
-        wget -qO- https://moonbitlang.com/install.sh | sh ||
+        info "wget -qO- $moon_install_url | bash"
+        wget -qO- "$moon_install_url" | bash ||
           die "MoonBit installation failed"
       else
         die "curl or wget is required to install MoonBit"

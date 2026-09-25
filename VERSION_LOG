@@ -193,3 +193,10 @@
     -Target native|wasm, and -BinDir/-NoPath PATH handling via the user
     environment; falls back to the default target when the POSIX-only native
     build is unavailable on Windows
+
+2026.9.25: v0.22.3
+    installer: use the current MoonBit installers. Unix/macOS now runs
+    `curl -fsSL https://cli.moonbitlang.cn/install/unix.sh | bash` (the old
+    https://moonbitlang.com/install.sh 404s, and the brew route is gone);
+    Windows sets `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` and runs
+    `irm https://cli.moonbitlang.cn/install/powershell.ps1 | iex`
