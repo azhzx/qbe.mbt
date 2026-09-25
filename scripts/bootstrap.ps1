@@ -24,7 +24,7 @@ param(
     [switch]$WithReference,
     [ValidateSet('native', 'wasm')]
     [string]$Target = 'native',
-    [string]$MoonInstallerUrl = 'https://cli.moonbitlang.com/install/windows.ps1',
+    [string]$MoonInstallerUrl = 'https://cli.moonbitlang.cn/install/powershell.ps1',
     [switch]$Yes,
     [switch]$Help
 )
@@ -82,7 +82,9 @@ function Find-Moon {
 }
 
 function Install-Moon {
-    Write-Info "Invoke-WebRequest -UseBasicParsing $MoonInstallerUrl | Invoke-Expression"
+    Write-Info 'Set-ExecutionPolicy RemoteSigned -Scope CurrentUser'
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -ErrorAction SilentlyContinue
+    Write-Info "irm $MoonInstallerUrl | iex"
     try {
         $scriptText = (Invoke-WebRequest -UseBasicParsing -Uri $MoonInstallerUrl).Content
         Invoke-Expression $scriptText
