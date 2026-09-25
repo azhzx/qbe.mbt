@@ -232,8 +232,10 @@ fn la64_typclass(
   c.ngp = 0
   c.nfp = 0
 
-  if t.align > 4 {
-    // alignments larger than 16 are not supported
+  if t.dark != 0 || t.size > 16L || t.size == 0L || t.align > 4 {
+    // Large, dark or over-aligned aggregates are replaced by a pointer
+    // (C Cptr). The size guard is also what keeps cls/off within their two
+    // slots: a {b 17} member used to index cls[2] and panic.
     c.class_ = c.class_ | Cptr
     c.cls[0] = @types.Kl
     c.off[0] = 0
@@ -282,20 +284,21 @@ fn la64_ldregs(st : La64AbiState, c : La64Class, mem : @types.Ref) -> Unit {
 fn la64_sttmps(
   st : La64AbiState,
   tmp : Array[@types.Ref],
+  base : Int,
   ntmp : Int,
   c : La64Class,
   mem : @types.Ref,
 ) -> Unit {
   let store_ops = [@types.Storew, @types.Storel, @types.Stores, @types.Stored]
   for i in 0..<ntmp {
-    tmp[i] = la64_newtmp(st, c.cls[i])
+    tmp[base + i] = la64_newtmp(st, c.cls[i])
     let r = la64_newtmp(st, @types.Kl)
     la64_emit(
       st,
       store_ops[c.cls[i].code()],
       @types.Kw,
       @types.Ref::none(),
-      tmp[i],
+      tmp[base + i],
       r,
     )
     la64_emit(
@@ -360,7 +363,20 @@ fn la64_argsclass(
             let _ = la64_typclass(st, c, t, false)
           }
         }
-        if c.nfp <= nfp {
+        // Assign the argument registers (C typclass). Without this the
+        // aggregate's reg[] stays 0 and the emitter prints "$?".
+        let mut tg = gpi
+        let mut tf = fpi
+        for j in 0..<c.nreg {
+          if c.cls[j].base() == 0 {
+            c.reg[j] = @types.LA_A0 + tg
+            tg = tg + 1
+          } else {
+            c.reg[j] = @types.LA_FA0 + tf
+            tf = tf + 1
+          }
+        }
+        if c.ngp <= ngp {
           ngp = ngp - c.ngp
           nfp = nfp - c.nfp
           gpi = gpi + c.ngp
@@ -420,6 +436,19 @@ fn la64_selret(st : La64AbiState, bid : Int) -> Unit {
   if j == @types.Jretc {
     let mut cr = La64Class::new()
     cr = la64_typclass(st, cr, st.typs[st.fn_.ret_ty], true)
+    // Return registers start at a0/fa0 (C typclass with gpreg/fpreg); without
+    // this cr.reg stays 0 and ldregs prints "$?".
+    let mut tg = 0
+    let mut tf = 0
+    for j in 0..<cr.nreg {
+      if cr.cls[j].base() == 0 {
+        cr.reg[j] = @types.LA_A0 + tg
+        tg = tg + 1
+      } else {
+        cr.reg[j] = @types.LA_FA0 + tf
+        tf = tf + 1
+      }
+    }
     if (cr.class_ & Cptr) != 0 {
       la64_blit(st, st.fn_.retr, r0, cr.typ.unwrap().size)
       ca = 0
@@ -461,6 +490,7 @@ fn la64_selcall(
   orig : Array[@types.Ins],
   i0 : Int,
   i1 : Int,
+  il : Array[@types.Ins],
 ) -> Unit {
   let nargs = i1 - i0
   let ca : Array[La64Class] = []
@@ -472,11 +502,36 @@ fn la64_selcall(
   let mut cr = La64Class::new()
   if has_retty {
     cr = la64_typclass(st, cr, st.typs[callins.arg2.typ_val()], true)
+    let mut tg = 0
+    let mut tf = 0
+    for j in 0..<cr.nreg {
+      if cr.cls[j].base() == 0 {
+        cr.reg[j] = @types.LA_A0 + tg
+        tg = tg + 1
+      } else {
+        cr.reg[j] = @types.LA_FA0 + tf
+        tf = tf + 1
+      }
+    }
   }
 
   let cty = la64_argsclass(st, orig, i0, i1, ca, (cr.class_ & Cptr) != 0)
   let mut stk = 0
   for a in 0..<nargs {
+    let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
+    // Replace a Cptr aggregate with a pointer to a caller-allocated blob
+    // (C rv64/abi.c 355-361).
+    if (ca[a].class_ & Cptr) != 0 {
+      i.arg1 = la64_newtmp(st, @types.Kl)
+      la64_stkblob(st, i.arg1, ca[a].typ.unwrap())
+      let blob = st.buf[st.buf.length() - 1]
+      ignore(st.buf.remove(st.buf.length() - 1))
+      il.push(blob)
+      i.op = @types.Arg
+    }
     if (ca[a].class_ & Cstk1) != 0 {
       stk = stk + 8
     }
@@ -497,8 +552,11 @@ fn la64_selcall(
   }
 
   if has_retty {
+    la64_stkblob(st, callins.to, cr.typ.unwrap())
+    let blob = st.buf[st.buf.length() - 1]
+    ignore(st.buf.remove(st.buf.length() - 1))
+    il.push(blob)
     if (cr.class_ & Cptr) != 0 {
-      la64_stkblob(st, callins.to, cr.typ.unwrap())
       la64_emit(
         st,
         @types.Copy,
@@ -509,7 +567,7 @@ fn la64_selcall(
       )
     } else {
       let tmp : Array[@types.Ref] = Array::make(2, @types.Ref::none())
-      la64_sttmps(st, tmp, cr.nreg, cr, callins.to)
+      la64_sttmps(st, tmp, 0, cr.nreg, cr, callins.to)
       for j in 0..<cr.nreg {
         let r = @types.Ref::tmp(cr.reg[j])
         la64_emit(st, @types.Copy, cr.cls[j], tmp[j], r, @types.Ref::none())
@@ -535,13 +593,9 @@ fn la64_selcall(
     )
   }
 
-  // Encode the returned-value register counts into the call ref so that
-  // spill/rega know which registers the call defines (C abi selcall adds
-  // retr(...)/ca before emitting Ocall).
   let mut cty2 = cty
   if has_retty {
     if (cr.class_ & Cptr) != 0 {
-      // the hidden sret pointer comes back in a0
       cty2 = cty2 | 1
     } else {
       cty2 = cty2 | (cr.nfp << 2) | cr.ngp
@@ -561,9 +615,23 @@ fn la64_selcall(
     la64_call_ref(cty2),
   )
 
+  if has_retty && (cr.class_ & Cptr) != 0 {
+    la64_emit(
+      st,
+      @types.Copy,
+      @types.Kl,
+      @types.Ref::tmp(@types.LA_A0),
+      callins.to,
+      @types.Ref::none(),
+    )
+  }
+
   // Move arguments into registers
   for a in 0..<nargs {
     let i = orig[i0 + a]
+    if i.op == @types.Argv {
+      continue
+    }
     if (ca[a].class_ & Cstk1) != 0 {
       continue
     }
@@ -593,6 +661,33 @@ fn la64_selcall(
     }
   }
 
+  // Cfpint casts and Cptr blob copies (C rv64/abi.c selcall).
+  for a in 0..<nargs {
+    let i = orig[i0 + a]
+    if (ca[a].class_ & Cfpint) != 0 && (ca[a].class_ & Cstk1) == 0 {
+      let k = if ca[a].cls[0].wide() != 0 { @types.Kl } else { @types.Kw }
+      la64_emit(
+        st,
+        @types.Cast,
+        k,
+        @types.Ref::tmp(ca[a].reg[0]),
+        i.arg1,
+        @types.Ref::none(),
+      )
+    }
+    if (ca[a].class_ & Cptr) != 0 {
+      la64_emit(
+        st,
+        @types.Blit1,
+        @types.Kw,
+        @types.Ref::none(),
+        @types.Ref::rint(ca[a].typ.unwrap().size.to_int()),
+        @types.Ref::none(),
+      )
+      la64_emit(st, @types.Blit0, @types.Kw, @types.Ref::none(), i.arg2, i.arg1)
+    }
+  }
+
   if stk == 0 {
     return
   }
@@ -607,8 +702,16 @@ fn la64_selcall(
     }
     if i.op == @types.Arg {
       let r1 = la64_newtmp(st, @types.Kl)
-      let store_op = @types.Op::from_index(@types.Storew.index() + i.cls.code())
-      la64_emit(st, store_op, @types.Kw, @types.Ref::none(), i.arg1, r1)
+      if i.cls == @types.Kw {
+        let r0 = la64_newtmp(st, @types.Kl)
+        la64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, r1)
+        la64_emit(st, @types.Extsw, @types.Kl, r0, i.arg1, @types.Ref::none())
+      } else {
+        let store_op = @types.Op::from_index(
+          @types.Storew.index() + i.cls.code(),
+        )
+        la64_emit(st, store_op, @types.Kw, @types.Ref::none(), i.arg1, r1)
+      }
       la64_emit(
         st,
         @types.Add,
@@ -666,7 +769,7 @@ fn la64_selcall(
 
 ///|
 // Select parameter handling (C selpar)
-fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
+fn la64_selpar(st : La64AbiState, par_end : Int) -> Unit {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ca : Array[La64Class] = []
@@ -694,24 +797,50 @@ fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
 
   let cty = la64_argsclass(st, ins, 0, npar, ca, (cr.class_ & Cptr) != 0)
 
-  // Allocate register-copied aggregates
+  // Allocate register-copied aggregates: copy the incoming registers into a
+  // caller-visible blob on the stack (C rv64/abi.c selpar stkblob).
+  let il : Array[@types.Ins] = []
+  let tmp : Array[@types.Ref] = Array::make(npar + 2, @types.Ref::none())
+  let mut t = 0
   for a in 0..<npar {
     let i = ins[a]
     if i.op != @types.Parc || (ca[a].class_ & Cptr) != 0 {
       continue
     }
     if ca[a].nreg != 0 {
-      let nt = ca[a].nreg
+      let mut nt = ca[a].nreg
       if (ca[a].class_ & Cstk2) != 0 {
         ca[a].cls[1] = @types.Kl
         ca[a].off[1] = 8
+        nt = 2
       }
-      let tmp : Array[@types.Ref] = Array::make(nt, @types.Ref::none())
-      la64_sttmps(st, tmp, nt, ca[a], i.to)
+      la64_sttmps(st, tmp, t, nt, ca[a], i.to)
+      t = t + nt
+      la64_stkblob(st, i.to, ca[a].typ.unwrap())
+      let blob = st.buf[st.buf.length() - 1]
+      ignore(st.buf.remove(st.buf.length() - 1))
+      il.push(blob)
+    }
+  }
+  for k in (il.length() - 1)>=..0 {
+    la64_emiti(st, il[k])
+  }
+
+  // Cfpint casts are emitted before the register copies so that, after the
+  // reversed write-back, they appear last (C rv64/abi.c selpar).
+  let cfpint_abi : Array[@types.Ref] = Array::make(npar, @types.Ref::none())
+  for a in 0..<npar {
+    let i = ins[a]
+    if (ca[a].class_ & Cfpint) != 0 {
+      let fk = ca[a].cls[0]
+      let abi = la64_newtmp(st, fk)
+      cfpint_abi[a] = abi
+      la64_emit(st, @types.Cast, fk, i.to, abi, @types.Ref::none())
     }
   }
 
   let mut s = 2 + (if st.fn_.is_vararg { 8 } else { 0 })
+  t = 0
   for a in 0..<npar {
     let i = ins[a]
     if i.op == @types.Parc && (ca[a].class_ & Cptr) == 0 {
@@ -722,14 +851,20 @@ fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
       }
       for j in 0..<ca[a].nreg {
         let r = @types.Ref::tmp(ca[a].reg[j])
+        la64_emit(st, @types.Copy, ca[a].cls[j], tmp[t], r, @types.Ref::none())
+        t = t + 1
+      }
+      if (ca[a].class_ & Cstk2) != 0 {
         la64_emit(
           st,
-          @types.Copy,
-          ca[a].cls[j],
-          @types.Ref::tmp(i.to.tmp_val() + j),
-          r,
+          @types.Load,
+          @types.Kl,
+          tmp[t],
+          @types.Ref::slot(-s),
           @types.Ref::none(),
         )
+        t = t + 1
+        s = s + 1
       }
     } else if (ca[a].class_ & Cstk1) != 0 {
       la64_emit(
@@ -741,6 +876,17 @@ fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
         @types.Ref::none(),
       )
       s = s + 1
+    } else if (ca[a].class_ & Cfpint) != 0 {
+      let fk = ca[a].cls[0]
+      let ik = if fk.wide() == 1 { @types.Kl } else { @types.Kw }
+      la64_emit(
+        st,
+        @types.Copy,
+        ik,
+        cfpint_abi[a],
+        @types.Ref::tmp(ca[a].reg[0]),
+        @types.Ref::none(),
+      )
     } else {
       la64_emit(
         st,
@@ -754,7 +900,6 @@ fn la64_selpar(st : La64AbiState, par_end : Int) -> Int {
   }
 
   st.fn_.reg = la64_call_ref(cty).la64_argregs().0
-  cty | ((s * 4) << 12)
 }
 
 ///|
@@ -782,7 +927,7 @@ pub fn abi_la64(
     }
     par_end = par_end + 1
   }
-  let _ = la64_selpar(st, par_end)
+  la64_selpar(st, par_end)
 
   // Rebuild the start block
   let emitted = la64_emit_block(st)
@@ -799,7 +944,10 @@ pub fn abi_la64(
     start.ins.push(x)
   }
 
-  // Lower calls, returns, and vararg instructions
+  // Lower calls, returns, and vararg instructions. Blob allocations for
+  // Cptr arguments/returns are collected in il and emitted at block start
+  // (C rv64/abi.c il list).
+  let il : Array[@types.Ins] = []
   let mut i = 1
   while i < fn_.def_order.length() {
     let bid = fn_.def_order[i]
@@ -827,7 +975,7 @@ pub fn abi_la64(
             }
             i0 = i0 - 1
           }
-          la64_selcall(st, orig, i0, j)
+          la64_selcall(st, orig, i0, j, il)
           j = i0
         }
         @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
@@ -863,7 +1011,7 @@ pub fn abi_la64(
           }
           i0 = i0 - 1
         }
-        la64_selcall(st, start_orig, i0, j)
+        la64_selcall(st, start_orig, i0, j, il)
         j = i0
       }
       @types.Vastart | @types.Vaarg => ()
@@ -871,6 +1019,10 @@ pub fn abi_la64(
       _ => la64_emiti(st, ins)
     }
   }
+  for k in (il.length() - 1)>=..0 {
+    la64_emiti(st, il[k])
+  }
+  il.clear()
   let nb = la64_emit_block(st)
   start_b.ins.clear()
   for x in nb {

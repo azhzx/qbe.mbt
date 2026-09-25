@@ -208,3 +208,19 @@
     .com); Windows uses Set-ExecutionPolicy RemoteSigned + the .cn
     powershell.ps1; filled in moon.mod repository/description/keywords; stopped
     tracking .idea/
+
+2026.9.25: v1.1.0
+    la64: emit GNU-as LoongArch that can actually be assembled. Fix the class
+    suffix (add.d not add.l), module-global block labels (no duplicate .L1 /
+    lost labels), aggregate ABI (size/dark guard, argument register assignment,
+    Cfpint casts, Cptr blobs, return registers), fcmp.gt/ge via swapped
+    lt/le, FPR-based ffint/ftintrz, constant materialization and reserved
+    scratch registers; 338/338 reference-compilable tests now assemble
+    wasm: emit validator-clean WAT. Unify the i64/i32 pointer model, add the
+    missing extensions (extsw/extuw/extub/extuh), width-correct conversions
+    and Cast reinterprets, aggregate-pointer arguments and returns, per-op
+    store widths, external-function imports and fixed-arity call fixups;
+    338/338 reference-compilable tests now validate
+    add tools/check_la64_asm.py, tools/check_wasm.py and the unified
+    tools/check_all_backends.py; CI now gates all five backends (previously
+    la64 and wasm had no gate); refresh la64 snapshots and the docs

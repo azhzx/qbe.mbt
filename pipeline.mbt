@@ -534,6 +534,7 @@ fn emit_la64_module(
 ) -> Unit raise {
   @types.fp_stash_reset()
   @util.dbg_reset()
+  @emit_la64.la64_emit_reset()
   let mut fi = 0
   let mut di = 0
   for item in order {

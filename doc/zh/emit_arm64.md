@@ -36,7 +36,7 @@ pub fn arm64_emit_reset() -> Unit
 ## 说明
 
 - 通过 `vendor/qbe/qbe -t arm64` 对 ELF（`-G e`）与 Mach-O（`-G m`，
-  `-t arm64_apple`）两种风格均逐字节验证（各 406/406）：标签、
+  `-t arm64_apple`）两种风格均逐字节验证（各 408/408）：标签、
   `sym@page`/`@pageoff`、`.balign 4`、`_` 前缀、Mach-O 字面量段、
   Apple ABI（非宽标量占 4 字节栈槽、`apple_selvastart`/`apple_selvaarg`）、
   且不输出 ELF 指令。参考的 `apple_extsb` 预处理在本移植中是空操作，因为
