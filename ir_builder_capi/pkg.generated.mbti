@@ -42,6 +42,10 @@ pub fn qbe_jmp(Int64, Int, Int) -> Unit
 
 pub fn qbe_jmp1(Int64, Int, Int, Int) -> Unit
 
+pub fn qbe_jmp2(Int64, Int, Int, Int, Int) -> Unit
+
+pub fn qbe_jmp3(Int64, Int, Int, Int, Int, Int) -> Unit
+
 pub fn qbe_jmp4(Int64, Int, Int, Int, Int, Int, Int) -> Unit
 
 pub fn qbe_jnz(Int64, Int, Int, Int, Int) -> Unit

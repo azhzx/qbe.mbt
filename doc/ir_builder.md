@@ -103,6 +103,15 @@ ABI), links them with `examples/capi/capi_driver.c`, runs the result and checks
 bash scripts/build_capi.sh
 ```
 
+`demo/12_builder_capi.c` is a fuller example: it constructs a `$tri` loop with
+two block parameters (phi) plus `$add`, prints their arm64 assembly, writes
+`12_tri.o` / `12_add.o` and links them with `demo/12_builder_capi_driver.c`:
+
+```sh
+bash scripts/run_builder_demo.sh
+# tri(10)=55 add(20,22)=42
+```
+
 On the MoonBit side, `moon test --target native ir_builder` also JITs the
 builder-built `fib` in-process and checks `fib(10) == 55`, `fib(20) == 6765`.
 

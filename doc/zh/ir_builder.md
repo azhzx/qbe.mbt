@@ -101,6 +101,15 @@ cc -I include -I "$HOME/.moon/include" my_prog.c \
 bash scripts/build_capi.sh
 ```
 
+`demo/12_builder_capi.c` 是更完整的示例：用 C 构造带两个块参数（phi）的 `$tri`
+循环与 `$add`，打印 arm64 汇编，写出 `12_tri.o` / `12_add.o`，并与
+`demo/12_builder_capi_driver.c` 链接运行：
+
+```sh
+bash scripts/run_builder_demo.sh
+# tri(10)=55 add(20,22)=42
+```
+
 MoonBit 侧，`moon test --target native ir_builder` 还会在进程内 JIT 由构造器
 生成的 `fib`，校验 `fib(10) == 55`、`fib(20) == 6765`。
 
