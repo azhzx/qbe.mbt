@@ -51,6 +51,9 @@ The crate build script (`rust/build.rs`):
 | `ins().jump/brif` | `qbe_jmp_n` / `qbe_jnz_n` |
 | `ins().return_` | `qbe_ret` |
 | `emit_il` / `emit_asm` / `emit_object` | `qbe_emit_il` / `qbe_emit_asm` / `qbe_emit_object` |
+| `Module::jit` / `JitModule::get_fn` | `qbe_jit_load` / `qbe_jit_symbol` |
+| `JitModule::get_data_ptr` | `qbe_jit_global` |
+| `JitModule` drop | `qbe_jit_free` |
 
 ## Verification
 
@@ -58,5 +61,6 @@ The crate build script (`rust/build.rs`):
 cargo test --manifest-path rust/Cargo.toml
 ```
 
-Unit tests cover the IL text and the assembly; the end-to-end test emits a
-Mach-O object, links it with `cc` and runs it (macOS/aarch64).
+Unit tests cover the IL text and the assembly; the end-to-end tests JIT the
+functions and call them directly (`add(20,22)=42 tri(10)=55 fib(10)=55`), emit
+a Mach-O object, link it with `cc` and run it (macOS/aarch64).

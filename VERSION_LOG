@@ -1,3 +1,6 @@
+* remember to update the version in moon.mod when you edit this file
+
+
 2026.8.24: v0.1.0
     finish x86-64 backend
 
@@ -91,4 +94,5 @@
     include/qbe_builder.h): build IL, print it back, emit arm64 asm / Mach-O
     object / JIT image; C demo (demo/12_builder_capi.c)
     Rust glue layer (rust/, crate qbe-builder) over the C ABI, with a
-    Cranelift/inkwell-style API
+    Cranelift/inkwell-style API, including an in-memory JIT
+    (qbe_jit_load/symbol/global/free; Module::jit / JitModule::get_fn)

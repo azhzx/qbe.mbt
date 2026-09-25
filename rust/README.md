@@ -49,6 +49,26 @@ Values carry their `Type`, so arithmetic and comparisons pick the right QBE
 class automatically (for example `icmp(IntCC::Equal, a, b)` becomes `ceqw` or
 `ceql` depending on the operand).
 
+## In-memory JIT
+
+`Module::jit()` compiles the module to executable memory and returns a
+`JitModule`. `get_fn` transmutes a symbol address to a function pointer
+(Cranelift-style):
+
+```rust
+let jit = module.jit()?;
+let add: extern "C" fn(i32, i32) -> i32 = jit.get_fn("add")?;
+assert_eq!(add(20, 22), 42);
+
+let tri: extern "C" fn(i32) -> i32 = jit.get_fn("tri")?;
+assert_eq!(tri(10), 55);
+
+let msg: *mut u8 = jit.get_data_ptr("msg")?;   // global data
+```
+
+The image is self-contained (no linker involved). External symbols such as
+libc calls are not resolved yet, so JIT functions must be self-contained.
+
 ## Building and testing
 
 Requirements: a Rust toolchain, the MoonBit toolchain (`moon`), and a C

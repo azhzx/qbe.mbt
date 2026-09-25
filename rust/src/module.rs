@@ -2,6 +2,7 @@
 
 use crate::builder::{FunctionBuilder, Value};
 use crate::ffi;
+use crate::jit::JitModule;
 use crate::types::{Signature, Type};
 use std::sync::{Mutex, MutexGuard, Once};
 
@@ -176,11 +177,21 @@ impl Module {
     }
 
     pub(crate) fn last_error(&self) -> Error {
-        let mut buf = vec![0u8; 4096];
-        let n = unsafe { ffi::qbe_glue_error_copy(buf.as_mut_ptr(), buf.len()) };
-        buf.truncate(n.min(buf.len()));
-        Error {
-            message: String::from_utf8_lossy(&buf).into_owned(),
+        last_error_now()
+    }
+
+    /// Compile the module to a self-contained code image, map it executable and
+    /// return a JIT module that resolves functions by name.
+    ///
+    /// This consumes the IR (the backend passes run once), so call it after
+    /// emit_il / emit_asm.
+    pub fn jit(&mut self) -> Result<JitModule, Error> {
+        let h = unsafe { ffi::qbe_jit_load(self.handle) };
+        if h <= 0 {
+            Err(self.last_error())
+        } else {
+            self.compiled = true;
+            Ok(JitModule::from_handle(h))
         }
     }
 }
@@ -188,5 +199,14 @@ impl Module {
 impl Drop for Module {
     fn drop(&mut self) {
         unsafe { ffi::qbe_builder_free(self.handle) };
+    }
+}
+
+pub(crate) fn last_error_now() -> Error {
+    let mut buf = vec![0u8; 4096];
+    let n = unsafe { ffi::qbe_glue_error_copy(buf.as_mut_ptr(), buf.len()) };
+    buf.truncate(n.min(buf.len()));
+    Error {
+        message: String::from_utf8_lossy(&buf).into_owned(),
     }
 }

@@ -24,9 +24,11 @@
 
 mod builder;
 mod ffi;
+mod jit;
 mod module;
 pub mod types;
 
 pub use builder::{BlockId, FunctionBuilder, InstructionInserter, Value};
+pub use jit::JitModule;
 pub use module::{Context, Error, FunctionId, Module};
 pub use types::{FloatCC, IntCC, Signature, Type};

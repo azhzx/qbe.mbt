@@ -23,6 +23,12 @@ fn main() {
     let runtime = repo.join("_build/native/debug/build/libruntime.a");
 
     let capi_obj = locate_capi(&repo);
+    let run_asm_stub = repo.join("_build/native/debug/build/run_asm/run_asm_stub.o");
+    assert!(
+        run_asm_stub.exists(),
+        "missing {}; the JIT C ABI links run_asm's native stub",
+        run_asm_stub.display()
+    );
 
     // Compile the C shim that bridges MoonBit `Bytes` values.
     let cc = env::var("CC").unwrap_or_else(|_| "cc".to_string());
@@ -53,6 +59,7 @@ fn main() {
             .arg(&combined)
             .arg(&shim_o)
             .arg(&capi_obj)
+            .arg(&run_asm_stub)
             .arg(&moonbitrun)
             .arg(&runtime)
             .arg(&backtrace)
@@ -66,7 +73,7 @@ fn main() {
         combine_with_ar(
             &out,
             &combined,
-            &[shim_o, capi_obj, moonbitrun],
+            &[shim_o, capi_obj, run_asm_stub, moonbitrun],
             &[runtime, backtrace],
         );
     }
@@ -85,6 +92,7 @@ fn main() {
         "cargo:rerun-if-changed={}",
         repo.join("ir_builder_capi").display()
     );
+    println!("cargo:rerun-if-changed={}", repo.join("run_asm").display());
 }
 
 fn locate_capi(repo: &Path) -> PathBuf {
