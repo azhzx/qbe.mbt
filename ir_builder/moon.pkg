@@ -8,3 +8,7 @@ import {
   "azhzx/qbe/jit",
   "azhzx/qbe/native",
 } for "wbtest"
+
+options(
+  targets: { "jit_wbtest.mbt": [ "native" ] },
+)
