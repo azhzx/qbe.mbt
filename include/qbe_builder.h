@@ -58,6 +58,7 @@ moonbit_bytes_t qbe_last_error(void);
 qbe_func_t qbe_add_func(qbe_builder_t b, moonbit_bytes_t name, int32_t ret_cls,
                         int32_t is_export, moonbit_bytes_t params);
 qbe_value_t qbe_func_param(qbe_builder_t b, qbe_func_t f, int32_t i);
+qbe_block_t qbe_entry_block(qbe_builder_t b, qbe_func_t f);
 qbe_block_t qbe_add_block(qbe_builder_t b, qbe_func_t f, moonbit_bytes_t label);
 void qbe_switch_to(qbe_builder_t b, qbe_func_t f, qbe_block_t blk);
 qbe_value_t qbe_block_param(qbe_builder_t b, qbe_func_t f, qbe_block_t blk,
@@ -93,6 +94,12 @@ void qbe_jnz(qbe_builder_t b, qbe_func_t f, qbe_value_t cond, qbe_block_t then_b
 void qbe_jnz1(qbe_builder_t b, qbe_func_t f, qbe_value_t cond,
               qbe_block_t then_blk, qbe_value_t then_arg, qbe_block_t else_blk,
               qbe_value_t else_arg);
+/* Variable-arity branches: args are little-endian int32 value arrays. */
+void qbe_jmp_n(qbe_builder_t b, qbe_func_t f, qbe_block_t dest,
+               moonbit_bytes_t args);
+void qbe_jnz_n(qbe_builder_t b, qbe_func_t f, qbe_value_t cond,
+               qbe_block_t then_blk, moonbit_bytes_t then_args,
+               qbe_block_t else_blk, moonbit_bytes_t else_args);
 
 void qbe_data_string(qbe_builder_t b, moonbit_bytes_t name, int32_t is_export,
                      moonbit_bytes_t s);

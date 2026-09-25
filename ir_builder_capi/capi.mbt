@@ -47,6 +47,18 @@ fn read_i32(b : Bytes, off : Int) -> Int {
 }
 
 ///|
+// Decode a little-endian int32 array from a byte buffer. Value handles are
+// small non-negative indices, so no sign extension is needed.
+fn read_i32_array(b : Bytes) -> Array[Int] {
+  let n = b.length() / 4
+  let a : Array[Int] = []
+  for i in 0..<n {
+    a.push(read_i32(b, i * 4))
+  }
+  a
+}
+
+///|
 #export_name("qbe_builder_new")
 pub fn qbe_builder_new() -> Int64 {
   builders.push(Some(@ir_builder.Builder::new()))
@@ -97,6 +109,13 @@ pub fn qbe_add_func(
 #export_name("qbe_func_param")
 pub fn qbe_func_param(h : Int64, fid : Int, i : Int) -> Int {
   get_builder(h).param(fid, i)
+}
+
+///|
+// The entry block id of a function.
+#export_name("qbe_entry_block")
+pub fn qbe_entry_block(h : Int64, fid : Int) -> Int {
+  get_builder(h).entry_block(fid)
 }
 
 ///|
@@ -286,6 +305,36 @@ pub fn qbe_jnz1(
   else_arg : Int,
 ) -> Unit {
   get_builder(h).jnz(fid, cond, then_blk, [then_arg], else_blk, [else_arg])
+}
+
+///|
+// Unconditional branch with an arbitrary number of block-parameter arguments,
+// passed as a little-endian int32 array.
+#export_name("qbe_jmp_n")
+pub fn qbe_jmp_n(h : Int64, fid : Int, dest : Int, args : Bytes) -> Unit {
+  get_builder(h).jmp(fid, dest, read_i32_array(args))
+}
+
+///|
+// Conditional branch with arbitrary per-edge block-parameter arguments.
+#export_name("qbe_jnz_n")
+pub fn qbe_jnz_n(
+  h : Int64,
+  fid : Int,
+  cond : Int,
+  then_blk : Int,
+  then_args : Bytes,
+  else_blk : Int,
+  else_args : Bytes,
+) -> Unit {
+  get_builder(h).jnz(
+    fid,
+    cond,
+    then_blk,
+    read_i32_array(then_args),
+    else_blk,
+    read_i32_array(else_args),
+  )
 }
 
 ///|

@@ -102,7 +102,9 @@ cc -I include -I "$HOME/.moon/include" my_prog.c \
 ```
 
 Call `moonbit_runtime_init(argc, argv)` and then `moonbit_init()` once at
-program start, before the first `qbe_*` call.
+program start, before the first `qbe_*` call. A Cranelift/inkwell-style Rust
+wrapper over this ABI lives in [`rust/`](../rust/README.md) (see
+[rust_bindings.md](rust_bindings.md)).
 
 ## Smoke test
 

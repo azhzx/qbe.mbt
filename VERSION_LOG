@@ -85,3 +85,10 @@
     (the old stk + (stk & 15) only worked for 8-byte-aligned stacks);
     apple_extsb is a no-op here (no narrow parsb..paruh/argsb..arguh forms)
     CI now gates the Mach-O flavor on both amd64 and arm64
+
+2026.9.25: v0.14.0
+    programmatic QBE IL builder (ir_builder) + C ABI (ir_builder_capi,
+    include/qbe_builder.h): build IL, print it back, emit arm64 asm / Mach-O
+    object / JIT image; C demo (demo/12_builder_capi.c)
+    Rust glue layer (rust/, crate qbe-builder) over the C ABI, with a
+    Cranelift/inkwell-style API
