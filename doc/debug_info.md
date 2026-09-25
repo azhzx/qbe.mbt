@@ -126,6 +126,9 @@ files); the three differential targets pass under every debug flag.
     clang -c -g out.s -o out.o        # -> __debug_line in the object
     llvm-dwarfdump --debug-line out.o
 
+`scripts/run_dbg_demo.sh` does the whole flow (emit `-g`, link, set a breakpoint
+under `lldb`) and is part of the macOS CI job.
+
 ## Limitations and roadmap
 
 - Line tables, a minimal DWARF5 compilation unit and (amd64/arm64) CFI. There

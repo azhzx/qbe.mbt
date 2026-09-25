@@ -157,3 +157,7 @@
     the linker debug map relocates .debug_addr (same as clang). macOS lldb now
     sets source breakpoints and unwinds from assembly-only objects; ELF/arm64
     verified with llvm-dwarfdump --verify; off by default; docs (+zh) updated
+
+2026.9.25: v0.21.1
+    add scripts/run_dbg_demo.sh: emit -g arm64 assembly, link it, and assert
+    that lldb sets a source breakpoint and unwinds; wired into the macOS CI job

@@ -105,6 +105,11 @@ jobs:
       - name: Build & run C builder demo
         run: bash scripts/run_builder_demo.sh
 
+      # Emits arm64 assembly with -g, links it, and checks that lldb sets a
+      # source breakpoint and unwinds (DWARF line table + CU + CFI).
+      - name: Debug info (lldb) smoke test
+        run: bash scripts/run_dbg_demo.sh
+
   rust:
     name: Rust bindings (macOS arm64)
     runs-on: macos-14

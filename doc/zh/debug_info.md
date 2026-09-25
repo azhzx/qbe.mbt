@@ -120,6 +120,9 @@ macOS 上端到端可用（无需 dSYM，lldb 直接读目标的 debug map）：
     clang -c -g out.s -o out.o        # 目标文件中出现 __debug_line
     llvm-dwarfdump --debug-line out.o
 
+`scripts/run_dbg_demo.sh` 跑完整流程（`-g` 发射、链接、`lldb` 断点），
+并已接入 macOS 的 CI job。
+
 ## 局限与路线图
 
 - 目前是行号表 + 最小 DWARF5 编译单元 + amd64/arm64 的 CFI。还没有变量/类型
