@@ -218,9 +218,32 @@ fn locate_capi(repo: &Path) -> PathBuf {
     if let Some(p) = search(&repo.join("_build"), "ir_builder_capi.o") {
         return p;
     }
+    // Some toolchains name the foreign-library object differently (for example
+    // ir_builder_capi.core.o); accept any object that carries the package name.
+    if let Some(p) = search_name(&repo.join("_build"), "ir_builder_capi", ".o") {
+        return p;
+    }
     panic!(
         "could not find ir_builder_capi.o; run `moon build --target native ir_builder_capi` or set QBE_CAPI_OBJ"
     );
+}
+
+fn search_name(dir: &Path, contains: &str, suffix: &str) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(p) = search_name(&path, contains, suffix) {
+                return Some(p);
+            }
+        } else if let Some(name) = path.file_name() {
+            let name = name.to_string_lossy();
+            if name.contains(contains) && name.ends_with(suffix) {
+                return Some(path);
+            }
+        }
+    }
+    None
 }
 
 fn search(dir: &Path, name: &str) -> Option<PathBuf> {
