@@ -74,6 +74,11 @@ jobs:
             ar t "$a" || true
             nm "$a" 2>/dev/null | grep -m5 'qbe_builder_new\|qbe_emit\|T qbe_' || true
           done
+          if [ -f "$d/ir_builder_capi.c" ]; then
+            head -40 "$d/ir_builder_capi.c"
+            cc -c -O2 -fPIC -I"$HOME/.moon/include" -Iinclude "$d/ir_builder_capi.c" -o /tmp/capi_probe.o \
+              && echo PROBE_COMPILE_OK && nm /tmp/capi_probe.o | grep -m3 'qbe_builder_new' || echo PROBE_FAILED
+          fi
 
       # Force the from-source path so the archive cannot be a stale vendored one.
       - name: Build the qopple native archive

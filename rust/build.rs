@@ -89,7 +89,7 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
     let include = moon_home.join("include");
     let moonbitrun = moon_home.join("lib/libmoonbitrun.o");
     let backtrace = moon_home.join("lib/libbacktrace.a");
-    let capi = locate_capi(repo);
+    let capi = locate_capi(repo, out, &include);
     // On aarch64 Linux the foreign library is emitted as a static archive
     // (libir_builder_capi-<hash>.a) rather than a bare object.
     let capi_is_archive = capi.extension().map(|e| e == "a").unwrap_or(false);
@@ -204,7 +204,7 @@ fn locate_runtime(repo: &Path) -> Option<PathBuf> {
     None
 }
 
-fn locate_capi(repo: &Path) -> PathBuf {
+fn locate_capi(repo: &Path, out: &Path, include: &Path) -> PathBuf {
     if let Ok(p) = env::var("QBE_CAPI_OBJ") {
         let p = PathBuf::from(p);
         assert!(p.exists(), "QBE_CAPI_OBJ does not exist: {}", p.display());
@@ -231,10 +231,27 @@ fn locate_capi(repo: &Path) -> PathBuf {
     if let Some(p) = search_name(&repo.join("_build"), "ir_builder_capi", ".o") {
         return p;
     }
-    // aarch64 Linux emits the package as libir_builder_capi-<hash>.a and leaves
-    // only an IR .core file next to it.
-    if let Some(p) = search_name(&repo.join("_build"), "ir_builder_capi", ".a") {
-        return p;
+    // The C backend (aarch64 Linux) keeps only the generated C source, so
+    // compile it ourselves with the same flags as the shim.
+    let c_src = repo.join("_build/native/debug/build/ir_builder_capi/ir_builder_capi.c");
+    if c_src.exists() {
+        let cc = env::var("CC").unwrap_or_else(|_| "cc".to_string());
+        let obj = out.join("ir_builder_capi.o");
+        let status = Command::new(&cc)
+            .arg("-c")
+            .arg("-O2")
+            .arg("-fPIC")
+            .arg("-I")
+            .arg(include)
+            .arg("-I")
+            .arg(repo.join("include"))
+            .arg(&c_src)
+            .arg("-o")
+            .arg(&obj)
+            .status()
+            .unwrap_or_else(|e| panic!("failed to run {cc}: {e}"));
+        assert!(status.success(), "compiling ir_builder_capi.c failed");
+        return obj;
     }
     panic!(
         "could not find ir_builder_capi.o; run `moon build --target native ir_builder_capi` or set QBE_CAPI_OBJ"
