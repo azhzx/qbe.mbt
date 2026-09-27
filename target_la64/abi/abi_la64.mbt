@@ -1069,7 +1069,6 @@ pub fn abi_la64(
         la64_selcall(st, start_orig, i0, j, il)
         j = i0
       }
-      @types.Vastart | @types.Vaarg => ()
       @types.Vastart => la64_selvastart(st, ins.arg1)
       @types.Vaarg => la64_selvaarg(st, ins)
       @types.Arg | @types.Argc | @types.Arge => abort("unreachable")

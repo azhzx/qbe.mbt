@@ -399,8 +399,11 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
     | @types.Xcmp
     | @types.Acmp
     | @types.Acmn
-    | @types.Afcmp
-    | @types.Addr => ()
+    | @types.Afcmp => ()
+    // Address materialization: the ABI (va_start) and the isel's own fast
+    // locals both rely on the emitter to turn Addr into an fp-relative
+    // address, so it must not be dropped here (C Emit: emitted and args fixed).
+    @types.Addr => sel_emit(st, i)
     // Flag-setting ops - skip (LoongArch doesn't use flags)
     @types.Flagieq
     | @types.Flagine
