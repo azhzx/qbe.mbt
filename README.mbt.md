@@ -65,11 +65,12 @@ Install a prebuilt binary — no MoonBit compiler or C toolchain needed:
 curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
 ~~~
 
-The installer detects your OS and architecture, downloads the matching release
-asset (`qbe-macos-aarch64`, `qbe-linux-x86_64`, ...), verifies its
-SHA-256 checksum and installs it on your `PATH`. Use `--version v0.24.0`
-to pin a release, `--bin-dir DIR` to choose the directory, or `--no-path`
-to leave your shell configuration alone.
+The installer detects your OS and architecture and downloads the matching
+release asset — `qbe-macos-aarch64`, `qbe-linux-x86_64` or
+`qbe-linux-aarch64` — verifying its SHA-256 checksum before installing it on
+your `PATH`. (Intel macOS has no MoonBit toolchain and is not supported.)
+Use `--version v0.24.0` to pin a release, `--bin-dir DIR` to choose the
+directory, or `--no-path` to leave your shell configuration alone.
 
 ### From source
 

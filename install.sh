@@ -82,6 +82,9 @@ case "$uname_m" in
   x86_64 | amd64) arch=x86_64 ;;
   *) die "no prebuilt binary for architecture '$uname_m'" ;;
 esac
+if [ "$os" = macos ] && [ "$arch" = x86_64 ]; then
+  die "no prebuilt binary for Intel macOS: the MoonBit toolchain only targets Apple Silicon"
+fi
 asset="qbe-$os-$arch"
 
 if [ -n "$version" ]; then
