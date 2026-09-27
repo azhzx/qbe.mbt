@@ -89,7 +89,10 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
     let include = moon_home.join("include");
     let moonbitrun = moon_home.join("lib/libmoonbitrun.o");
     let backtrace = moon_home.join("lib/libbacktrace.a");
-    let capi_obj = locate_capi(repo);
+    let capi = locate_capi(repo);
+    // On aarch64 Linux the foreign library is emitted as a static archive
+    // (libir_builder_capi-<hash>.a) rather than a bare object.
+    let capi_is_archive = capi.extension().map(|e| e == "a").unwrap_or(false);
     let run_asm_stub = repo.join("_build/native/debug/build/native/native_stub.o");
     assert!(
         run_asm_stub.exists(),
@@ -119,7 +122,13 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
     // it, and the runtime entry points are already provided by libmoonbitrun.o
     // and the native stub (libtool silently ignores a missing input, so this was
     // only ever fatal on the `ar` path).
+    let mut objects: Vec<PathBuf> = vec![shim_o, run_asm_stub, moonbitrun];
     let mut archives: Vec<PathBuf> = Vec::new();
+    if capi_is_archive {
+        archives.push(capi);
+    } else {
+        objects.push(capi);
+    }
     match locate_runtime(repo) {
         Some(rt) => archives.push(rt),
         None => println!(
@@ -132,7 +141,6 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
     // Combine everything into one archive so downstream crates link it too.
     let combined = out.join("libqopple_native.a");
     let _ = std::fs::remove_file(&combined);
-    let objects = [shim_o, capi_obj, run_asm_stub, moonbitrun];
     if target_os == "macos" {
         let libtool = env::var("LIBTOOL").unwrap_or_else(|_| "libtool".to_string());
         let mut cmd = Command::new(&libtool);
@@ -221,6 +229,11 @@ fn locate_capi(repo: &Path) -> PathBuf {
     // Some toolchains name the foreign-library object differently (for example
     // ir_builder_capi.core.o); accept any object that carries the package name.
     if let Some(p) = search_name(&repo.join("_build"), "ir_builder_capi", ".o") {
+        return p;
+    }
+    // aarch64 Linux emits the package as libir_builder_capi-<hash>.a and leaves
+    // only an IR .core file next to it.
+    if let Some(p) = search_name(&repo.join("_build"), "ir_builder_capi", ".a") {
         return p;
     }
     panic!(
