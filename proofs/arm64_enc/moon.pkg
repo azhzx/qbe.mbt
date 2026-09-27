@@ -1,0 +1,7 @@
+import {
+  "azhzx/qbe/object",
+} for "wbtest"
+
+options(
+  "proof-enabled": true,
+)

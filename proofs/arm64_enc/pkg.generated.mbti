@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/proofs/arm64_enc"
+
+// Values
+pub fn enc_add_reg_ref(Int, Int, Int) -> Int
+
+pub fn enc_movz_ref(Int, Int, Int) -> Int
+
+pub fn word(Int) -> BV32
+
+// Errors
+
+// Types and methods
+pub type BV32
+pub fn BV32::band(Self, Self) -> Self
+pub fn BV32::bor(Self, Self) -> Self
+pub fn BV32::equal(Self, Self) -> Bool
+pub fn BV32::nth(Self, Int) -> Bool
+pub fn BV32::shl(Self, Int) -> Self
+pub impl Eq for BV32
+
+// Type aliases
+
+// Traits
