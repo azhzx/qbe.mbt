@@ -1,0 +1,63 @@
+///|
+#proof_import("bv.BV32")
+fn raw_of_int(x : Int) -> BV32 = "of_int"
+
+///|
+#proof_import("bv.BV32")
+fn raw_nth(x : BV32, idx : Int) -> Bool = "nth"
+
+///|
+#proof_import("bv.BV32")
+fn raw_band(a : BV32, b : BV32) -> BV32 = "bw_and"
+
+///|
+#proof_import("bv.BV32")
+fn raw_bor(a : BV32, b : BV32) -> BV32 = "bw_or"
+
+///|
+#proof_import("bv.BV32")
+fn raw_lsl(a : BV32, s : Int) -> BV32 = "lsl"
+
+///|
+#proof_import("bv.BV32")
+fn raw_eq(a : BV32, b : BV32) -> Bool = "(=)"
+
+///|
+pub fn word(x : Int) -> BV32 {
+  raw_of_int(x)
+}
+
+///|
+pub fn BV32::nth(self : BV32, i : Int) -> Bool {
+  raw_nth(self, i)
+}
+
+///|
+pub fn BV32::band(self : BV32, o : BV32) -> BV32 {
+  raw_band(self, o)
+}
+
+///|
+pub fn BV32::bor(self : BV32, o : BV32) -> BV32 {
+  raw_bor(self, o)
+}
+
+///|
+pub fn BV32::shl(self : BV32, s : Int) -> BV32 {
+  raw_lsl(self, s)
+}
+
+///|
+pub fn BV32::equal(self : BV32, o : BV32) -> Bool {
+  raw_eq(self, o)
+}
+
+///|
+pub impl Eq for BV32 with fn equal(self : BV32, other : BV32) -> Bool {
+  BV32::equal(self, other)
+}
+
+///|
+pub impl Eq for BV32 with fn not_equal(self : BV32, other : BV32) -> Bool {
+  !BV32::equal(self, other)
+}

@@ -276,3 +276,42 @@ jobs:
 
       - name: "Variadic runtime semantics (interp / wasm / la64)"
         run: python tools/check_vararg_runtime.py
+
+  prove:
+    name: Formal proofs (arm64 encoders, report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install solvers
+        run: sudo apt-get update && sudo apt-get install -y z3
+
+      - name: Toolchain version
+        run: moon version --all
+
+      - name: Sync dependencies
+        run: moon update
+
+      # Report-only for now: allowed to fail while the proof set grows.
+      - name: Prove arm64 encoders
+        run: moon prove proofs/arm64_enc
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-report
+          path: _build/verif/**
+          if-no-files-found: ignore
+
