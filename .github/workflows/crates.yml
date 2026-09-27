@@ -62,6 +62,19 @@ jobs:
       - name: Build the MoonBit runtime
         run: moon build --target native
 
+      - name: Inspect capi artifacts (diagnostic)
+        if: always()
+        run: |
+          set -x
+          d=_build/native/debug/build/ir_builder_capi
+          ls -la "$d"
+          file "$d"/* 2>/dev/null || true
+          for a in "$d"/libir_builder_capi-*.a; do
+            [ -e "$a" ] || continue
+            ar t "$a" || true
+            nm "$a" 2>/dev/null | grep -m5 'qbe_builder_new\|qbe_emit\|T qbe_' || true
+          done
+
       # Force the from-source path so the archive cannot be a stale vendored one.
       - name: Build the qopple native archive
         env:
