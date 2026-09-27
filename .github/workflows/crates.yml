@@ -116,10 +116,12 @@ jobs:
       - name: Show staged archives
         run: find rust/vendor -type f
 
+      # The vendored archives are generated inputs, not tracked files, so cargo
+      # sees them as uncommitted; --allow-dirty is expected here.
       - name: Package both crates
         run: |
           set -eux
-          cargo package --manifest-path rust/Cargo.toml
+          cargo package --manifest-path rust/Cargo.toml --allow-dirty
           cargo package --manifest-path rust/qopple-cli/Cargo.toml
 
       # Linking the packaged examples forces the vendored archive through the
@@ -169,7 +171,7 @@ jobs:
           path: rust/vendor/aarch64-unknown-linux-gnu
 
       - name: Publish qopple
-        run: cargo publish --manifest-path rust/Cargo.toml
+        run: cargo publish --manifest-path rust/Cargo.toml --allow-dirty
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 

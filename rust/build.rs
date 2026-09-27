@@ -89,8 +89,6 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
     let include = moon_home.join("include");
     let moonbitrun = moon_home.join("lib/libmoonbitrun.o");
     let backtrace = moon_home.join("lib/libbacktrace.a");
-    let runtime = repo.join("_build/native/debug/build/libruntime.a");
-
     let capi_obj = locate_capi(repo);
     let run_asm_stub = repo.join("_build/native/debug/build/native/native_stub.o");
     assert!(
@@ -117,21 +115,32 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
         .unwrap_or_else(|e| panic!("failed to run {cc}: {e}"));
     assert!(status.success(), "compiling src/shim.c failed");
 
+    // The MoonBit runtime archive is optional: some build trees do not produce
+    // it, and the runtime entry points are already provided by libmoonbitrun.o
+    // and the native stub (libtool silently ignores a missing input, so this was
+    // only ever fatal on the `ar` path).
+    let mut archives: Vec<PathBuf> = Vec::new();
+    match locate_runtime(repo) {
+        Some(rt) => archives.push(rt),
+        None => println!(
+            "cargo:warning=qbe.mbt: libruntime.a not found under _build; \
+             continuing without it"
+        ),
+    }
+    archives.push(backtrace);
+
     // Combine everything into one archive so downstream crates link it too.
     let combined = out.join("libqopple_native.a");
     let _ = std::fs::remove_file(&combined);
+    let objects = [shim_o, capi_obj, run_asm_stub, moonbitrun];
     if target_os == "macos" {
         let libtool = env::var("LIBTOOL").unwrap_or_else(|_| "libtool".to_string());
-        let status = Command::new(&libtool)
-            .arg("-static")
-            .arg("-o")
-            .arg(&combined)
-            .arg(&shim_o)
-            .arg(&capi_obj)
-            .arg(&run_asm_stub)
-            .arg(&moonbitrun)
-            .arg(&runtime)
-            .arg(&backtrace)
+        let mut cmd = Command::new(&libtool);
+        cmd.arg("-static").arg("-o").arg(&combined);
+        for path in objects.iter().chain(archives.iter()) {
+            cmd.arg(path);
+        }
+        let status = cmd
             .status()
             .unwrap_or_else(|e| panic!("failed to run {libtool}: {e}"));
         assert!(
@@ -139,12 +148,7 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
             "libtool failed to build the combined archive"
         );
     } else {
-        combine_with_ar(
-            out,
-            &combined,
-            &[shim_o, capi_obj, run_asm_stub, moonbitrun],
-            &[runtime, backtrace],
-        );
+        combine_with_ar(out, &combined, &objects, &archives);
     }
 
     println!("cargo:rustc-link-search=native={}", out.display());
@@ -162,6 +166,34 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
         repo.join("ir_builder_capi").display()
     );
     println!("cargo:rerun-if-changed={}", repo.join("native").display());
+}
+
+fn locate_runtime(repo: &Path) -> Option<PathBuf> {
+    let build = repo.join("_build/native/debug/build");
+    let plain = build.join("libruntime.a");
+    if plain.exists() {
+        return Some(plain);
+    }
+    // Newer toolchains may fingerprint the archive name.
+    if let Ok(entries) = std::fs::read_dir(&build) {
+        let mut hits: Vec<PathBuf> = entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| {
+                p.file_name()
+                    .map(|n| {
+                        let n = n.to_string_lossy();
+                        n.starts_with("libruntime") && n.ends_with(".a")
+                    })
+                    .unwrap_or(false)
+            })
+            .collect();
+        hits.sort();
+        if let Some(p) = hits.into_iter().next() {
+            return Some(p);
+        }
+    }
+    None
 }
 
 fn locate_capi(repo: &Path) -> PathBuf {

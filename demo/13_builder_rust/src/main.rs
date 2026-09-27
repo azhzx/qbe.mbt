@@ -1,6 +1,6 @@
 //! demo/13_builder_rust - build QBE IL from Rust.
 //!
-//! The Rust counterpart of demo/12_builder_capi.c. Through the qbe-builder
+//! The Rust counterpart of demo/12_builder_capi.c. Through the qopple
 //! crate it builds $add, a phi loop $tri and a recursive $fib, prints the QBE
 //! IL, emits arm64 assembly, and (on macOS/aarch64) JITs the functions and
 //! calls them directly.
