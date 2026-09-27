@@ -30,8 +30,6 @@ jobs:
         include:
           - os: macos-14
             asset: qbe-macos-aarch64
-          - os: macos-15-intel
-            asset: qbe-macos-x86_64
           - os: ubuntu-latest
             asset: qbe-linux-x86_64
           - os: ubuntu-24.04-arm
@@ -84,14 +82,13 @@ jobs:
         run: |
           set -eux
           cd dist
-          sha256sum qbe-macos-aarch64 qbe-macos-x86_64 qbe-linux-x86_64 qbe-linux-aarch64 > SHA256SUMS
+          sha256sum qbe-macos-aarch64 qbe-linux-x86_64 qbe-linux-aarch64 > SHA256SUMS
           cat SHA256SUMS
 
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/qbe-macos-aarch64
-            dist/qbe-macos-x86_64
             dist/qbe-linux-x86_64
             dist/qbe-linux-aarch64
             dist/SHA256SUMS
