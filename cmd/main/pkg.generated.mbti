@@ -6,9 +6,7 @@ package "azhzx/qbe/cmd/main"
 // Errors
 
 // Types and methods
-type DbFlags
 
 // Type aliases
 
 // Traits
-

@@ -250,6 +250,12 @@ fn Builder::il_func(self : Builder, fid : Int, sb : StringBuilder) -> Unit {
     sb.write_string(" %")
     sb.write_string(f.tmps[tid].name)
   }
+  if f.is_vararg {
+    if ps.length() > 0 {
+      sb.write_string(", ")
+    }
+    sb.write_string("...")
+  }
   sb.write_string(") {\n")
   for bid in f.def_order {
     let b = f.blks[bid]

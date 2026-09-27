@@ -2,6 +2,83 @@
 package "azhzx/qbe/native"
 
 // Values
+pub fn cstr(String) -> Bytes
+
+pub fn host_supported() -> Bool
+
+pub fn mbt_native_alloc(Int) -> Int64
+
+pub fn mbt_native_call_f64_0(Int64) -> Double
+
+pub fn mbt_native_call_f64_1(Int64, Double) -> Double
+
+pub fn mbt_native_call_f64_2(Int64, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_3(Int64, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_4(Int64, Double, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_5(Int64, Double, Double, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_6(Int64, Double, Double, Double, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_7(Int64, Double, Double, Double, Double, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_f64_8(Int64, Double, Double, Double, Double, Double, Double, Double, Double) -> Double
+
+pub fn mbt_native_call_i64_0(Int64) -> Int64
+
+pub fn mbt_native_call_i64_1(Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_2(Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_3(Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_4(Int64, Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_5(Int64, Int64, Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_6(Int64, Int64, Int64, Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_7(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_call_i64_8(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64) -> Int64
+
+pub fn mbt_native_capture(Bytes) -> Bytes
+
+pub fn mbt_native_dlopen(Bytes) -> Int64
+
+pub fn mbt_native_dlsym(Int64, Bytes) -> Int64
+
+pub fn mbt_native_free(Int64, Int) -> Unit
+
+pub fn mbt_native_host_supported() -> Int
+
+pub fn mbt_native_icache_flush(Int64, Int) -> Unit
+
+pub fn mbt_native_protect(Int64, Int) -> Int
+
+pub fn mbt_native_read_file(Bytes) -> Bytes
+
+pub fn mbt_native_run(Bytes) -> Int
+
+pub fn mbt_native_sym(Bytes) -> Int64
+
+pub fn mbt_native_temp(Bytes) -> Bytes
+
+pub fn mbt_native_unlink(Bytes) -> Int
+
+pub fn mbt_native_write_bytes(Int64, Int, Bytes) -> Unit
+
+pub fn mbt_native_write_file(Bytes, Bytes) -> Int
+
+pub fn mbt_native_write_u32(Int64, Int, UInt) -> Unit
+
+pub fn run_command(String) -> Int
+
+pub fn tmp_path(String) -> String
+
+pub fn write_file(String, Bytes) -> Unit raise
 
 // Errors
 

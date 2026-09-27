@@ -97,3 +97,41 @@ async test "interpret: parse errors propagate" {
     _ => fail("expected a parse error")
   }
 }
+
+///|
+async test "interpret: va_start/va_arg over a variadic call" {
+  let src =
+    #|function w $sum(w %n, ...) {
+    #|@start
+    #|  %ap =l alloc8 32
+    #|  vastart %ap
+    #|  %i =w copy 0
+    #|  %r =w copy 0
+    #|@loop
+    #|  %i1 =w phi @start %i, @body %i2
+    #|  %r1 =w phi @start %r, @body %r2
+    #|  %c =w csltw %i1, %n
+    #|  jnz %c, @body, @end
+    #|@body
+    #|  %v =w vaarg %ap
+    #|  %r2 =w add %r1, %v
+    #|  %i2 =w add %i1, 1
+    #|  jmp @loop
+    #|@end
+    #|  ret %r1
+    #|}
+    #|
+    #|export function w $main() {
+    #|@start
+    #|  %r =w call $sum(w 3, ..., w 10, w 20, w 12)
+    #|  ret %r
+    #|}
+    #|
+  match @qbe.interpret(src) {
+    Ok((@interp.VInt(v), _)) => assert_eq(v, 42L)
+    Ok(_) => fail("unexpected result kind")
+    Err(@util.QbeError::CompileError(m)) => fail("interpret failed: \{m}")
+    Err(@util.QbeError::Ice(m)) => fail("ice: \{m}")
+    Err(@util.QbeError::ParseError(_, _, m)) => fail("parse: \{m}")
+  }
+}

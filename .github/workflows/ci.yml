@@ -246,3 +246,12 @@ jobs:
 
       - name: "WASM validation (moon-wasm-opt)"
         run: python tools/check_wasm.py
+
+      # Runtime semantics for variadic functions: the interpreter and wasm32
+      # run the program directly; la64 is assembled, linked and run under
+      # qemu-user. All three must agree.
+      - name: "Install qemu-user (la64 runtime check)"
+        run: sudo apt-get update && sudo apt-get install -y qemu-user
+
+      - name: "Variadic runtime semantics (interp / wasm / la64)"
+        run: python tools/check_vararg_runtime.py

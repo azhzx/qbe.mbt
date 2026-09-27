@@ -59,3 +59,16 @@ cargo test --manifest-path rust/Cargo.toml
 
 单元测试覆盖 IL 文本与汇编；端到端测试生成 Mach-O 对象、用 `cc` 链接并运行
 （macOS/aarch64）。
+## 可变参数
+
+`Signature::variadic` 把签名最后一个参数标记为省略号，`FunctionBuilder`
+提供 `vastart`、`vaarg`、`arg_vararg` 与 `call_vararg`：
+
+```rust
+let f = module.add_function("sum", Signature::variadic([Type::I32], Some(Type::I32)));
+let size = b.ins().iconst(Type::I64, 32);
+let ap = b.ins().raw("alloc8", Type::I64, Some(Type::I64), Some(size), None).unwrap();
+b.ins().vastart(ap);
+let v = b.ins().vaarg(Type::I32, ap);
+let r = b.ins().call_vararg(f, &[a], &[b]).unwrap();
+```

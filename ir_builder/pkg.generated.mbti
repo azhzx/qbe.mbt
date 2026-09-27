@@ -29,11 +29,13 @@ pub struct Builder {
   // private fields
 }
 pub fn Builder::add_block(Self, Int, String) -> Int
-pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool) -> Int
+pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool, is_vararg? : Bool) -> Int
 pub fn Builder::add_param(Self, Int, @types.Class) -> Int
+pub fn Builder::arg_vararg(Self, Int) -> Unit
 pub fn Builder::arith(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
 pub fn Builder::block_param(Self, Int, Int, @types.Class) -> Int
 pub fn Builder::call(Self, Int, String, Array[(@types.Class, Int)], Ret) -> Int
+pub fn Builder::call_vararg(Self, Int, String, Array[(@types.Class, Int)], Array[(@types.Class, Int)], Ret) -> Int
 pub fn Builder::cmp(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
 pub fn Builder::current_block(Self, Int) -> Int
 pub fn Builder::data_bytes(Self, String, Bool, Bytes) -> Unit
@@ -68,7 +70,9 @@ pub fn Builder::store(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
 pub fn Builder::switch_to(Self, Int, Int) -> Unit
 pub fn Builder::symbol(Self, String) -> Int
 pub fn Builder::unop(Self, Int, @types.Op, @types.Class, @types.Class, Int) -> Int
+pub fn Builder::vaarg(Self, Int, @types.Class, Int) -> Int
 pub fn Builder::val_ref(Self, Int) -> @types.Ref
+pub fn Builder::vastart(Self, Int, Int) -> Unit
 
 pub(all) enum Ret {
   Void

@@ -361,6 +361,70 @@ impl<'b, 'm> InstructionInserter<'b, 'm> {
         ret.map(|ty| Value::new(id, ty))
     }
 
+    /// Mark the fixed/variadic argument boundary before the variadic args.
+    pub fn arg_vararg(&mut self) {
+        let fid = self.fb.funcid();
+        let handle = self.fb.handle();
+        unsafe { ffi::qbe_arg_vararg(handle, fid) };
+    }
+
+    /// Emit va_start over the va_list storage value ap.
+    pub fn vastart(&mut self, ap: Value) {
+        let fid = self.fb.funcid();
+        let handle = self.fb.handle();
+        unsafe { ffi::qbe_vastart(handle, fid, ap.id) };
+    }
+
+    /// Emit a va_arg of the given type.
+    pub fn vaarg(&mut self, ty: Type, ap: Value) -> Value {
+        let fid = self.fb.funcid();
+        let handle = self.fb.handle();
+        let id = unsafe { ffi::qbe_vaarg(handle, fid, ty.code(), ap.id) };
+        Value::new(id, ty)
+    }
+
+    /// Call a variadic function: fixed arguments, then the varargs.
+    pub fn call_vararg(
+        &mut self,
+        f: FunctionId,
+        fixed: &[Value],
+        varargs: &[Value],
+    ) -> Option<Value> {
+        let (name, ret) = {
+            let meta = &self.fb.module.funcs[f.0];
+            (meta.name.clone(), meta.sig.ret)
+        };
+        self.call_by_name_vararg(&name, ret, fixed, varargs)
+    }
+
+    /// Call a variadic symbol by name: fixed arguments, then the varargs.
+    pub fn call_by_name_vararg(
+        &mut self,
+        callee: &str,
+        ret: Option<Type>,
+        fixed: &[Value],
+        varargs: &[Value],
+    ) -> Option<Value> {
+        let fid = self.fb.funcid();
+        let handle = self.fb.handle();
+        for a in fixed {
+            unsafe { ffi::qbe_arg(handle, fid, a.ty.code(), a.id) };
+        }
+        unsafe { ffi::qbe_arg_vararg(handle, fid) };
+        for a in varargs {
+            unsafe { ffi::qbe_arg(handle, fid, a.ty.code(), a.id) };
+        }
+        let id = ffi::with_bytes(callee.as_bytes(), |cb| unsafe {
+            ffi::qbe_call(
+                handle,
+                fid,
+                cb,
+                ret.map(Type::code).unwrap_or(ffi::QBE_VOID),
+            )
+        });
+        ret.map(|ty| Value::new(id, ty))
+    }
+
     /// Return the first value (QBE has a single return value).
     pub fn return_(&mut self, vals: &[Value]) {
         let fid = self.fb.funcid();

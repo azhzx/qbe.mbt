@@ -184,7 +184,7 @@
     bootstrap.sh is now an interactive rustup-style installer: a colored
     numbered menu picks the MoonBit compiler (PATH / install / custom path),
     then it builds the native qbe binary and offers to install it to
-    ~/.local/bin and update the shell rc. Non-interactive flags: --moon,
+    `/.local/bin and update the shell rc. Non-interactive flags: --moon,
     --bin-dir, --no-path, --yes; vendor/qbe is now behind --with-reference
 
 2026.9.25: v0.22.2
@@ -224,3 +224,18 @@
     add tools/check_la64_asm.py, tools/check_wasm.py and the unified
     tools/check_all_backends.py; CI now gates all five backends (previously
     la64 and wasm had no gate); refresh la64 snapshots and the docs
+
+
+2026.9.25: v0.24.0
+    variadic arguments across the whole tool: declare `...`, emit va_start /
+    va_arg and call variadic functions from the MoonBit builder, the C ABI and
+    Rust (Signature::variadic, call_vararg)
+    parser: accept arguments after the ellipsis in a call (C parserefl)
+    la64: port selvastart/selvaarg and the Params layout; lowering matches rv64
+    rv64: pass arguments after `...` as if the float file were exhausted (Oargv)
+    interpreter: materialise varargs in an 8-byte-slot buffer, execute
+    va_start/va_arg
+    wasm32: self-contained convention (caller-built buffer passed as a hidden
+    trailing i64 parameter); external imports are keyed by call signature
+    add tools/check_vararg_runtime.py (interp + wasm + la64 under qemu-user)
+    and test/emit/016_vararg_after.ssa

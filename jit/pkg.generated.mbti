@@ -1,11 +1,43 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "azhzx/qbe/jit"
 
+import {
+  "azhzx/qbe/target_arm64/emit",
+}
+
 // Values
 
 // Errors
 
 // Types and methods
+pub struct ExecBlock {
+  addr : Int64
+  size : Int
+}
+pub fn ExecBlock::base(Self) -> Int64
+pub fn ExecBlock::call1(Self, Int64) -> Int64 raise
+pub fn ExecBlock::call1_at(Self, Int, Int64) -> Int64 raise
+pub fn ExecBlock::close(Self) -> Unit
+pub fn ExecBlock::load_module(Bytes, Int) -> Self raise
+pub fn ExecBlock::load_module_rw(Bytes, Int) -> Self raise
+pub fn ExecBlock::load_text(Bytes) -> Self raise
+pub fn ExecBlock::protect(Self, Int) -> Unit raise
+
+pub struct JitModule {
+  exec : ExecBlock
+  fns : Array[(String, Int)]
+  datas : Array[(String, Int)]
+  code_bytes : Int
+}
+pub fn JitModule::call_f64(Self, String, Array[Double]) -> Double raise
+pub fn JitModule::call_i64(Self, String, Array[Int64]) -> Int64 raise
+pub fn JitModule::call_i64_1(Self, String, Int64) -> Int64 raise
+pub fn JitModule::close(Self) -> Unit
+pub fn JitModule::from_bin_module(@emit.Arm64BinModule) -> Self raise
+pub fn JitModule::from_bin_module_ex(@emit.Arm64BinModule, @emit.Arm64BinFixups, symbols? : Array[(String, Int64)]) -> Self raise
+pub fn JitModule::function_names(Self) -> Array[String]
+pub fn JitModule::global(Self, String) -> Int64 raise
+pub fn JitModule::symbol(Self, String) -> Int64 raise
 
 // Type aliases
 

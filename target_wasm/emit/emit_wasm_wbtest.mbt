@@ -56,6 +56,8 @@ test "emit_fn: wasm function body snapshot" {
     content=(
       #|  (func $add (param $t64 i32) (param $t65 i32) (result i32)
       #|(local $pc i32)
+      #|(local $vabase i32)
+      #|(local $vatmp i64)
       #|(local $t66 i32)
       #|    i32.const 0
       #|    local.set $pc

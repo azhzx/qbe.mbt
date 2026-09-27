@@ -80,6 +80,14 @@ void qbe_emit_void(qbe_builder_t b, qbe_func_t f, moonbit_bytes_t op,
 void qbe_arg(qbe_builder_t b, qbe_func_t f, int32_t cls, qbe_value_t val);
 qbe_value_t qbe_call(qbe_builder_t b, qbe_func_t f, moonbit_bytes_t callee,
                      int32_t ret_cls);
+/* Mark a function as variadic (its last signature parameter is the ellipsis). */
+void qbe_func_set_vararg(qbe_builder_t b, qbe_func_t f);
+/* Mark the fixed/variadic argument boundary before the following qbe_call. */
+void qbe_arg_vararg(qbe_builder_t b, qbe_func_t f);
+/* va_start/va_arg over a va_list storage value (from alloc). */
+void qbe_vastart(qbe_builder_t b, qbe_func_t f, qbe_value_t ap);
+qbe_value_t qbe_vaarg(qbe_builder_t b, qbe_func_t f, int32_t cls,
+                      qbe_value_t ap);
 
 void qbe_ret(qbe_builder_t b, qbe_func_t f, qbe_value_t val);
 void qbe_jmp(qbe_builder_t b, qbe_func_t f, qbe_block_t dest);

@@ -8,6 +8,8 @@ pub fn qbe_add_func(Int64, Bytes, Int, Int, Bytes) -> Int
 
 pub fn qbe_arg(Int64, Int, Int, Int) -> Unit
 
+pub fn qbe_arg_vararg(Int64, Int) -> Unit
+
 pub fn qbe_block_param(Int64, Int, Int, Int) -> Int
 
 pub fn qbe_builder_free(Int64) -> Unit
@@ -50,7 +52,21 @@ pub fn qbe_entry_block(Int64, Int) -> Int
 
 pub fn qbe_func_param(Int64, Int, Int) -> Int
 
+pub fn qbe_func_set_vararg(Int64, Int) -> Unit
+
 pub fn qbe_global(Int64, Int, Bytes) -> Int
+
+pub fn qbe_jit_free(Int64) -> Unit
+
+pub fn qbe_jit_global(Int64, Bytes) -> Int64
+
+pub fn qbe_jit_load(Int64) -> Int64
+
+pub fn qbe_jit_symbol(Int64, Bytes) -> Int64
+
+pub fn qbe_jit_symbol_clear() -> Unit
+
+pub fn qbe_jit_symbol_define(Bytes, Int64) -> Unit
 
 pub fn qbe_jmp(Int64, Int, Int) -> Unit
 
@@ -75,6 +91,10 @@ pub fn qbe_last_error() -> Bytes
 pub fn qbe_ret(Int64, Int, Int) -> Unit
 
 pub fn qbe_switch_to(Int64, Int, Int) -> Unit
+
+pub fn qbe_vaarg(Int64, Int, Int, Int) -> Int
+
+pub fn qbe_vastart(Int64, Int, Int) -> Unit
 
 // Errors
 

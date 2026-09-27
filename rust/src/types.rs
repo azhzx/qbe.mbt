@@ -59,6 +59,8 @@ pub enum FloatCC {
 pub struct Signature {
     pub params: Vec<Type>,
     pub ret: Option<Type>,
+    /// The last signature parameter is an ellipsis (a variadic function).
+    pub varargs: bool,
 }
 
 impl Signature {
@@ -66,6 +68,16 @@ impl Signature {
         Signature {
             params: params.into(),
             ret,
+            varargs: false,
+        }
+    }
+
+    /// A variadic signature: the fixed params are followed by an ellipsis.
+    pub fn variadic(params: impl Into<Vec<Type>>, ret: Option<Type>) -> Signature {
+        Signature {
+            params: params.into(),
+            ret,
+            varargs: true,
         }
     }
 }

@@ -14,6 +14,12 @@ priv struct WatEmitState {
   // Declared parameter types of each module function (name -> wasm types),
   // used to pad or drop call arguments so wasm's fixed arity is satisfied.
   fn_params : Array[(String, Array[String])]
+  // Names of variadic module functions (they take a hidden i64 buffer pointer).
+  fn_vararg : Array[String]
+  // External import name per call signature key (ext_key -> wasm identifier).
+  ext_names : Array[(String, String)]
+  // Classes of the arguments pushed since the last call.
+  arg_classes : Array[@types.Class]
   mut pending_args : Int
   mut indent : Int
 }
@@ -26,6 +32,8 @@ fn wat_emit_new(
   dats : Array[(String, Int)],
   void_fns : Array[String],
   fn_params : Array[(String, Array[String])],
+  fn_vararg : Array[String],
+  ext_names : Array[(String, String)],
 ) -> WatEmitState {
   WatEmitState::{
     fn_,
@@ -34,6 +42,9 @@ fn wat_emit_new(
     dats,
     void_fns,
     fn_params,
+    fn_vararg,
+    ext_names,
+    arg_classes: [],
     pending_args: 0,
     indent: 0,
   }
@@ -47,6 +58,19 @@ fn zero_const(t : String) -> String {
     "f64" => "f64.const 0"
     _ => "i32.const 0"
   }
+}
+
+///|
+// Key for an external call import: the symbol plus its argument types, so
+// calls with different signatures get distinct imports.
+fn ext_key(target : String, types : Array[String]) -> String {
+  let sb = StringBuilder::StringBuilder()
+  sb.write_string(target)
+  for t in types {
+    sb.write_string("|")
+    sb.write_string(t)
+  }
+  sb.to_string()
 }
 
 ///|
@@ -392,6 +416,7 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
     @types.Arg | @types.Arge => {
       emit_ref(st, ins.arg1, ins.cls)
       st.pending_args = st.pending_args + 1
+      st.arg_classes.push(ins.cls)
     }
     // Aggregate argument: pass the aggregate's memory address as an i64
     // pointer, matching the i64 Parc parameter.
@@ -399,14 +424,30 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       emit_addr32(st, ins.arg2)
       wat_writeln(st, "i64.extend_i32_u")
       st.pending_args = st.pending_args + 1
+      st.arg_classes.push(@types.Kl)
     }
-    // Varargs: wasm32 has no variadic ABI, so a va_arg yields a typed zero and
-    // va_start is a no-op. This keeps the module valid; the values are not the
-    // caller's actual varargs.
-    @types.Vastart => ()
+    // wasm32 has no native variadic ABI. The convention here: the caller builds
+    // an 8-byte-per-argument buffer and passes its address as a hidden trailing
+    // i64 parameter; va_start stores that pointer and va_arg walks it.
+    @types.Argv => ()
+    @types.Vastart => {
+      emit_addr32(st, ins.arg1)
+      wat_writeln(st, "local.get $va")
+      wat_writeln(st, "i64.store")
+    }
     @types.Vaarg => {
-      wat_writeln(st, zero_const(wasm_type(ins.cls)))
+      emit_addr32(st, ins.arg1)
+      wat_writeln(st, "i64.load")
+      wat_writeln(st, "local.set $vatmp")
+      wat_writeln(st, "local.get $vatmp")
+      wat_writeln(st, "i32.wrap_i64")
+      wat_writeln(st, @types.wasm_load_op(ins.cls))
       set_dest(st, ins)
+      emit_addr32(st, ins.arg1)
+      wat_writeln(st, "local.get $vatmp")
+      wat_writeln(st, "i64.const 8")
+      wat_writeln(st, "i64.add")
+      wat_writeln(st, "i64.store")
     }
     @types.Copy => {
       emit_ref(st, ins.arg1, ins.cls)
@@ -441,29 +482,94 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
           target = st.interner.get(con.label)
         }
       }
-      // Reconcile the pushed argument count with the callee's fixed arity:
-      // drop extra varargs, or pad missing arguments with zeroes.
-      let mut params : Array[String] = []
-      let mut found = false
-      for p in st.fn_params {
-        if p.0 == target {
-          params = p.1
-          found = true
+      // Only defined variadic functions use the hidden vararg buffer; external
+      // variadic calls (printf/...) receive their arguments directly.
+      let mut callee_vararg = false
+      for n in st.fn_vararg {
+        if n == target {
+          callee_vararg = true
         }
       }
-      if found {
-        while st.pending_args > params.length() {
-          wat_writeln(st, "drop")
-          st.pending_args = st.pending_args - 1
+      let nargs = st.pending_args
+      let mut call_name = target
+      if callee_vararg {
+        let mut fixed_n = nargs
+        for p in st.fn_params {
+          if p.0 == target {
+            fixed_n = p.1.length()
+          }
         }
-        while st.pending_args < params.length() {
-          wat_writeln(st, zero_const(params[st.pending_args]))
-          st.pending_args = st.pending_args + 1
+        let nvar = if nargs > fixed_n { nargs - fixed_n } else { 0 }
+        // Reserve the vararg buffer at the top of the wasm stack.
+        wat_writeln(st, "global.get $sp")
+        wat_writeln(st, "local.set $vabase")
+        if nvar > 0 {
+          wat_writeln(st, "global.get $sp")
+          wat_writeln(st, "i32.const " + (nvar * 8).to_string())
+          wat_writeln(st, "i32.add")
+          wat_writeln(st, "global.set $sp")
+          // Pop the varargs (top of the stack) into 8-byte slots.
+          let mut k = nvar
+          while k > 0 {
+            k = k - 1
+            match st.arg_classes[fixed_n + k] {
+              @types.Kw => wat_writeln(st, "i64.extend_i32_s")
+              @types.Ks => {
+                wat_writeln(st, "i32.reinterpret_f32")
+                wat_writeln(st, "i64.extend_i32_u")
+              }
+              @types.Kd => wat_writeln(st, "i64.reinterpret_f64")
+              _ => ()
+            }
+            wat_writeln(st, "local.set $vatmp")
+            wat_writeln(st, "local.get $vabase")
+            wat_writeln(st, "i32.const " + (k * 8).to_string())
+            wat_writeln(st, "i32.add")
+            wat_writeln(st, "local.get $vatmp")
+            wat_writeln(st, "i64.store")
+          }
+        }
+        // Pass the buffer pointer as the last (hidden) parameter.
+        wat_writeln(st, "local.get $vabase")
+        wat_writeln(st, "i64.extend_i32_u")
+      } else {
+        // Reconcile the pushed argument count with the callee's fixed arity:
+        // drop extras, or pad missing arguments with zeroes.
+        let mut params : Array[String] = []
+        let mut found = false
+        for p in st.fn_params {
+          if p.0 == target {
+            params = p.1
+            found = true
+          }
+        }
+        if found {
+          while st.pending_args > params.length() {
+            wat_writeln(st, "drop")
+            st.pending_args = st.pending_args - 1
+          }
+          while st.pending_args < params.length() {
+            wat_writeln(st, zero_const(params[st.pending_args]))
+            st.pending_args = st.pending_args + 1
+          }
+        } else if target != "" {
+          // External function: resolve the import declared for this signature.
+          let types : Array[String] = []
+          for c in st.arg_classes {
+            types.push(wasm_type(c))
+          }
+          let key = ext_key(target, types)
+          for e in st.ext_names {
+            if e.0 == key {
+              call_name = e.1
+            }
+          }
         }
       }
       st.pending_args = 0
-      if target != "" {
-        wat_writeln(st, "call $" + target)
+      st.arg_classes.clear()
+      if call_name != "" {
+        wat_writeln(st, "call $" + call_name)
       }
       let mut is_void = false
       for n in st.void_fns {
@@ -643,6 +749,10 @@ fn emit_params(st : WatEmitState) -> Unit {
       }
     }
   }
+  if st.fn_.is_vararg {
+    // Hidden pointer to the caller-built vararg buffer.
+    st.sb.write_string(" (param $va i64)")
+  }
 }
 
 ///|
@@ -692,6 +802,9 @@ fn is_cmp_op(op : @types.Op) -> Bool {
 fn emit_locals(st : WatEmitState) -> Unit {
   // dispatch-loop program counter
   wat_writeln(st, "(local $pc i32)")
+  // Scratch for building/reading the vararg buffer.
+  wat_writeln(st, "(local $vabase i32)")
+  wat_writeln(st, "(local $vatmp i64)")
   let declared : Array[Bool] = Array::make(st.fn_.ntmp(), false)
   for bid in st.fn_.def_order {
     for p in st.fn_.blks[bid].phi {
@@ -962,8 +1075,12 @@ pub fn emit_fn(
   dats? : Array[(String, Int)] = [],
   void_fns? : Array[String] = [],
   fn_params? : Array[(String, Array[String])] = [],
+  fn_vararg? : Array[String] = [],
+  ext_names? : Array[(String, String)] = [],
 ) -> Unit {
-  let st = wat_emit_new(fn_, interner, sb, dats, void_fns, fn_params)
+  let st = wat_emit_new(
+    fn_, interner, sb, dats, void_fns, fn_params, fn_vararg, ext_names,
+  )
   sb.write_string("  (func $\{fn_.name}")
   emit_params(st)
   match return_class(st) {
@@ -984,8 +1101,9 @@ pub fn emit_fn(
 fn collect_extern_calls(
   funcs : Array[@types.Fn],
   interner : @util.Interner,
-) -> Array[(String, Array[String], String)] {
-  let out : Array[(String, Array[String], String)] = []
+) -> (Array[(String, String, Array[String], String)], Array[(String, String)]) {
+  let out : Array[(String, String, Array[String], String)] = []
+  let names : Array[(String, String)] = []
   for f in funcs {
     for bid in f.def_order {
       let b = f.blks[bid]
@@ -1008,34 +1126,52 @@ fn collect_extern_calls(
               }
             }
             if !is_def {
-              let params : Array[String] = []
+              // Every argument (the Argv marker is skipped) becomes a fixed
+              // import parameter; the field name is the C symbol.
+              let all : Array[String] = []
               let mut j = i
               while j > 0 {
                 let p = b.ins[j - 1]
+                if p.op == @types.Argv {
+                  j = j - 1
+                  continue
+                }
                 if p.op == @types.Arg {
-                  params.push(wasm_type(p.cls))
+                  all.push(wasm_type(p.cls))
                 } else if p.op == @types.Arge || p.op == @types.Argc {
-                  params.push("i64")
+                  all.push("i64")
                 } else {
                   break
                 }
                 j = j - 1
               }
-              let rparams : Array[String] = []
-              let mut k = params.length()
-              while k > 0 {
-                k = k - 1
-                rparams.push(params[k])
+              let params : Array[String] = []
+              let mut m = all.length()
+              while m > 0 {
+                m = m - 1
+                params.push(all[m])
               }
               let ret = if ins.to.is_tmp() { wasm_type(ins.cls) } else { "" }
+              let key = ext_key(target, params)
               let mut found = false
-              for e in out {
-                if e.0 == target {
+              for e in names {
+                if e.0 == key {
                   found = true
                 }
               }
               if !found {
-                out.push((target, rparams, ret))
+                let mut import_name = target
+                let mut n = 0
+                for e in out {
+                  if e.1 == target {
+                    n = n + 1
+                  }
+                }
+                if n > 0 {
+                  import_name = target + "#" + n.to_string()
+                }
+                out.push((import_name, target, params, ret))
+                names.push((key, import_name))
               }
             }
           }
@@ -1044,7 +1180,7 @@ fn collect_extern_calls(
       }
     }
   }
-  out
+  (out, names)
 }
 
 ///|
@@ -1056,14 +1192,15 @@ pub fn emit_wat_module(
   sb : StringBuilder,
 ) -> Unit {
   sb.write_string("(module\n")
-  let imports = collect_extern_calls(funcs, _interner)
+  let (imports, ext_names) = collect_extern_calls(funcs, _interner)
   if imports.length() > 0 {
     sb.write_string("  ;; Imports\n")
     for entry in imports {
-      let name = entry.0
-      let params = entry.1
-      let ret = entry.2
-      sb.write_string("  (import \"env\" \"" + name + "\" (func $" + name)
+      let iname = entry.0
+      let field = entry.1
+      let params = entry.2
+      let ret = entry.3
+      sb.write_string("  (import \"env\" \"" + field + "\" (func $" + iname)
       for p in params {
         sb.write_string(" (param " + p + ")")
       }
@@ -1110,6 +1247,13 @@ pub fn emit_wat_module(
       void_fns.push(fn_.name)
     }
   }
+  // Variadic functions take an extra hidden i64 buffer pointer.
+  let fn_vararg : Array[String] = []
+  for fn_ in funcs {
+    if fn_.is_vararg {
+      fn_vararg.push(fn_.name)
+    }
+  }
   // Declared parameter types per function, in signature order.
   let fn_params : Array[(String, Array[String])] = []
   for fn_ in funcs {
@@ -1125,7 +1269,16 @@ pub fn emit_wat_module(
   }
   sb.write_string("  ;; Functions\n")
   for fn_ in funcs {
-    emit_fn(fn_, _interner, sb, dats~, void_fns~, fn_params~)
+    emit_fn(
+      fn_,
+      _interner,
+      sb,
+      dats~,
+      void_fns~,
+      fn_params~,
+      fn_vararg~,
+      ext_names~,
+    )
     sb.write_string("\n")
   }
   sb.write_string("  ;; Exports\n")

@@ -349,6 +349,7 @@ fn rv64_argsclass(
   let mut envc = 0
   let mut gpi = 0
   let mut fpi = 0
+  let mut vararg = false
 
   if retptr {
     gpi = gpi + 1
@@ -362,7 +363,7 @@ fn rv64_argsclass(
     match cur.op {
       @types.Par | @types.Arg => {
         c.cls[0] = cur.cls
-        if cur.cls.base() == 1 && nfp > 0 {
+        if !vararg && cur.cls.base() == 1 && nfp > 0 {
           nfp = nfp - 1
           c.reg[0] = @types.FA0 + fpi
           fpi = fpi + 1
@@ -416,6 +417,10 @@ fn rv64_argsclass(
           c.nreg = 0
         }
       }
+      @types.Argv =>
+        // Everything after the ellipsis is passed as if the float file were
+        // exhausted (C Oargv); float varargs then land in the GPR save area.
+        vararg = true
       @types.Pare | @types.Arge => {
         c.reg[0] = @types.T5
         c.cls[0] = @types.Kl
