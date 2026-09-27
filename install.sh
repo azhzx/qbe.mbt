@@ -118,7 +118,7 @@ sha256_of() {
 tty_read() { read -r _ans < /dev/tty 2>/dev/null || _ans=; }
 have_tty() { [ -r /dev/tty ] && [ -w /dev/tty ]; }
 
-step 1/2 "Downloading $asset"
+step 1/3 "Downloading $asset"
 info "$asset_url"
 if [ "$dry_run" -eq 1 ]; then
   info "dry run: would install to $bin_dir/qbe"
@@ -144,7 +144,7 @@ else
   warn "could not fetch SHA256SUMS; skipping verification"
 fi
 
-step 2/2 "Installing"
+step 2/3 "Installing"
 mkdir -p "$bin_dir" || die "cannot create $bin_dir"
 if command -v install >/dev/null 2>&1; then
   install -m 755 "$tmp" "$bin_dir/qbe" || die "cannot install to $bin_dir/qbe"
@@ -154,19 +154,26 @@ else
 fi
 ok "installed $bin_dir/qbe"
 
+step 3/3 "Shell integration"
 if [ "$add_path" -eq 0 ]; then
-  info "PATH not modified (--no-path)"
+  info "PATH not modified (--no-path); the binary is at $bin_dir/qbe"
 else
   on_path=0
   case ":$PATH:" in *":$bin_dir:"*) on_path=1 ;; esac
   if [ "$on_path" -eq 1 ]; then
     ok "$bin_dir is already on PATH"
   else
-    ans=y
-    if [ "$assume_yes" -eq 0 ] && have_tty; then
+    ans=n
+    if [ "$assume_yes" -eq 1 ]; then
+      ans=y
+    elif have_tty; then
       printf 'Add %s to PATH? [Y/n] ' "$bin_dir" >&2
       tty_read
       case "${_ans:-y}" in [Nn]*) ans=n ;; *) ans=y ;; esac
+    else
+      info "no terminal to ask; add this line to your shell rc to put qbe on PATH:"
+      info "  export PATH=\"$bin_dir:\$PATH\""
+      ans=n
     fi
     if [ "$ans" = y ]; then
       case "${SHELL##*/}" in
