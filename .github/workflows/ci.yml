@@ -177,10 +177,13 @@ jobs:
       # build.rs runs `moon build --target native ir_builder_capi` and links the
       # object plus the MoonBit runtime into the crate.
       - name: Check formatting
-        run: cargo fmt --manifest-path rust/Cargo.toml --check
+        run: cargo fmt --manifest-path rust/Cargo.toml --all --check
 
       - name: Build & test Rust bindings
         run: cargo test --manifest-path rust/Cargo.toml
+
+      - name: Build & test qopple-cli
+        run: cargo test --manifest-path rust/qopple-cli/Cargo.toml
 
       # demo/13_builder_rust builds $add/$tri/$fib in Rust, prints the QBE IL
       # and JITs the functions.

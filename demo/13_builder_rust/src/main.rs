@@ -9,7 +9,7 @@
 //!   cargo run --manifest-path demo/13_builder_rust/Cargo.toml
 //!   ./scripts/run_builder_rust_demo.sh
 
-use qbe_builder::{Context, IntCC, Module, Signature, Type};
+use qopple::{Context, IntCC, Module, Signature, Type};
 
 // export function w $add(w %a, w %b) { @start  %r =w add %a, %b  ret %r }
 fn build_add(module: &mut Module) {

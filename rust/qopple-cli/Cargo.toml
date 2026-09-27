@@ -1,0 +1,20 @@
+[package]
+name = "qopple-cli"
+version = "0.24.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Run the qbe.mbt QBE compiler executable from Rust: a pure-Rust subprocess wrapper with no native linking"
+license = "Apache-2.0"
+repository = "https://github.com/azhzx/qbe.mbt"
+homepage = "https://github.com/azhzx/qbe.mbt"
+readme = "README.md"
+keywords = ["qbe", "compiler", "codegen", "cli", "subprocess"]
+categories = ["development-tools", "compilers", "command-line-utilities"]
+
+[lib]
+name = "qopple_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "qopple"
+path = "src/main.rs"

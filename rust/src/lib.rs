@@ -1,4 +1,4 @@
-//! Rust glue layer over the qbe.mbt programmatic QBE IL builder.
+//! Rust bindings (`qopple`) for the qbe.mbt programmatic QBE IL builder.
 //!
 //! The API mirrors Cranelift/inkwell: a Context creates a Module, functions
 //! are declared with a Signature, and a FunctionBuilder emits instructions via
@@ -6,7 +6,7 @@
 //! as arm64 assembly, or emitted as a self-contained Mach-O arm64 object.
 //!
 //! ```no_run
-//! use qbe_builder::{Context, Signature, Type};
+//! use qopple::{Context, Signature, Type};
 //!
 //! let ctx = Context::new();
 //! let mut module = ctx.create_module();

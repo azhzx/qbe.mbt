@@ -1,8 +1,8 @@
 //! End-to-end tests for the Rust glue layer.
 
-use qbe_builder::{Context, DebugType, IntCC, Signature, Type};
+use qopple::{Context, DebugType, IntCC, Signature, Type};
 
-fn build_module() -> qbe_builder::Module {
+fn build_module() -> qopple::Module {
     let ctx = Context::new();
     let mut module = ctx.create_module();
 
@@ -133,7 +133,7 @@ fn object_links_and_runs() {
     let obj = module.emit_object().unwrap();
     drop(module);
 
-    let dir = std::env::temp_dir().join(format!("qbe_builder_rust_{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("qopple_rust_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let obj_path = dir.join("module.o");
@@ -224,7 +224,7 @@ fn jit_calls_host_function() {
         b.ins().return_(&[r]);
     }
     let jit = module
-        .jit_with_symbols(&[("host_mul", host_mul as usize)])
+        .jit_with_symbols(&[("host_mul", host_mul as *const () as usize)])
         .unwrap();
     let use_host: extern "C" fn(i64, i64) -> i64 = jit.get_fn("use_host").unwrap();
     assert_eq!(use_host(6, 7), 42);

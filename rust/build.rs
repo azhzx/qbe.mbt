@@ -1,19 +1,88 @@
-// Build script for the qbe.mbt C-ABI glue layer.
+// Build script for the `qopple` crate.
 //
-// It locates (or builds) the `ir_builder_capi` object produced by MoonBit,
-// compiles src/shim.c, then combines the foreign-library object, the MoonBit
-// runtime archives and the shim into one self-contained static archive that
-// is linked into every target of this crate.
+// There are two ways to obtain the native half of the C ABI:
+//
+//   * **Vendored archives (default for crates.io builds).** The crate ships a
+//     self-contained static archive per supported target under
+//     `vendor/<target-triple>/libqopple_native.a`. These are produced by the
+//     `crates` GitHub Actions workflow with the MoonBit toolchain, so a
+//     downstream `cargo build` only has to link one file and needs neither
+//     `moon` nor the qbe.mbt repository.
+//
+//   * **From source.** Inside a qbe.mbt checkout (or with
+//     `QOPPLE_BUILD_FROM_SOURCE=1`), build `ir_builder_capi` with `moon`,
+//     compile `src/shim.c`, and combine the foreign-library object, the MoonBit
+//     runtime archives and the shim into the same archive. This is what keeps
+//     `cargo test` inside the repository working against live MoonBit sources.
+//
+// Supported prebuilt targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu,
+// aarch64-unknown-linux-gnu.
 use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let repo = manifest.parent().expect("rust/ has a parent").to_path_buf();
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    let repo = manifest.parent().map(Path::to_path_buf);
 
+    let force_source = env::var_os("QOPPLE_BUILD_FROM_SOURCE").is_some();
+    let have_repo = repo
+        .as_deref()
+        .map(|r| r.join("ir_builder_capi/moon.pkg").exists())
+        .unwrap_or(false);
+
+    // A repository checkout always builds from source so that changes to the
+    // MoonBit side are picked up; the published crate has no repository next to
+    // it and therefore uses the vendored archive.
+    if !force_source && !have_repo {
+        let triple = target_triple(&target_arch, &target_os);
+        let dir = manifest.join("vendor").join(triple);
+        let archive = dir.join("libqopple_native.a");
+        if !archive.exists() {
+            panic!(
+                "qopple: no prebuilt native library for {triple}\n\
+                 Looked in {}\n\
+                 Supported prebuilt targets: aarch64-apple-darwin, \
+                 x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu.\n\
+                 Install the MoonBit toolchain (https://www.moonbitlang.com) and \
+                 build a qbe.mbt checkout with QOPPLE_BUILD_FROM_SOURCE=1 to \
+                 build this target from source.",
+                archive.display()
+            );
+        }
+        println!("cargo:rustc-link-search=native={}", dir.display());
+        println!("cargo:rustc-link-lib=static=qopple_native");
+        link_system_libs(&target_os);
+        println!("cargo:rerun-if-changed={}", archive.display());
+        return;
+    }
+
+    let repo = repo.expect("a from-source build needs the qbe.mbt repository next to rust/");
+    build_from_source(&repo, &manifest, &out, &target_os);
+}
+
+fn target_triple(arch: &str, os: &str) -> &'static str {
+    match (arch, os) {
+        ("aarch64", "macos") => "aarch64-apple-darwin",
+        ("x86_64", "linux") => "x86_64-unknown-linux-gnu",
+        ("aarch64", "linux") => "aarch64-unknown-linux-gnu",
+        _ => panic!("qopple: unsupported target {arch}-{os}"),
+    }
+}
+
+fn link_system_libs(target_os: &str) {
+    // The MoonBit runtime uses the C math library; everything else comes from
+    // libSystem on macOS and from libc/libgcc on Linux.
+    println!("cargo:rustc-link-lib=dylib=m");
+    if target_os == "linux" {
+        println!("cargo:rustc-link-lib=dylib=pthread");
+    }
+}
+
+fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) {
     let moon_home = env::var("MOON_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(env::var("HOME").unwrap()).join(".moon"));
@@ -22,7 +91,7 @@ fn main() {
     let backtrace = moon_home.join("lib/libbacktrace.a");
     let runtime = repo.join("_build/native/debug/build/libruntime.a");
 
-    let capi_obj = locate_capi(&repo);
+    let capi_obj = locate_capi(repo);
     let run_asm_stub = repo.join("_build/native/debug/build/native/native_stub.o");
     assert!(
         run_asm_stub.exists(),
@@ -49,7 +118,7 @@ fn main() {
     assert!(status.success(), "compiling src/shim.c failed");
 
     // Combine everything into one archive so downstream crates link it too.
-    let combined = out.join("libqbe_builder_native.a");
+    let combined = out.join("libqopple_native.a");
     let _ = std::fs::remove_file(&combined);
     if target_os == "macos" {
         let libtool = env::var("LIBTOOL").unwrap_or_else(|_| "libtool".to_string());
@@ -71,7 +140,7 @@ fn main() {
         );
     } else {
         combine_with_ar(
-            &out,
+            out,
             &combined,
             &[shim_o, capi_obj, run_asm_stub, moonbitrun],
             &[runtime, backtrace],
@@ -79,8 +148,8 @@ fn main() {
     }
 
     println!("cargo:rustc-link-search=native={}", out.display());
-    println!("cargo:rustc-link-lib=static=qbe_builder_native");
-    println!("cargo:rustc-link-lib=dylib=m");
+    println!("cargo:rustc-link-lib=static=qopple_native");
+    link_system_libs(target_os);
     println!("cargo:rerun-if-changed=src/shim.c");
     println!("cargo:rerun-if-env-changed=QBE_CAPI_OBJ");
     println!("cargo:rerun-if-env-changed=MOON_HOME");

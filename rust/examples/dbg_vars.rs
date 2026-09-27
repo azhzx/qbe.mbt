@@ -3,7 +3,7 @@
 //! Used by `scripts/run_dbg_vars_demo.sh`: the front end names a variable and
 //! its type, and the emitted `.debug_info`/`.debug_loc` let lldb show it.
 
-use qbe_builder::{Context, DebugType, Signature, Type};
+use qopple::{Context, DebugType, Signature, Type};
 
 fn main() {
     let ctx = Context::new();

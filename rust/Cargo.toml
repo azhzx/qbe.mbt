@@ -1,19 +1,39 @@
 [package]
-name = "qbe-builder"
-version = "0.1.0"
+name = "qopple"
+version = "0.24.0"
 edition = "2021"
 rust-version = "1.70"
-description = "Rust glue layer over the qbe.mbt programmatic QBE IL builder C ABI"
+description = "Programmatic QBE IL builder for Rust: construct QBE IR, then emit assembly, objects or JIT code through the qbe.mbt C ABI"
 license = "Apache-2.0"
-publish = false
+repository = "https://github.com/azhzx/qbe.mbt"
+homepage = "https://github.com/azhzx/qbe.mbt"
+readme = "README.md"
+keywords = ["qbe", "compiler", "codegen", "jit", "ir"]
+categories = ["development-tools", "compilers"]
+include = [
+  "src/**",
+  "examples/**",
+  "tests/**",
+  "build.rs",
+  "Cargo.toml",
+  "README.md",
+  "LICENSE",
+  "vendor/**",
+]
 
 [lib]
-name = "qbe_builder"
+name = "qopple"
 path = "src/lib.rs"
 
 [[example]]
 name = "demo"
 path = "examples/demo.rs"
+
+[workspace]
+members = ["qopple-cli"]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [profile.dev]
 debug = true

@@ -1,4 +1,4 @@
-# Rust 胶水层（qbe-builder）
+# Rust 胶水层（qopple）
 
 `rust/` 是一个基于 [`include/qbe_builder.h`](../../include/qbe_builder.h) C ABI 的
 Rust 胶水层，接口风格对齐 Cranelift/inkwell。
@@ -6,7 +6,7 @@ Rust 胶水层，接口风格对齐 Cranelift/inkwell。
 完整指南见 [`rust/README.md`](../../rust/README.md)。摘要：
 
 ```rust
-use qbe_builder::{Context, Signature, Type};
+use qopple::{Context, Signature, Type};
 
 let ctx = Context::new();
 let mut module = ctx.create_module();
@@ -33,7 +33,10 @@ let obj = module.emit_object()?;
    （`moonbit_make_bytes`、`Moonbit_array_length`、`moonbit_decref`）以及一次性的
    `moonbit_runtime_init` + `moonbit_init`；
 3. 把 foreign library 目标文件、`libmoonbitrun.o`、`libruntime.a`、`libbacktrace.a`
-   合成 `libqbe_builder_native.a` 并链接（外加 `-lm`）。
+   合成 `libqopple_native.a` 并链接（外加 `-lm`）。
+
+从 crates.io 安装的版本旁边没有仓库：构建脚本改为链接随 crate 一起发布的
+预编译 `vendor/<target-triple>/libqopple_native.a`（见 `crates` workflow）。
 
 ## API 映射
 

@@ -239,3 +239,7 @@
     trailing i64 parameter); external imports are keyed by call signature
     add tools/check_vararg_runtime.py (interp + wasm + la64 under qemu-user)
     and test/emit/016_vararg_after.ssa
+    publish the Rust bindings to crates.io as `qopple` 0.24.0, with a companion
+    `qopple-cli` subprocess wrapper; `qopple` ships prebuilt native archives for
+    aarch64 macOS and x86_64/aarch64 Linux, so downstream builds need neither
+    the MoonBit toolchain nor the repository; add .github/workflows/crates.yml

@@ -1,8 +1,8 @@
 //! Cranelift-style demo: build add, a phi loop (tri) and recursive fib, then
 //! print the IL, the arm64 assembly, and emit Mach-O objects.
-use qbe_builder::{Context, IntCC, Signature, Type};
+use qopple::{Context, IntCC, Signature, Type};
 
-fn build_tri(module: &mut qbe_builder::Module) {
+fn build_tri(module: &mut qopple::Module) {
     let f = module.add_function("tri", Signature::new([Type::I32], Some(Type::I32)));
     let mut b = module.builder(f);
     let n = b.params()[0];
@@ -32,7 +32,7 @@ fn build_tri(module: &mut qbe_builder::Module) {
     b.ins().return_(&[s2]);
 }
 
-fn build_fib(module: &mut qbe_builder::Module) {
+fn build_fib(module: &mut qopple::Module) {
     let f = module.add_function("fib", Signature::new([Type::I32], Some(Type::I32)));
     let mut b = module.builder(f);
     let n = b.params()[0];

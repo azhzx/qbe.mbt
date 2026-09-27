@@ -1,12 +1,30 @@
-# qbe-builder (Rust glue layer)
+# qopple (Rust bindings for qbe.mbt)
 
 Idiomatic Rust bindings over the [qbe.mbt](../) programmatic QBE IL builder
-**through its C ABI** (`include/qbe_builder.h`). The API follows
-Cranelift/inkwell: a `Context` creates a `Module`, functions are declared with
-a `Signature`, and a `FunctionBuilder` emits instructions via `builder.ins()`.
+**through its C ABI** ([include/qbe_builder.h](../include/qbe_builder.h)). The
+API follows Cranelift/inkwell: a `Context` creates a `Module`, functions are
+declared with a `Signature`, and a `FunctionBuilder` emits instructions via
+`builder.ins()`.
+
+## Install
+
+```sh
+cargo add qopple
+```
+
+The published crate ships **prebuilt, self-contained native archives** for
+`aarch64-apple-darwin`, `x86_64-unknown-linux-gnu` and
+`aarch64-unknown-linux-gnu`, so a downstream build needs neither the MoonBit
+toolchain nor the qbe.mbt repository. On any other target, install the MoonBit
+toolchain and build a qbe.mbt checkout with `QOPPLE_BUILD_FROM_SOURCE=1`; see
+[Building from source](#building-from-source).
+
+For a pure-Rust alternative that does not link anything and instead runs the
+`qbe` executable as a subprocess, use the companion crate
+[`qopple-cli`](qopple-cli/).
 
 ```rust
-use qbe_builder::{Context, Signature, Type};
+use qopple::{Context, Signature, Type};
 
 let ctx = Context::new();
 let mut module = ctx.create_module();
@@ -30,7 +48,7 @@ Run the full example:
 cargo run --example demo
 ```
 
-The standalone demo under [`demo/13_builder_rust/`](../demo/13_builder_rust/) (the
+The standalone demo under [demo/13_builder_rust/](../demo/13_builder_rust/) (the
 Rust counterpart of `demo/12_builder_capi.c`) is run with
 `./scripts/run_builder_rust_demo.sh`.
 
@@ -110,19 +128,35 @@ per variable with a `.debug_loc` location (`DW_OP_regx` for a register,
 `scripts/run_dbg_vars_demo.sh` links the result and checks `frame variable`
 under lldb.
 
-## Building and testing
+## Variadic functions
+
+`Signature::variadic` marks the last signature parameter as the ellipsis; the
+`FunctionBuilder` then offers `vastart`, `vaarg`, `arg_vararg` and
+`call_vararg`:
+
+```rust
+let f = module.add_function("sum", Signature::variadic([Type::I32], Some(Type::I32)));
+let size = b.ins().iconst(Type::I64, 32);
+let ap = b.ins().raw("alloc8", Type::I64, Some(Type::I64), Some(size), None).unwrap();
+b.ins().vastart(ap);
+let v = b.ins().vaarg(Type::I32, ap);
+let r = b.ins().call_vararg(f, &[a], &[b]).unwrap();
+```
+
+## Building from source
 
 Requirements: a Rust toolchain, the MoonBit toolchain (`moon`), and a C
-compiler. The build script runs
+compiler. Inside a qbe.mbt checkout - or with `QOPPLE_BUILD_FROM_SOURCE=1` - the
+build script runs
 
 ```sh
 moon build --target native ir_builder_capi
 ```
 
 locates the produced `ir_builder_capi.o`, compiles `src/shim.c`, and combines
-the foreign-library object, the MoonBit runtime archives and the shim into one
-static archive that is linked into every target. Set `QBE_CAPI_OBJ` to a
-prebuilt object to skip the `moon build` step, or `QBE_NO_MOON_BUILD=1` to
+the foreign-library object, the MoonBit runtime archives and the shim into
+`libqopple_native.a`, which is linked into every target. Set `QBE_CAPI_OBJ` to
+a prebuilt object to skip the `moon build` step, or `QBE_NO_MOON_BUILD=1` to
 forbid it. `MOON_HOME` overrides the MoonBit install location.
 
 ```sh
@@ -135,8 +169,19 @@ runs it and checks `add(20,22)=42 tri(10)=55 fib(10)=55`. It is skipped on
 hosts that are not macOS/aarch64; the IL and assembly tests run everywhere the
 foreign library builds.
 
+## Vendored archives
+
+The prebuilt archives under `vendor/<target-triple>/` are produced by the
+`crates` GitHub Actions workflow from the same commit as the crate
+(`QOPPLE_BUILD_FROM_SOURCE=1` forces the from-source path). They are regular
+static archives containing the C ABI object, the shim and the MoonBit runtime,
+and are linked with `-lm` (plus `-lpthread` on Linux).
+
 ## Notes and limitations
 
+- **Platforms**: prebuilt for aarch64 macOS, x86_64 Linux and aarch64 Linux.
+  Windows and Intel macOS are not supported (the MoonBit native toolchain does
+  not target them).
 - **Threading**: the C ABI has a process-global builder registry and the
   MoonBit runtime is not thread-safe, so a live `Module` holds a process-wide
   lock and is `!Send`. Build one module at a time.

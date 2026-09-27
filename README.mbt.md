@@ -17,7 +17,7 @@
 - **In-memory JIT** for macOS/aarch64 (`jit/`): map and call arm64 machine code
   with no toolchain in the path, resolving libc via `dlsym` and host callbacks;
   usable from the C ABI or Rust
-- **Rust glue layer** (`rust/`, crate `qbe-builder`): Cranelift/inkwell-style
+- **Rust bindings** (`rust/`, crates.io `qopple`): Cranelift/inkwell-style
   `Context` / `Module` / `FunctionBuilder` / `ins()`, including `Module::jit`
 - **Variadic functions** (`...`): declare, emit `va_start`/`va_arg` and call
   them from the MoonBit builder, the C ABI or Rust. Every backend lowers them

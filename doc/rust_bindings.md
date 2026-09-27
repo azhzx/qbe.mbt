@@ -1,4 +1,4 @@
-# Rust bindings (qbe-builder)
+# Rust bindings (qopple)
 
 `rust/` contains a Rust glue layer over the programmatic QBE IL builder, built
 **on top of the C ABI** in [`include/qbe_builder.h`](../include/qbe_builder.h).
@@ -7,7 +7,7 @@ Its API follows Cranelift/inkwell.
 See [`rust/README.md`](../rust/README.md) for the full guide. Summary:
 
 ```rust
-use qbe_builder::{Context, Signature, Type};
+use qopple::{Context, Signature, Type};
 
 let ctx = Context::new();
 let mut module = ctx.create_module();
@@ -34,7 +34,11 @@ The crate build script (`rust/build.rs`):
    (`moonbit_make_bytes`, `Moonbit_array_length`, `moonbit_decref`) and the
    one-shot `moonbit_runtime_init` + `moonbit_init`;
 3. combines the foreign-library object, `libmoonbitrun.o`, `libruntime.a` and
-   `libbacktrace.a` into `libqbe_builder_native.a` and links it (plus `-lm`).
+   `libbacktrace.a` into `libqopple_native.a` and links it (plus `-lm`).
+
+For published crates.io builds there is no repository next to the crate: the
+build script links the prebuilt `vendor/<target-triple>/libqopple_native.a`
+shipped with the crate instead (see the `crates` workflow).
 
 ## API mapping
 
