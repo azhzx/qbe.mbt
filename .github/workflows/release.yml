@@ -1,0 +1,98 @@
+# Build and publish the native qbe binary for each supported platform.
+#
+# The installer served from https://i2pl.com/install-qbe-mbt.sh only downloads
+# one of these assets; it never builds from source.
+#
+# Push a version tag (e.g. v0.24.0) to publish a release, or run the workflow
+# manually to build the matrix and keep the binaries as workflow artifacts.
+#
+# Asset names deliberately carry no version so that the installer can use
+# https://github.com/<repo>/releases/latest/download/<asset> without the API.
+
+name: Release binaries
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            asset: qbe-macos-aarch64
+          - os: macos-15-intel
+            asset: qbe-macos-x86_64
+          - os: ubuntu-latest
+            asset: qbe-linux-x86_64
+          - os: ubuntu-24.04-arm
+            asset: qbe-linux-aarch64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
+
+      - name: Sync dependencies
+        run: moon update
+
+      - name: Build qbe (release)
+        run: moon build --target native --release --strip
+
+      - name: Package
+        run: |
+          set -eux
+          src=$(find _build/native/release -type f -name 'main.exe' -path '*cmd/main*' | head -n 1)
+          test -n "$src"
+          install -m 755 "$src" "${{ matrix.asset }}"
+          file "${{ matrix.asset }}"
+          ./"${{ matrix.asset }}" --help >/dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          set -eux
+          cd dist
+          sha256sum qbe-macos-aarch64 qbe-macos-x86_64 qbe-linux-x86_64 qbe-linux-aarch64 > SHA256SUMS
+          cat SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/qbe-macos-aarch64
+            dist/qbe-macos-x86_64
+            dist/qbe-linux-x86_64
+            dist/qbe-linux-aarch64
+            dist/SHA256SUMS
+          generate_release_notes: true

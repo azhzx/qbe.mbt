@@ -73,6 +73,24 @@ jobs:
       - name: Unit tests (native)
         run: moon test --target native
 
+      # The download-only installer (the file served from i2pl.com) is what
+      # users pipe into sh; exercise it end to end against a staged release
+      # tree over HTTP, including the piped form and the checksum path.
+      - name: Installer smoke test (download-only path)
+        run: |
+          set -eux
+          stage="$RUNNER_TEMP/releases/latest/download"
+          mkdir -p "$stage"
+          cp _build/native/debug/build/cmd/main/main.exe "$stage/qbe-linux-x86_64"
+          (cd "$stage" && sha256sum qbe-linux-x86_64 > SHA256SUMS)
+          python3 -m http.server 8765 --directory "$RUNNER_TEMP" >/dev/null 2>&1 &
+          srv=$!
+          trap 'kill $srv 2>/dev/null || true' EXIT
+          sleep 1
+          sh -n install.sh
+          cat install.sh | sh -s -- --base-url http://127.0.0.1:8765/releases --bin-dir "$RUNNER_TEMP/bin" --no-path --yes
+          "$RUNNER_TEMP/bin/qbe" --help >/dev/null
+
       # PowerShell is preinstalled on the runner; parse-check the Windows
       # installer so a syntax error cannot land unnoticed.
       - name: Check PowerShell installer syntax

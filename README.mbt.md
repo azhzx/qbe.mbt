@@ -59,6 +59,20 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 ## Quick start
 
+Install a prebuilt binary — no MoonBit compiler or C toolchain needed:
+
+~~~sh
+curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
+~~~
+
+The installer detects your OS and architecture, downloads the matching release
+asset (`qbe-macos-aarch64`, `qbe-linux-x86_64`, ...), verifies its
+SHA-256 checksum and installs it on your `PATH`. Use `--version v0.24.0`
+to pin a release, `--bin-dir DIR` to choose the directory, or `--no-path`
+to leave your shell configuration alone.
+
+### From source
+
 `./scripts/bootstrap.sh` is an interactive installer (rustup-style): it asks
 how to get the MoonBit compiler, builds the native `qbe` binary and offers to
 put it on your `PATH`.
