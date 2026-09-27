@@ -2,10 +2,19 @@
 package "azhzx/qbe/run_asm"
 
 // Values
+pub fn assemble_object(String) -> Bytes raise
+
+pub fn run_wasm(String, String, Array[String]) -> String raise
 
 // Errors
 
 // Types and methods
+pub struct RunAsmModule {
+  handle : Int64
+}
+pub fn RunAsmModule::call1(Self, String, Int64) -> Int64 raise
+pub fn RunAsmModule::load_shared(String) -> Self raise
+pub fn RunAsmModule::lookup(Self, String) -> Int64 raise
 
 // Type aliases
 

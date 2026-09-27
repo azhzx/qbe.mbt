@@ -257,3 +257,38 @@ fn debug_info_names_variables() {
     assert!(asm.contains("\t.asciz \"sum\""), "{asm}");
     assert!(asm.contains("\t.asciz \"int\""), "{asm}");
 }
+
+#[test]
+fn variadic_signature_va_ops_and_call() {
+    let ctx = Context::new();
+    let mut module = ctx.create_module();
+
+    // function w $sum(w %n, ...) { %ap = alloc8 32; vastart; vaarg; ret }
+    let f = module.add_function("sum", Signature::variadic([Type::I32], Some(Type::I32)));
+    {
+        let mut b = module.builder(f);
+        let _n = b.params()[0];
+        let size = b.ins().iconst(Type::I64, 32);
+        let ap = b
+            .ins()
+            .raw("alloc8", Type::I64, Some(Type::I64), Some(size), None)
+            .unwrap();
+        b.ins().vastart(ap);
+        let v = b.ins().vaarg(Type::I32, ap);
+        b.ins().return_(&[v]);
+    }
+
+    // export function w $main() { %r =w call $sum(w 1, ..., w 2) }
+    let g = module.add_function("main", Signature::new([], Some(Type::I32)));
+    {
+        let mut b = module.builder(g);
+        let a = b.ins().iconst(Type::I32, 1);
+        let c = b.ins().iconst(Type::I32, 2);
+        let r = b.ins().call_vararg(f, &[a], &[c]).unwrap();
+        b.ins().return_(&[r]);
+    }
+
+    let il = module.emit_il();
+    assert!(il.contains(", ...)"), "{il}");
+    assert!(il.contains("..., w "), "{il}");
+}

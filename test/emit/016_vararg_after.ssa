@@ -1,0 +1,12 @@
+# varargs: arguments after the ellipsis (a float after ... goes in a GPR)
+
+export function d $f(l %a, d %c, ...) {
+@start
+	ret %c
+}
+
+export function d $g() {
+@start
+	%r =d call $f(l 1, d d_2.0, ..., w 3, d d_4.0)
+	ret %r
+}

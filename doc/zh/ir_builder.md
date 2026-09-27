@@ -1,3 +1,27 @@
+## 可变参数
+
+用 `is_vararg` 声明可变参数函数，对 `alloc8` 分配的 va_list 槽执行
+`va_start`/`va_arg`，并用 `call_vararg` 调用可变参数函数（省略号写在固定
+参数与可变参数之间）：
+
+```moonbit
+let f = b.add_func("sum", Word, [Kw], true, is_vararg=true)
+let ap = b.emit_ins(f, Alloc8, Kl, Kl, b.iconst(f, 32L), -1)
+b.vastart(f, ap)
+let v = b.vaarg(f, Kw, ap)
+let r = b.call_vararg(g, "sum", [ (Kw, a) ], [ (Kw, c) ], Word)
+```
+
+C ABI 对应 `qbe_func_set_vararg`、`qbe_vastart`、`qbe_vaarg`、
+`qbe_arg_vararg`；Rust 对应 `Signature::variadic` 与 `FunctionBuilder` 的
+`vastart` / `vaarg` / `call_vararg`。
+
+各后端都实现了可变参数：amd64、arm64、rv64 与参考实现逐字节一致；la64 走
+LP64D 的寄存器保存区；wasm32 没有原生可变参数 ABI，因此由调用方构造 8 字节
+槽缓冲区，并把地址作为隐藏的末尾 i64 参数传入。解释器直接执行
+`va_start`/`va_arg`，`tools/check_vararg_runtime.py` 会校验解释器、wasm32
+以及（在 qemu-user 下）la64 的结果一致。
+
 # 程序化 IR 构造器与 C ABI
 
 `ir_builder` 以**程序化**方式构造 QBE IL：不再渲染 `.ssa` 文本再重新解析，

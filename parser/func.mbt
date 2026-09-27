@@ -90,10 +90,38 @@ fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
 fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
   self.expect(TLpa) // (
   let mut hasenv = false
+  let mut vararg = false
   while true {
     let pk = self.peek_kind()
-    if pk == TRpa || pk == TDot3 {
+    if pk == TRpa {
       break
+    }
+    // The ellipsis marks where the variadic arguments start. In a signature
+    // it sets is_vararg; in a call it emits an Argv marker. Arguments may
+    // follow it, so keep parsing after consuming the marker (C parserefl).
+    if pk == TDot3 {
+      let _ = self.next() // consume ...
+      vararg = true
+      if arg {
+        let fn_ = self.curfn()
+        let ins = @types.Ins::new(
+          @types.Argv,
+          @types.Kw,
+          @types.Ref::none(),
+          @types.Ref::none(),
+          @types.Ref::none(),
+        )
+        if self.curblk >= 0 {
+          fn_.blks[self.curblk].ins.push(ins)
+        } else {
+          self.par_ins.push(ins)
+        }
+      }
+      if self.peek_kind() == TRpa {
+        break
+      }
+      self.expect(TCom) // ,
+      continue
     }
     // Parse environment or class
     let env = pk == TId && self.peek().raw == "env"
@@ -169,30 +197,8 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
     }
     self.expect(TCom) // ,
   }
-  // Check for ... (variadic)
-  if self.peek_kind() == TDot3 {
-    let _ = self.next() // consume ...
-    // C parserefl emits an Oargv marker at the ... position for calls.
-    if arg {
-      let fn_ = self.curfn()
-      let ins = @types.Ins::new(
-        @types.Argv,
-        @types.Kw,
-        @types.Ref::none(),
-        @types.Ref::none(),
-        @types.Ref::none(),
-      )
-      if self.curblk >= 0 {
-        fn_.blks[self.curblk].ins.push(ins)
-      } else {
-        self.par_ins.push(ins)
-      }
-    }
-    self.expect(TRpa) // )
-    return true
-  }
   self.expect(TRpa) // )
-  false
+  vararg
 }
 
 ///|

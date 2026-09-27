@@ -54,6 +54,10 @@ extern "C" {
     pub fn qbe_emit_void(b: Builder, f: Func, op: MbBytes, cls: i32, a1: Val, a2: Val);
     pub fn qbe_arg(b: Builder, f: Func, cls: i32, val: Val);
     pub fn qbe_call(b: Builder, f: Func, callee: MbBytes, ret_cls: i32) -> Val;
+    pub fn qbe_func_set_vararg(b: Builder, f: Func);
+    pub fn qbe_arg_vararg(b: Builder, f: Func);
+    pub fn qbe_vastart(b: Builder, f: Func, ap: Val);
+    pub fn qbe_vaarg(b: Builder, f: Func, cls: i32, ap: Val) -> Val;
     pub fn qbe_ret(b: Builder, f: Func, val: Val);
     pub fn qbe_jmp(b: Builder, f: Func, dest: Block);
     pub fn qbe_jmp_n(b: Builder, f: Func, dest: Block, args: MbBytes);

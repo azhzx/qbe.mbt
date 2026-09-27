@@ -161,6 +161,33 @@ bash scripts/run_builder_demo.sh
 On the MoonBit side, `moon test --target native ir_builder` also JITs the
 builder-built `fib` in-process and checks `fib(10) == 55`, `fib(20) == 6765`.
 
+## Variadic functions
+
+Declare a variadic function with the `is_vararg` flag, run `va_start`/`va_arg`
+against an `alloc8` va_list slot, and call variadic functions with
+`call_vararg` (the ellipsis is written between the fixed and variadic argument
+lists):
+
+```moonbit
+let f = b.add_func("sum", Word, [Kw], true, is_vararg=true)
+let ap = b.emit_ins(f, Alloc8, Kl, Kl, b.iconst(f, 32L), -1)
+b.vastart(f, ap)
+let v = b.vaarg(f, Kw, ap)
+let r = b.call_vararg(g, "sum", [ (Kw, a) ], [ (Kw, c) ], Word)
+```
+
+The C ABI exposes the same surface with `qbe_func_set_vararg`, `qbe_vastart`,
+`qbe_vaarg` and `qbe_arg_vararg`; Rust uses `Signature::variadic` with
+`FunctionBuilder::vastart` / `vaarg` / `call_vararg`.
+
+Every backend lowers varargs: amd64, arm64 and rv64 are byte-identical to the
+reference; la64 walks the LP64D register save area; wasm32 has no native
+variadic ABI, so the caller builds an 8-byte-slot buffer and passes its address
+as a hidden trailing i64 parameter. The SSA interpreter executes
+`va_start`/`va_arg` directly, and `tools/check_vararg_runtime.py` asserts the
+same result on the interpreter, the wasm32 backend and (under qemu-user) the
+la64 backend.
+
 ## Limitations
 
 - Object/JIT emission is arm64 (macOS/aarch64) only, matching route B.

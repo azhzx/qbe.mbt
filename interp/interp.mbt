@@ -47,6 +47,8 @@ priv struct Frame {
   mut frame_sp : UInt64
   // pending call arguments collected from Arg/Argc/Arge instructions
   mut call_args : Array[InterpValue]
+  // start of this frame's vararg buffer (the va_start target)
+  va_base : UInt64
 }
 
 ///|
@@ -224,12 +226,40 @@ fn Interp::call_function(
       argi = argi + 1
     }
   }
+  // Everything past the fixed parameters is a variadic argument. Only a
+  // variadic callee may receive them; the IL ellipsis in the caller is
+  // optional (see test/emit/002_vararg_mixed.ssa).
+  let varargs : Array[InterpValue] = []
   if argi < args.length() {
-    raise @util.QbeError::CompileError(
-      "interpreter: too many arguments for '\{name}'",
-    )
+    if !f.is_vararg {
+      raise @util.QbeError::CompileError(
+        "interpreter: too many arguments for '\{name}'",
+      )
+    }
+    for k in argi..<args.length() {
+      varargs.push(args[k])
+    }
   }
-  let frame : Frame = { fn_: f, locals, frame_sp: self.sp, call_args: [], }
+  // Materialize the varargs as 8-byte slots the callee's va_arg walks. The
+  // buffer sits above the callee's frame, so its own allocs cannot clobber it.
+  let va_base : UInt64 = if varargs.length() == 0 {
+    self.sp
+  } else {
+    let sz = (varargs.length() * 8).to_uint64()
+    let base = self.sp - sz
+    self.sp = base
+    for k in 0..<varargs.length() {
+      self.mem.store_int(base + (k * 8).to_uint64(), varargs[k].bits(), 8)
+    }
+    base
+  }
+  let frame : Frame = {
+    fn_: f,
+    locals,
+    frame_sp: self.sp,
+    call_args: [],
+    va_base,
+  }
   self.enter_block(frame, f.start_id, -1, depth)
 }
 
@@ -305,14 +335,33 @@ fn Interp::enter_block(
             frame.locals[ins.to.tmp_val()] = sp.reinterpret_as_int64()
           }
         }
-        @types.Vastart =>
-          raise @util.QbeError::CompileError(
-            "interpreter: vastart is not supported",
+        @types.Argv => ()
+        @types.Vastart => {
+          // va_list points at this frame's vararg buffer.
+          let ap = self.eval_ref(frame, ins.arg1)
+          self.mem.store_int(
+            ap.reinterpret_as_uint64(),
+            frame.va_base.reinterpret_as_int64(),
+            8,
           )
-        @types.Vaarg =>
-          raise @util.QbeError::CompileError(
-            "interpreter: vaarg is not supported",
+        }
+        @types.Vaarg => {
+          let ap = self.eval_ref(frame, ins.arg1)
+          let loc = self.mem.load_uint(ap.reinterpret_as_uint64(), 8)
+          let raw = match ins.cls {
+            @types.Kw => sext32(self.mem.load_int(loc, 4))
+            @types.Ks => self.mem.load_int(loc, 4)
+            _ => self.mem.load_int(loc, 8)
+          }
+          if ins.to.is_tmp() {
+            frame.locals[ins.to.tmp_val()] = raw
+          }
+          self.mem.store_int(
+            ap.reinterpret_as_uint64(),
+            (loc + 8UL).reinterpret_as_int64(),
+            8,
           )
+        }
         @types.Nop => ()
         // Debug info is metadata only.
         @types.Dbgloc => ()

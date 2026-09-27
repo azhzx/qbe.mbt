@@ -204,9 +204,11 @@ pub fn Builder::add_func(
   ret : Ret,
   params : Array[@types.Class],
   is_export : Bool,
+  is_vararg? : Bool = false,
 ) -> Int {
   let f = @types.Fn::new(name)
   f.is_export = is_export
+  f.is_vararg = is_vararg
   f.init_regs()
   let _ = f.get_con(0L)
   self.funcs.push(f)
@@ -489,6 +491,120 @@ fn Builder::add_edge(
   args : Array[Int],
 ) -> Unit {
   self.pending.push(PendingEdge::{ fid, pred, dest, args, })
+}
+
+///|
+// Emit a call whose trailing arguments are variadic. The IL ellipsis is
+// written between the fixed and variadic argument lists so the backends
+// place the varargs according to the target ABI.
+pub fn Builder::call_vararg(
+  self : Builder,
+  fid : Int,
+  callee : String,
+  fixed : Array[(@types.Class, Int)],
+  varargs : Array[(@types.Class, Int)],
+  ret : Ret,
+) -> Int {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.leaf = false
+  let g = self.interner.intern(callee)
+  let callee_ref = @types.Ref::con(f.get_con_by(@types.Con::addr(g)))
+  for a in fixed {
+    f.blks[bid].ins.push(
+      @types.Ins::new(
+        @types.Arg,
+        a.0,
+        @types.Ref::none(),
+        self.val_ref(a.1),
+        @types.Ref::none(),
+      ),
+    )
+  }
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.Argv,
+      @types.Kw,
+      @types.Ref::none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
+    ),
+  )
+  for a in varargs {
+    f.blks[bid].ins.push(
+      @types.Ins::new(
+        @types.Arg,
+        a.0,
+        @types.Ref::none(),
+        self.val_ref(a.1),
+        @types.Ref::none(),
+      ),
+    )
+  }
+  let ret_cls = ret.cls()
+  let to = if ret_cls == @types.Kx {
+    @types.Ref::none()
+  } else {
+    @types.Ref::tmp(f.new_tmp("t", ret_cls))
+  }
+  let call_cls = if ret_cls == @types.Kx { @types.Kw } else { ret_cls }
+  f.blks[bid].ins.push(
+    @types.Ins::new(@types.Call, call_cls, to, callee_ref, @types.Ref::none()),
+  )
+  if ret_cls == @types.Kx {
+    -1
+  } else {
+    self.push_ref(to)
+  }
+}
+
+///|
+// Emit a va_start instruction for the value handle of the va_list storage.
+pub fn Builder::vastart(self : Builder, fid : Int, ap : Int) -> Unit {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.Vastart,
+      @types.Kl,
+      @types.Ref::none(),
+      self.val_ref(ap),
+      @types.Ref::none(),
+    ),
+  )
+}
+
+///|
+// Emit a va_arg of the given class and return the result handle.
+pub fn Builder::vaarg(
+  self : Builder,
+  fid : Int,
+  cls : @types.Class,
+  ap : Int,
+) -> Int {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  let to = @types.Ref::tmp(f.new_tmp("t", cls))
+  f.blks[bid].ins.push(
+    @types.Ins::new(@types.Vaarg, cls, to, self.val_ref(ap), @types.Ref::none()),
+  )
+  self.push_ref(to)
+}
+
+///|
+// Mark the start of the variadic arguments in the following call.
+pub fn Builder::arg_vararg(self : Builder, fid : Int) -> Unit {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.Argv,
+      @types.Kw,
+      @types.Ref::none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
+    ),
+  )
 }
 
 ///|

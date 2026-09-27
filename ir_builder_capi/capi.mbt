@@ -231,6 +231,36 @@ pub fn qbe_call(h : Int64, fid : Int, callee : Bytes, ret_cls : Int) -> Int {
 }
 
 ///|
+// Mark a function as variadic (its last signature parameter is the ellipsis).
+#export_name("qbe_func_set_vararg")
+pub fn qbe_func_set_vararg(h : Int64, fid : Int) -> Unit {
+  let b = get_builder(h)
+  b.functions()[fid].is_vararg = true
+}
+
+///|
+// Emit va_start for the value handle of the va_list storage.
+#export_name("qbe_vastart")
+pub fn qbe_vastart(h : Int64, fid : Int, ap : Int) -> Unit {
+  get_builder(h).vastart(fid, ap)
+}
+
+///|
+// Emit a va_arg of the given class; returns the result handle.
+#export_name("qbe_vaarg")
+pub fn qbe_vaarg(h : Int64, fid : Int, cls : Int, ap : Int) -> Int {
+  get_builder(h).vaarg(fid, @types.Class::from_code(cls), ap)
+}
+
+///|
+// Mark the boundary between fixed and variadic arguments: emit this after the
+// fixed qbe_arg calls and before the variadic ones.
+#export_name("qbe_arg_vararg")
+pub fn qbe_arg_vararg(h : Int64, fid : Int) -> Unit {
+  get_builder(h).arg_vararg(fid)
+}
+
+///|
 #export_name("qbe_ret")
 pub fn qbe_ret(h : Int64, fid : Int, val : Int) -> Unit {
   get_builder(h).ret(fid, val)

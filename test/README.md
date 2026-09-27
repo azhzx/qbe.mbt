@@ -2,7 +2,7 @@
 
 This directory holds the `.ssa` inputs used by `compare.py` to verify the
 MoonBit QBE implementation against the vendored reference C QBE.
-All 408 non-underscore files must compile identically on both implementations
+All 409 non-underscore files must compile identically on both implementations
 for the default `amd64_sysv` target.
 
 ## Reference binary
@@ -27,7 +27,7 @@ vendored reference:
 The port is byte-for-byte identical to the reference on all three targets
 (amd64_sysv, arm64, rv64), for both the debug-dump differential suite
 (`compare.py`, every `-d` flag) and the emitted assembly
-(`compare.py --asm`) on all 408 tests (408/408 per target).
+(`compare.py --asm`) on all 409 tests (409/409 per target).
 
 The two extra backends have no reference target, so they are gated on
 independent validity tools instead:
@@ -37,7 +37,7 @@ independent validity tools instead:
 
 `tools/check_all_backends.py` runs all five gates in one pass (clang for
 amd64/arm64/rv64/la64, moon-wasm-opt for wasm) and skips inputs the reference
-itself rejects. All 338 reference-compilable inputs pass on every backend.
+itself rejects. All 339 reference-compilable inputs pass on every backend.
 
 ## Layout
 

@@ -61,16 +61,30 @@ fn La64Class::new() -> La64Class {
 }
 
 ///|
+// Stack-parameter layout produced by selpar (C struct Params)
+priv struct La64Params {
+  mut ngp : Int
+  mut nfp : Int
+  mut stk : Int
+}
+
+///|
 // LoongArch ABI state
 priv struct La64AbiState {
   fn_ : @types.Fn
   typs : Array[@types.Typ]
   buf : Array[@types.Ins]
+  params : La64Params
 }
 
 ///|
 fn la64_abi_new(fn_ : @types.Fn, typs : Array[@types.Typ]) -> La64AbiState {
-  La64AbiState::{ fn_, typs, buf: [], }
+  La64AbiState::{
+    fn_,
+    typs,
+    buf: [],
+    params: La64Params::{ ngp: 0, nfp: 0, stk: 0, },
+  }
 }
 
 ///|
@@ -327,6 +341,7 @@ fn la64_argsclass(
   let mut envc = 0
   let mut gpi = 0
   let mut fpi = 0
+  let mut vararg = false
 
   if retptr {
     gpi = gpi + 1
@@ -340,7 +355,7 @@ fn la64_argsclass(
     match cur.op {
       @types.Par | @types.Arg => {
         c.cls[0] = cur.cls
-        if cur.cls.base() == 1 && nfp > 0 {
+        if !vararg && cur.cls.base() == 1 && nfp > 0 {
           nfp = nfp - 1
           c.reg[0] = @types.LA_FA0 + fpi
           fpi = fpi + 1
@@ -394,6 +409,10 @@ fn la64_argsclass(
           c.nreg = 0
         }
       }
+      @types.Argv =>
+        // Everything after the ellipsis is passed as if the float file were
+        // exhausted, so float varargs land in the GPR save area (C Oargv).
+        vararg = true
       @types.Pare | @types.Arge => {
         c.reg[0] = @types.LA_T8
         c.cls[0] = @types.Kl
@@ -900,6 +919,40 @@ fn la64_selpar(st : La64AbiState, par_end : Int) -> Unit {
   }
 
   st.fn_.reg = la64_call_ref(cty).la64_argregs().0
+  st.params.ngp = (cty >> 4) & 15
+  st.params.nfp = (cty >> 8) & 15
+  st.params.stk = s
+}
+
+///|
+// Expand va_arg (C rv64/abi.c selvaarg).
+fn la64_selvaarg(st : La64AbiState, i : @types.Ins) -> Unit {
+  let ap = i.arg1
+  let loc = la64_newtmp(st, @types.Kl)
+  let newloc = la64_newtmp(st, @types.Kl)
+  la64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), newloc, ap)
+  la64_emit(st, @types.Add, @types.Kl, newloc, loc, la64_getcon(st, 8L))
+  la64_emit(st, @types.Load, i.cls, i.to, loc, @types.Ref::none())
+  la64_emit(st, @types.Load, @types.Kl, loc, ap, @types.Ref::none())
+}
+
+///|
+// Expand va_start (C rv64/abi.c selvastart). The va_list points at the
+// function's register save area, or at the first stack argument.
+fn la64_selvastart(st : La64AbiState, ap : @types.Ref) -> Unit {
+  let p = st.params
+  let rsave = la64_newtmp(st, @types.Kl)
+  la64_emit(st, @types.Storel, @types.Kw, @types.Ref::none(), rsave, ap)
+  let vararg = if st.fn_.is_vararg { 1 } else { 0 }
+  let s = if p.stk > 2 + 8 * vararg { p.stk } else { 2 + p.ngp }
+  la64_emit(
+    st,
+    @types.Addr,
+    @types.Kl,
+    rsave,
+    @types.Ref::slot(-s),
+    @types.Ref::none(),
+  )
 }
 
 ///|
@@ -978,6 +1031,8 @@ pub fn abi_la64(
           la64_selcall(st, orig, i0, j, il)
           j = i0
         }
+        @types.Vastart => la64_selvastart(st, ins.arg1)
+        @types.Vaarg => la64_selvaarg(st, ins)
         @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
         _ => la64_emiti(st, ins)
       }
@@ -1014,7 +1069,8 @@ pub fn abi_la64(
         la64_selcall(st, start_orig, i0, j, il)
         j = i0
       }
-      @types.Vastart | @types.Vaarg => ()
+      @types.Vastart => la64_selvastart(st, ins.arg1)
+      @types.Vaarg => la64_selvaarg(st, ins)
       @types.Arg | @types.Argc | @types.Arge => abort("unreachable")
       _ => la64_emiti(st, ins)
     }

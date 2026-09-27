@@ -5,7 +5,7 @@
 ## Features
 - **Byte-faithful QBE core**: the optimizer pipeline and the amd64 / arm64 /
   rv64 backends, checked byte-for-byte against the pinned `vendor/qbe`
-  reference (661ceb2) — every debug stage and the emitted assembly (408/408
+  reference (661ceb2) — every debug stage and the emitted assembly (409/409
   per target)
 - **Extra backends**: LoongArch64 and WASM, verified on every
   reference-compilable input with clang's LoongArch assembler and
@@ -19,6 +19,11 @@
   usable from the C ABI or Rust
 - **Rust glue layer** (`rust/`, crate `qbe-builder`): Cranelift/inkwell-style
   `Context` / `Module` / `FunctionBuilder` / `ins()`, including `Module::jit`
+- **Variadic functions** (`...`): declare, emit `va_start`/`va_arg` and call
+  them from the MoonBit builder, the C ABI or Rust. Every backend lowers them
+  (amd64/arm64/rv64 reference-identical, la64 via the LP64D save area, wasm32
+  via a caller-built buffer), and the interpreter executes them directly
+  (`python tools/check_vararg_runtime.py`)
 - **Layered runtime**: `native/` (executable memory, symbol lookup, temp files,
   process spawn, dynamic linking) shared by `jit/` and `run_asm/`
 - **Debug info**: the IL `dbgfile`/`dbgloc` statements emit `.file`/`.loc` DWARF

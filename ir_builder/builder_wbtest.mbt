@@ -160,3 +160,32 @@ test "builder: -g emits DWARF for declared variables" {
   let plain = b.emit_asm(gas="m")
   assert_true(!plain.contains(".debug_info"))
 }
+
+///|
+test "builder: variadic signature, va ops and call_vararg round-trip" {
+  let b = Builder::new()
+  // function w $sum(w %n, ...) { %ap =l alloc8 32; vastart %ap; ret vaarg }
+  let fs = b.add_func("sum", Word, [@types.Kw], true, is_vararg=true)
+  let size = b.iconst(fs, 32L)
+  let ap = b.emit_ins(fs, @types.Alloc8, @types.Kl, @types.Kl, size, -1)
+  b.vastart(fs, ap)
+  let v = b.vaarg(fs, @types.Kw, ap)
+  b.ret(fs, v)
+  // export function w $main() { %r =w call $sum(w 1, ..., w 2) }
+  let fm = b.add_func("main", Word, [], true)
+  let a = b.iconst(fm, 1L)
+  let c = b.iconst(fm, 2L)
+  let r = b.call_vararg(fm, "sum", [(@types.Kw, a)], [(@types.Kw, c)], Word)
+  b.ret(fm, r)
+  let il = b.emit_il()
+  if !(il.contains("$sum(w %") && il.contains(", ...)")) {
+    fail("IL was:\n" + il)
+  }
+  assert_true(il.contains("..., w "))
+  let direct = b.emit_asm()
+  let parsed = match @qbe.compile_arm64(il) {
+    Ok(s) => s
+    Err(e) => fail("re-parse failed: \{Repr(e)}\n--- IL ---\n\{il}")
+  }
+  assert_eq(direct, parsed)
+}

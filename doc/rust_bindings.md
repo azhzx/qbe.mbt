@@ -66,3 +66,17 @@ cargo test --manifest-path rust/Cargo.toml
 Unit tests cover the IL text and the assembly; the end-to-end tests JIT the
 functions and call them directly (`add(20,22)=42 tri(10)=55 fib(10)=55`), emit
 a Mach-O object, link it with `cc` and run it (macOS/aarch64).
+## Variadic functions
+
+`Signature::variadic` marks the last signature parameter as the ellipsis; the
+`FunctionBuilder` then offers `vastart`, `vaarg`, `arg_vararg` and
+`call_vararg`:
+
+```rust
+let f = module.add_function("sum", Signature::variadic([Type::I32], Some(Type::I32)));
+let size = b.ins().iconst(Type::I64, 32);
+let ap = b.ins().raw("alloc8", Type::I64, Some(Type::I64), Some(size), None).unwrap();
+b.ins().vastart(ap);
+let v = b.ins().vaarg(Type::I32, ap);
+let r = b.ins().call_vararg(f, &[a], &[b]).unwrap();
+```

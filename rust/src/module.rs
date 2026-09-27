@@ -108,6 +108,9 @@ impl Module {
             })
         });
         assert!(fid >= 0, "qbe_add_func failed: {}", self.last_error());
+        if sig.varargs {
+            unsafe { ffi::qbe_func_set_vararg(self.handle, fid) };
+        }
         let mut params = Vec::with_capacity(sig.params.len());
         for (i, t) in sig.params.iter().enumerate() {
             let id = unsafe { ffi::qbe_func_param(self.handle, fid, i as i32) };
