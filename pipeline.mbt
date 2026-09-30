@@ -164,6 +164,8 @@ fn run_frontend_passes(
   @cfg.filldom(fn_)
   @ssa.ssacheck(fn_)
   // gvn/gcm (gvn.c/gcm.c): -dG.
+  // gvn currently duplicates some definitions (ssacheck: "defined more than
+  // once"), so it is disabled along with gcm until that is fixed.
   // out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
   let _ = @gvn.gvn
   let _ = dbg.g
