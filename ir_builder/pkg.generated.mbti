@@ -33,15 +33,21 @@ pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool, is_vararg
 pub fn Builder::add_param(Self, Int, @types.Class) -> Int
 pub fn Builder::arg_vararg(Self, Int) -> Unit
 pub fn Builder::arith(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
+pub fn Builder::atomic_load(Self, Int, @types.Class, Int) -> Int
+pub fn Builder::atomic_store(Self, Int, @types.Class, Int, Int) -> Unit
 pub fn Builder::block_param(Self, Int, Int, @types.Class) -> Int
 pub fn Builder::call(Self, Int, String, Array[(@types.Class, Int)], Ret) -> Int
 pub fn Builder::call_value(Self, Int, Int, Array[(@types.Class, Int)], Ret) -> Int
 pub fn Builder::call_vararg(Self, Int, String, Array[(@types.Class, Int)], Array[(@types.Class, Int)], Ret) -> Int
 pub fn Builder::cmp(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
 pub fn Builder::current_block(Self, Int) -> Int
+pub fn Builder::data_begin(Self, String, Bool) -> Unit
+pub fn Builder::data_byte(Self, Int64) -> Unit
 pub fn Builder::data_bytes(Self, String, Bool, Bytes) -> Unit
+pub fn Builder::data_end(Self) -> Unit
 pub fn Builder::data_items(Self) -> Array[@types.Dat]
 pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
+pub fn Builder::data_ref_item(Self, String, Int64) -> Unit
 pub fn Builder::data_string(Self, String, Bool, String) -> Unit
 pub fn Builder::dbg_loc(Self, Int, Int, Int) -> Unit
 pub fn Builder::dbg_var(Self, Int, String, @types.DbgType, Int) -> Unit
@@ -54,6 +60,7 @@ pub fn Builder::emit_object(Self) -> Bytes raise
 pub fn Builder::emit_void(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
 pub fn Builder::entry_block(Self, Int) -> Int
 pub fn Builder::fconst(Self, Int, Double) -> Int
+pub fn Builder::fence(Self, Int) -> Unit
 pub fn Builder::func_params(Self, Int) -> Array[Int]
 pub fn Builder::functions(Self) -> Array[@types.Fn]
 pub fn Builder::global(Self, Int, String) -> Int

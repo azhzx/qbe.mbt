@@ -971,6 +971,9 @@ pub(all) enum Op {
   Vaarg
   Vastart
   Copy
+  AtomicLoad
+  AtomicStore
+  Fence
   Dbgloc
   Nop
   Addr
