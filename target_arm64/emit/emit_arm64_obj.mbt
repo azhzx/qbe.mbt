@@ -115,6 +115,7 @@ pub fn emit_arm64_object(
         2
       },
       rtype: @object.ARM64_RELOC_UNSIGNED,
+      is_extern: true,
     })
   }
 
@@ -129,6 +130,7 @@ pub fn emit_arm64_object(
       pcrel: true,
       length: 2,
       rtype: @object.ARM64_RELOC_BRANCH26,
+      is_extern: true,
     })
   }
   for a in addrs {
@@ -139,13 +141,25 @@ pub fn emit_arm64_object(
       pcrel: true,
       length: 2,
       rtype: @object.ARM64_RELOC_PAGE21,
+      is_extern: true,
     })
+    if a.4 != 0 {
+      text_relocs.push(@object.MachoReloc::{
+        offset: a.1 * 4,
+        sym: a.4,
+        pcrel: false,
+        length: 2,
+        rtype: @object.ARM64_RELOC_ADDEND,
+        is_extern: false,
+      })
+    }
     text_relocs.push(@object.MachoReloc::{
       offset: a.1 * 4,
       sym: i,
       pcrel: false,
       length: 2,
       rtype: @object.ARM64_RELOC_PAGEOFF12,
+      is_extern: true,
     })
   }
 
