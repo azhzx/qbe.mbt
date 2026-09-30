@@ -58,6 +58,12 @@ pub fn promote(
     if skip {
       continue
     }
+    if k == -1 {
+      // No defining store is visible (e.g. the slot is filled through a
+      // call such as memcpy/memset). Leaving it in memory is always safe,
+      // so skip promotion instead of failing.
+      continue
+    }
     // Get rid of the alloc and replace its uses.
     i.op = @types.Nop
     i.cls = @types.Kw
