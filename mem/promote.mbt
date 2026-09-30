@@ -26,8 +26,17 @@ pub fn promote(
     let mut k = -1
     let mut s = -1
     let mut skip = false
+    let mut first_blk = -1
     for u in fn_.tmps[alloc_t].uses {
       if u.kind != @types.UIns {
+        skip = true
+        break
+      }
+      if first_blk == -1 {
+        first_blk = u.blk_id
+      } else if u.blk_id != first_blk {
+        // Promoting a slot used in more than one block can place a load
+        // before the defining store, so leave it in memory.
         skip = true
         break
       }
