@@ -264,7 +264,7 @@ pub fn target_argregs(Ref) -> (UInt64, Int, Int)
   `Tmp0=64`；rv64 编号在 `target_rv64.mbt`：`T0=1..A7=14`、`S1..S11=15..25`、
   `FP/SP/GP/TP/RA=26..30`、`FT0..FA7=31..49`、`FS0..FS11=50..61`、
   `Rv64Tmp0=64`。
-- `abi`/`isel`/`emit`（amd64 专属）与 `abi_rv64`/`isel_rv64`/`emit_rv64`
+- `target_amd64/abi`/`target_amd64/isel`/`target_amd64/emit`（amd64 专属）与 `target_rv64/abi`/`target_rv64/isel`/`target_rv64/emit`
   仍直接使用各自 `target*.mbt` 中的常量，不经 `TargetCfg`。
 
 ## 类型别名

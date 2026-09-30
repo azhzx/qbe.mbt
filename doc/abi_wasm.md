@@ -1,4 +1,4 @@
-# `abi_wasm` Package API Reference
+# `target_wasm/abi` Package API Reference
 
 Package path: `azhzx/qbe/target_wasm/abi`
 
@@ -41,6 +41,6 @@ pub fn abi_wasm(
 
 ## Notes
 
-- `abi_wasm` is the **key transformation point** from abstract SSA to wasm-related SSA. Before this function returns, all references are abstract `RTmp`/`RCon`; afterwards parameters/arguments carry their real classes for the emitter.
+- `target_wasm/abi` is the **key transformation point** from abstract SSA to wasm-related SSA. Before this function returns, all references are abstract `RTmp`/`RCon`; afterwards parameters/arguments carry their real classes for the emitter.
 - wasm32 pointer width is 32 bits (`Km = Kw`), no `Kl` type.
 - Currently does not support wasm variadic arguments or aggregate types larger than 16 bytes (different from amd64 behavior).

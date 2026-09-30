@@ -262,7 +262,7 @@ pub fn target_argregs(Ref) -> (UInt64, Int, Int)
 
 - `pipeline.mbt` calls the matching `init_*_target()` at the start of each `run_passes*` (before the first `filllive`) and again at the post-isel stage to complete the switch; `live` reads `rglob_mask`/`retregs`/`argregs` through `target_cfg`, while `spill`/`rega` read the register layout. The wasm pipeline skips spill/rega and does not depend on this configuration.
 - amd64 register numbers are in `target.mbt`: `RAX=1..RSP=16`, `XMM0=17..XMM15=32`, `Tmp0=64`; rv64 numbers are in `target_rv64.mbt`: `T0=1..A7=14`, `S1..S11=15..25`, `FP/SP/GP/TP/RA=26..30`, `FT0..FA7=31..49`, `FS0..FS11=50..61`, `Rv64Tmp0=64`; arm64 numbers are in `target_arm64.mbt`: `R0=1..IP1=18 R18=19..SP=32`, `V0=33..V30=63`, `Arm64Tmp0=64`.
-- `abi`/`isel`/`emit` (amd64-specific) and the `*_rv64`/`*_la64`/`*_arm64` packages still use constants directly from their respective `target*.mbt` files, not through `TargetCfg`.
+- `target_amd64/abi`/`target_amd64/isel`/`target_amd64/emit` (amd64-specific) and the `target_rv64/*`/`target_la64/*`/`target_arm64/*` packages still use constants directly from their respective `target*.mbt` files, not through `TargetCfg`.
 
 ## Type Aliases
 

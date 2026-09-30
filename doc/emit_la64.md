@@ -1,4 +1,4 @@
-# `emit_la64` Package API Reference
+# `target_la64/emit` Package API Reference
 
 Package path: `azhzx/qbe/target_la64/emit`
 

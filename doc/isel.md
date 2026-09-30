@@ -1,4 +1,4 @@
-# `isel` Package API Reference
+# `target_amd64/isel` Package API Reference
 
 Package path: `azhzx/qbe/target_amd64/isel`
 

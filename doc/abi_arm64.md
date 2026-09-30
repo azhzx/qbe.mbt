@@ -1,4 +1,4 @@
-# `abi_arm64` Package API Reference
+# `target_arm64/abi` Package API Reference
 
 Package path: `azhzx/qbe/target_arm64/abi`
 

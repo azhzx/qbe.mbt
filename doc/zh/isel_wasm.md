@@ -1,4 +1,4 @@
-# `isel_wasm` 包接口介绍
+# `target_wasm/isel` 包接口介绍
 
 包路径: `azhzx/qbe/target_wasm/isel`
 

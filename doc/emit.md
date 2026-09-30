@@ -1,4 +1,4 @@
-# `emit` Package API Reference
+# `target_amd64/emit` Package API Reference
 
 Package path: `azhzx/qbe/target_amd64/emit`
 

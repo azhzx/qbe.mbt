@@ -1,4 +1,4 @@
-# `abi_rv64` 包接口介绍
+# `target_rv64/abi` 包接口介绍
 
 包路径: `azhzx/qbe/target_rv64/abi`
 
@@ -49,7 +49,7 @@ pub fn abi_rv64(
 
 ## 与其它后端 ABI 的区别
 
-| 特性 | amd64_sysv (`abi_amd64`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
+| 特性 | amd64_sysv (`target_amd64/abi`) | wasm (`target_wasm/abi`) | rv64 (`target_rv64/abi`) |
 |------|--------------------|--------------------|-------------------|
 | 整数参数 | RDI,RSI,RDX,RCX,R8,R9 | 函数签名参数 | A0–A7 |
 | 浮点参数 | XMM0–XMM7 | 函数签名参数 | FA0–FA7 |
@@ -67,6 +67,6 @@ pub fn abi_rv64(
 - rv64 后端通过 `python compare.py --target rv64`（IR/调试 dump）与
   `tools/check_rv64_asm.py`（可编码性）对照 `vendor/qbe -t rv64` 验证，行为以
   IL 语义与 RISC-V 调用约定为准。
-- `spill`/`rega` 是目标无关的：`abi_rv64` 降级完成后，`pipeline.mbt` 调用
+- `spill`/`rega` 是目标无关的：`target_rv64/abi` 降级完成后，`pipeline.mbt` 调用
   `@types.init_rv64_target()` 切换全局 `TargetCfg`，后续 `spill`/`rega`
   按 RISC-V 寄存器编号分配。

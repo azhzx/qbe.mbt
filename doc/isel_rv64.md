@@ -1,8 +1,8 @@
-# `isel_rv64` Package API Reference
+# `target_rv64/isel` Package API Reference
 
 Package path: `azhzx/qbe/target_rv64/isel`
 
-RISC-V 64 instruction selection. Runs after `abi_rv64` lowering, mapping generic SSA instructions to RISC-V instruction forms. Corresponds to upstream QBE's `rv64/isel.c`.
+RISC-V 64 instruction selection. Runs after `target_rv64/abi` lowering, mapping generic SSA instructions to RISC-V instruction forms. Corresponds to upstream QBE's `rv64/isel.c`.
 
 [中文版本 (Chinese Version)](zh/isel_rv64.md)
 
@@ -40,7 +40,7 @@ Compare + branch combinations are rewritten at the instruction selection level t
 ## Differences from amd64 isel
 
 - **No flags register**: amd64 uses `xcmp` + flag-op + `jX...`, rv64 directly generates compare + branch sequences.
-- **No complex addressing**: amd64 can fold `add` chains into `[base + index*scale + offset]` addressing operands; RISC-V only supports `[rs1 + imm]`, `isel_rv64` only does `base + offset` form recognition (`decompose_addr`/`is_simple_addr` semantics), complex addresses keep explicit `add` instructions.
+- **No complex addressing**: amd64 can fold `add` chains into `[base + index*scale + offset]` addressing operands; RISC-V only supports `[rs1 + imm]`, `target_rv64/isel` only does `base + offset` form recognition (`decompose_addr`/`is_simple_addr` semantics), complex addresses keep explicit `add` instructions.
 - **No magic number division**: amd64 converts constant division to multiply + shift sequence; rv64 directly uses `div`/`rem` instructions.
 - **Immediates**: RISC-V instruction immediate bit-width is limited; large constants are first loaded into registers with `li`.
 

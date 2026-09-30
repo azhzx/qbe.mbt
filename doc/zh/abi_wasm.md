@@ -1,4 +1,4 @@
-# `abi_wasm` 包接口介绍
+# `target_wasm/abi` 包接口介绍
 
 包路径: `azhzx/qbe/target_wasm/abi`
 
@@ -39,6 +39,6 @@ pub fn abi_wasm(
 
 ## 备注
 
-- `abi_wasm` 是从抽象 SSA 到 wasm 相关 SSA 的**关键转换点**。在该函数返回前，所有引用都是抽象的 `RTmp`/`RCon`；返回后，参数/实参带着真实 class 交给发射器。
+- `target_wasm/abi` 是从抽象 SSA 到 wasm 相关 SSA 的**关键转换点**。在该函数返回前，所有引用都是抽象的 `RTmp`/`RCon`；返回后，参数/实参带着真实 class 交给发射器。
 - wasm32 指针宽度为 32 位（`Km = Kw`），没有 `Kl` 类型。
 - 当前不支持 wasm 的可变参数和超过 16 字节的聚合类型（与 amd64 的行为不同）。

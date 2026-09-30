@@ -1,4 +1,4 @@
-# `emit_wasm` 包接口介绍
+# `target_wasm/emit` 包接口介绍
 
 包路径: `azhzx/qbe/target_wasm/emit`
 

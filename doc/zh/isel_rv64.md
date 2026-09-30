@@ -1,8 +1,8 @@
-# `isel_rv64` 包接口介绍
+# `target_rv64/isel` 包接口介绍
 
 包路径: `azhzx/qbe/target_rv64/isel`
 
-RISC-V 64 指令选择。在 `abi_rv64` 降级之后运行，把通用 SSA 指令映射为
+RISC-V 64 指令选择。在 `target_rv64/abi` 降级之后运行，把通用 SSA 指令映射为
 RISC-V 指令形态，对应上游 QBE 的 `rv64/isel.c`。
 
 ## 入口
@@ -42,7 +42,7 @@ pub fn isel_rv64(
 - **无 flags 寄存器**：amd64 用 `xcmp` + flag-op + `jX...`，rv64 直接生成
   比较 + 分支序列。
 - **无复杂寻址**：amd64 可把 `add` 链折叠成 `[base + index*scale + offset]`
-  寻址操作数；RISC-V 只支持 `[rs1 + imm]`，`isel_rv64` 仅做
+  寻址操作数；RISC-V 只支持 `[rs1 + imm]`，`target_rv64/isel` 仅做
   `base + offset` 形式识别（`decompose_addr`/`is_simple_addr` 语义），
   复杂地址保留显式 `add` 指令。
 - **无魔法数除法**：amd64 把常量除法降为乘加移位序列；rv64 直接用

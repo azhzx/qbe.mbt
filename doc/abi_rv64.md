@@ -1,4 +1,4 @@
-# `abi_rv64` Package API Reference
+# `target_rv64/abi` Package API Reference
 
 Package path: `azhzx/qbe/target_rv64/abi`
 
@@ -42,7 +42,7 @@ Registers are numbered by tmp id (see `types/target_rv64.mbt`): `T0=1..A7=14`, `
 
 ## Differences from Other Backend ABIs
 
-| Feature | amd64_sysv (`abi_amd64`) | wasm (`abi_wasm`) | rv64 (`abi_rv64`) |
+| Feature | amd64_sysv (`target_amd64/abi`) | wasm (`target_wasm/abi`) | rv64 (`target_rv64/abi`) |
 |------|--------------------|--------------------|-------------------|
 | Integer parameters | RDI,RSI,RDX,RCX,R8,R9 | Function signature parameters | A0–A7 |
 | Floating-point parameters | XMM0–XMM7 | Function signature parameters | FA0–FA7 |
@@ -58,4 +58,4 @@ Registers are numbered by tmp id (see `types/target_rv64.mbt`): `T0=1..A7=14`, `
 ## Notes
 
 - The rv64 backend is validated against `vendor/qbe -t rv64` through `python compare.py --target rv64` (IR/debug dumps) and `tools/check_rv64_asm.py` (encodability); behavior follows IL semantics and the RISC-V calling convention.
-- `spill`/`rega` are target-independent: after `abi_rv64` lowering completes, `pipeline.mbt` calls `@types.init_rv64_target()` to switch the global `TargetCfg`, and subsequent `spill`/`rega` allocates by RISC-V register numbers.
+- `spill`/`rega` are target-independent: after `target_rv64/abi` lowering completes, `pipeline.mbt` calls `@types.init_rv64_target()` to switch the global `TargetCfg`, and subsequent `spill`/`rega` allocates by RISC-V register numbers.

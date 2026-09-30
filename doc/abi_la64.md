@@ -1,4 +1,4 @@
-# `abi_la64` Package API Reference
+# `target_la64/abi` Package API Reference
 
 Package path: `azhzx/qbe/target_la64/abi`
 
@@ -6,7 +6,7 @@ Package path: `azhzx/qbe/target_la64/abi`
 
 LoongArch 64 (la64) LP64D ABI lowering. Replaces abstract parameter/return
 references with concrete LoongArch calling-convention registers before
-instruction selection. Structurally mirrors `abi_rv64` (LP64D's parameter
+instruction selection. Structurally mirrors `target_rv64/abi` (LP64D's parameter
 classification is register-wise identical to RISC-V lp64d).
 
 ## Entry Point

@@ -1,4 +1,4 @@
-# `isel_la64` 包接口介绍
+# `target_la64/isel` 包接口介绍
 
 包路径: `azhzx/qbe/target_la64/isel`
 

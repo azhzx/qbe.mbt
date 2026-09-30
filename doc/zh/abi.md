@@ -1,4 +1,4 @@
-# `abi` 包接口介绍
+# `target_amd64/abi` 包接口介绍
 
 包路径: `azhzx/qbe/target_amd64/abi`
 

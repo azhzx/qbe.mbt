@@ -1,4 +1,4 @@
-# `emit_la64` 包接口介绍
+# `target_la64/emit` 包接口介绍
 
 包路径: `azhzx/qbe/target_la64/emit`
 

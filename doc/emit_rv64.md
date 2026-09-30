@@ -1,8 +1,8 @@
-# `emit_rv64` Package API Reference
+# `target_rv64/emit` Package API Reference
 
 Package path: `azhzx/qbe/target_rv64/emit`
 
-RISC-V 64 GAS assembly output. Runs after `isel_rv64` and `spill`/`rega` completion, rendering functions with assigned physical registers into RISC-V assembly text. Corresponds to upstream QBE's `rv64/emit.c`.
+RISC-V 64 GAS assembly output. Runs after `target_rv64/isel` and `spill`/`rega` completion, rendering functions with assigned physical registers into RISC-V assembly text. Corresponds to upstream QBE's `rv64/emit.c`.
 
 [中文版本 (Chinese Version)](zh/emit_rv64.md)
 
@@ -62,7 +62,7 @@ Key points:
 
 ## Relationship with Other Output Backends
 
-| | `emit` (amd64) | `emit_wasm` | `emit_rv64` |
+| | `target_amd64/emit` | `target_wasm/emit` | `target_rv64/emit` |
 | --- | --- | --- | --- |
 | Output format | x86-64 GAS | WAT text | RISC-V GAS |
 | Stack frame | `pushq %rbp`/`leave` | None (stack machine) | `sd fp`/`ld fp` frame chain |
@@ -81,5 +81,5 @@ Key points:
   module with clang's integrated assembler as an independent encodability gate.
 - `data` segments (including default `.balign 8`, zero runs emitted to `.bss`) and
   the floating-point constant pool (`.section .rodata`, `.p2align`, `.quad`/`.int`)
-  match `vendor/qbe/qbe -t rv64` byte-for-byte; `emit_rv64` supports `-G e`
+  match `vendor/qbe/qbe -t rv64` byte-for-byte; `target_rv64/emit` supports `-G e`
   (`gasloc=".L"`, `gassym=""`).

@@ -1,8 +1,8 @@
-# `emit_rv64` 包接口介绍
+# `target_rv64/emit` 包接口介绍
 
 包路径: `azhzx/qbe/target_rv64/emit`
 
-RISC-V 64 GAS 汇编输出。在 `isel_rv64` 与 `spill`/`rega` 完成后运行，把已分配
+RISC-V 64 GAS 汇编输出。在 `target_rv64/isel` 与 `spill`/`rega` 完成后运行，把已分配
 物理寄存器的函数渲染成 RISC-V 汇编文本，对应上游 QBE 的 `rv64/emit.c`。
 
 ## 入口
@@ -64,7 +64,7 @@ add:
 
 ## 与其它输出后端的关系
 
-| | `emit` (amd64) | `emit_wasm` | `emit_rv64` |
+| | `target_amd64/emit` | `target_wasm/emit` | `target_rv64/emit` |
 | --- | --- | --- | --- |
 | 输出格式 | x86-64 GAS | WAT 文本 | RISC-V GAS |
 | 栈帧 | `pushq %rbp`/`leave` | 无（栈机） | `sd fp`/`ld fp` 帧链 |
@@ -83,5 +83,5 @@ add:
   做独立可编码性验证。
 - `data` 段（默认 `.balign 8`，纯零数据走 `.bss`）与浮点常量池
   （`.section .rodata`、`.p2align`、`.quad`/`.int`）与
-  `vendor/qbe/qbe -t rv64` 逐字节一致；`emit_rv64` 支持 `-G e`
+  `vendor/qbe/qbe -t rv64` 逐字节一致；`target_rv64/emit` 支持 `-G e`
   （`gasloc=".L"`、`gassym=""`）。
