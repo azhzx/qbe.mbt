@@ -639,6 +639,67 @@ pub fn Builder::vaarg(
 
 ///|
 // Mark the start of the variadic arguments in the following call.
+pub fn Builder::atomic_load(
+  self : Builder,
+  fid : Int,
+  cls : @types.Class,
+  addr : Int,
+) -> Int {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  let to = @types.Ref::tmp(f.new_tmp("t", cls))
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.AtomicLoad,
+      cls,
+      to,
+      self.val_ref(addr),
+      @types.Ref::none(),
+    ),
+  )
+  self.push_ref(to)
+}
+
+///|
+// Sequentially consistent atomic store.
+pub fn Builder::atomic_store(
+  self : Builder,
+  fid : Int,
+  cls : @types.Class,
+  val : Int,
+  addr : Int,
+) -> Unit {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.AtomicStore,
+      cls,
+      @types.Ref::none(),
+      self.val_ref(val),
+      self.val_ref(addr),
+    ),
+  )
+}
+
+///|
+// Full sequentially consistent fence (dmb ish).
+pub fn Builder::fence(self : Builder, fid : Int) -> Unit {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.Fence,
+      @types.Kw,
+      @types.Ref::none(),
+      @types.Ref::none(),
+      @types.Ref::none(),
+    ),
+  )
+}
+
+///|
+// Mark the start of the variadic arguments in the following call.
 pub fn Builder::arg_vararg(self : Builder, fid : Int) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -809,6 +870,40 @@ pub fn Builder::data_ref(
   self.datas.push(start)
   self.datas.push(@types.Dat::name(name, is_export))
   self.datas.push(@types.Dat::ref_to(target, offset))
+  self.datas.push(@types.Dat::end())
+  self.order.push("d")
+}
+
+///|
+// Start a data section whose items are appended one by one (mixed bytes and
+// relocations). Finish with data_end.
+pub fn Builder::data_begin(
+  self : Builder,
+  name : String,
+  is_export : Bool,
+) -> Unit {
+  let start = @types.Dat::start()
+  start.is_export = is_export
+  self.datas.push(start)
+  self.datas.push(@types.Dat::name(name, is_export))
+}
+
+///|
+pub fn Builder::data_byte(self : Builder, v : Int64) -> Unit {
+  self.datas.push(@types.Dat::byte(v))
+}
+
+///|
+pub fn Builder::data_ref_item(
+  self : Builder,
+  target : String,
+  offset : Int64,
+) -> Unit {
+  self.datas.push(@types.Dat::ref_to(target, offset))
+}
+
+///|
+pub fn Builder::data_end(self : Builder) -> Unit {
   self.datas.push(@types.Dat::end())
   self.order.push("d")
 }

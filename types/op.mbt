@@ -105,6 +105,11 @@ pub(all) enum Op {
   Vastart
   Copy
 
+  // === Atomics (sequentially consistent) ===
+  AtomicLoad
+  AtomicStore
+  Fence
+
   // === Debug info (C Odbgloc) ===
   Dbgloc
 
@@ -338,6 +343,9 @@ pub fn Op::from_string(s : String) -> Op {
     "alloc4" => Alloc4
     "alloc8" => Alloc8
     "alloc16" => Alloc16
+    "atomicload" => AtomicLoad
+    "atomicstore" => AtomicStore
+    "fence" => Fence
     "vaarg" => Vaarg
     "vastart" => Vastart
     "copy" => Copy

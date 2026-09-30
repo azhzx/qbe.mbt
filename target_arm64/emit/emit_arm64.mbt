@@ -234,6 +234,15 @@ let arm64_omap : Array[(Int, Int, String)] = [
   (@types.Acmp.index(), ARM64_KI, "cmp %0, %1"),
   (@types.Acmn.index(), ARM64_KI, "cmn %0, %1"),
   (@types.Afcmp.index(), ARM64_KA, "fcmpe %0, %1"),
+  (@types.AtomicLoad.index(), @types.Kw.code(), "ldar %W=, %M0"),
+  (@types.AtomicLoad.index(), @types.Kl.code(), "ldar %=, %M0"),
+  (@types.AtomicLoad.index(), @types.Ks.code(), "ldar %S=, %M0"),
+  (@types.AtomicLoad.index(), @types.Kd.code(), "ldar %D=, %M0"),
+  (@types.AtomicStore.index(), @types.Kw.code(), "stlr %W0, %M1"),
+  (@types.AtomicStore.index(), @types.Kl.code(), "stlr %L0, %M1"),
+  (@types.AtomicStore.index(), @types.Ks.code(), "stlr %S0, %M1"),
+  (@types.AtomicStore.index(), @types.Kd.code(), "stlr %D0, %M1"),
+  (@types.Fence.index(), @types.Kw.code(), "dmb ish"),
 ]
 
 ///|

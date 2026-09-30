@@ -840,3 +840,21 @@ pub fn words_to_bytes(words : Array[Int]) -> Bytes {
   }
   Bytes::from_array(a[:])
 }
+
+///|
+// LDAR: load-acquire (sequentially consistent acquire semantics).
+pub fn enc_ldar(sf : Bool, rt : Int, rn : Int) -> Int {
+  (if sf { 0xC8DFFC00 } else { 0x88DFFC00 }) | (rn << 5) | rt
+}
+
+///|
+// STLR: store-release.
+pub fn enc_stlr(sf : Bool, rt : Int, rn : Int) -> Int {
+  (if sf { 0xC89FFC00 } else { 0x889FFC00 }) | (rn << 5) | rt
+}
+
+///|
+// DMB ISH: full barrier for the inner-shareable domain.
+pub fn enc_dmb_ish() -> Int {
+  0xD5033BBF
+}

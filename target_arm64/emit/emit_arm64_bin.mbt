@@ -707,6 +707,18 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
       }
     }
+    @types.AtomicLoad => {
+      let (rn, _off) = arm64_bin_mem(st, i.arg1)
+      let sf = i.cls == @types.Kl || i.cls == @types.Kd
+      arm64_bin_emit(st, @object.enc_ldar(sf, rd, rn))
+    }
+    @types.AtomicStore => {
+      let (rn, _off) = arm64_bin_mem(st, i.arg2)
+      let rt = arm64_bin_reg(i.arg1.tmp_val())
+      let sf = i.cls == @types.Kl || i.cls == @types.Kd
+      arm64_bin_emit(st, @object.enc_stlr(sf, rt, rn))
+    }
+    @types.Fence => arm64_bin_emit(st, @object.enc_dmb_ish())
     @types.Loadub => {
       let (rn, off) = arm64_bin_mem(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(0, 1, rd, rn, off))
