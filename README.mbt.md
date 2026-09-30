@@ -62,7 +62,7 @@ Made with [contrib.rocks](https://contrib.rocks).
 Install a prebuilt binary — no MoonBit compiler or C toolchain needed:
 
 ~~~sh
-curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
+curl -fsSL https://i2pl.com/install_qopple.sh | sh
 ~~~
 
 The installer detects your OS and architecture and downloads the matching
@@ -77,6 +77,9 @@ directory, or `--no-path` to leave your shell configuration alone.
 `./scripts/bootstrap.sh` is an interactive installer (rustup-style): it asks
 how to get the MoonBit compiler, builds the native `qbe` binary and offers to
 put it on your `PATH`.
+
+Building from source requires the MoonBit toolchain with **`moonc` >= 0.10.14**
+(`moon version --all` prints the version).
 
 ```sh
 git clone https://github.com/azhzx/qbe.mbt.git
@@ -143,3 +146,11 @@ Documentation:
 - [Command-line reference](doc/cmd_main.md)
 - [Demos](demo/README.md)
 - [Tests](test/README.md)
+
+## License
+
+qbe.mbt is licensed under the [Apache License 2.0](LICENSE), an OSI-approved
+license. It is a MoonBit reimplementation of [QBE](https://c9x.me/compile/)
+(MIT, (c) Quentin Carbonneaux); the reference is vendored as a git submodule
+under `vendor/qbe`. Third-party notices are collected in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

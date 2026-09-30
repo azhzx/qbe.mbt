@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 # qbe.mbt installer: download a prebuilt native qbe and put it on PATH.
 #
-#   curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
-#   curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh -s -- --version v0.24.0
+#   curl -fsSL https://i2pl.com/install_qopple.sh | sh
+#   curl -fsSL https://i2pl.com/install_qopple.sh | sh -s -- --version v0.24.0
 #
 # It never builds from source. Assets come from the project's GitHub releases:
 #   qbe-macos-aarch64  qbe-macos-x86_64  qbe-linux-x86_64  qbe-linux-aarch64
@@ -43,7 +43,7 @@ die()  { printf '%s\n' "${RED}xx${RESET}  ${*}" >&2; exit 1; }
 
 usage() {
   cat <<'USAGE'
-Usage: install-qbe-mbt.sh [options]
+Usage: install_qopple.sh [options]
 
   --version TAG    Install a specific release tag (default: the latest).
   --bin-dir DIR    Install directory (default: ~/.local/bin).

@@ -49,8 +49,18 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
-      - name: Toolchain version
-        run: moon version --all
+      - name: Toolchain version (require moonc >= 0.10.14)
+        run: |
+          set -eu
+          moon version --all
+          v=$(moon version --all | sed -n 's/.*moonc v\([0-9][0-9.]*\).*/\1/p' | head -n1)
+          test -n "$v"
+          lowest=$(printf '%s\n0.10.14\n' "$v" | sort -V | head -n1)
+          if [ "$lowest" != "0.10.14" ]; then
+            echo "::error::moonc $v is older than the required 0.10.14"
+            exit 1
+          fi
+          echo "moonc $v OK"
 
       - name: Sync dependencies
         run: moon update
