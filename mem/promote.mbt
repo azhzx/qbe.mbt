@@ -33,8 +33,13 @@ pub fn promote(
       }
       let l = fn_.blks[u.blk_id].ins[u.ins_idx]
       if l.op.is_load() {
-        if s == -1 || s == loadsz(l) {
-          s = loadsz(l)
+        if s == -1 {
+          // The slot is read before it is ever written. Promoting it would
+          // read an undefined register, so leave it in memory.
+          skip = true
+          break
+        }
+        if s == loadsz(l) {
           continue
         }
         skip = true
