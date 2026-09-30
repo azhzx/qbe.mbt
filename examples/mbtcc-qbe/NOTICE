@@ -1,0 +1,22 @@
+mbtcc
+=====
+
+This directory vendors a copy of mbtcc, a C compiler written in MoonBit.
+
+  upstream : https://github.com/moonbitlang/mbtcc
+  mirror   : https://github.com/Kaida-Amethyst/mbtcc
+  commit   : 39d58ef3a405f1118199cace27e4d7f6d2a6f7b6
+
+Copyright and license
+---------------------
+- mbtcc is licensed under the Apache License 2.0 (see LICENSE).
+- mbtcc references / is derived from chibicc, licensed under the MIT License,
+  Copyright (c) 2019 Rui Ueyama (see chibicc/LICENSE).
+
+Modifications
+-------------
+qbe.mbt maintains a modified code generator in this copy that targets the
+qbe.mbt programmatic QBE IL builder (`azhzx/qbe`, the `ir_builder` package)
+instead of MoonLLVM. Upstream does not accept pull requests, so these changes
+are carried here as a vendored fork; the pristine upstream is pinned by the
+commit above. See INTEGRATION.md for status and remaining work.

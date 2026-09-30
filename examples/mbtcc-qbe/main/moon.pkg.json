@@ -1,0 +1,20 @@
+{
+  "is-main": true,
+  "import": [
+    "Yoorkin/ArgParser",
+    "Kaida-Amethyst/mbtcc/parser",
+    "Kaida-Amethyst/mbtcc/lexer",
+    "Kaida-Amethyst/mbtcc/preprocess",
+    "Kaida-Amethyst/mbtcc/codegen",
+    "moonbitlang/x/fs",
+    "moonbitlang/core/ref",
+    "moonbitlang/core/env"
+  ],
+  "link" : {
+    "native" : {
+      "cc" : "$CC",
+      "cc-flags": "$CC_FLAGS -w",
+      "cc-link-flags" : "$CC_LINK_FLAGS"
+    }
+  }
+}

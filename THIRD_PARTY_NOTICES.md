@@ -49,3 +49,16 @@ under the Apache License 2.0; the toolchain `CREDITS.md` additionally lists:
 
 These are components of the MoonBit toolchain; qbe.mbt redistributes only the
 runtime objects named above.
+
+## mbtcc (vendored example)
+
+`examples/mbtcc-qbe/` vendors mbtcc, a C compiler written in MoonBit, pinned at
+commit `39d58ef3a405f1118199cace27e4d7f6d2a6f7b6` of
+<https://github.com/moonbitlang/mbtcc>.
+
+- mbtcc — Apache License 2.0 (Copyright the mbtcc authors / Kaida-Amethyst)
+- chibicc — MIT License, Copyright (c) 2019 Rui Ueyama
+  (<https://github.com/rui314/chibicc>)
+
+See `examples/mbtcc-qbe/LICENSE`, `examples/mbtcc-qbe/chibicc/LICENSE` and
+`examples/mbtcc-qbe/NOTICE`.

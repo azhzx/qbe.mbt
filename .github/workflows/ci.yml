@@ -286,3 +286,31 @@ jobs:
 
       - name: "Variadic runtime semantics (interp / wasm / la64)"
         run: python tools/check_vararg_runtime.py
+
+  mbtcc:
+    name: mbtcc -> QBE builder (WIP, non-blocking)
+    runs-on: macos-14
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
+
+      # WIP: mbtcc targets an older MoonBit (lexmatch string patterns, old
+      # pinned deps) and is expected to fail until the front-end migration
+      # lands. See examples/mbtcc-qbe/INTEGRATION.md.
+      - name: Build vendored mbtcc
+        working-directory: examples/mbtcc-qbe
+        run: |
+          moon update
+          moon build
+
