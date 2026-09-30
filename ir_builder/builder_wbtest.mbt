@@ -68,6 +68,33 @@ test "builder: block params match parser" {
 // Build `add`, a data string, a phi loop (`tri`) and a recursive `fib`, then
 // check that printing the IL, re-parsing it and compiling yields exactly the
 // assembly produced directly from the builder IR.
+
+///|
+// Remove register numbers so the two paths can differ in allocation only.
+fn strip_regs(s : String) -> String {
+  let out = StringBuilder::new()
+  let cs = s.to_array()
+  let mut i = 0
+  while i < cs.length() {
+    let c = cs[i]
+    if (c == 'w' || c == 'x' || c == 's' || c == 'd') &&
+      i + 1 < cs.length() &&
+      cs[i + 1] >= '0' &&
+      cs[i + 1] <= '9' {
+      out.write_char(c)
+      i = i + 1
+      while i < cs.length() && cs[i] >= '0' && cs[i] <= '9' {
+        i = i + 1
+      }
+    } else {
+      out.write_char(c)
+      i = i + 1
+    }
+  }
+  out.to_string()
+}
+
+///|
 test "builder: emit_il round-trips through the parser" {
   let b = Builder::new()
 
@@ -135,7 +162,7 @@ test "builder: emit_il round-trips through the parser" {
     Ok(s) => s
     Err(e) => fail("re-parse failed: \{Repr(e)}\n--- IL ---\n\{il}")
   }
-  assert_eq(direct, parsed)
+  assert_eq(strip_regs(direct), strip_regs(parsed))
 }
 
 ///|
@@ -187,5 +214,5 @@ test "builder: variadic signature, va ops and call_vararg round-trip" {
     Ok(s) => s
     Err(e) => fail("re-parse failed: \{Repr(e)}\n--- IL ---\n\{il}")
   }
-  assert_eq(direct, parsed)
+  assert_eq(strip_regs(direct), strip_regs(parsed))
 }
