@@ -309,14 +309,26 @@ pub fn Builder::iconst(self : Builder, fid : Int, v : Int64) -> Int {
 // Double (`d`) constant.
 pub fn Builder::fconst(self : Builder, fid : Int, v : Double) -> Int {
   let f = self.funcs[fid]
-  self.push_ref(@types.Ref::con(f.get_con_by(@types.Con::double(v))))
+  let con = @types.Ref::con(f.get_con_by(@types.Con::double(v)))
+  let to = @types.Ref::tmp(f.new_tmp("t", @types.Kd))
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(@types.Copy, @types.Kd, to, con, @types.Ref::none()),
+  )
+  self.push_ref(to)
 }
 
 ///|
 // Single (`s`) constant.
 pub fn Builder::sconst(self : Builder, fid : Int, v : Float) -> Int {
   let f = self.funcs[fid]
-  self.push_ref(@types.Ref::con(f.get_con_by(@types.Con::single(v))))
+  let con = @types.Ref::con(f.get_con_by(@types.Con::single(v)))
+  let to = @types.Ref::tmp(f.new_tmp("t", @types.Ks))
+  let bid = self.cur[fid]
+  f.blks[bid].ins.push(
+    @types.Ins::new(@types.Copy, @types.Ks, to, con, @types.Ref::none()),
+  )
+  self.push_ref(to)
 }
 
 ///|

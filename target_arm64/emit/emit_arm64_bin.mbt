@@ -268,12 +268,22 @@ fn arm64_bin_loadcon(
     st.words.push(@object.enc_add_imm(rd, rd, 0))
     return
   }
-  let w = k.wide()
+  // The instruction class is not reliable for constants that the pipeline has
+  // moved between register files, so derive floatness from the constant.
+  let is_s = con.flt == 1
+  let is_d = con.flt == 2
+  let w = if is_s { 0 } else if is_d { 1 } else { k.wide() }
   let sf = w != 0
   let bits = if sf { 64 } else { 32 }
   let mask = if sf { -1L } else { 0xFFFFFFFFL }
-  let mut n = con.raw_bits()
-  if w == 0 {
+  let mut n = if is_s {
+    con.bits.s.reinterpret_as_uint().to_int64()
+  } else if is_d {
+    con.bits.d.reinterpret_as_int64()
+  } else {
+    con.raw_bits()
+  }
+  if !is_s && !is_d && w == 0 {
     n = arm64_s32(n)
   }
   let rd = arm64_bin_reg(r)
@@ -305,7 +315,7 @@ fn arm64_bin_loadcon(
   let mut sh = 16
   let mut m = n >> 16
   while m != 0L {
-    if (w == 0 && sh == 32) || sh == 64 {
+    if (!sf && sh == 32) || sh == 64 {
       break
     }
     arm64_bin_emit(
@@ -314,6 +324,11 @@ fn arm64_bin_loadcon(
     )
     m = m >> 16
     sh = sh + 16
+  }
+  if is_s {
+    arm64_bin_emit(st, @object.enc_fmov_s_w(rd, rd))
+  } else if is_d {
+    arm64_bin_emit(st, @object.enc_fmov_d_x(rd, rd))
   }
 }
 
