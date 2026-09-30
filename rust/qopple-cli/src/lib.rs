@@ -4,7 +4,7 @@
 //! This is the pure-Rust companion to the [`qopple`](https://crates.io/crates/qopple)
 //! crate: it links nothing at build time and instead locates the compiler at
 //! runtime. Install the binary with the qbe.mbt installer
-//! (`curl -fsSL https://i2pl.com/install_qopple.sh | sh`) or build it from a
+//! (`curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh`) or build it from a
 //! checkout, then point this crate at it via `$QOPPLE_BIN` or `PATH`.
 //!
 //! ```no_run
@@ -46,7 +46,7 @@ impl fmt::Display for Error {
             Error::NotFound => write!(
                 f,
                 "could not find the `qbe` executable; install it from \
-                 https://i2pl.com/install_qopple.sh or set {BIN_ENV}"
+                 https://i2pl.com/install-qbe-mbt.sh or set {BIN_ENV}"
             ),
             Error::Io(e) => write!(f, "failed to run qbe: {e}"),
             Error::Failed { code, stderr } => {

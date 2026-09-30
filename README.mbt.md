@@ -62,7 +62,7 @@ Made with [contrib.rocks](https://contrib.rocks).
 Install a prebuilt binary — no MoonBit compiler or C toolchain needed:
 
 ~~~sh
-curl -fsSL https://i2pl.com/install_qopple.sh | sh
+curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
 ~~~
 
 The installer detects your OS and architecture and downloads the matching
