@@ -111,7 +111,7 @@ fn arm64_cmpop(c : Int) -> Int {
     13 => 10 // Cfge -> Cfle
     16 => 17 // Cfo -> Cfuo
     17 => 16 // Cfuo -> Cfo
-    _ => 0 // eq/ne are self-inverse
+    _ => c // eq/ne/fne/feq are self-inverse
   }
 }
 
