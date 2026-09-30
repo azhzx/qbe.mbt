@@ -494,6 +494,52 @@ fn Builder::add_edge(
 }
 
 ///|
+// Indirect call through a value handle holding a function pointer.
+pub fn Builder::call_value(
+  self : Builder,
+  fid : Int,
+  callee : Int,
+  args : Array[(@types.Class, Int)],
+  ret : Ret,
+) -> Int {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  f.leaf = false
+  for a in args {
+    f.blks[bid].ins.push(
+      @types.Ins::new(
+        @types.Arg,
+        a.0,
+        @types.Ref::none(),
+        self.val_ref(a.1),
+        @types.Ref::none(),
+      ),
+    )
+  }
+  let ret_cls = ret.cls()
+  let to = if ret_cls == @types.Kx {
+    @types.Ref::none()
+  } else {
+    @types.Ref::tmp(f.new_tmp("t", ret_cls))
+  }
+  let call_cls = if ret_cls == @types.Kx { @types.Kw } else { ret_cls }
+  f.blks[bid].ins.push(
+    @types.Ins::new(
+      @types.Call,
+      call_cls,
+      to,
+      self.val_ref(callee),
+      @types.Ref::none(),
+    ),
+  )
+  if ret_cls == @types.Kx {
+    -1
+  } else {
+    self.push_ref(to)
+  }
+}
+
+///|
 // Emit a call whose trailing arguments are variadic. The IL ellipsis is
 // written between the fixed and variadic argument lists so the backends
 // place the varargs according to the target ABI.
