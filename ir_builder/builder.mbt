@@ -901,6 +901,26 @@ pub fn Builder::data_begin(
 }
 
 ///|
+// Start a data section with an explicit alignment.
+pub fn Builder::data_begin_aligned(
+  self : Builder,
+  name : String,
+  is_export : Bool,
+  align : Int64,
+) -> Unit {
+  let start = @types.Dat::start()
+  start.is_export = is_export
+  self.datas.push(start)
+  self.datas.push(@types.Dat::align(align))
+  self.datas.push(@types.Dat::name(name, is_export))
+}
+
+///|
+pub fn Builder::data_align(self : Builder, a : Int64) -> Unit {
+  self.datas.push(@types.Dat::align(a))
+}
+
+///|
 pub fn Builder::data_byte(self : Builder, v : Int64) -> Unit {
   self.datas.push(@types.Dat::byte(v))
 }
