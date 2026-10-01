@@ -850,3 +850,42 @@ int main(void) {
 或 tbl 数组本身的构造方式),还需要更贴近的还原。
 
 **在证实之前,16.8 那条观察只是一条观察,不是根因。**
+
+## 17. 一个新的最小失败:负数常量存进静态 64 位变量
+
+```c
+static long long g;
+int main(void) { g = -1; return g == -1 ? 0 : 1; }
+```
+
+QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `0xFFFFFFFFFFFFFFFF`。
+复现见 `qpcc/repro_neg2.c`。
+
+### 17.1 已排除的范围
+
+| 假设 | 结论 |
+| --- | --- |
+| arm64 后端没下降 `extsw` | ❌ 六种扩展(extsw/extuw/extsb/extub/extsh/extuh)两边生成的汇编**逐字相同** |
+| `foldint` 折叠 `Extsw` 算错 | ❌ `fold/fold_wbtest.mbt` 已有断言 `-2147483648`,通过 |
+| `ssa/copy.mbt` 的 `iscopy` 把它当复制消掉 | ❌ `i.cls == Kl && t.cls == Kw` 时明确返回 false |
+| 局部变量也一样 | ❌ 局部 `long long` 正确;`static int` 正确;从 int 变量赋值也正确 |
+
+### 17.2 剩下的线索
+
+`--emit qbe` 打出来的 IR 是**对的**:
+
+    %t.1 =w sub 0, 1
+    %t.2 =l extsw %t.1        ← 正确
+    storel %t.2, $g
+
+但 `--emit qbe` **不经过优化流水线**(见 14.2),所以真正进后端的 IR 已经被改坏。
+真实汇编是 `mov w0, #-1` / `str x0` —— 一个 **32 位**常量,说明 `extsw` 被折叠成了
+**`Kw` 类别的常量**,而不是 `Kl`。
+
+### 17.3 下一步
+
+在**优化后**的 IR 上定位(而不是 `--emit qbe`):
+
+1. 检查 `fold`/`gvn` 里把扩展指令折成常量时,新常量的 **class** 是 `Kw` 还是 `Kl`
+2. 检查 IR builder 的 `iconst`,对 `Kl` 类的负常量是否只写了低 32 位
+3. 用 `-d` 系列 dump 优化各阶段(参考版 qbe 有 `-dM`/`-dG` 等)
