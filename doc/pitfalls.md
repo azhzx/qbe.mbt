@@ -1361,3 +1361,40 @@ QPCC 的汇编(错误):
 
 在 c_opfold 入口打印 op 和 cls,跑 repro_bit32.c,看折 shl 时收到哪个类别。
 非 Heisenberg,因为 QPCC 由 moon build 编译。
+
+### 21.7 完整证据链:折叠全程正确,之后丢失
+
+插桩(ZPCC 由 moon build 编译,非 Heisenberg)给出的四步:
+
+    c_opfold 入口:   op=13(Shl) cls=1(Kl) a1=1 a2=32
+    c_opfold 出口:   i=4294967296 wide=1 out=4294967296
+    killins 收到:    op=13(Shl) cls=1(Kl) repl=con(4294967296)
+    isel 之前:       op=53(Storel) cls=1(Kl) a0=con(0) a1=con(0)
+
+**前四步全对,第五步变成 0。**
+
+所以值是在 **`killins` 之后、`isel` 之前** 丢的,范围是:
+
+* `replaceuses`(改写使用者的那一步)
+* `abi` / `simpl`(在 gvn 之后、isel 之前)
+
+### 21.8 已排除的
+
+| 假设 | 结果 |
+| --- | --- |
+| 掩码把值截成 0 | 禁掉掩码无效 |
+| `con_eq` 把 0 和 0x100000000 当同一个 | `raw_bits` 对整数走 `bits.i`,精确 |
+| `get_con_by` 返回了别的常量 | 未验证,但 `killins` 收到的是对的 |
+| 折叠算错 | `c_opfold` 出口就是 4294967296 |
+
+### 21.9 下一步
+
+在 `replaceuses` 入口打印它拿到的 `r` 和改写了几个使用者,
+并在 `abi` 之后、`simpl` 之后各 dump 一次 `storel`(本会话第 28 轮和第 29 轮
+各有一套已验证可用的插桩),看 `0x100000000` 在哪一步变成 0。
+
+### 21.10 这个 bug 值得追到底
+
+它是**唯一解释 `isel6`/`echo`/`abi5`/`abi6`/`isel5` 五个 fixture 的根因**
+(缺栈分配,因为 `rega` 的固定寄存器集合 `T.rglob` 丢掉 `BIT(32)`=SP)。
+修好它预期一次解决五个。
