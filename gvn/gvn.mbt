@@ -1458,11 +1458,46 @@ fn copyref(st : GState, b : @types.Blk, i : @types.Ins) -> @types.Ref {
 }
 
 ///|
+// Is it safe to replace every use of `old` (defined in block b_id) by `r`?
+// `r` must dominate each use site, otherwise the substitution breaks SSA.
+fn gvn_repl_ok(
+  st : GState,
+  old : @types.Ref,
+  r : @types.Ref,
+  b_id : Int,
+) -> Bool {
+  let fn_ = st.fn_
+  if r.is_con() {
+    return true
+  }
+  if !r.is_tmp() {
+    return false
+  }
+  let d = fn_.tmps[r.tmp_val()].bid
+  if d < 0 {
+    return false
+  }
+  if d != b_id && !gvn_sdom(fn_, d, b_id) {
+    println(
+      "DBGREL rbid=" +
+      d.to_string() +
+      " bid=" +
+      b_id.to_string() +
+      " rname=" +
+      fn_.tmps[r.tmp_val()].name,
+    )
+    return false
+  }
+  ignore(old)
+  true
+}
+
+///|
 fn dedupphi(st : GState, b : @types.Blk) -> Unit {
   for pi in 0..<b.phi.length() {
     let p = b.phi[pi]
     let r = phicopyref(st, b, pi)
-    if !r.is_none() {
+    if !r.is_none() && gvn_repl_ok(st, p.to, r, b.id) {
       replaceuses(st, p.to, r)
       p.to = @types.Ref::none()
     }

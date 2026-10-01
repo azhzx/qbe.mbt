@@ -16,7 +16,7 @@ pub fn emit_arm64(@types.Fn, @util.Interner, Array[@types.Typ], String, String, 
 
 pub fn emit_arm64_bin_fn(@types.Fn, @util.Interner, Bool) -> Array[Int] raise
 
-pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise
+pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool, Array[String]) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise
 
 pub fn emit_arm64_bin_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Arm64BinModule raise
 

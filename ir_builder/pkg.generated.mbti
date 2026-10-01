@@ -41,7 +41,9 @@ pub fn Builder::call_value(Self, Int, Int, Array[(@types.Class, Int)], Ret) -> I
 pub fn Builder::call_vararg(Self, Int, String, Array[(@types.Class, Int)], Array[(@types.Class, Int)], Ret) -> Int
 pub fn Builder::cmp(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
 pub fn Builder::current_block(Self, Int) -> Int
+pub fn Builder::data_align(Self, Int64) -> Unit
 pub fn Builder::data_begin(Self, String, Bool) -> Unit
+pub fn Builder::data_begin_aligned(Self, String, Bool, Int64) -> Unit
 pub fn Builder::data_byte(Self, Int64) -> Unit
 pub fn Builder::data_bytes(Self, String, Bool, Bytes) -> Unit
 pub fn Builder::data_end(Self) -> Unit
