@@ -476,7 +476,62 @@ DBG chk ac=0x6000009800a0 a=0x60000098007a off=-38 inmem=196608 align=524288
 
 ---
 
-## 11. 一句话总结
+
+## 11. FIXME:amd64 目标没有语义验证
+
+**状态:已知缺口,故意留在这里。**
+
+自举 qbe 默认目标是 `amd64_sysv`,之前所有的 76 用例对比都用它。问题是:
+
+| 目标 | 能否在这台 macOS/arm64 上汇编 | 能否运行 |
+| --- | --- | --- |
+| `amd64_sysv`(默认) | ❌ 产出的是 **Linux x86-64** 汇编,`.type`/`.size` 是 ELF 指令 | — |
+| `amd64_apple` | ✅ 能汇编 | ❌ `Bad CPU type in executable`(没有 Rosetta) |
+| `arm64_apple` | ✅ | ✅ |
+
+所以 **`semantic-check.sh` 只能跑 arm64_apple**。这带来两个后果:
+
+1. **C 类那 11 个"仅输出不同"的 fixture 无法在本机做语义判定** —— 它们的差异出现在
+   amd64 目标上,而 amd64 的产物在这里既汇编不了也跑不了。
+2. **arm64 目标此前一次都没被量过** —— 见下。
+
+**要补上这块,需要其中一条:**
+- 一台能跑 x86-64 的机器(Intel Mac,或装了 Rosetta 的 Apple Silicon)
+- 一个 Linux x86-64 环境(qemu-user 也能用)
+- 或者 CI 上加一个 `ubuntu-latest` job,用 `-t amd64_sysv` 跑 `semantic-check.sh`
+
+在补上之前,**不要根据 amd64 的字节对比结果宣称"自举 qbe 正确"** ——
+那条路径既没有语义验证,也不是 QPCC 自己产出的目标。
+
+---
+
+## 12. arm64 目标:整片没测过的维度
+
+第一次用 `-t arm64_apple` 跑 `semantic-check.sh`,结果:
+
+```
+$ qbe-qpcc -t arm64_apple env.ssa
+Abort trap: 6          # SIGABRT
+$ vendor/qbe/qbe -t arm64_apple env.ssa
+(正常)
+```
+
+已跑出的部分分类(~29/76):
+
+```
+both correct          :  5
+only reference correct: 23      ← 自举版语义错,不是"次优代码"
+only qpcc correct     :  0
+neither               :  1      (dark:自举版编译失败)
+```
+
+**这已经不是"代码质量差异",是真的编错了。**而且它正好是 QPCC 自己产出的目标 ——
+换句话说:**对自举 qbe 唯一重要的那个后端,此前从未被验证过。**
+
+下一步从这里开始:先追 `env.ssa` 的 arm64 SIGABRT(断言失败通常直接指出被编坏的不变式,
+一个 bug 可能带过一大批)。
+
+## 13. 一句话总结
 
 > 这些 bug 大多**不是"少写了一个 case"**,而是**某个语义细节被实现时的捷径吃掉了**:typedef 的符号性、默认实参提升、复合字面量的存储期、`default` 在语句列表里的位置、gvn 的支配性、指针缩放的字节数……
 >
