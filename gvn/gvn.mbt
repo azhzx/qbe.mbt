@@ -1216,7 +1216,12 @@ fn normins(st : GState, i : @types.Ins) -> Unit {
   let fn_ = st.fn_
   for n in 0..<2 {
     let k = argcls(i, n)
-    if (k & 1) == 0 {
+    // QBE writes !KWIDE(k), and its placeholder for the e class is -1,
+    // which is odd and therefore never truncated.  Our argcls returns -2
+    // for the same placeholder, and -2 & 1 is 0, so a store of a 64-bit
+    // constant was silently masked to its low word: 1 << 32 became 0.
+    // A negative code means any class and must never match.
+    if k >= 0 && (k & 1) == 0 {
       let a = if n == 0 { i.arg1 } else { i.arg2 }
       match isconbits(fn_, a) {
         Some(v) =>
