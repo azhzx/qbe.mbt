@@ -1435,3 +1435,40 @@ QPCC 的汇编(错误):
 
 它是 `isel6`/`echo`/`abi5`/`abi6`/`isel5` 五个 fixture 的共同根因
 (`rega` 的 `T.rglob` 丢掉 `BIT(32)`=SP)。**修好它预期一次解决五个。**
+
+### 21.15 最后一次改写:store 的 arg1 被正确写成 4294967296
+
+在 `replaceuse` 里打印每一次改写:
+
+    WU op=13(Shl)    blk=0 idx=2 a1?true  a2?false ->con(1)
+    WU op=13(Shl)    blk=0 idx=2 a1?false a2?true  ->con(32)
+    WU op=53(Storel) blk=0 idx=3 a1?true  a2?false ->con(4294967296)
+
+**store 的 `arg1` 被正确改写为 `con(4294967296)`。**
+
+而 frontend 结束后的 dump 显示 `op=53 a1=con(0)`。
+
+### 21.16 已排除的 pass 与步骤
+
+| 排除对象 | 关掉后 |
+| --- | --- |
+| 32 位掩码 | rc 仍 2 |
+| `assoccon` | rc 仍 1 |
+| `normins` | rc 仍 1 |
+| `gvndup` | rc 仍 1 |
+| `mem.coalesce` | rc 仍 1 |
+
+### 21.17 剩下的是什么
+
+`gvn` 之后 frontend 里还有多次 `gvn_dedup_defs`(第 165、168、181、183 行)
+以及 `gvn`/`gcm`/`ifconvert`。
+
+**下一个判据**:在 `dedupins` 的**末尾**打印 store 的 `arg1`(本轮插桩因编译错误未跑成,
+写法是把 `if a.is_con()` 的结果先绑到局部变量再拼接,避免在字符串里直接索引数组)。
+
+### 21.18 本会话的总进度
+
+* 四个根因已修并验证(both correct 39 -> 42)
+* 第五个 bug 的完整证据链,逐段插桩七次,排除了六个可能
+* 定位到:`gvn` 第一次 `gvn_dedup_defs` 里 store 的 arg1 被正确改写,
+  但在 frontend 结束前又被改回 0
