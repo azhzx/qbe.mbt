@@ -151,8 +151,8 @@ fn run_frontend_passes(
   }
   @cfg.fillalias(fn_)
   // loadopt (load.c): -dM "After load elimination".
-  // Disabled: the pass currently places some promoted loads in blocks that do
-  // not dominate their uses, which trips ssacheck on larger inputs.
+  // Disabled: the pass places some promoted loads in blocks that do not
+  // dominate their uses, which trips ssacheck on larger inputs.
   let _ = dbg.m
   let _ = interner
   let _ = typs
