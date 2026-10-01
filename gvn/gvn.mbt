@@ -1478,14 +1478,6 @@ fn gvn_repl_ok(
     return false
   }
   if d != b_id && !gvn_sdom(fn_, d, b_id) {
-    println(
-      "DBGREL rbid=" +
-      d.to_string() +
-      " bid=" +
-      b_id.to_string() +
-      " rname=" +
-      fn_.tmps[r.tmp_val()].name,
-    )
     return false
   }
   ignore(old)
