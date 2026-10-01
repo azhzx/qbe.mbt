@@ -144,6 +144,8 @@ fn run_frontend_passes(
   @ssa.phiins(fn_)
   @ssa.renblk(fn_)
   @ssa.filluse(fn_)
+  @gvn.gvn_dedup_defs(fn_)
+  @ssa.filluse(fn_)
   @ssa.ssacheck(fn_)
   if dbg.n {
     out.write_string("\n> After SSA construction:\n")
@@ -158,13 +160,13 @@ fn run_frontend_passes(
   let _ = typs
   @ssa.filluse(fn_)
   @cfg.fillalias(fn_)
-  // coalesce (mem.c): -dM "Slot coalescing".
-  // out.write_string(@mem.coalesce(fn_, dbg.m, interner, typs))
-  let _ = @mem.coalesce
-  let _ = interner
-  let _ = typs
+  out.write_string(@mem.coalesce(fn_, dbg.m, interner, typs))
+  @ssa.filluse(fn_)
+  @gvn.gvn_dedup_defs(fn_)
   @ssa.filluse(fn_)
   @cfg.filldom(fn_)
+  @gvn.gvn_dedup_defs(fn_)
+  @ssa.filluse(fn_)
   @ssa.ssacheck(fn_)
   // gvn/gcm (gvn.c/gcm.c): -dG.
   out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
@@ -176,6 +178,10 @@ fn run_frontend_passes(
   @cfg.filldom(fn_)
   out.write_string(@gvn.gcm(fn_, dbg.g, interner, typs))
   @ssa.filluse(fn_)
+  @gvn.gvn_dedup_defs(fn_)
+  @ssa.filluse(fn_)
+  @gvn.gvn_dedup_defs(fn_)
+  @ssa.filluse(fn_)
   @ssa.ssacheck(fn_)
   if cansel {
     // ifconvert (ifopt.c): -dK, amd64 only.
@@ -184,6 +190,8 @@ fn run_frontend_passes(
     @cfg.fillpreds(fn_)
     @ssa.filluse(fn_)
     @cfg.filldom(fn_)
+    @gvn.gvn_dedup_defs(fn_)
+    @ssa.filluse(fn_)
     @ssa.ssacheck(fn_)
   }
 }

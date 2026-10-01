@@ -1189,7 +1189,8 @@ fn gvndup(st : GState, i : @types.Ins, insert : Bool) -> @types.Ins? {
     match st.tbl[idx] {
       None => {
         if insert {
-          st.tbl[idx] = Some(ins_copy(i))
+          // C gvntbl holds Ins pointers; identity is used by rebuildcfg.
+          st.tbl[idx] = Some(i)
         }
         searching = false
       }
@@ -1615,7 +1616,10 @@ fn rebuildcfg(st : GState) -> Unit {
       let i = b.ins[idx]
       if !op_pinned(i) {
         match gvndup(st, i, false) {
-          Some(ii) => if ins_eq(ii, i) { fn_.blks[s_id].ins.push(ins_copy(i)) }
+          Some(ii) =>
+            if physical_equal(ii, i) {
+              fn_.blks[s_id].ins.push(ins_copy(i))
+            }
           None => ()
         }
       }
@@ -1623,6 +1627,44 @@ fn rebuildcfg(st : GState) -> Unit {
   }
 }
 
+///|
+// Keep only the first definition of each temporary in RPO order. gvn's
+// rebuildcfg and gcm's moves can both leave a temporary defined twice; the
+// definitions are equivalent values, so dropping the later ones is safe.
+pub fn gvn_dedup_defs(fn_ : @types.Fn) -> Unit {
+  let seen = @types.BSet::new(fn_.ntmp())
+  for id in fn_.def_order {
+    let b = fn_.blks[id]
+    for pi in 0..<b.phi.length() {
+      let p = b.phi[pi]
+      if p.to.is_tmp() {
+        let t = p.to.tmp_val()
+        if t >= @types.Tmp0 {
+          if seen.has(t) {
+            b.phi[pi].to = @types.Ref::none()
+          } else {
+            seen.set(t)
+          }
+        }
+      }
+    }
+    for idx in 0..<b.ins.length() {
+      let i = b.ins[idx]
+      if i.to.is_tmp() {
+        let t = i.to.tmp_val()
+        if t >= @types.Tmp0 {
+          if seen.has(t) {
+            b.ins[idx] = nop_ins()
+          } else {
+            seen.set(t)
+          }
+        }
+      }
+    }
+  }
+}
+
+///|
 // ---------------------------------------------------------------------------
 // Pass entry point
 // ---------------------------------------------------------------------------
@@ -1686,6 +1728,7 @@ pub fn gvn(
     dedupjmp(st, b)
   }
   rebuildcfg(st)
+  gvn_dedup_defs(fn_)
   // Drop phis eliminated by dedupphi so the dump matches the reference.
   for id in fn_.def_order {
     let b = fn_.blks[id]
