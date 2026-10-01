@@ -77,6 +77,16 @@ Useful flags: `--emit obj|asm|qbe` to see QPCC's IR instead of an object,
 `-std=c11` or `-std=c23` to pick the dialect, and `--check` for
 parse/semantic checking only.
 
+## Pitfalls
+
+The exercise is as much a test of the tooling as of the compiler, and several
+of the traps are easy to fall into twice: `timeout` does not exist on macOS, so
+a comparison script can silently report success by comparing two empty strings;
+zsh does not word-split an unquoted variable; `vendor/qbe` is a submodule, so
+reverting a debug patch means `cd vendor/qbe` first. All of that, plus the
+compiler bugs the self-host exposed and how each was found, is written up in
+[`doc/qpcc-selfhost-pitfalls.md`](../../doc/qpcc-selfhost-pitfalls.md).
+
 ## Regression suite
 
 `sh qpcc/test.sh` compiles every fixture under `qpcc/tests/` with both clang
