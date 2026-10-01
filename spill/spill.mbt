@@ -144,7 +144,9 @@ fn limit2(
   b2.copy_from(b1)
   b1.inter(st.mask[0])
   b2.inter(st.mask[1])
-  limit(st, b1, @types.target_cfg.ngpr - k1, fst)
+  // The globally reserved registers (sp, fp, ip1, x18) occupy slots inside
+  // ngpr that rega cannot use, so leave that many slots free.
+  limit(st, b1, @types.target_cfg.ngpr - k1 - 4, fst)
   limit(st, b2, @types.target_cfg.nfpr - k2, fst)
   ignore(b1.union(b2))
 }

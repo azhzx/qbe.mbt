@@ -31,6 +31,7 @@ priv struct Arm64BinState {
   addrs : Array[(Int, Int, Int, String, Int)]
   // Names defined in this object; anything else needs a GOT load.
   defined : Array[String]
+  mut cur_op : String
   mut frame : Int
   mut padding : Int
 }
@@ -52,6 +53,7 @@ fn arm64_bin_new(
     calls: [],
     addrs: [],
     defined,
+    cur_op: "",
     frame: 0,
     padding: 0,
   }
@@ -360,7 +362,9 @@ fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int raise {
   if r.is_tmp() {
     arm64_bin_reg(r.tmp_val())
   } else {
-    raise @util.QbeError::Ice("arm64 bin: expected a register operand")
+    raise @util.QbeError::Ice(
+      "arm64 bin: expected a register operand for " + st.cur_op,
+    )
   }
 }
 
@@ -808,6 +812,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 
 ///|
 fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
+  st.cur_op = i.op.name()
   let oi = i.op.index()
   let fi = @types.Flagieq.index()
   if oi >= fi && oi <= @types.Flagfuo.index() {
@@ -826,6 +831,33 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()
+      } else if i.to.is_slot() {
+        // Spilled value: copy to its stack slot (C emit.c Ocopy to RSlot).
+        let (rn, off) = arm64_bin_mem(st, i.to)
+        let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
+        let is_fp = i.cls == @types.Ks || i.cls == @types.Kd
+        let rt = if i.arg1.is_con() {
+          let ip1 = arm64_bin_reg(@types.ARM64_IP1)
+          arm64_bin_loadcon(st, st.fn_.cons[i.arg1.con_val()], ip1, i.cls)
+          ip1
+        } else {
+          arm64_bin_r(st, i.arg1)
+        }
+        if is_fp {
+          arm64_bin_emit(st, @object.enc_ldst_fp(size, 0, rt, rn, off))
+        } else {
+          arm64_bin_emit(st, @object.enc_ldst(size, 0, rt, rn, off))
+        }
+      } else if i.arg1.is_slot() {
+        // Reload a spilled value (C emit.c Ocopy from RSlot).
+        let (rn, off) = arm64_bin_mem(st, i.arg1)
+        let rd = arm64_bin_reg(i.to.tmp_val())
+        let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
+        if i.cls == @types.Ks || i.cls == @types.Kd {
+          arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, rd, rn, off))
+        } else {
+          arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
+        }
       } else if i.arg1.is_con() {
         arm64_bin_loadcon(
           st,

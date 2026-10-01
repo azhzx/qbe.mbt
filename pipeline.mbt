@@ -167,20 +167,14 @@ fn run_frontend_passes(
   @cfg.filldom(fn_)
   @ssa.ssacheck(fn_)
   // gvn/gcm (gvn.c/gcm.c): -dG.
-  // gvn currently duplicates some definitions (ssacheck: "defined more than
-  // once"), so it is disabled along with gcm until that is fixed.
-  // out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
-  let _ = @gvn.gvn
-  let _ = dbg.g
+  out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
   @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   // simplcfg (cfg.c): -dC.
   out.write_string(@cfg.simplcfg(fn_, dbg.c, interner, typs))
   @ssa.filluse(fn_)
   @cfg.filldom(fn_)
-  // out.write_string(@gvn.gcm(fn_, dbg.g, interner, typs))
-  let _ = @gvn.gcm
-  let _ = dbg.g
+  out.write_string(@gvn.gcm(fn_, dbg.g, interner, typs))
   @ssa.filluse(fn_)
   @ssa.ssacheck(fn_)
   if cansel {
