@@ -85,7 +85,7 @@ a comparison script can silently report success by comparing two empty strings;
 zsh does not word-split an unquoted variable; `vendor/qbe` is a submodule, so
 reverting a debug patch means `cd vendor/qbe` first. All of that, plus the
 compiler bugs the self-host exposed and how each was found, is written up in
-[`doc/qpcc-selfhost-pitfalls.md`](../../doc/qpcc-selfhost-pitfalls.md).
+[`doc/pitfalls.md`](../../doc/pitfalls.md).
 
 ## Regression suite
 
