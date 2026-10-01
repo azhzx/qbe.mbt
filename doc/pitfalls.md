@@ -1172,3 +1172,57 @@ QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `-1`。汇编是:
 直到把"被替换临时量"和"使用者"的**类别码**一起打出来,才看到错配。
 
 **下一次再遇到类似情形,第一时间就该打印双方类别码,而不是只打印值。**
+
+## 19. 三个修复之后的实测状态
+
+### 19.1 直接复测(秒级可信)
+
+    一致 4/20 : abi3 fold1 max queen
+
+### 19.2 完整 harness(跑到 28/60 时的中途值)
+
+    both correct          19
+    only reference correct  7   (abi1 abi4 abi5 abi6 abi8 abi9 echo)
+    neither                0   <- 【neither 清零了】
+
+基线是 39/20/1。`neither` 那个 `dark` 已经不再出现。
+
+### 19.3 剩余四类症状
+
+| 类别 | fixture | 观察 |
+| --- | --- | --- |
+| 缺栈分配 | abi5 abi6 echo isel5 isel6 | 参考版有 `sub sp, sp, xN`,QPCC 版没有 |
+| 段错误 | abi1 abi4 abi8 abi9 mem1 mem2 mem3 vararg2 | rc=139 |
+| 挂死 | ifc isel2 | rc=137 |
+| 输出不同 | tls | — |
+
+### 19.4 缺栈分配这条线的进展与教训
+
+已定位到 `vendor/qbe/arm64/abi.c:390`:
+
+    stk = align(stk, 16);
+    rstk = getcon(stk, fn);
+    if (stk)
+        emit(Oadd, Kl, TMP(SP), TMP(SP), rstk);
+
+以及 `abi.c:355` 的 `(Ins){Oalloc+al, Kl, r, {getcon(sz, fn)}}`(计算出的枚举值放进复合字面量)。
+
+写了两轮构造电池测试,**都没有找到分歧**:
+
+* 第一轮:`align`/栈大小走查/复合字面量 —— 全部与 clang 一致
+* 第二轮:`INRANGE` 宏(`(unsigned)(x) - l <= u - l`)、`isarg`、计算枚举 —— 也全部一致
+
+**两次测试本身都犯过同一个错**:第一次期望值算错,第二次又用了 `#define`
+而被 QPCC 驱动剥离(这个坑第 9 轮踩过一次)。
+
+**教训重复了三次**:`#define` 必须先用 `clang -E -P` 预处理。这条值得写进肌肉记忆。
+
+### 19.5 下一步的新思路
+
+缺栈分配**未必**是 QPCC 编错 `abi.c`。也可能是:
+
+1. QPCC 编错**另一个 pass**(比如 `spill.c` 的栈槽分配),导致 `Oalloc` 被消掉
+2. 自举 qbe **自身**的优化把 `add sp, sp, rstk` 删了 —— 但参考版不会,所以仍是 QPCC 的编错
+
+判别方法:用 `-d` 系列开关(参考版 qbe 支持 dump 各阶段 IR)对比自举版和参考版
+**在 abi 之后**的 IR,看 `Oalloc` 是否已经不在。
