@@ -267,12 +267,8 @@ fn arm64_bin_loadcon(
       (st.words.length(), st.words.length() + 1, rd, name, con.bits.i.to_int()),
     )
     st.words.push(@object.enc_adrp(rd, 0))
-    let off = con.bits.i.to_int()
     if con.is_local || st.defined.contains(name) {
-      // Small addends fit in the PAGEOFF12 immediate; larger ones need an
-      // explicit ARM64_RELOC_ADDEND from the module emitter.
-      let imm = if off > 0 && off < 4096 { off } else { 0 }
-      st.words.push(@object.enc_add_imm(rd, rd, imm))
+      st.words.push(@object.enc_add_imm(rd, rd, 0))
     } else {
       st.words.push(@object.enc_ldst(3, 1, rd, rd, 0))
     }
