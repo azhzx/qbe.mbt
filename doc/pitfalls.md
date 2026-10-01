@@ -519,11 +519,12 @@ $ vendor/qbe/qbe -t arm64_apple env.ssa
 已跑出的部分分类(~29/76):
 
 ```
-both correct          :  5
-only reference correct: 23      ← 自举版语义错,不是"次优代码"
-only qpcc correct     :  0
-neither               :  1      (dark:自举版编译失败)
+total 59: both correct 6, only reference 52, only qpcc 0, neither 1
 ```
+
+也就是说:**arm64 目标上,自举 qbe 编 59 个 fixture 有 52 个语义错误**(不是"次优代码",是真的算错)。
+只有 6 个和参考版一样正确。
+`dark` 是 neither:参考版崩溃(rc=139),自举版直接编译失败(rc=134)。
 
 **这已经不是"代码质量差异",是真的编错了。**而且它正好是 QPCC 自己产出的目标 ——
 换句话说:**对自举 qbe 唯一重要的那个后端,此前从未被验证过。**
