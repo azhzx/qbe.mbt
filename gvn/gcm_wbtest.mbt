@@ -63,7 +63,7 @@ fn gcmw_violations(f : @types.Fn) -> Array[String] {
     if d == ub {
       if pos[t] >= uidx {
         bad.push(
-          "tmp %" + t.to_string() + " used before def in blk " + ub.to_string(),
+          "tmp %" + t.to_string() + " used before def in blk " + f.blks[ub].name,
         )
       }
     } else if !gcmw_dom(f, d, ub) {
@@ -71,20 +71,22 @@ fn gcmw_violations(f : @types.Fn) -> Array[String] {
         "tmp %" +
         t.to_string() +
         " blk " +
-        d.to_string() +
-        " not dom blk " +
-        ub.to_string(),
+        f.blks[d].name +
+        " does not dominate " +
+        f.blks[ub].name,
       )
     }
   }
   for id in f.def_order {
     let b = f.blks[id]
     for p in b.phi {
-      let mut i = 0
+      // A phi argument is available at the end of the block it flows from,
+      // which the argument records itself.
       for a in p.args {
-        let from = if i < b.pred.length() { b.pred[i] } else { id }
-        check(a.value, from, 0)
-        i = i + 1
+        // the value is consumed at the end of the predecessor block,
+        // so any definition inside it is early enough
+        let from = a.blk_id
+        check(a.value, from, f.blks[from].ins.length())
       }
     }
     let mut k = 0
@@ -155,7 +157,7 @@ test "gcm orders a diamond" {
   // that the defect is present rather than absent. When gcm is fixed the
   // count drops to zero and this assertion starts failing, which is the
   // signal to flip it back to assert_eq(bad.length(), 0).
-  assert_true(bad.length() > 0)
+  assert_eq(bad.length(), 0)
 }
 
 ///|
@@ -189,7 +191,7 @@ test "gcm orders a loop body" {
   // that the defect is present rather than absent. When gcm is fixed the
   // count drops to zero and this assertion starts failing, which is the
   // signal to flip it back to assert_eq(bad.length(), 0).
-  assert_true(bad.length() > 0)
+  assert_eq(bad.length(), 0)
 }
 
 ///|
@@ -230,7 +232,7 @@ test "gcm orders a nested loop" {
   // that the defect is present rather than absent. When gcm is fixed the
   // count drops to zero and this assertion starts failing, which is the
   // signal to flip it back to assert_eq(bad.length(), 0).
-  assert_true(bad.length() > 0)
+  assert_eq(bad.length(), 0)
 }
 
 ///|
