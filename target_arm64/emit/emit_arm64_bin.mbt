@@ -289,13 +289,37 @@ fn arm64_bin_loadcon(
       )
     }
     let hi = off >> 12
-    if hi != 0 {
+    if hi != 0 && hi <= 0xFFF {
       let imm = (hi & 0xFFF) | (1 << 12)
       st.words.push(
         if neg {
           @object.enc_sub_imm_sf(true, rd, rd, imm)
         } else {
           @object.enc_add_imm_sf(true, rd, rd, imm)
+        },
+      )
+    } else if hi > 0xFFF {
+      // The shifted imm12 form only reaches 0xfffff, so a larger offset goes
+      // through a scratch register (IP0 is reserved and not allocatable).
+      let scratch = arm64_bin_reg(@types.ARM64_IP0)
+      let n = off.to_int64().reinterpret_as_uint64()
+      st.words.push(
+        @object.enc_movz_sf(true, scratch, (n & 0xFFFFUL).to_int(), 0),
+      )
+      let mut sh = 16
+      let mut m = n >> 16
+      while m != 0UL {
+        st.words.push(
+          @object.enc_movk_sf(true, scratch, (m & 0xFFFFUL).to_int(), sh / 16),
+        )
+        m = m >> 16
+        sh = sh + 16
+      }
+      st.words.push(
+        if neg {
+          @object.enc_sub_reg_sf(true, rd, rd, scratch)
+        } else {
+          @object.enc_add_reg_sf(true, rd, rd, scratch)
         },
       )
     }
