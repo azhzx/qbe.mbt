@@ -135,6 +135,60 @@ IR 铁证:
 
 ---
 
+
+### 1.8 指针差被推成指针类型(`c1e7596`)
+
+**现象**:`abi5 abi6 abi8 env queen tls` 六个用例报 `sysv abi requires alignments of 16 or less`,而参考 qbe 处理它们毫无问题。
+
+**根因是一条类型推导**:
+
+```moonbit
+// qpcc/sema/expr.mbt  check_binary
+(CPtr(e), _) => if op == "+" || op == "-" { CPtr(e) } else { lt }
+```
+
+`p - q`(两个指针)的结果类型被判成 **`CPtr(elem)`**。C 里它是 `ptrdiff_t`,整数。
+
+然后 codegen 靠**下标的类型**决定要不要缩放:
+
+```moonbit
+// qpcc/codegen/codegen.mbt  gen_bin
+(CPtr(el), _) =>
+  if !is_ptr_ty(r.ty) {        // 下标的类型是整数才缩放
+    ... idx * sizeof(el) ...
+  } else if op == "-" { ... }  // 否则当成 ptr+ptr,完全不缩放
+```
+
+于是 `&arr[b - a]` 算成了**字节偏移**。QBE 的 amd64 ABI 正好这么写:
+
+```c
+// vendor/qbe/amd64/sysv.c  selcall
+for (stk=0, a=&ac[i1-i0]; a>ac;)
+	if ((--a)->inmem) {
+		if (a->align > 4)
+			err("sysv abi requires alignments of 16 or less");
+```
+
+`&ac[2]` 本该是 `ac+80`,实际是 `ac+2` → `--a` 落到 `ac-38` → 读到**分配区之外**的垃圾 → 假报错。
+
+**定位过程**(值得复用):
+
+```
+1. 给 alloc() 加自检,确认返回的内存确实全零      → 排除"未初始化"
+2. 写 alias_shape.c 断言 AClass 布局(40/偏移)    → 排除"结构偏移";sizeof=40 ✓
+3. 在检查点打印指针: off=-38, start=ac+2         → 反推"缩放 = 1"
+4. 八种下标写法逐一二分:
+     ac[n] long 变量              ✓
+     ac[(long)(i1-i0)]            ✓
+     ac[i1-i0]  裸指针差           ✗   ← 精确定位
+     ac[3] / ac[d] / ac[(int)(...)]   ✓
+```
+
+**教训**:C 里"指针"和"整数"的区分贯穿每一步类型推导。把 `ptrdiff_t` 推成指针,后果是**另一个模块**(codegen 的缩放判据)做了一个看似合理的决定。修复只在 sema 加了 3 行,但它解释了 6 个用例。
+
+顺带:同一个 fixture 还暴露出 QPCC **不支持声明式里引用自身**(`AClass *ac = f(sizeof ac[0]);` —— clang 作为 GNU 扩展接受,QPCC 报 `use of undeclared identifier`),这是另一个待修的小问题。
+
+---
 ## 2. QPCC codegen / 初始化器 / 数据
 
 ### 2.1 聚合初始化:零填充 / 位域 / 元素类型(`83c3d73`)
