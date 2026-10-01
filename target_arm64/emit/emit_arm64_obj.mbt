@@ -157,7 +157,10 @@ pub fn emit_arm64_object(
       },
       is_extern: true,
     })
-    if a.4 != 0 {
+    // A small addend is already encoded in the instruction immediate; only
+    // larger ones need the explicit ADDEND relocation.
+    let inlined = is_def && a.4 > 0 && a.4 < 4096
+    if a.4 != 0 && !inlined {
       text_relocs.push(@object.MachoReloc::{
         offset: a.1 * 4,
         sym: a.4,
