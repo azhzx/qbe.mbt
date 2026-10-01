@@ -29,6 +29,8 @@ priv struct Arm64BinState {
   calls : Array[(Int, String)]
   // Global-address fixups: (adrp word, add word, dest reg, symbol, byte offset).
   addrs : Array[(Int, Int, Int, String, Int)]
+  // Names defined in this object; anything else needs a GOT load.
+  defined : Array[String]
   mut frame : Int
   mut padding : Int
 }
@@ -38,6 +40,7 @@ fn arm64_bin_new(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
+  defined : Array[String],
 ) -> Arm64BinState {
   Arm64BinState::{
     fn_,
@@ -48,6 +51,7 @@ fn arm64_bin_new(
     fixups: [],
     calls: [],
     addrs: [],
+    defined,
     frame: 0,
     padding: 0,
   }
@@ -253,19 +257,19 @@ fn arm64_bin_loadcon(
 ) -> Unit raise {
   if con.kind == @types.CAddr {
     // adrp/add with a placeholder page/offset; the module emitter patches both
-    // once the data section is laid out.
+    // once the data section is laid out. Symbols that are not defined in this
+    // object are reached through the GOT (adrp + ldr).
     let rd = arm64_bin_reg(r)
+    let name = st.interner.get(con.label)
     st.addrs.push(
-      (
-        st.words.length(),
-        st.words.length() + 1,
-        rd,
-        st.interner.get(con.label),
-        con.bits.i.to_int(),
-      ),
+      (st.words.length(), st.words.length() + 1, rd, name, con.bits.i.to_int()),
     )
     st.words.push(@object.enc_adrp(rd, 0))
-    st.words.push(@object.enc_add_imm(rd, rd, 0))
+    if con.is_local || st.defined.contains(name) {
+      st.words.push(@object.enc_add_imm(rd, rd, 0))
+    } else {
+      st.words.push(@object.enc_ldst(3, 1, rd, rd, 0))
+    }
     return
   }
   // The instruction class is not reliable for constants that the pipeline has
@@ -1038,8 +1042,9 @@ pub fn emit_arm64_bin_fn_ex(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
+  defined : Array[String],
 ) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise {
-  let st = arm64_bin_new(fn_, interner, apple)
+  let st = arm64_bin_new(fn_, interner, apple, defined)
   arm64_binfn(st)
   (st.words, st.calls, st.addrs)
 }
@@ -1052,7 +1057,7 @@ pub fn emit_arm64_bin_fn(
   interner : @util.Interner,
   apple : Bool,
 ) -> Array[Int] raise {
-  let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+  let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple, [])
   if calls.length() > 0 || addrs.length() > 0 {
     raise @util.QbeError::Ice(
       "arm64 bin: function needs module linking; use emit_arm64_bin_module",
@@ -1298,8 +1303,12 @@ fn emit_arm64_bin_module_build(
   let fns : Array[(String, Int)] = []
   let pending : Array[(Int, String)] = []
   let pending_addrs : Array[(Int, Int, Int, String, Int)] = []
+  let defined : Array[String] = []
   for fn_ in funcs {
-    let (w, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+    defined.push(fn_.name)
+  }
+  for fn_ in funcs {
+    let (w, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple, defined)
     let off = words.length()
     fns.push((fn_.name, off))
     for x in w {

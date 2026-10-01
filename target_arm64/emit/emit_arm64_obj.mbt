@@ -47,8 +47,15 @@ pub fn emit_arm64_object(
   let fns : Array[(String, Int)] = []
   let calls : Array[(Int, String)] = []
   let addrs : Array[(Int, Int, Int, String, Int)] = []
+  let defined : Array[String] = []
   for fn_ in funcs {
-    let (w, c, a) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+    defined.push(fn_.name)
+  }
+  for d in datas {
+    defined.push(d.str)
+  }
+  for fn_ in funcs {
+    let (w, c, a) = emit_arm64_bin_fn_ex(fn_, interner, apple, defined)
     let off = text_words.length()
     fns.push((fn_.name, off))
     for x in w {
@@ -134,13 +141,20 @@ pub fn emit_arm64_object(
     })
   }
   for a in addrs {
+    // A directly referenced symbol that is defined in this object can use a
+    // plain adrp/add; an external one must go through the GOT.
+    let is_def = defined.contains(a.3)
     let i = arm64_obj_sym(syms, index, a.3, 0, 0, true)
     text_relocs.push(@object.MachoReloc::{
       offset: a.0 * 4,
       sym: i,
       pcrel: true,
       length: 2,
-      rtype: @object.ARM64_RELOC_PAGE21,
+      rtype: if is_def {
+        @object.ARM64_RELOC_PAGE21
+      } else {
+        @object.ARM64_RELOC_GOT_LOAD_PAGE21
+      },
       is_extern: true,
     })
     if a.4 != 0 {
@@ -158,7 +172,11 @@ pub fn emit_arm64_object(
       sym: i,
       pcrel: false,
       length: 2,
-      rtype: @object.ARM64_RELOC_PAGEOFF12,
+      rtype: if is_def {
+        @object.ARM64_RELOC_PAGEOFF12
+      } else {
+        @object.ARM64_RELOC_GOT_LOAD_PAGEOFF12
+      },
       is_extern: true,
     })
   }
