@@ -1472,3 +1472,48 @@ QPCC 的汇编(错误):
 * 第五个 bug 的完整证据链,逐段插桩七次,排除了六个可能
 * 定位到:`gvn` 第一次 `gvn_dedup_defs` 里 store 的 arg1 被正确改写,
   但在 frontend 结束前又被改回 0
+
+## 22. 第五个 bug 修好了(两个独立缺陷)
+
+### 22.1 `gvn` 的 `normins` 把占位符类别当成字宽
+
+QBE 的 `normins` 用 `!KWIDE(argcls(i,n))` 判断是否截成 32 位。QBE 表里 `e`
+占位符映射到 `Ke = -1`(奇数)所以永不截断;QPCC 的编码是 **-2**,而
+`-2 & 1 == 0` → 占位符被判成字宽 → 64 位常量被截成低 32 位。
+修法:判定加上 `k >= 0`。
+
+### 22.2 `arm64_argcls` 把 `Ke` 映射成了 `Kx`
+
+```moonbit
+let code = arr[idx]
+if code < 0 { i.cls } else { @types.Class::from_code(code) }
+```
+
+`from_code(-2)` 落到 `_ => Kx`,而 `Kx.wide() == 0` → `fixarg` 造出
+`Copy(cls=Kx)` → `loadcon` 里 `KWIDE` 为假 → `n = (int32_t)n` 截断。
+Ke 的语义是"表里没约束";对 store 来说值的类别就是 store 自己的类别。
+
+### 22.3 验证
+
+    oracle 133/133   moon test 362/362
+    6 个常量用例全过;新回归测试 qpcc/tests/store_wide_const.c
+
+## 23. `isel6` 的栈分配:已定位到具体数值
+
+逐阶段对比:
+
+    -dA -dM -dI -dS -dC -dK -dG : 全部零差异
+    -dR                          : 只有它不同
+
+在 `rega.c` 插桩(诊断用,已还原)打印每次发射:
+
+    RG op=86 cls=1 to=0/78 a0=1/12            <-- copy 常量 12
+    RG op=2  cls=1 to=0/32 a0=0/32 a1=0/78    <-- sub R32, R32, %78
+
+**自举版算出的栈大小是 12,参考版是 16。** 之前把 `14,15d13` 读成
+"两条被丢掉"是错的 —— 实际是**常量值不同**。
+
+已排除:`rega.c:424` 的自拷贝丢弃(常量参数从不触发 DROPC)、`align()` 本身。
+
+**下一步**:`abi.c` 的 `stk = align(stk, 16)` 算成了 12。在 `selcall` 里
+打印 `stk` 和每个 `c->size`/`c->align` 即可确定是 align 还是输入不同。
