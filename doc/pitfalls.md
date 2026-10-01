@@ -698,3 +698,52 @@ diff     (空)
 > 这些 bug 大多**不是"少写了一个 case"**,而是**某个语义细节被实现时的捷径吃掉了**:typedef 的符号性、默认实参提升、复合字面量的存储期、`default` 在语句列表里的位置、gvn 的支配性、指针缩放的字节数……
 >
 > 而比这些 bug 更危险的,是**验收脚本本身在撒谎**。
+
+## 16. 第 3 项(自举 qbe 正确性)的工作清单
+
+目标:让 `examples/qpcc-selfhost/semantic-check.sh` 报 0 个
+`only reference correct` 和 0 个 `neither`。
+
+### 16.1 可信基线(当前树重建的二进制)
+
+    both correct          : 23
+    only reference correct: 13
+    neither               :  1
+
+13 个失败按症状分组:
+
+| 症状 | fixtures |
+| --- | --- |
+| 挂死(rc=137) | `abi1` `abi9` `ifc` `isel2` |
+| 段错误(rc=139) | `abi4` `abi8` |
+| 输出不同 | `abi3` `abi5` `abi6` `echo` `fold1` `isel5` `isel6` |
+
+### 16.2 挂死组已定位到 blit(lldb,非侵入,无海森)
+
+    frame #0: getcon + 48/88/136
+    frame #1: blit + 812
+    frame #2: ins + 904
+    frame #3: simpl + 168
+
+四个挂死的 fixture 全部卡在 `simpl.c:blit` 的内层循环里反复调用 `getcon`。
+这是**在运行中的二进制上读栈**得到的,没有改任何源码,所以不受海森影响。
+
+### 16.3 已排除:blit 自身逻辑没被编错
+
+把 `blit` 原样抽出(保留结构体表、`abs`、`p++` 走表),用 stub 顶替
+`newtmp`/`getcon`/`emit`,QPCC 与 clang 在 **0/1/2/3/4/8/11/15/16/20**
+十个尺寸上结果**完全一致**。见 `qpcc/repro_blit.c`(标注为否定结果)。
+
+### 16.4 下一步
+
+`blit` 只在**传入的 size 是坏的**时候才空转:`fwd = sz >= 0; sz = abs(sz);`
+之后 `for (p=tbl; sz; p++)` 会走出表外,读到垃圾 `size`,内层循环就可能永不终止。
+
+所以下一个靶子是**调用方** —— `simpl.c:ins` 里的
+`blit((i-1)->arg, rsval(i->arg[0]), fn)`。需要检查:
+
+1. `rsval(i->arg[0])` 是否被编错(`(int)r.val ^ 0x10000000) - 0x10000000`)
+2. `(i-1)->arg` 这个结构体数组参数是否被正确传递
+3. `i` 与 `i-1` 的指针运算是否被编错
+
+这三条都可以沿用 16.3 的办法:抽成 C 级最小复现,QPCC vs clang 比对。
