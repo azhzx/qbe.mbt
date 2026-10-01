@@ -263,14 +263,41 @@ fn arm64_bin_loadcon(
     // object are reached through the GOT (adrp + ldr).
     let rd = arm64_bin_reg(r)
     let name = st.interner.get(con.label)
-    st.addrs.push(
-      (st.words.length(), st.words.length() + 1, rd, name, con.bits.i.to_int()),
-    )
+    // The relocation pair computes only the symbol's base address; any offset
+    // is added afterwards. This mirrors clang and avoids
+    // ARM64_RELOC_ADDEND, which the linker rejects for these objects.
+    st.addrs.push((st.words.length(), st.words.length() + 1, rd, name, 0))
     st.words.push(@object.enc_adrp(rd, 0))
     if con.is_local || st.defined.contains(name) {
       st.words.push(@object.enc_add_imm(rd, rd, 0))
     } else {
       st.words.push(@object.enc_ldst(3, 1, rd, rd, 0))
+    }
+    let mut off = con.bits.i.to_int()
+    let neg = off < 0
+    if neg {
+      off = -off
+    }
+    let lo = off & 0xFFF
+    if lo != 0 {
+      st.words.push(
+        if neg {
+          @object.enc_sub_imm_sf(true, rd, rd, lo)
+        } else {
+          @object.enc_add_imm_sf(true, rd, rd, lo)
+        },
+      )
+    }
+    let hi = off >> 12
+    if hi != 0 {
+      let imm = (hi & 0xFFF) | (1 << 12)
+      st.words.push(
+        if neg {
+          @object.enc_sub_imm_sf(true, rd, rd, imm)
+        } else {
+          @object.enc_add_imm_sf(true, rd, rd, imm)
+        },
+      )
     }
     return
   }
