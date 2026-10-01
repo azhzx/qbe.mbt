@@ -43,8 +43,14 @@ extract() {
 build_run() {
   qbe=$1; f=$2; tag=$3; d=$4
   mkdir -p "$d"
-  if ! "$qbe" -t $target "$f" > "$d/$tag.s" 2>"$d/$tag.err"; then
-    printf "COMPILE-FAIL\t%s\n" "$(head -1 "$d/$tag.err")"
+  # the compiler itself can hang on a fixture, so cap it here too
+  ( "$qbe" -t $target "$f" > "$d/$tag.s" 2>"$d/$tag.err" ) & cp=$!
+  ( sleep 20; kill -9 $cp 2>/dev/null ) & cw=$!
+  wait $cp 2>/dev/null; crc=$?
+  kill $cw 2>/dev/null
+  if [ $crc -ne 0 ]; then
+
+    printf "COMPILE-FAIL(rc=%s)\t%s\n" "$crc" "$(head -1 "$d/$tag.err")"
     return
   fi
   extract driver "$f" > "$d/$tag.drv.c"
