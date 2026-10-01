@@ -274,10 +274,11 @@ fn arm64_bin_loadcon(
     }
     return
   }
-  // The instruction class is not reliable for constants that the pipeline has
-  // moved between register files, so derive floatness from the constant.
-  let is_s = con.flt == 1
-  let is_d = con.flt == 2
+  // A constant is interned by its bits, so int 0 and double 0.0 share an
+  // entry: prefer the constant's own floatness, falling back to the
+  // instruction class (which is what C uses).
+  let is_s = if con.flt != 0 { con.flt == 1 } else { k == @types.Ks }
+  let is_d = if con.flt != 0 { con.flt == 2 } else { k == @types.Kd }
   let w = if is_s { 0 } else if is_d { 1 } else { k.wide() }
   let sf = w != 0
   let bits = if sf { 64 } else { 32 }

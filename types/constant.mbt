@@ -130,7 +130,10 @@ pub fn Con::raw_bits(self : Con) -> Int64 {
 // Interning comparison: type + raw bits + label (ignores flt flag),
 // matching C's `con[i].type == c.type && con[i].bits.i == c.bits.i`
 fn con_eq(c : Con, other : Con) -> Bool {
+  // flt keeps an integer constant distinct from a float one whose bits happen
+  // to match (int 0 vs double 0.0).
   c.kind == other.kind &&
+  c.flt == other.flt &&
   c.raw_bits() == other.raw_bits() &&
   c.label == other.label
 }
