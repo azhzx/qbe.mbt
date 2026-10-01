@@ -1655,3 +1655,53 @@ rega 轨迹里的 `a0=1/12` 应当读作 `type=RCon(1) val=12`,而 `val` 是**�
 
 **下一步具体动作**:在 `printfn` 开头打印 `b->nins` 和 `b->ins[0].op`,
 与 `IDUP-AFTER` 的 16/86 对比。若不同 ⇒ 中间被改;若相同 ⇒ `printfn` 自己漏。
+
+### 25. 【最终定位】那两条指令不在函数里
+
+同时给 `rega.c:446` 的写回和 `parse.c` 的 `printfn` 插桩:
+
+    IDUP-AFTER  nins=16 ins0op=86 ins1op=1 ins2op=86
+    PRINTFN blk=start nins=16 i0op=86 i1op=1
+
+**两者完全一致** ⇒ `b->ins` 真的不含那两条 ✗,**不是打印问题,也不是之后被改** ✓。
+
+而 `rega` 的发射轨迹里计数到了 **17**,写回却是 **16** ✗ ⇒
+**最后那次发射发生在写回【之后】**,落进了同一个静态缓冲 `insb`,
+但**没有进入函数的块链** ✗。
+
+`PRINTFN` 只打印了一个块(`start`)⇒ **那个新建的块没有被链进 `fn->start` 链** ✗。
+
+### 25.1 对应到源码
+
+`rega.c` 有两处写回:
+
+* `rega.c:446` —— 主循环结束,**每个块**写回(`idup(b, curi, ...)`)✓ 已执行
+* `rega.c:616-679` —— **"emit remaining copies in new blocks"**:
+
+```c
+curi = &insb[NIns];
+pmgen();
+j = &insb[NIns] - curi;
+if (j == 0) continue;
+s = alloc(...);
+b1 = newblk();
+...
+idup(b1, curi, &insb[NIns]-curi);
+b1->jmp.type = Jjmp;
+b1->s1 = s;
+**ps = b1;
+```
+
+**`b1` 只在 `j != 0` 时才创建并链接** ✗ —— 若 `j` 被算成 0,新块不产生,
+那两条也就消失了 ✓✓。
+
+**`j = &insb[NIns] - curi`** 正是**指针差**(`Ins *` 相减,再按 `sizeof(Ins)` 缩放)✗。
+
+### 25.2 下一步(唯一)
+
+在 `rega.c:618` 打印 `j` 和 `curi`;若 `j == 0` 而 `curi != &insb[NIns]`,
+即**指针差被算错** ✓ —— 那就回到本会话开头修过的**同一类 bug**
+(`c1e7596`: "a pointer difference is an integer, not a pointer")✗。
+
+**这与 `doc/pitfalls.md` 第 402 行"`Ins`/`Typ`/`AClass` 的字段宽度决定位域读取和
+指针缩放"是同一类问题** —— 指针缩放取决于 `sizeof(Ins)` 和字段布局 ✓。
