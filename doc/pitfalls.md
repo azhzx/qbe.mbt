@@ -531,6 +531,54 @@ neither               :  1      (dark:自举版编译失败)
 下一步从这里开始:先追 `env.ssa` 的 arm64 SIGABRT(断言失败通常直接指出被编坏的不变式,
 一个 bug 可能带过一大批)。
 
+
+## 14. 自举 qbe 的 arm64 错码:根因锁定到 `gcm`
+
+这一节记录一个**已经定位、但还没修好**的 bug。
+
+### 定位方法(一步二分,非常有效)
+
+`pipeline.mbt` 把 QPCC 的优化 pass 按顺序列出。逐个注释掉再重编自举 qbe,
+就能判断错码来自哪一段:
+
+```
+关掉全部优化 pass        → 自举 qbe 的 arm64 输出与参考版逐字节相同 ✓
+只关掉 gcm               → 同样逐字节相同 ✓        ← 根因在 gcm
+关掉 gvn(单独)           → QPCC 自己 ICE(有依赖,不能这么测)
+```
+
+`gcm` 在 `gvn/gcm.mbt`(QBE `gcm.c` 的 MoonBit 移植)。注意:这里说的不是
+"QPCC 编 C 时出错",而是 **qbe.mbt 自己用 MoonBit 写的 gcm pass 编错了 C 代码** ——
+正是 `/doc/pitfalls.md` 想收集的那类 bug。
+
+### 进一步二分
+
+`gcm` 内部三个阶段,`gcmmove` / `sink` / `schedblk`,**单独关掉任何一个都能修好**。
+说明 bug 要么在它们共用的机制里(`add_one` / `addgcmins` / `gcmbid`),
+要么是阶段间的相互作用。
+
+### 已找到的与 C 的确切分歧
+
+| 位置 | C | MoonBit | 危害 |
+| --- | --- | --- | --- |
+| `cheap()` | 含 `Oneg` | **漏了 `Neg`** | 偏保守,少下沉,不会错码 |
+| `bestbid()` | 比较 `blk->loop`(循环头 id) | 比较 `loop_depth`(嵌套深度) | 启发式差异,位置仍在支配链上,语义安全 |
+| 坐标系 | 只有 rpo 下标 | `Blk.rpo_id` 与 `Blk.id` **两套** | 需逐一核对每个数组建在哪套上 |
+
+### 下一步(按优先级)
+
+1. 在 `gcm` 前后 dump IL(`--emit qbe` 加 `-dG`),拿 `env.ssa` 的一个小函数,
+   逐条比对"参考版 gcm 之后"与"MoonBit gcm 之后"的 IR —— 差异指令就是元凶。
+2. 特别检查 `schedins` 跳过 `Nop` 而 C 不跳过这一处(可能是 `Oblit0/Oblit1`
+   这类必须相邻的指令被打散)。
+3. 检查 `add_one`:C 用 `fn->rpo[t->gcmbid]`,MoonBit 用 `fn->blks[gb]` ——
+   只有在 `Blk.id == rpo 下标` 时才等价。
+
+### 临时缓解
+
+把 `pipeline.mbt` 里那次 `@gvn.gcm(...)` 注释掉,**自举 qbe 的 arm64 输出立刻正确**。
+这是可用的退路,但会损失 gcm 带来的代码质量,不是修复。
+
 ## 13. 一句话总结
 
 > 这些 bug 大多**不是"少写了一个 case"**,而是**某个语义细节被实现时的捷径吃掉了**:typedef 的符号性、默认实参提升、复合字面量的存储期、`default` 在语句列表里的位置、gvn 的支配性、指针缩放的字节数……
