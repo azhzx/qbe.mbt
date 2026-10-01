@@ -1,6 +1,7 @@
 .DS_Store
 _build/
 .qbe_build/
+.qpcc_build/
 target/
 target
 .mooncakes/

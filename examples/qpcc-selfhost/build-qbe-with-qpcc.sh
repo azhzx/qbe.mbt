@@ -12,11 +12,14 @@
 # Requires: moon, clang, and (on macOS) xcrun ld.
 #
 # Usage:  sh examples/qpcc-selfhost/build-qbe-with-qpcc.sh [output-dir]
+#
+# Everything is written under .qpcc_build/ at the repository root (already in
+# .gitignore); pass a directory to put it elsewhere.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
-out=${1:-"$PWD/qbe-qpcc-build"}
+out=${1:-"$root/.qpcc_build"}
 
 exe="$root/_build/native/debug/build/qpcc/cmd/cmd.exe"
 

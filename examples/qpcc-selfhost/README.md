@@ -15,9 +15,9 @@ git submodule update --init          # if vendor/qbe is empty
 sh examples/qpcc-selfhost/build-qbe-with-qpcc.sh
 ```
 
-The script writes everything under `qbe-qpcc-build/` in the current directory
-(pass a different directory as the first argument). It exits non-zero if any
-fixture differs.
+The script writes everything under `.qpcc_build/` at the repository root
+(already in `.gitignore`; pass a directory as the first argument to put it
+elsewhere). It exits non-zero if any fixture differs.
 
 ```
 == 1/4  building QPCC
@@ -26,10 +26,13 @@ fixture differs.
 == 3/4  linking ./qbe-qpcc
 == 4/4  reference build and corpus comparison
 
-artifacts:      /…/qbe-qpcc-build/qbe-qpcc
-test corpus:    76 identical, 0 differing, 76 total
-OK: the QPCC-built qbe matches the reference on every fixture
+artifacts:      /…/.qpcc_build/qbe-qpcc
+test corpus:    21 identical, 55 differing, 76 total
 ```
+
+The corpus line is read as a scoreboard: a fixture counts as identical only if
+both compilers produce exactly the same output and the same exit status, so
+anything the script still reports as differing is a real gap.
 
 ## What each step shows
 
