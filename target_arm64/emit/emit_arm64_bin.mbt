@@ -316,6 +316,13 @@ fn arm64_bin_loadcon(
             }
         }
     }
+    // The single-MOV fast paths still need to move the bit pattern into the
+    // floating-point register file.
+    if is_s {
+      arm64_bin_emit(st, @object.enc_fmov_s_w(rd, rd))
+    } else if is_d {
+      arm64_bin_emit(st, @object.enc_fmov_d_x(rd, rd))
+    }
     return
   }
   arm64_bin_emit(st, @object.enc_movz_sf(sf, rd, (n & 0xFFFFL).to_int(), 0))
