@@ -1309,3 +1309,27 @@ rglob = BIT(32) | BIT(31) 丢掉 BIT(32) 之后,SP 不再被当作固定寄存�
 而 -dI/-dS/-dR 逐步对比,一轮就把范围锁到 rega.c,再用一个构造测试抓到表达式。
 
 **下次后端出问题,第一步就是 dump 对比,不是猜构造。**
+
+### 19.6 权威数字(完整 harness 跑完)
+
+    total 59: both correct 42, only reference 16, only qpcc 0, neither 1
+
+| | 基线 | 现在 |
+| --- | --- | --- |
+| both correct | 39 | **42** |
+| only reference correct | 20 | **16** |
+| neither | 1 | 1 |
+
+三个 fixture 转正(abi3 fold1 max queen 中的三个进入了这 42,另一个此前已算在内)。
+
+### 19.7 剩下的 16 个
+
+    abi1 abi4 abi5 abi6 abi8 abi9 echo ifc isel2 isel5 isel6
+    mem1 mem2 mem3 tls vararg2
+
+其中 abi5 abi6 echo isel5 isel6 属于**缺栈分配**一类,已由第 21 节的最小复现
+(`repro_bit32.c`)解释了共同根因:静态 64 位变量存不下 1<<32,导致 rega 的
+固定寄存器集合丢掉 SP 位。
+
+**其余为段错误(abi1 abi4 abi8 abi9 mem1 mem2 mem3 vararg2)和挂死(ifc isel2),
+尚未定位。**
