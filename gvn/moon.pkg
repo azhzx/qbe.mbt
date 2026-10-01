@@ -10,4 +10,5 @@ import {
   "azhzx/qbe/lexer",
   "azhzx/qbe/live",
   "azhzx/qbe/fold",
+  "azhzx/qbe/interp",
 } for "wbtest"
