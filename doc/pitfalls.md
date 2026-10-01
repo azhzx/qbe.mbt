@@ -1398,3 +1398,40 @@ QPCC 的汇编(错误):
 它是**唯一解释 `isel6`/`echo`/`abi5`/`abi6`/`isel5` 五个 fixture 的根因**
 (缺栈分配,因为 `rega` 的固定寄存器集合 `T.rglob` 丢掉 `BIT(32)`=SP)。
 修好它预期一次解决五个。
+
+### 21.11 逐段插桩的完整结果
+
+对 `rglob = ((unsigned long long)1) << 32` 逐段插桩:
+
+| 插桩点 | 读数 | 判定 |
+| --- | --- | --- |
+| c_opfold 入口 | op=13(Shl) cls=1(Kl) a1=1 a2=32 | 正确 |
+| c_opfold 出口 | i=4294967296 wide=1 out=4294967296 | 正确 |
+| killins 收到 | op=13 cls=1 repl=con(4294967296) | 正确 |
+| replaceuses | r1=tmp n=1 repl=con(4294967296) | 正确 |
+| **frontend 之后(abi 之前)** | **op=53(Storel) a0=con(0) a1=con(0)** | **已经是 0** |
+| abi 之后 | 同上,仍是 0 | 不是 abi |
+| isel 之前 | 同上,仍是 0 | 不是 simpl |
+
+**结论:值在 `gvn` 内部、`killins` 放入正确常量之后被再一次改写。**
+
+### 21.12 已排除的 gvn 内步骤
+
+| 步骤 | 关掉后 |
+| --- | --- |
+| 32 位掩码 | rc 仍 2 |
+| assoccon | rc 仍 1 |
+| normins | rc 仍 1 |
+
+**剩下的嫌疑**:`gvndup`(按哈希去重,可能把 store 的 arg 换成另一条指令的值)
+和 `gvn` 的**定点迭代**(同一个块被反复处理)。
+
+### 21.13 下轮的确切动作
+
+在 `dedupins` 的**每个步骤之后**打印 store 的 `a1`,或者直接在 `gvndup` 里打印
+它返回的 `i1.to` 和对应的 con 值。**一次就能看到是哪一步把 store 的 arg 改回 0 的。**
+
+### 21.14 这个 bug 的收官价值
+
+它是 `isel6`/`echo`/`abi5`/`abi6`/`isel5` 五个 fixture 的共同根因
+(`rega` 的 `T.rglob` 丢掉 `BIT(32)`=SP)。**修好它预期一次解决五个。**
