@@ -1226,3 +1226,52 @@ QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `-1`。汇编是:
 
 判别方法:用 `-d` 系列开关(参考版 qbe 支持 dump 各阶段 IR)对比自举版和参考版
 **在 abi 之后**的 IR,看 `Oalloc` 是否已经不在。
+
+## 20. 新的判据工具:让自举 qbe 自己 dump
+
+自举 qbe 是**完整的 qbe**,自带全部 `-d` 开关。这让我们不必再靠猜构造,
+而是**逐步对比两边各阶段的 IR**,直接定位是哪个 pass 出错。
+
+### 20.1 各阶段的开关
+
+| 开关 | 阶段 | 代码位置 |
+| --- | --- | --- |
+| `-dA` | Apple pre-ABI 之后 | abi |
+| `-dM` | slot promotion 之后 | mem.c / load.c |
+| `-dI` | 指令选择之后 | isel |
+| `-dS` | spill 之后 | spill.c |
+| `-dR` | 寄存器分配之后 | rega.c |
+| `-dL` | 活性分析 | live.c |
+| `-dG` | gvn/gcm | gvn.c/gcm.c |
+| `-dC` | cfg | cfg.c |
+| `-dK` | ifopt | ifopt.c |
+
+### 20.2 对 isel6(第 9 个参数上栈)的逐步对比
+
+    -dI : 两边【逐字节一致】  (R32 =l sub R32, %isel.14 都在)
+    -dS : 两边【逐字节一致】
+    -dR : 自举版【少了】 R1 =l copy 16 和 R32 =l sub R32, R1
+
+**结论:IR 在 isel 和 spill 之后都正确,是 rega 把栈调整弄丢了。**
+
+也就是说:QPCC 编译 `vendor/qbe/rega.c` 时编错了,错在 **SP(`R32`)的路径**上。
+
+### 20.3 这个方法的价值
+
+之前三轮我一直在猜 `abi.c` 的构造(`Oalloc+al` 复合字面量、`INRANGE` 宏、
+`align` 的无符号取负),两轮电池测试都没找到分歧。
+
+**`-d` 逐步对比把范围从"整个后端"缩到了"一个 pass"**,而且不需要任何猜测。
+
+**下一次遇到后端问题,第一步就该做这个对比,而不是写构造测试。**
+
+### 20.4 下一步
+
+在 `vendor/qbe/rega.c` 里找与 `T.rglob`(被调用者保存的固定寄存器集合)
+和 `R32`(SP)相关的逻辑,重点是:
+
+* `rega.c:397`: `if (r < Tmp0 && (BIT(r) & T.rglob))`
+* `rfree`/`ralloc`/`radd` 对固定寄存器的处理
+* `radd(m, r, r)`(把寄存器映射到自身)
+
+然后按老办法:抽成最小 C 复现,QPCC vs clang 对比。
