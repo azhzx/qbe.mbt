@@ -1238,10 +1238,12 @@ fn arm64_bin_dat_size(d : @types.Dat) -> Int {
 // of every named global (byte offset within the image).
 fn arm64_bin_layout_data(
   datas : Array[@types.Dat],
-) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int)]) {
+) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int, Int)]) {
   let addr_of : Array[(String, Int)] = []
-  // Relocatable pointer entries: (byte offset, target symbol, byte width).
-  let refs : Array[(Int, String, Int)] = []
+  // Relocatable pointer entries: (byte offset, target symbol, byte width,
+  // addend). The addend is what the object's relocation resolves against; the
+  // in-memory image instead stores the fully resolved section address.
+  let refs : Array[(Int, String, Int, Int)] = []
   let mut off = 0
   let mut align = 8
   for d in datas {
@@ -1275,7 +1277,7 @@ fn arm64_bin_layout_data(
             buf[cur + i] = b[i]
           }
         } else if d.is_ref {
-          refs.push((cur, d.ref_name, w))
+          refs.push((cur, d.ref_name, w, d.ref_offset.to_int()))
           let mut base = 0
           for p in addr_of {
             if p.0 == d.ref_name {
