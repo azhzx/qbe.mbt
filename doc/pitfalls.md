@@ -889,3 +889,31 @@ QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `0xFFFFFFFFFFFFFFFF`。
 1. 检查 `fold`/`gvn` 里把扩展指令折成常量时,新常量的 **class** 是 `Kw` 还是 `Kl`
 2. 检查 IR builder 的 `iconst`,对 `Kl` 类的负常量是否只写了低 32 位
 3. 用 `-d` 系列 dump 优化各阶段(参考版 qbe 有 `-dM`/`-dG` 等)
+
+### 17.4 二分定位到 gvn
+
+用 C 级最小复现(秒级反馈)逐个关掉优化 pass,而不是等自举构建:
+
+    cp pipeline.mbt.bak pipeline.mbt && moon build      rc=1  (bug 存在)
+    关 G (gvn_dedup_defs)                               rc=1
+    关 C (coalesce)                                     rc=1
+    关 V (gvn)                                          rc=0  ← 修好了
+    关 S (simplcfg)                                     rc=1
+    关 M (gcm)                                          rc=1
+    关 I (ifconvert)                                    rc=1
+
+关掉 gvn 就没问题了,所以病灶在 gvn/gvn.mbt。
+
+注意 gvn.mbt 里的折叠表达式本身是对的:
+
+    @types.Extsw => l << 32 >> 32      // 符号扩展,正确
+    @types.Extuw => l & 0xFFFFFFFF
+
+所以问题不在算出来的值,而在折叠结果怎么落地 -- 生成的常量或替代指令
+用的是 Kw 类而不是 Kl,于是后端发出 mov w0, #-1(32 位)再接 str x0。
+
+下一步:在 gvn.mbt 里找把折叠结果写成常量或 copy 的地方,看它的 cls 取
+i.cls 还是硬编码的 Kw。
+
+方法学收获:C 级最小复现让 pass 二分从每次 3-5 分钟变成每次约 2 分钟,
+六次二分不到 15 分钟。这是本轮最有用的工具组合。
