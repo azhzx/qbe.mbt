@@ -953,3 +953,26 @@ i.cls 还是硬编码的 Kw。
 
 下一步:确认这条早退是否应当要求 `i.cls == fn_.tmps[tid].cls`(或至少
 `i.cls.wide() <= 操作数.wide()`),并写一个白盒测试固定住。
+
+### 17.7 排除 copyref,锁定 foldref
+
+`gvn` 里替换指令的分支有两个:
+
+    let r  = copyref(st, b, i)
+    if !r.is_none() && gvn_dom_ok(st, r, b.id, idx)      { killins(st, i, r);  return }
+    let r2 = foldref(st.fn_, i)
+    if !r2.is_none() && gvn_dom_ok(st, r2, b.id, idx)   { ... }
+
+两者都**只查支配性,不查类别**。我给 `copyref` 分支加了一个类别守卫
+(`gvn_class_ok`:替换值的类别宽度不得小于被替换指令),重建后 rc **仍是 1**。
+
+⇒ **病灶不在 copyref,而在 foldref。**
+
+`foldref` 会把 `%t.2 =l extsw %t.1` 折成一个常量。它折叠出的值应当是
+`-1`(64 位),但实测发出的汇编是 `mov w0, #-1`(32 位)再接 `str x0` ——
+说明折出来的常量在**被使用时按 32 位处理**了。
+
+那个守卫已撤回(没修好,且改动有风险,不应留在树里)。
+
+**下一步**:看 `foldref` 对扩展指令的处理,以及它产出的常量被替换进指令时
+`i.cls` 是否仍然正确。
