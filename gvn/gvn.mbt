@@ -1333,40 +1333,6 @@ fn phieq(fn_ : @types.Fn, pa : @types.Phi, pb : @types.Phi) -> Bool {
 }
 
 ///|
-// A word-width fold is only unsafe when both hold: the value's top bit is
-// set, so sign- and zero-extension disagree, and some consumer needs more
-// than a word, so it would read the wrong number.  Either alone is fine --
-// a word result with word consumers ignores the upper bits, and a positive
-// word widens the same way either way.  Use records can be stale, so every
-// index is bounds-checked.
-fn gvn_widen_ok(st : GState, i : @types.Ins, r : @types.Ref) -> Bool {
-  if i.cls != @types.Kw || !r.is_con() || !i.to.is_tmp() {
-    return true
-  }
-  let v = st.fn_.cons[r.con_val()].bits.i
-  if (v & 0x80000000L) == 0L {
-    return true
-  }
-  let t1 = st.fn_.tmps[i.to.tmp_val()]
-  let mut u = 0
-  let mut wider = false
-  while u < t1.nuse {
-    let ub = t1.uses[u].blk_id
-    let ui = t1.uses[u].ins_idx
-    if ub >= 0 && ub < st.fn_.blks.length() {
-      let b = st.fn_.blks[ub]
-      if ui >= 0 && ui < b.ins.length() {
-        if b.ins[ui].cls.wide() > i.cls.wide() {
-          wider = true
-        }
-      }
-    }
-    u = u + 1
-  }
-  !wider
-}
-
-///|
 fn phicopyref(st : GState, b : @types.Blk, pi : Int) -> @types.Ref {
   let fn_ = st.fn_
   let p = b.phi[pi]
@@ -1581,8 +1547,7 @@ fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
     return
   }
   let r2 = foldref(st.fn_, i)
-  if !r2.is_none() && gvn_widen_ok(st, i, r2) &&
-    gvn_dom_ok(st, r2, b.id, idx) {
+  if !r2.is_none() && gvn_dom_ok(st, r2, b.id, idx) {
     killins(st, i, r2)
     return
   }

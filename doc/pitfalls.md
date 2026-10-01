@@ -1333,3 +1333,31 @@ rglob = BIT(32) | BIT(31) 丢掉 BIT(32) 之后,SP 不再被当作固定寄存�
 
 **其余为段错误(abi1 abi4 abi8 abi9 mem1 mem2 mem3 vararg2)和挂死(ifc isel2),
 尚未定位。**
+
+### 21.4 决定性证据:折叠把 1<<32 变成 0
+
+QPCC 的 IR(正确):
+
+    %t.3 =l shl %t.1, %t.2
+    storel %t.3, $rglob
+
+QPCC 的汇编(错误):
+
+    mov  w0, #0x0          <-- 折叠出来的值是 0
+    str  x0, [x1]
+    mov  x1, #0x100000000  <-- 比较用的常量却是对的
+
+同一次运行里只有折叠的那个常量变成 0。
+
+### 21.5 为什么守卫没抓到
+
+守卫要求 cls 为 Kw 才检查,而这条指令是 Kl,所以放行。
+但折出的常量被按 32 位截断,那是 c_opfold 收尾的掩码,只在 cls.wide() 为 0 时生效。
+
+**所以传给 c_opfold 的 cls 是 Kw,而指令是 Kl。**
+这也解释了为什么禁掉掩码没用:掩码是现象,类别传错才是原因。
+
+### 21.6 下一步
+
+在 c_opfold 入口打印 op 和 cls,跑 repro_bit32.c,看折 shl 时收到哪个类别。
+非 Heisenberg,因为 QPCC 由 moon build 编译。
