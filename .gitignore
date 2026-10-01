@@ -2,6 +2,7 @@
 _build/
 .qbe_build/
 .qpcc_build/
+.qpcc_build-quick/
 target/
 target
 .mooncakes/
