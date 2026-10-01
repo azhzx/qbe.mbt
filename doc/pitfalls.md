@@ -598,6 +598,39 @@ total 59: both correct 6, only reference 52, only qpcc 0, neither 1
 拿它去跑一个必然正确的场景(这里是"gcm 之前"),如果也失败,那就是自检的错。
 这一步只花了两次重编,却避免了一轮完全错误的追查方向。
 
+
+### 14.2 IR 对比的两个否定结果(有用,别重复走)
+
+想用"QPCC 的 IR"和"参考版 qbe 的 IR"直接对比来揪出 gcm 那一处错误。两个结果:
+
+**结果一:gcm 产出的 IR 是合法的,只是语义错了。**
+
+```sh
+qpcc <file>.c --emit qbe > x.ssa      # gcm 已跑过
+./vendor/qbe/qbe -t arm64_apple x.ssa  # 参考版消费它
+→ rc=0,无任何报错
+```
+
+如果 gcm 产生了 use-before-def 这类**结构**错误,参考版 qbe 的 `ssacheck` 会当场拒绝。
+它没有。所以缺陷不是"IR 非法",而是"IR 合法但算错了" —— 这决定了排查方向
+(不要去找支配性违规,要去找**值**的变化)。
+
+**结果二:`--emit qbe` 不经过优化流水线。**
+
+用两个只差 gcm 开关的 QPCC 构建分别 `--emit qbe`,对 `simpl.c` 得到的两份 IL:
+
+```
+off.ssa  649 行
+on.ssa   649 行
+diff     (空)
+```
+
+**逐字节相同**。也就是说 `b.emit_il()` 打印的状态**不包含 gcm 的效果** ——
+`--emit qbe` 走的是另一条路径,不经过 `pipeline.mbt` 的优化 pass。
+
+所以想用 IR dump 做对比,**必须给流水线内部加 dump 钩子**(在 `@gvn.gcm` 前后各写一次),
+不能指望 `--emit qbe`。
+
 ## 13. 一句话总结
 
 > 这些 bug 大多**不是"少写了一个 case"**,而是**某个语义细节被实现时的捷径吃掉了**:typedef 的符号性、默认实参提升、复合字面量的存储期、`default` 在语句列表里的位置、gvn 的支配性、指针缩放的字节数……
