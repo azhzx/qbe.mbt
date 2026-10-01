@@ -159,7 +159,10 @@ fn run_frontend_passes(
   @ssa.filluse(fn_)
   @cfg.fillalias(fn_)
   // coalesce (mem.c): -dM "Slot coalescing".
-  out.write_string(@mem.coalesce(fn_, dbg.m, interner, typs))
+  // out.write_string(@mem.coalesce(fn_, dbg.m, interner, typs))
+  let _ = @mem.coalesce
+  let _ = interner
+  let _ = typs
   @ssa.filluse(fn_)
   @cfg.filldom(fn_)
   @ssa.ssacheck(fn_)
