@@ -917,3 +917,39 @@ i.cls 还是硬编码的 Kw。
 
 方法学收获:C 级最小复现让 pass 二分从每次 3-5 分钟变成每次约 2 分钟,
 六次二分不到 15 分钟。这是本轮最有用的工具组合。
+
+### 17.5 决定性证据:gvn 删掉了 sxtw
+
+同一份 C,只切 gvn 开关,对比 `main` 的汇编:
+
+    gvn 关(正确)                 gvn 开(错误)
+      mov  w1, #0x1                 mov  w0, #-0x1
+      mov  w0, #0x0                 str  x0, [x1]     <-- 少了 sxtw
+      sub  w0, w0, w1               cmn  x0, #0x1
+      sxtw x0, w0   <-- 在这里      b.eq
+      str  x0, [x1]
+      cmp  x0, x1
+      b.eq
+
+**`gvn` 把符号扩展 `sxtw` 整条删掉了**,于是 32 位的 `0xFFFFFFFF` 被当成 64 位值
+使用 —— 正是 `mov w0, #-1` 后直接 `str x0` 的来源。
+
+### 17.6 嫌疑点
+
+`gvn.mbt:1428`:
+
+    if i.cls == Kw && (i.op == Extsw || i.op == Extuw) {
+      return i.arg1                      // 无条件返回操作数
+    }
+
+以及 `gvn.mbt:1435` 的守卫:
+
+    if i.cls.wide() > fn_.tmps[tid].cls.wide() {
+      return Ref::none()                 // 只有这条路径挡了加宽
+    }
+
+**1428 这条早退发生在 1435 的守卫之前**,而且不检查操作数的类别。
+如果 `i.cls` 是 `Kw` 但操作数实际承载的是需要 64 位的值,这一行就会把加宽删掉。
+
+下一步:确认这条早退是否应当要求 `i.cls == fn_.tmps[tid].cls`(或至少
+`i.cls.wide() <= 操作数.wide()`),并写一个白盒测试固定住。
