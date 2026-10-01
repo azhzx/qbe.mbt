@@ -1470,6 +1470,43 @@ fn dedupphi(st : GState, b : @types.Blk) -> Unit {
 }
 
 ///|
+
+///|
+// Strict dominance (C sdom) - duplicated from ssa.c to avoid a dependency.
+fn gvn_sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+  if b1 == b2 {
+    return false
+  }
+  let mut b2 = b2
+  while b2 >= 0 && fn_.blks[b2].rpo_id > fn_.blks[b1].rpo_id {
+    b2 = fn_.blks[b2].idom
+  }
+  b1 == b2
+}
+
+///|
+// Does the definition of r dominate position idx of block b_id?
+fn gvn_dom_ok(st : GState, r : @types.Ref, b_id : Int, idx : Int) -> Bool {
+  if r.is_con() {
+    return true
+  }
+  if !r.is_tmp() {
+    return false
+  }
+  let t = r.tmp_val()
+  let d = st.fn_.tmps[t].bid
+  if d < 0 {
+    return false
+  }
+  if d == b_id {
+    let di = st.def_idx[t]
+    // A phi definition sits at the start of the block, so it always dominates.
+    return di < 0 || di < idx
+  }
+  gvn_sdom(st.fn_, d, b_id)
+}
+
+///|
 fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
   let i = b.ins[idx]
   normins(st, i)
@@ -1478,17 +1515,17 @@ fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
   }
   assoccon(st, b, i, idx)
   let r = copyref(st, b, i)
-  if !r.is_none() {
+  if !r.is_none() && gvn_dom_ok(st, r, b.id, idx) {
     killins(st, i, r)
     return
   }
   let r2 = foldref(st.fn_, i)
-  if !r2.is_none() {
+  if !r2.is_none() && gvn_dom_ok(st, r2, b.id, idx) {
     killins(st, i, r2)
     return
   }
   match gvndup(st, i, true) {
-    Some(i1) => killins(st, i, i1.to)
+    Some(i1) => if gvn_dom_ok(st, i1.to, b.id, idx) { killins(st, i, i1.to) }
     None => ()
   }
 }
