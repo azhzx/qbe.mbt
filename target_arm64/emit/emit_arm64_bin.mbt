@@ -346,9 +346,8 @@ fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
     if n >> 12 == 0UL {
       n.to_int()
     } else if (n & 0xFFFUL) == 0UL && n >> 24 == 0UL {
-      raise @util.QbeError::Ice(
-        "arm64 bin: imm12 with lsl #12 not supported yet",
-      )
+      // #imm12, lsl #12: the sh bit is bit 12 of the immediate field.
+      (n >> 12).to_int() | (1 << 12)
     } else {
       raise @util.QbeError::Ice("arm64 bin: immediate does not fit #imm12")
     }

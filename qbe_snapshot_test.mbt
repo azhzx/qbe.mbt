@@ -27,8 +27,7 @@ test "e2e fold: 001_add_w" {
           #|.globl fold_add_w
           #|fold_add_w:
           #|	endbr64
-          #|	movl $2000000000, %eax
-          #|	addl $2000000000, %eax
+          #|	movl $4000000000, %eax
           #|	ret
           #|.type fold_add_w, @function
           #|.size fold_add_w, .-fold_add_w
@@ -63,8 +62,7 @@ test "e2e fold: 002_sub_w" {
           #|.globl fold_sub_w
           #|fold_sub_w:
           #|	endbr64
-          #|	movl $-2147483648, %eax
-          #|	subl $1, %eax
+          #|	movl $2147483647, %eax
           #|	ret
           #|.type fold_sub_w, @function
           #|.size fold_sub_w, .-fold_sub_w
@@ -105,7 +103,6 @@ test "e2e abi: 001_arg1w" {
           #|callee1:
           #|	endbr64
           #|	movl %edi, %eax
-          #|	addl $0, %eax
           #|	ret
           #|.type callee1, @function
           #|.size callee1, .-callee1
@@ -160,7 +157,6 @@ test "e2e abi: 009_arg1l" {
           #|callee1:
           #|	endbr64
           #|	movq %rdi, %rax
-          #|	addq $0, %rax
           #|	ret
           #|.type callee1, @function
           #|.size callee1, .-callee1
@@ -209,8 +205,8 @@ test "e2e isel: 001_imm_add_w" {
           #|.globl test
           #|test:
           #|	endbr64
-          #|	movl $2147483647, %eax
-          #|	addl %edi, %eax
+          #|	movl %edi, %eax
+          #|	addl $2147483647, %eax
           #|	ret
           #|.type test, @function
           #|.size test, .-test
@@ -288,8 +284,8 @@ test "e2e regalloc: 006_callersave" {
           #|.globl callee
           #|callee:
           #|	endbr64
-          #|	movl $1, %eax
-          #|	addl %edi, %eax
+          #|	movl %edi, %eax
+          #|	addl $1, %eax
           #|	ret
           #|.type callee, @function
           #|.size callee, .-callee
@@ -356,8 +352,8 @@ test "e2e regalloc: 010_calleesave" {
           #|.globl callee
           #|callee:
           #|	endbr64
-          #|	movl $1, %eax
-          #|	addl %edi, %eax
+          #|	movl %edi, %eax
+          #|	addl $1, %eax
           #|	ret
           #|.type callee, @function
           #|.size callee, .-callee
@@ -369,7 +365,7 @@ test "e2e regalloc: 010_calleesave" {
           #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
-          #|	subq $8, %rsp
+          #|	subq $24, %rsp
           #|	pushq %rbx
           #|	pushq %r12
           #|	pushq %r13
@@ -386,10 +382,9 @@ test "e2e regalloc: 010_calleesave" {
           #|	movl %ebx, %edi
           #|	movl %eax, %ebx
           #|	callq callee
-          #|	movl %eax, %ecx
-          #|	movl %r12d, %eax
-          #|	addl %r13d, %eax
-          #|	addl %ebx, %eax
+          #|	movl %r12d, %ecx
+          #|	addl %r13d, %ecx
+          #|	addl %ebx, %ecx
           #|	addl %ecx, %eax
           #|	popq %r13
           #|	popq %r12

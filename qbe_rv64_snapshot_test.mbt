@@ -177,16 +177,19 @@ test "e2e rv64: loop with phi" {
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
           #|	add sp, sp, -16
-          #|	mv t0, a0
-          #|	li t2, 0
           #|	li t1, 0
-          #|	mv a0, t2
-          #|.L2:
+          #|	li t0, 0
           #|	mv t2, t1
-          #|	addw t1, t1, 1
-          #|	addw a0, a0, t2
-          #|	slt t2, t1, t0
-          #|	bnez t2, .L2
+          #|.L2:
+          #|	addw t1, t0, 1
+          #|	addw t3, t0, t2
+          #|	slt t4, t1, a0
+          #|	beqz t4, .L4
+          #|	mv t2, t3
+          #|	mv t0, t1
+          #|	j .L2
+          #|.L4:
+          #|	addw a0, t0, t2
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
@@ -228,8 +231,6 @@ test "e2e rv64: memory and alloc" {
           #|	sd ra, -8(sp)
           #|	add fp, sp, -16
           #|	add sp, sp, -16
-          #|	mv t0, a0
-          #|	mv a0, t0
           #|	add sp, fp, 16
           #|	ld ra, 8(fp)
           #|	ld fp, 0(fp)
