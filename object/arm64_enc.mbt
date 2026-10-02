@@ -106,22 +106,22 @@ pub fn enc_sub_imm32(rd : Int, rn : Int, imm12 : Int) -> Int {
 // Class-aware immediate forms (32/64-bit) and the CMP/CMN aliases (Rd = ZR,
 // S = 1), which the binary emitter needs for operands left as constants.
 pub fn enc_add_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, false, false, rd, rn, 0, imm12)
+  dpr_addsub_imm(sf, false, false, rd, rn, imm12 >> 12, imm12)
 }
 
 ///|
 pub fn enc_sub_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, true, false, rd, rn, 0, imm12)
+  dpr_addsub_imm(sf, true, false, rd, rn, imm12 >> 12, imm12)
 }
 
 ///|
 pub fn enc_cmp_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, true, true, 31, rn, 0, imm12)
+  dpr_addsub_imm(sf, true, true, 31, rn, imm12 >> 12, imm12)
 }
 
 ///|
 pub fn enc_cmn_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, false, true, 31, rn, 0, imm12)
+  dpr_addsub_imm(sf, false, true, 31, rn, imm12 >> 12, imm12)
 }
 
 ///|
