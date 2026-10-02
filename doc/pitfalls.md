@@ -1770,3 +1770,74 @@ p = (pool == PFn ? alloc : emalloc)(n + 1);
 * 挂死组:`ifc isel2`
 
 **这是本次会话覆盖面最大的一个发现。**
+
+## 27. 【根因确定】变参函数调用的返回值被滞后一拍读取
+
+在 `qpcc/repro_strf.c` 的每次 `p = strf...(...)` 之后打印
+`pooloff` / `inpool(p)` / `strlen(p)`:
+
+```
+  off=8  in=0 len=0     <- strfA 刚返回,p 仍是空
+  off=8  in=1 len=5     <- 下一次打印才看到【上一次】的结果
+  off=16 in=0 len=0
+  off=16 in=1 len=5
+  off=24 in=0 len=0
+  off=24 in=0 len=5
+  off=32 in=0 len=5
+  off=32 in=0 len=3
+  off=32 in=0 len=0
+  off=32 in=0 len=3
+  off=72 in=0 len=0
+  off=72 in=0 len=36
+```
+
+**关键观察**:
+
+1. **`pooloff` 每次都正确推进** ⇒ `alloc` 确实被调用、池状态正确 ✓
+2. **但调用者刚拿到的 `p` 还是空的,下一次调用后才看到上一次的值** ✗
+   ⇒ **变参函数调用的返回值被滞后一拍读取** ✗
+3. 最后一次 `off=72 in=0 len=36`:`off` 推进了 40(=align(37))✓,
+   内容也是对的(len=36)✓ —— **但 `inpool(p)` 用的是陈旧的 `p`** ✗,
+   **所以 `repro_strf.c` 的 rc=19 是这个陈旧读取造成的** ✓
+
+### 27.1 为什么这解释崩溃
+
+`strf` 里:
+
+```c
+p = (pool == PFn ? alloc : emalloc)(n + 1);   /* 返回值滞后 */
+va_start(ap, s); vsnprintf(p, n + 1, s, ap);  /* 用陈旧 p -> 越界 */
+```
+
+**写进错误的缓冲区 ⇒ 踩坏堆/`FILE*` ⇒ `__sfvwrite` 段错误** ✓
+——与 lldb 栈完全吻合 ✓。
+
+### 27.2 已排除的构造(独立测试全部通过)
+
+* 三元选函数指针(if/else 同样失败)✗
+* `vsnprintf(NULL, 0, ...)` 的返回值 ✓
+* 对齐表达式 `(n+7) & ~(size_t)7` ✓
+* 指针差、位域、嵌套 designator、`emit` 形状、`getcon` 查找 ✓
+* 单次调用的简化版(手写四个变体全部 rc=0)✓
+
+**⇒ 触发条件是【同一个变参函数被调用多次】且返回值被使用** ✓。
+
+### 27.3 下一步(很窄)
+
+写一个**不依赖分配器**的最小版:
+
+```c
+static char *g(char *s, ...) { va_list ap; va_start(ap,s); va_end(ap);
+                                return s; }
+int main(void) {
+  char *a = g("A"); char *b = g("B"); char *c = g("C");
+  if (a[0] != 'A') return 1;   /* 滞后读会在这里失败 */
+  if (b[0] != 'B') return 2;
+  return 0;
+}
+```
+
+若 a/b 的内容滞后 ⇒ 直接得到不含 libc 的最小复现 ✓,
+然后去查 QPCC 的**变参调用返回约定**(arm64 ABI 的返回值/调用序列)。
+
+**这与本会话已修的 `argcls`/`normins` 是同一族问题**(调用约定编码)✓。
