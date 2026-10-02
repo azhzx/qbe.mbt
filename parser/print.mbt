@@ -69,6 +69,13 @@ fn printcon(
       } else {
         sb.write_string(interner.get(c.label))
       }
+      // C parse.c printcon: append the offset with an explicit sign if any.
+      if c.bits.i != 0L {
+        if c.bits.i > 0L {
+          sb.write_string("+")
+        }
+        sb.write_string(c.bits.i.to_string())
+      }
     }
     @types.CBits =>
       if c.flt == 1 {
