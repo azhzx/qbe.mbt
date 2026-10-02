@@ -1586,8 +1586,7 @@ fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
     return
   }
   let r2 = foldref(st.fn_, i)
-  if !r2.is_none() && gvn_widen_ok(st, i, r2) &&
-    gvn_dom_ok(st, r2, b.id, idx) {
+  if !r2.is_none() && gvn_widen_ok(st, i, r2) && gvn_dom_ok(st, r2, b.id, idx) {
     killins(st, i, r2)
     return
   }
