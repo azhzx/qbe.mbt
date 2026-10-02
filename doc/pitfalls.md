@@ -1955,3 +1955,45 @@ qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 
 **注意**:本会话第六次误读(把 `len=0` 解释成 `calloc` 零内存 ✓,实际是没调用 ✓),
 所以这一节只保留**两个互相印证的硬指标**(计数器 + `pooloff`)✓,不再用单点推断 ✓。
+
+## 29. 【里程碑】第三项达成:自举 qbe 全部 fixture 语义正确
+
+```
+total 58: both correct 58, only reference 0, only qpcc 0, neither 0, skipped 1
+```
+
+**验收标准(`only reference correct` = 0 且 `neither` = 0)已满足。**
+
+### 29.1 达成路径
+
+两条分支各自修了一半,合并后才够:
+
+| 修复项 | 来源 |
+| --- | --- |
+| `lsl #12` shifted immediate | 双方各自修了,等价;取同事的 `dpr_addsub_imm_packed` 版(含白盒测试)|
+| 移位结果类型与符号性 | 同事的 sema `promote_shift_operand` + codegen 用 `result_ty`(比只改 `uns` 更根本)|
+| 条件表达式分支转共同类型 | 双方各自修了(等价)|
+| **`&&`/`||` 作值时短路** | **同事**(我这边缺)|
+| `coerce` 字宽加宽符号性 | 我 |
+| `gvn` 宽常量守卫 | 我 |
+| 宽常量截断(`normins` 占位符 + `argcls` 的 `Ke`)| 我 |
+
+### 29.2 最后一个是 harness 缺陷,不是编译器 bug
+
+`dark.ssa` 首行是:
+
+```
+# skip arm64 arm64_apple rv64 amd64_win
+```
+
+它是 dark-type 取栈指针的 hack 测试,**明确声明不在 arm64_apple 上运行**;
+参考版 qbe 在此机上同样 rc=139 ✓。harness 之前忽略该指令,把它算成 `neither` ✗。
+
+现在 `semantic-check.sh` 会读每个 fixture 的首行,命中当前 target 就**单独报告为 skipped**,
+不计入失败 —— 与 `vendor/qbe/tools/test.sh` 的行为一致 ✓。
+
+### 29.3 教训
+
+* **"参考版也失败"必须先验证** —— 一个 `neither` 可能根本不是被测编译器的问题 ✓
+* QBE 自家的 fixture 自带 `# skip <targets>`,任何自定义 runner 都必须尊重它 ✓
+* 两条分叉分支各自修一半时,**合流比继续单独调查更快**(本次合并一次转正 14 个)✓
