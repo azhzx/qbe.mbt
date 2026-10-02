@@ -260,8 +260,8 @@ fn getstk(
   }
   stk[t] = n
   if n < 0 {
-    // Should not happen in valid SSA; return a constant zero
-    @types.Ref::con(fn_.get_con(0))
+    // C ssa.c getstk: "uh, oh, warn" -- return the UNDEF sentinel.
+    @types.Ref::con(fn_.undef())
   } else {
     pool.entries[n].r
   }

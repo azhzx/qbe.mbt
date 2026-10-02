@@ -56,7 +56,8 @@ fn printcon(
   sb : StringBuilder,
 ) -> Unit {
   match c.kind {
-    @types.CUndef => ()
+    // C parse.c prints the sentinel constant (UNDEF, con[0]) as "UNDEF".
+    @types.CUndef => sb.write_string("UNDEF")
     @types.CAddr => {
       sb.write_string("$")
       // The fp-constant stash uses a local label; the reference stores it as

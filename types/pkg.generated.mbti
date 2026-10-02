@@ -829,6 +829,7 @@ pub fn Fn::new(String) -> Self
 pub fn Fn::new_tmp(Self, String, Class) -> Int
 pub fn Fn::ntmp(Self) -> Int
 pub fn Fn::tmp(Self, Int) -> Tmp
+pub fn Fn::undef(Self) -> Int
 
 pub struct FpBits {
   b0 : Int64
