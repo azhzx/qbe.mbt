@@ -895,9 +895,17 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
         let is_fp = i.cls == @types.Ks || i.cls == @types.Kd
         let rt = if i.arg1.is_con() {
-          let ip1 = arm64_bin_reg(@types.ARM64_IP1)
-          arm64_bin_loadcon(st, st.fn_.cons[i.arg1.con_val()], ip1, i.cls)
-          ip1
+          // loadcon wants a QBE register id (it maps it itself); the store
+          // needs the physical number, so map it separately. Passing the
+          // mapped number here mapped it twice and materialised the constant
+          // into IP0 while the store read IP1.
+          arm64_bin_loadcon(
+            st,
+            st.fn_.cons[i.arg1.con_val()],
+            @types.ARM64_IP1,
+            i.cls,
+          )
+          arm64_bin_reg(@types.ARM64_IP1)
         } else {
           arm64_bin_r(st, i.arg1)
         }
