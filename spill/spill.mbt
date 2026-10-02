@@ -150,24 +150,6 @@ fn limit2(
 }
 
 ///|
-// Merge a successor's live set (C merge in spill.c). When control leaves a
-// loop (bu->loop > bv->loop) only temporaries that still have no stack slot
-// must stay in registers; the others can be reloaded from their slot.
-fn sp_merge(
-  st : SpillState,
-  u : @types.BSet,
-  bu : Int,
-  v : @types.BSet,
-  bv : Int,
-) -> Unit {
-  if st.fn_.blks[bu].loop_depth <= st.fn_.blks[bv].loop_depth {
-    ignore(u.union(v))
-  } else {
-    v.each(t => if st.fn_.tmps[t].slot == -1 { u.set(t) })
-  }
-}
-
-///|
 fn sethint(st : SpillState, u : @types.BSet, r : UInt64) -> Unit {
   u.each_from(@types.Tmp0, t => {
     let pc = @types.phicls(t, st.fn_.tmps)
@@ -335,15 +317,14 @@ pub fn spill(
         ignore(v.union(u))
       }
     } else if s1 >= 0 {
-      // avoid reloading temporaries in the middle of loops (C spill.c 371-383)
+      @live.liveon(v, bid, fn_.blks[s1], fn_)
       let w = @types.BSet::new(st.ntmp)
-      @live.liveon(w, bid, fn_.blks[s1], fn_)
-      sp_merge(st, v, bid, w, s1)
       if s2 >= 0 {
         let u = @types.BSet::new(st.ntmp)
         @live.liveon(u, bid, fn_.blks[s2], fn_)
-        sp_merge(st, v, bid, u, s2)
-        w.inter(u)
+        w.copy_from(u)
+        w.inter(v)
+        ignore(v.union(u))
       }
       limit2(st, v, 0, 0, Some(w))
     } else {
