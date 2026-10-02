@@ -65,17 +65,7 @@ fn arm64_argcls(i : @types.Ins, n : Int) -> @types.Class {
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = i.cls.code()
   let idx = if c < 0 { 0 } else { c }
-  // The table uses Ke (-2) where it does not constrain an argument, and
-  // that is exactly where a store keeps its value: the operand class is
-  // then the instruction class.  Mapping Ke through from_code yields Kx,
-  // whose wide() is 0, so the value was materialised as a 32-bit word --
-  // storel 4294967296 became mov w0,#0 followed by str x0.
-  let code = arr[idx]
-  if code < 0 {
-    i.cls
-  } else {
-    @types.Class::from_code(code)
-  }
+  @types.Class::from_code(arr[idx])
 }
 
 ///|
