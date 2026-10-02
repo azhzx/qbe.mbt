@@ -11,8 +11,6 @@ pub fn gcm(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 
 pub fn gvn(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 
-pub fn gvn_dedup_defs(@types.Fn) -> Unit
-
 // Errors
 
 // Types and methods

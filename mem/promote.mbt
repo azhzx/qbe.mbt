@@ -33,14 +33,8 @@ pub fn promote(
       }
       let l = fn_.blks[u.blk_id].ins[u.ins_idx]
       if l.op.is_load() {
-        if s == -1 {
-          // The slot is read before it is ever written: its value is
-          // undefined, and promoting it would create an SSA use without a
-          // definition. Leave it in memory instead.
-          skip = true
-          break
-        }
-        if s == loadsz(l) {
+        if s == -1 || s == loadsz(l) {
+          s = loadsz(l)
           continue
         }
         skip = true
@@ -62,12 +56,6 @@ pub fn promote(
       break
     }
     if skip {
-      continue
-    }
-    if k == -1 {
-      // No defining store is visible (e.g. the slot is filled through a
-      // call such as memcpy/memset). Leaving it in memory is always safe,
-      // so skip promotion instead of failing.
       continue
     }
     // Get rid of the alloc and replace its uses.

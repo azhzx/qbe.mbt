@@ -1189,8 +1189,7 @@ fn gvndup(st : GState, i : @types.Ins, insert : Bool) -> @types.Ins? {
     match st.tbl[idx] {
       None => {
         if insert {
-          // C gvntbl holds Ins pointers; identity is used by rebuildcfg.
-          st.tbl[idx] = Some(i)
+          st.tbl[idx] = Some(ins_copy(i))
         }
         searching = false
       }
@@ -1458,79 +1457,15 @@ fn copyref(st : GState, b : @types.Blk, i : @types.Ins) -> @types.Ref {
 }
 
 ///|
-// Is it safe to replace every use of `old` (defined in block b_id) by `r`?
-// `r` must dominate each use site, otherwise the substitution breaks SSA.
-fn gvn_repl_ok(
-  st : GState,
-  old : @types.Ref,
-  r : @types.Ref,
-  b_id : Int,
-) -> Bool {
-  let fn_ = st.fn_
-  if r.is_con() {
-    return true
-  }
-  if !r.is_tmp() {
-    return false
-  }
-  let d = fn_.tmps[r.tmp_val()].bid
-  if d < 0 {
-    return false
-  }
-  if d != b_id && !gvn_sdom(fn_, d, b_id) {
-    return false
-  }
-  ignore(old)
-  true
-}
-
-///|
 fn dedupphi(st : GState, b : @types.Blk) -> Unit {
   for pi in 0..<b.phi.length() {
     let p = b.phi[pi]
     let r = phicopyref(st, b, pi)
-    if !r.is_none() && gvn_repl_ok(st, p.to, r, b.id) {
+    if !r.is_none() {
       replaceuses(st, p.to, r)
       p.to = @types.Ref::none()
     }
   }
-}
-
-///|
-
-///|
-// Strict dominance (C sdom) - duplicated from ssa.c to avoid a dependency.
-fn gvn_sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
-  if b1 == b2 {
-    return false
-  }
-  let mut b2 = b2
-  while b2 >= 0 && fn_.blks[b2].rpo_id > fn_.blks[b1].rpo_id {
-    b2 = fn_.blks[b2].idom
-  }
-  b1 == b2
-}
-
-///|
-// Does the definition of r dominate position idx of block b_id?
-fn gvn_dom_ok(st : GState, r : @types.Ref, b_id : Int, idx : Int) -> Bool {
-  if r.is_con() {
-    return true
-  }
-  if !r.is_tmp() {
-    return false
-  }
-  let t = r.tmp_val()
-  let d = st.fn_.tmps[t].bid
-  if d < 0 {
-    return false
-  }
-  if d == b_id {
-    let di = st.def_idx[t]
-    // A phi definition sits at the start of the block, so it always dominates.
-    return di < 0 || di < idx
-  }
-  gvn_sdom(st.fn_, d, b_id)
 }
 
 ///|
@@ -1542,17 +1477,17 @@ fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
   }
   assoccon(st, b, i, idx)
   let r = copyref(st, b, i)
-  if !r.is_none() && gvn_dom_ok(st, r, b.id, idx) {
+  if !r.is_none() {
     killins(st, i, r)
     return
   }
   let r2 = foldref(st.fn_, i)
-  if !r2.is_none() && gvn_dom_ok(st, r2, b.id, idx) {
+  if !r2.is_none() {
     killins(st, i, r2)
     return
   }
   match gvndup(st, i, true) {
-    Some(i1) => if gvn_dom_ok(st, i1.to, b.id, idx) { killins(st, i, i1.to) }
+    Some(i1) => killins(st, i, i1.to)
     None => ()
   }
 }
@@ -1680,10 +1615,7 @@ fn rebuildcfg(st : GState) -> Unit {
       let i = b.ins[idx]
       if !op_pinned(i) {
         match gvndup(st, i, false) {
-          Some(ii) =>
-            if physical_equal(ii, i) {
-              fn_.blks[s_id].ins.push(ins_copy(i))
-            }
+          Some(ii) => if ins_eq(ii, i) { fn_.blks[s_id].ins.push(ins_copy(i)) }
           None => ()
         }
       }
@@ -1691,44 +1623,6 @@ fn rebuildcfg(st : GState) -> Unit {
   }
 }
 
-///|
-// Keep only the first definition of each temporary in RPO order. gvn's
-// rebuildcfg and gcm's moves can both leave a temporary defined twice; the
-// definitions are equivalent values, so dropping the later ones is safe.
-pub fn gvn_dedup_defs(fn_ : @types.Fn) -> Unit {
-  let seen = @types.BSet::new(fn_.ntmp())
-  for id in fn_.def_order {
-    let b = fn_.blks[id]
-    for pi in 0..<b.phi.length() {
-      let p = b.phi[pi]
-      if p.to.is_tmp() {
-        let t = p.to.tmp_val()
-        if t >= @types.Tmp0 {
-          if seen.has(t) {
-            b.phi[pi].to = @types.Ref::none()
-          } else {
-            seen.set(t)
-          }
-        }
-      }
-    }
-    for idx in 0..<b.ins.length() {
-      let i = b.ins[idx]
-      if i.to.is_tmp() {
-        let t = i.to.tmp_val()
-        if t >= @types.Tmp0 {
-          if seen.has(t) {
-            b.ins[idx] = nop_ins()
-          } else {
-            seen.set(t)
-          }
-        }
-      }
-    }
-  }
-}
-
-///|
 // ---------------------------------------------------------------------------
 // Pass entry point
 // ---------------------------------------------------------------------------
@@ -1792,7 +1686,6 @@ pub fn gvn(
     dedupjmp(st, b)
   }
   rebuildcfg(st)
-  gvn_dedup_defs(fn_)
   // Drop phis eliminated by dedupphi so the dump matches the reference.
   for id in fn_.def_order {
     let b = fn_.blks[id]

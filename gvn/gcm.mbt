@@ -613,7 +613,6 @@ pub fn gcm(
   g_filluse(fn_)
   gcm_def_idx(st)
   schedblk(st)
-  gvn_dedup_defs(fn_)
   if print_dbg {
     "\n> After GCM:\n" + @parser.printfn(fn_, interner, all_typs) + "\n"
   } else {

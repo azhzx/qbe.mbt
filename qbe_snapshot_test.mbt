@@ -365,7 +365,7 @@ test "e2e regalloc: 010_calleesave" {
           #|	endbr64
           #|	pushq %rbp
           #|	movq %rsp, %rbp
-          #|	subq $24, %rsp
+          #|	subq $8, %rsp
           #|	pushq %rbx
           #|	pushq %r12
           #|	pushq %r13
