@@ -1705,3 +1705,68 @@ b1->s1 = s;
 
 **这与 `doc/pitfalls.md` 第 402 行"`Ins`/`Typ`/`AClass` 的字段宽度决定位域读取和
 指针缩放"是同一类问题** —— 指针缩放取决于 `sizeof(Ins)` 和字段布局 ✓。
+
+## 26. 【夜间重大发现】段错误组和挂死组是同一个根因:`strf`
+
+### 26.1 崩溃栈(lli db,任务 bash-82)
+
+```
+frame #0: __sfvwrite
+frame #1: __vfprintf
+frame #2: _vsnprintf
+frame #3: qbe-qpcc`strf + 72
+frame #4: qbe-qpcc`newtmp + 280
+frame #5: qbe-qpcc`blit + 632      <-- 就是之前挂死的 blit
+frame #6: qbe-qpcc`ins + 904
+frame #7: qbe-qpcc`simpl + 168
+```
+
+**崩在 `strf`(变参函数)** ✓ —— 而 `blit` → `newtmp` → `strf`
+正是之前"挂死"组(`ifc`/`isel2`)走过的路径 ✓。
+
+### 26.2 最小复现:`qpcc/repro_strf.c`
+
+```
+clang rc=0
+qpcc  rc=19      <- bit1 + bit2 + bit16
+```
+
+`strf` 的形状(`vendor/qbe/util.c`):
+
+```c
+p = (pool == PFn ? alloc : emalloc)(n + 1);
+```
+
+| 变体 | 结果 |
+| --- | --- |
+| `strfA`:三元选分配器 | **错** |
+| `strfB`:**if/else** 选分配器 | **错** |
+| `strfC`:恒用 `emalloc` | **对** |
+
+**⇒ 不是三元的问题**(if/else 同样错)。
+
+### 26.3 已排除
+
+* `vsnprintf(NULL, 0, ...)` 的返回值 **完全正确**(`len1`/`len2`/`len3` 全过 ✓)
+* 变参函数里按参数分支调用(A/B)在**独立测试里正确** ✓
+* 指针差、位域、嵌套 designator、`emit` 形状、`getcon` 查找,全部独立测试通过 ✓
+
+### 26.4 还差的最后一步
+
+`strfA`/`strfB` 里 `alloc` **被调用了却返回池外指针**,而 `strfC`(不调 `alloc`)正确。
+需要在 `alloc` 里打印 `pooloff` 与返回地址,确认:
+
+* 是 `alloc` 没被调用(走了 `emalloc`)
+* 还是 `pooloff` 被写坏
+
+`alloc` 与 `emalloc` 的区别是:**`alloc` 用了两个文件作用域静态(数组 + 计数器)** ✗,
+而 `emalloc` 只用 `calloc` ✓。**这是下一个要测的构造。**
+
+### 26.5 影响面
+
+`strf` 在 QBE 里被 `newtmp`/`newname` 等大量调用 ✓ ⇒ 一个修复可能同时解决:
+
+* 段错误组:`abi1 abi4 abi8 abi9 mem1 mem2 mem3 vararg2`
+* 挂死组:`ifc isel2`
+
+**这是本次会话覆盖面最大的一个发现。**
