@@ -468,6 +468,29 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()
+      } else if i.to.is_slot() {
+        // C arm64/emit.c: a copy into a slot becomes a store of the source.
+        let slot = i.to
+        let mut src = i.arg1
+        if !(src.is_tmp() && src.tmp_val() < @types.Tmp0) {
+          let ip1 = @types.Ref::tmp(@types.ARM64_IP1)
+          arm64_emitins(
+            st,
+            @types.Ins::new(@types.Copy, i.cls, ip1, i.arg1, @types.Ref::none()),
+          )
+          src = ip1
+        }
+        let op = @types.Op::from_index(@types.Storew.index() + i.cls.code())
+        arm64_emitins(
+          st,
+          @types.Ins::new(op, @types.Kw, @types.Ref::none(), src, slot),
+        )
+      } else if i.arg1.is_slot() {
+        // C arm64/emit.c: a copy from a slot becomes a load.
+        arm64_emitins(
+          st,
+          @types.Ins::new(@types.Load, i.cls, i.to, i.arg1, @types.Ref::none()),
+        )
       } else if i.arg1.is_con() {
         let c = st.fn_.cons[i.arg1.con_val()]
         arm64_loadcon(st, c, i.to.tmp_val(), i.cls)
