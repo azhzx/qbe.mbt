@@ -289,7 +289,10 @@ jobs:
 
   qpcc:
     name: QPCC (M0)
-    runs-on: macos-14
+    # macos-14 ships Xcode 15.4, whose ld asserts in addFixupFromRelocations
+    # on the relocations QPCC emits (pattern[0].addrMode == addr_other).
+    # The image is also deprecated; macos-26 ships a newer toolchain.
+    runs-on: macos-26
     timeout-minutes: 30
     permissions:
       contents: read
