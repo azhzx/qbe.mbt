@@ -68,6 +68,7 @@ build_run() {
 }
 
 both_ok=0; ref_ok=0; new_ok=0; neither=0; skipped=0; total=0
+strong=0; agreeonly=0
 printf "%-14s %-8s %-8s %s\n" fixture ref new note
 if [ "$#" -gt 0 ]; then
   selected=$*
@@ -110,23 +111,35 @@ for f do
   r=$(build_run "$ref" "$fixture" ref "$work/$b.r"); rr=${r%%	*}
   n=$(build_run "$new" "$fixture" new "$work/$b.n"); nr=${n%%	*}
   ro=${r#*	}; no=${n#*	}
-  rok=no; nok=no
+  rok=no; nok=yes; nok=no
+  # 43 of the 59 fixtures carry no "# >>> output" block.  Judging those on
+  # "the program exited 0" alone accepts a self-hosted build that runs but
+  # computes something else, so require the two builds to agree on what the
+  # program printed as well.
   if [ -n "$want" ]; then
     [ "$ro" = "$want" ] && rok=yes
     [ "$no" = "$want" ] && nok=yes
+    strong=$((strong + 1))
+    crit="declared output"
   else
-    [ "$rr" = "0" ] && rok=yes
-    [ "$nr" = "0" ] && nok=yes
+    if [ "$ro" = "$no" ]; then
+      [ "$rr" = "0" ] && rok=yes
+      [ "$nr" = "0" ] && nok=yes
+    fi
+    agreeonly=$((agreeonly + 1))
+    crit="output agreement"
   fi
   note=""
   case "$rok:$nok" in
     yes:yes) both_ok=$((both_ok + 1)); note="both correct" ;;
     yes:no)  ref_ok=$((ref_ok + 1));  note="only reference correct" ;;
     no:yes)  new_ok=$((new_ok + 1));  note="ONLY QPCC CORRECT" ;;
-    no:no)   neither=$((neither + 1)); note="excluding here: rc=$rr/$nr" ;;
+    no:no)   neither=$((neither + 1)); note="rc=$rr/$nr out-agree=$([ "$ro" = "$no" ] && echo yes || echo no) [$crit]" ;;
   esac
+  [ "$rok" = yes ] && [ "$nok" = yes ] && note="both correct [$crit]"
   printf "%-14s %-8s %-8s %s\n" "$b" "$rok" "$nok" "$note"
 done
 
 echo
 echo "total $total: both correct $both_ok, only reference $ref_ok, only qpcc $new_ok, neither $neither, skipped $skipped"
+echo "  criterion strength: declared output $strong, reference/self-hosted output agreement $agreeonly"
