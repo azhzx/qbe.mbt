@@ -14,7 +14,7 @@
 # default to amd64_sysv, so the assembly is x86-64 and the runner needs
 # -arch x86_64 (Rosetta).
 #
-# Usage: sh examples/qpcc-selfhost/semantic-check.sh
+# Usage: sh examples/qpcc-selfhost/semantic-check.sh [fixture ...]
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -69,7 +69,18 @@ build_run() {
 
 both_ok=0; ref_ok=0; new_ok=0; neither=0; total=0
 printf "%-14s %-8s %-8s %s\n" fixture ref new note
-for f in "$root"/vendor/qbe/test/[!_]*.ssa; do
+if [ "$#" -gt 0 ]; then
+  selected=$*
+  set --
+  for b in $selected; do
+    f="$root/vendor/qbe/test/$b.ssa"
+    [ -f "$f" ] || { echo "missing fixture: $b" >&2; exit 1; }
+    set -- "$@" "$f"
+  done
+else
+  set -- "$root"/vendor/qbe/test/[!_]*.ssa
+fi
+for f do
   b=$(basename "$f" .ssa)
   total=$((total + 1))
   f="$f"
@@ -100,4 +111,3 @@ done
 
 echo
 echo "total $total: both correct $both_ok, only reference $ref_ok, only qpcc $new_ok, neither $neither"
-

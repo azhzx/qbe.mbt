@@ -38,6 +38,19 @@ fn dpr_addsub_imm(
 }
 
 ///|
+// The binary emitter packs sh in bit 12 and imm12 in the low 12 bits.
+fn dpr_addsub_imm_packed(
+  sf : Bool,
+  sub : Bool,
+  set_flags : Bool,
+  rd : Int,
+  rn : Int,
+  imm : Int,
+) -> Int {
+  dpr_addsub_imm(sf, sub, set_flags, rd, rn, (imm >> 12) & 1, imm & 0xFFF)
+}
+
+///|
 // ADD/SUB (shifted register): sf op S 01011 shift N Rm imm6 Rn Rd.
 fn dpr_addsub(
   sf : Bool,
@@ -106,22 +119,22 @@ pub fn enc_sub_imm32(rd : Int, rn : Int, imm12 : Int) -> Int {
 // Class-aware immediate forms (32/64-bit) and the CMP/CMN aliases (Rd = ZR,
 // S = 1), which the binary emitter needs for operands left as constants.
 pub fn enc_add_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, false, false, rd, rn, imm12 >> 12, imm12)
+  dpr_addsub_imm_packed(sf, false, false, rd, rn, imm12)
 }
 
 ///|
 pub fn enc_sub_imm_sf(sf : Bool, rd : Int, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, true, false, rd, rn, imm12 >> 12, imm12)
+  dpr_addsub_imm_packed(sf, true, false, rd, rn, imm12)
 }
 
 ///|
 pub fn enc_cmp_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, true, true, 31, rn, imm12 >> 12, imm12)
+  dpr_addsub_imm_packed(sf, true, true, 31, rn, imm12)
 }
 
 ///|
 pub fn enc_cmn_imm_sf(sf : Bool, rn : Int, imm12 : Int) -> Int {
-  dpr_addsub_imm(sf, false, true, 31, rn, imm12 >> 12, imm12)
+  dpr_addsub_imm_packed(sf, false, true, 31, rn, imm12)
 }
 
 ///|

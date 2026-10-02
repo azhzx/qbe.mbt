@@ -69,6 +69,10 @@ test "arm64 enc: integer data processing" {
   check_word(enc_cmn_imm_sf(false, 0, 1), 0x3100041FL)
   check_word(enc_add_imm_sf(false, 0, 1, 100), 0x11019020L)
   check_word(enc_sub_imm_sf(true, 0, 1, 100), 0xD1019020L)
+  check_word(enc_cmp_imm_sf(false, 0, 0x1002), 0x7140081FL)
+  check_word(enc_cmn_imm_sf(false, 0, 0x1002), 0x3140081FL)
+  check_word(enc_add_imm_sf(false, 0, 1, 0x1002), 0x11400820L)
+  check_word(enc_sub_imm_sf(true, 0, 1, 0x1002), 0xD1400820L)
 }
 
 ///|
