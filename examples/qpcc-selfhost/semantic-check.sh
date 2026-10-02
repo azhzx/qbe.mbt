@@ -67,7 +67,7 @@ build_run() {
   printf "%s\t%s\n" "$rc" "$(cat "$d/$tag.out")"
 }
 
-both_ok=0; ref_ok=0; new_ok=0; neither=0; total=0
+both_ok=0; ref_ok=0; new_ok=0; neither=0; skipped=0; total=0
 printf "%-14s %-8s %-8s %s\n" fixture ref new note
 if [ "$#" -gt 0 ]; then
   selected=$*
@@ -82,6 +82,25 @@ else
 fi
 for f do
   b=$(basename "$f" .ssa)
+  # QBE's own suite marks the fixtures that do not apply to a target with a
+  # "# skip <targets>" first line.  dark.ssa does exactly that for arm64_apple,
+  # and the reference build crashes on it too, so running it here would charge
+  # the self-hosted build for a test that was never meant to run on this
+  # target.  Honor the directive the way vendor/qbe/tools/test.sh does.
+  skip=$(head -1 "$f" | tr -d '\r')
+  case "$skip" in
+    "# skip"*)
+      skipit=no
+      for t in ${skip#\# skip}; do
+        [ "$t" = "$target" ] && skipit=yes
+      done
+      if [ "$skipit" = yes ]; then
+        skipped=$((skipped + 1))
+        printf "%-14s %-8s %-8s %s\n" "$b" "-" "-" "skipped: fixture skips $target"
+        continue
+      fi
+      ;;
+  esac
   total=$((total + 1))
   f="$f"
   # the fixtures are CRLF
@@ -110,4 +129,4 @@ for f do
 done
 
 echo
-echo "total $total: both correct $both_ok, only reference $ref_ok, only qpcc $new_ok, neither $neither"
+echo "total $total: both correct $both_ok, only reference $ref_ok, only qpcc $new_ok, neither $neither, skipped $skipped"
