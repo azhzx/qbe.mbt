@@ -231,7 +231,7 @@ _Tagged_union Value {
 };
 
 _Tagged_union Value x = { .as_int = 100 };
-x.as_float = 1.5f;                 /* also sets the tag */
+x = (_Tagged_union Value){ .as_float = 1.5f };  /* sets the tag */
 switch (_Tag_of(x)) {
   case _Get_tag(_Tagged_union Value, as_int): break;
   case _Get_tag(_Tagged_union Value, as_float): break;
@@ -242,7 +242,7 @@ switch (_Tag_of(x)) {
 | --- | --- | --- |
 | `_Tagged_union Tag { members }` | yes | `tagged_union` |
 | natural layout: an `int` tag at offset 0, the members overlapping after it | yes | `{ int; float }` is 8 bytes, `{ int; double }` is 16 |
-| `x.m` read; a store through `x.m` also writes the tag | yes | `tagged_union` |
+| `x.m` read | yes | `tagged_union` |
 | `_Tag_of(x)`, an `int` rvalue | yes | `tagged_union` |
 | `_Get_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
 | designated initializers: local, compound literal, global, static | yes | `tagged_union`, `tagged_union_static` |
@@ -251,9 +251,10 @@ Semantics and limitations:
 
 - The tag is a synthetic `int` at offset 0 and the members overlap after it,
   so the layout is exactly `struct { int tag; union { members } payload; }`.
-- Writing any payload member (`=`, `+=`, `++`, or a store to a nested member)
-  sets the tag to that member's discriminator. Discriminators are the member
-  declaration order, 0-based.
+- A member cannot be assigned directly: `x.m = v`, `x.m += v`, `x.m++` and a
+  store to a nested member are all diagnosed. Change the value as a whole
+  instead, e.g. `x = (_Tagged_union T){ .m = v };`, which sets the tag.
+  Discriminators are the member declaration order, 0-based.
 - Reading a member whose tag is not current is undefined behaviour; there is
   no runtime check. Taking the address of a member and writing through it
   also bypasses the tag: `&x.m` is allowed, but the invariant is then the

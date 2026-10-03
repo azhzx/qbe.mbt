@@ -225,7 +225,7 @@ _Tagged_union Value {
 };
 
 _Tagged_union Value x = { .as_int = 100 };
-x.as_float = 1.5f;                 /* 同时更新 tag */
+x = (_Tagged_union Value){ .as_float = 1.5f };  /* 同时设置 tag */
 switch (_Tag_of(x)) {
   case _Get_tag(_Tagged_union Value, as_int): break;
   case _Get_tag(_Tagged_union Value, as_float): break;
@@ -236,7 +236,7 @@ switch (_Tag_of(x)) {
 | --- | --- | --- |
 | `_Tagged_union Tag { members }` | 是 | `tagged_union` |
 | 自然布局：偏移 0 是 `int` tag，成员在其后重叠 | 是 | `{ int; float }` 为 8 字节，`{ int; double }` 为 16 |
-| 读 `x.m`；写 `x.m` 同时写 tag | 是 | `tagged_union` |
+| 读 `x.m` | 是 | `tagged_union` |
 | `_Tag_of(x)`，`int` 右值 | 是 | `tagged_union` |
 | `_Get_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
 | 设计化初始化：局部、复合字面量、全局、静态 | 是 | `tagged_union`、`tagged_union_static` |
@@ -245,8 +245,9 @@ switch (_Tag_of(x)) {
 
 - tag 是偏移 0 的合成 `int`，成员在其后重叠，布局等价于
   `struct { int tag; union { members } payload; }`。
-- 写入任一 payload 成员（`=`、`+=`、`++`，或对嵌套成员的写入）都会把 tag 置为
-  该成员的判别式；判别式按成员声明顺序，从 0 开始。
+- 不能直接给成员赋值：`x.m = v`、`x.m += v`、`x.m++` 以及对嵌套成员的写入都会
+  被诊断。请整体改值，例如 `x = (_Tagged_union T){ .m = v };`，它同时设置 tag。
+  判别式按成员声明顺序，从 0 开始。
 - 读取 tag 与当前不一致的成员是未定义行为，不做运行时检查。对成员取地址再经
   指针写入同样绕过 tag：`&x.m` 允许，但此时不变量由程序员负责。
 - 初始化器必须写出成员名，如 `{ .as_int = 100 }`。位置元素（`{ 1 }`、`{ 0 }`）
