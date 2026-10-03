@@ -38,6 +38,16 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   defines them), unlike `<stdcountof.h>` (N3469) and `<stddefer.h>`
   (TS 25755).
 
+- `_Tagged_union`: a member read used in an arithmetic expression is not yet
+  reliable (e.g. `(int)(v.as_float * 2.0f)` gives 0 while the same float read
+  in a comparison is correct). Reads, comparisons, tag stores and
+  initializers all work; the arithmetic path needs a look at how
+  `TTaggedMember` feeds a float binary op.
+- Pre-existing, unrelated to `_Tagged_union`: a 16-byte struct containing a
+  `double` is passed by value incorrectly (8- and 12-byte structs are fine,
+  and clang agrees on the 16-byte case).
+
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under
