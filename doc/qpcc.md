@@ -27,6 +27,7 @@ The fixture column below names the oracle cases that cover a feature, or
 | --- | --- | --- |
 | C11 | default, `-std=c11` | the baseline |
 | C23 | `-std=c23` | C23 syntax on top of the same front end; partial (see below) |
+| C2y | `-std=c2y` | C2y syntax on top of the same front end; see the C2y section |
 
 The C preprocessor is **external**: run `clang -E -P` before QPCC when the
 input uses `#include`/`#define`. The driver only strips the remaining lines
@@ -88,6 +89,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `struct` | yes | `struct`, `structarr`, `structptr`, `structsz`, `struct_ptr_index`, `global_struct` |
 | `union` | yes | `union` |
 | anonymous `struct`/`union` members | yes | sweep |
+| empty `struct`/`union` (GNU extension, no members) | yes | a zero-sized type: `sizeof` is 0 and `_Alignof` is 1 |
 | `enum` (explicit values, gaps, duplicates) | yes | `enum`, `enum_gap`, `shift_enum` |
 | C23 `enum E : T` fixed underlying type | yes | `enum_fixed`; the enum is its underlying integer type |
 | by-value struct arguments and returns, nested aggregates | yes | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
@@ -119,6 +121,8 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `sizeof` of types, expressions and arrays | yes | `sizeof`, `sizeof_ins`, `sizeof_vec`, `op_size` |
 | `_Generic` | yes | `generic`, `generic2` |
 | `_Static_assert` | yes | `staticassert` |
+| C2y `_Countof(expr)` / `_Countof(type-name)` | yes | `countof` |
+| C2y `_Maxof(type-name)` / `_Minof(type-name)` | yes | `maxminof` |
 | `__builtin_offsetof`, `__builtin_types_compatible_p`, `__builtin_constant_p`, `__builtin_expect`, `__builtin_unreachable` | yes | sweep |
 | `typeof`/`__typeof__`/`typeof_unqual`, `__alignof__` | yes | sweep |
 | statement expressions `({ ... })`, including inside macros | yes | sweep |
@@ -138,6 +142,8 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | computed goto `goto *p` and `&&label` | yes | `computed_goto` |
 | Duff's device | yes | `duff`, `switch_duff2` |
 | case ranges `case 1 ... 5:` | yes | sweep |
+| C2y named loops: `label:` on a loop/switch, `break label;`, `continue label;` | yes | `named_loops` |
+| C2y `_Defer` statements | yes | `defer_basic`, `defer_header` |
 | C23 `[[fallthrough]]` in statement position | yes | `fallthrough_attr` |
 
 ## Functions

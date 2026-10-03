@@ -25,6 +25,18 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   affect 4908/4908 or the self-host semantic-check. It is a real difference
   from the reference and should be ported.
 
+## C2y (`-std=c2y`)
+
+- `_Defer` diagnoses a jump out of its own statement and a `goto` into it,
+  but a `longjmp` past a defer is left undefined (as the TS says) and is not
+  diagnosed.
+- clang implements `_Countof` but not `_Maxof`/`_Minof`, named loops or
+  `_Defer`, so `maxminof.c`, `named_loops.c`, `defer_basic.c` and
+  `defer_header.c` are QPCC-only (`// expect-exit N`) and are checked
+  against their expected exit code instead of a clang reference.
+- `_Maxof`/`_Minof` have no `<stdmaxof.h>`/`<stdminof.h>` companion
+  header (the proposals define none), so they exist only as keywords.
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under

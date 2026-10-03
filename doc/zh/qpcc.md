@@ -25,6 +25,7 @@ QPCC（`qpcc/`）是把 C 降低到 qbe.mbt IR builder、再从那里降低到 M
 | --- | --- | --- |
 | C11 | 默认，`-std=c11` | 基线 |
 | C23 | `-std=c23` | 在同一前端之上启用 C23 语法；部分支持（见下） |
+| C2y | `-std=c2y` | 在同一前端之上启用 C2y 语法；见 C2y 小节 |
 
 C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 QPCC 之前运行
 `clang -E -P`。驱动只剥离剩余以 `#` 开头的行，因此仅由 `#define` 定义的名字
@@ -86,6 +87,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `struct` | 是 | `struct`, `structarr`, `structptr`, `structsz`, `struct_ptr_index`, `global_struct` |
 | `union` | 是 | `union` |
 | 匿名的 `struct`/`union` 成员 | 是 | sweep |
+| 空的 `struct`/`union`（GNU 扩展，无成员） | 是 | 零大小类型：`sizeof` 为 0、`_Alignof` 为 1 |
 | `enum`（显式值、缺口、重复） | 是 | `enum`, `enum_gap`, `shift_enum` |
 | C23 `enum E : T` 固定底层类型 | 是 | `enum_fixed`；枚举即其底层整型 |
 | 按值传递的结构体参数与返回值、嵌套聚合 | 是 | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
@@ -117,6 +119,8 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 类型、表达式与数组的 `sizeof` | 是 | `sizeof`, `sizeof_ins`, `sizeof_vec`, `op_size` |
 | `_Generic` | 是 | `generic`, `generic2` |
 | `_Static_assert` | 是 | `staticassert` |
+| C2y `_Countof(expr)` / `_Countof(type-name)` | 是 | `countof` |
+| C2y `_Maxof(type-name)` / `_Minof(type-name)` | 是 | `maxminof` |
 | `__builtin_offsetof`、`__builtin_types_compatible_p`、`__builtin_constant_p`、`__builtin_expect`、`__builtin_unreachable` | 是 | sweep |
 | `typeof`/`__typeof__`/`typeof_unqual`、`__alignof__` | 是 | sweep |
 | 语句表达式 `({ ... })`，包括在宏内部 | 是 | sweep |
@@ -136,6 +140,8 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 计算 goto `goto *p` 与 `&&label` | 是 | `computed_goto` |
 | Duff 设备 | 是 | `duff`, `switch_duff2` |
 | case 范围 `case 1 ... 5:` | 是 | sweep |
+| C2y 命名循环：循环/switch 的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
+| C2y `_Defer` 语句 | 是 | `defer_basic`、`defer_header` |
 | C23 语句位置的 `[[fallthrough]]` | 是 | `fallthrough_attr` |
 
 ## 函数
