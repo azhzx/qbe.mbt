@@ -243,3 +243,45 @@
     `qopple-cli` subprocess wrapper; `qopple` ships prebuilt native archives for
     aarch64 macOS and x86_64/aarch64 Linux, so downstream builds need neither
     the MoonBit toolchain nor the repository; add .github/workflows/crates.yml
+
+2026.9.30: v0.25.0
+    Qopple C Compiler (qpcc) M0-M5: a C front end built on the programmatic
+    QBE builder. preprocessor, globals, structs, char literals, the C11
+    numeric type core (unsigned/short/long long/_Bool/float/double, casts),
+    control flow (if/for/while/switch/goto/labels), enum and union, typedef
+    and local aggregate initializers, _Alignof, _Static_assert/_Generic,
+    indirect calls and function pointers, variadic calls; a clang oracle
+    drives the tests
+
+2026.9.30: v0.26.0
+    qpcc front end: a full C11 (+ GNU extensions) lexer, AST and parser, C23
+    syntax and -std=c11|c23 switching; a typed-AST semantic analyser (scopes,
+    declarators, expression and statement checking, typeof, bitfield layout);
+    source positions and statement locations
+
+2026.10.1: v0.27.0
+    qpcc codegen on the checked AST becomes the only compiler, and QPCC parses
+    and compiles the original QBE C sources. aggregate/struct ABI: by-value
+    struct parameters and sret returns; unique basic-block names; object
+    relocations carry their addend
+
+2026.10.1: v0.28.0
+    qpcc A-series: variadic definitions, bitfield access, global aggregate and
+    string initializers, computed goto and label addresses, sequentially
+    consistent atomics, _Alignas, _Complex; parameter decay, linkage and GOT
+    relocations; links the original QBE compiler
+
+2026.10.2: v0.29.0
+    self-host correctness: the optimizer and arm64 defects the QPCC-built qbe
+    exposed -- gvn word-constant widening and phi dominance, store value class,
+    arm64 imm12 lsl #12, large symbol offsets through a scratch, loadopt
+    insertion order, salloc constant folding, spill merge() and register cost,
+    arm64 copies to/from stack slots, printcon address offsets, dominators by
+    RPO index; add examples/qpcc-selfhost/semantic-check.sh
+
+2026.10.3: v0.30.0
+    self-host complete: the QPCC-built qbe passes all 58 semantic-check
+    fixtures. implicit function declarations use the standard register ABI;
+    the mem/ssa UNDEF sentinel is distinct from the zero constant; the object
+    emitter no longer maps the IP1 scratch twice; the QPCC CI job runs on
+    macos-26; TODO.md records the remaining known issues

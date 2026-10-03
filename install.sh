@@ -2,7 +2,7 @@
 # qbe.mbt installer: download a prebuilt native qbe and put it on PATH.
 #
 #   curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh
-#   curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh -s -- --version v0.25.0
+#   curl -fsSL https://i2pl.com/install-qbe-mbt.sh | sh -s -- --version v0.30.0
 #
 # It never builds from source. Assets come from the project's GitHub releases:
 #   qbe-macos-aarch64  qbe-linux-x86_64  qbe-linux-aarch64
