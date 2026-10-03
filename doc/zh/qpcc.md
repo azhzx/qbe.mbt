@@ -213,6 +213,48 @@ QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
 - clang 尚未实现 `_Maxof`/`_Minof`、命名循环与 `_Defer`，因此这些夹具是
   QPCC-only（`// expect-exit N`），按其预期退出码校验而非与 clang 对照。
 
+## `_Tagged_union`（`-f_tagged_union`）
+
+QPCC 私有扩展，没有 WG14 提案。需显式开启 `-f_tagged_union`；未开启时这三个
+关键字只是普通标识符，C11/C23/C2y 行为不变。
+
+```c
+_Tagged_union Value {
+  int as_int;
+  float as_float;
+};
+
+_Tagged_union Value x = { .as_int = 100 };
+x.as_float = 1.5f;                 /* 同时更新 tag */
+switch (_Tag_of(x)) {
+  case _Get_tag(_Tagged_union Value, as_int): break;
+  case _Get_tag(_Tagged_union Value, as_float): break;
+}
+```
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Tagged_union Tag { members }` | 是 | `tagged_union` |
+| 自然布局：偏移 0 是 `int` tag，成员在其后重叠 | 是 | `{ int; float }` 为 8 字节，`{ int; double }` 为 16 |
+| 读 `x.m`；写 `x.m` 同时写 tag | 是 | `tagged_union` |
+| `_Tag_of(x)`，`int` 右值 | 是 | `tagged_union` |
+| `_Get_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
+| 设计化初始化：局部、复合字面量、全局、静态 | 是 | `tagged_union`、`tagged_union_static` |
+
+语义与限制：
+
+- tag 是偏移 0 的合成 `int`，成员在其后重叠，布局等价于
+  `struct { int tag; union { members } payload; }`。
+- 写入任一 payload 成员（`=`、`+=`、`++`，或对嵌套成员的写入）都会把 tag 置为
+  该成员的判别式；判别式按成员声明顺序，从 0 开始。
+- 读取 tag 与当前不一致的成员是未定义行为，不做运行时检查。对成员取地址再经
+  指针写入同样绕过 tag：`&x.m` 允许，但此时不变量由程序员负责。
+- 初始化器必须写出成员名，如 `{ .as_int = 100 }`。位置元素（`{ 1 }`、`{ 0 }`）
+  或空列表（`{}`）都会被诊断。多个 designator 时最后者生效（同 union）。
+- 只有 `_Tagged_union Tag` 是类型名（没有裸 `Tag` 别名），要短名字请写
+  `typedef _Tagged_union Value value_t;`。
+- clang 完全不支持这些，因此夹具是 QPCC-only（`// expect-exit N`），按预期
+  退出码校验。
 ## 已知缺口一览
 
 - 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。

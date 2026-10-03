@@ -218,6 +218,53 @@ Known limitations:
   so those fixtures are QPCC-only (`// expect-exit N`), checked against their
   expected exit code rather than a clang reference.
 
+## `_Tagged_union` (`-f_tagged_union`)
+
+A QPCC extension with no WG14 proposal behind it. It is opt-in through
+`-f_tagged_union`; without the flag the three keywords are ordinary
+identifiers, so C11/C23/C2y are unchanged.
+
+```c
+_Tagged_union Value {
+  int as_int;
+  float as_float;
+};
+
+_Tagged_union Value x = { .as_int = 100 };
+x.as_float = 1.5f;                 /* also sets the tag */
+switch (_Tag_of(x)) {
+  case _Get_tag(_Tagged_union Value, as_int): break;
+  case _Get_tag(_Tagged_union Value, as_float): break;
+}
+```
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Tagged_union Tag { members }` | yes | `tagged_union` |
+| natural layout: an `int` tag at offset 0, the members overlapping after it | yes | `{ int; float }` is 8 bytes, `{ int; double }` is 16 |
+| `x.m` read; a store through `x.m` also writes the tag | yes | `tagged_union` |
+| `_Tag_of(x)`, an `int` rvalue | yes | `tagged_union` |
+| `_Get_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
+| designated initializers: local, compound literal, global, static | yes | `tagged_union`, `tagged_union_static` |
+
+Semantics and limitations:
+
+- The tag is a synthetic `int` at offset 0 and the members overlap after it,
+  so the layout is exactly `struct { int tag; union { members } payload; }`.
+- Writing any payload member (`=`, `+=`, `++`, or a store to a nested member)
+  sets the tag to that member's discriminator. Discriminators are the member
+  declaration order, 0-based.
+- Reading a member whose tag is not current is undefined behaviour; there is
+  no runtime check. Taking the address of a member and writing through it
+  also bypasses the tag: `&x.m` is allowed, but the invariant is then the
+  programmer's responsibility.
+- An initializer must name a member, as in `{ .as_int = 100 }`. A positional
+  element (`{ 1 }`, `{ 0 }`) or an empty list (`{}`) is diagnosed. The last
+  designator wins, as for a union.
+- Only `_Tagged_union Tag` names the type (there is no bare `Tag` alias), so
+  `typedef _Tagged_union Value value_t;` is how to get a short name.
+- clang implements none of this, so the fixtures are QPCC-only
+  (`// expect-exit N`) and are checked against their expected exit code.
 ## Known gaps at a glance
 
 - The preprocessor is external (`clang -E`); no `#include`/`#define` handling.

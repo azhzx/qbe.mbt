@@ -31,14 +31,18 @@ run_one() {
   base=$(basename "$src" .c)
   hdr=$(head -2 "$src")
   std=""
+  extra=""
   case "$hdr" in
     *"std=c2y"*) std="-std=c2y" ;;
     *"std=c23"*) std="-std=c23" ;;
   esac
+  case "$hdr" in
+    *"tagged"*) extra="-f_tagged_union" ;;
+  esac
 
   echo "=== $base ==="
   clang -E -P $std -I "$inc" "$src" > "$tmp/$base.i"
-  "$exe" "$tmp/$base.i" $std -o "$tmp/$base.o"
+  "$exe" "$tmp/$base.i" $std $extra -o "$tmp/$base.o"
   clang "$tmp/$base.o" -o "$tmp/$base"
   set +e
   "$tmp/$base" "$@"
