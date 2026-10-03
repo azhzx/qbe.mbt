@@ -1,0 +1,298 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/qpcc/sema"
+
+import {
+  "azhzx/qbe/qpcc/front",
+}
+
+// Values
+pub fn align_of_ty(CType, Array[Layout]) -> Int
+
+pub fn align_up(Int, Int) -> Int
+
+pub fn build_type(@front.Declarator, CType, Ctx) -> CType
+
+pub fn check(@front.TranslationUnit) -> CheckedProgram
+
+pub fn check_block_items(Array[@front.BlockItem], Ctx) -> Array[TStmt]
+
+pub fn check_expr(@front.Expr, Ctx) -> TExpr
+
+pub fn check_stmt(@front.Stmt, Ctx) -> TStmt
+
+pub fn collect_locals(TStmt, Array[(String, CType, Int)]) -> Unit
+
+pub fn common_type(CType, CType) -> CType
+
+pub fn const_eval_int(@front.Expr, Ctx) -> Int64
+
+pub fn decay(CType) -> CType
+
+pub fn decl_name(@front.Declarator) -> String?
+
+pub fn declspec_to_type(@front.DeclSpec, Ctx) -> CType
+
+pub fn decode_string(String) -> String
+
+pub fn encode_global_init(@front.Initializer, CType, Int, Array[Byte], Array[(Int, GlobalReloc)], Ctx) -> Unit
+
+pub fn func_params(@front.Declarator) -> Array[@front.ParamDecl]
+
+pub fn has_auto_type(@front.DeclSpec) -> Bool
+
+pub fn infer_auto_type(Array[@front.InitDeclarator], @front.InitDeclarator, Ctx) -> CType
+
+pub fn int_literal_type(String) -> CType
+
+pub fn int_type_limits(CType) -> (Int64, Int64)?
+
+pub fn is_arith(CType) -> Bool
+
+pub fn is_complex(CType) -> Bool
+
+pub fn is_const_expr(@front.Expr, Ctx) -> Bool
+
+pub fn is_float(CType) -> Bool
+
+pub fn is_integer(CType) -> Bool
+
+pub fn is_ptr(CType) -> Bool
+
+pub fn is_scalar(CType) -> Bool
+
+pub fn is_signed(CType) -> Bool
+
+pub fn parse_char_lit(String) -> Int64
+
+pub fn parse_float_lit(String) -> Double
+
+pub fn parse_int_lit(String) -> Int64
+
+pub fn size_of_ty(CType, Array[Layout]) -> Int
+
+pub fn ty_eq(CType, CType) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum CType {
+  CVoid
+  CBool
+  CChar(Bool)
+  CShort(Bool)
+  CInt(Bool)
+  CLong(Bool)
+  CLongLong(Bool)
+  CLongDouble
+  CFloat
+  CDouble
+  CComplex(CType)
+  CPtr(CType)
+  CArray(CType, Int)
+  CVLA(CType, TExpr)
+  CFunc(CType, Array[CType], Bool)
+  CStruct(Int)
+  CUnion(Int)
+  CEnum(Int)
+  CBitInt(Int)
+}
+
+pub struct CheckedFunc {
+  name : String
+  ty : CType
+  params : Array[(String, CType)]
+  locals : Array[(String, CType, Int)]
+  is_vararg : Bool
+  is_export : Bool
+  body : TStmt
+}
+
+pub struct CheckedGlobal {
+  name : String
+  ty : CType
+  init : Int64?
+  bytes : Array[Byte]
+  relocs : Array[(Int, GlobalReloc)]
+  is_export : Bool
+  align : Int
+}
+
+pub struct CheckedProgram {
+  layouts : Array[Layout]
+  funcs : Array[CheckedFunc]
+  globals : Array[CheckedGlobal]
+  strings : Array[String]
+  diags : Array[Diag]
+}
+
+pub struct Ctx {
+  scopes : ScopeStack
+  layouts : Array[Layout]
+  diags : Diags
+  mut ret_ty : CType?
+  strings : Array[String]
+  funcs : Array[CheckedFunc]
+  globals : Array[CheckedGlobal]
+  mut cur_params : Array[(String, CType)]
+  mut cur_locals : Array[(String, CType, Int)]
+  mut loop_depth : Int
+  mut switch_depth : Int
+  label_pending : Array[String]
+  mut defer_depth : Int
+  break_labels : Array[Array[String]]
+  cont_labels : Array[Array[String]]
+  mut labels : Map[String, Bool]
+  mut gotos : Array[String]
+  mut static_counter : Int
+}
+
+pub struct Diag {
+  sev : Severity
+  line : Int
+  col : Int
+  msg : String
+}
+
+pub struct Diags {
+  items : Array[Diag]
+  mut cur_line : Int
+  mut cur_col : Int
+}
+pub fn Diags::error(Self, String) -> Unit
+pub fn Diags::has_error(Self) -> Bool
+pub fn Diags::new() -> Self
+pub fn Diags::warning(Self, String) -> Unit
+
+pub struct Field {
+  name : String
+  ty : CType
+  offset : Int
+  bit_width : Int
+  bit_offset : Int
+}
+
+pub(all) enum GlobalReloc {
+  RGlobal(String, Int)
+  RString(Int, Int)
+}
+
+pub struct Layout {
+  name : String
+  is_union : Bool
+  fields : Array[Field]
+  size : Int
+  align : Int
+  enum_vals : Array[(String, Int64)]
+  enum_ty : CType?
+  tagged : Bool
+  payload_off : Int
+  tag_vals : Array[(String, Int64)]
+}
+
+pub struct ScopeStack {
+  scopes : Array[Map[String, Symbol]]
+  tags : Array[Map[String, Int]]
+}
+pub fn ScopeStack::define(Self, Symbol) -> Unit
+pub fn ScopeStack::define_tag(Self, String, Int) -> Unit
+pub fn ScopeStack::lookup(Self, String) -> Symbol?
+pub fn ScopeStack::lookup_tag(Self, String) -> Int?
+pub fn ScopeStack::new() -> Self
+pub fn ScopeStack::pop(Self) -> Unit
+pub fn ScopeStack::push(Self) -> Unit
+
+pub(all) enum Severity {
+  SevError
+  SevWarning
+}
+
+pub(all) enum Storage {
+  StNone
+  StStatic
+  StExtern
+  StTypedef
+  StAuto
+  StRegister
+  StThread
+}
+
+pub(all) enum SymKind {
+  SymVar
+  SymConstVar
+  SymFunc
+  SymTypedef
+  SymEnumConst
+  SymLabel
+}
+
+pub struct Symbol {
+  name : String
+  gname : String
+  kind : SymKind
+  ty : CType
+  storage : Storage
+  value : Int64
+}
+
+pub struct TExpr {
+  kind : TExprKind
+  ty : CType
+  lvalue : Bool
+}
+
+pub(all) enum TExprKind {
+  TInt(Int64)
+  TFlt(Double, Bool)
+  TStr(Int)
+  TVar(String)
+  TLabelAddr(String)
+  TBin(String, TExpr, TExpr)
+  TUn(String, TExpr)
+  TAssign(TExpr, TExpr)
+  TCall(String, TExpr, Array[TExpr])
+  TCond(TExpr, TExpr, TExpr)
+  TCast(TExpr)
+  TMember(TExpr, Int)
+  TTaggedMember(TExpr, Int, Int64)
+  TBitField(TExpr, Int, Int, Int)
+  TIndex(TExpr, TExpr)
+  TComma(TExpr, TExpr)
+  TAddr(TExpr)
+  TDeref(TExpr)
+  TSizeof(Int)
+  TAlignof(Int)
+  TSizeofVLA(TExpr)
+  TStmtExpr(Array[TStmt])
+  TCompoundLit(Array[(Int, TExpr, Int, Int)])
+  TVaArg(TExpr)
+  TUnsupported(String)
+}
+
+pub struct TStmt {
+  kind : TStmtKind
+}
+
+pub(all) enum TStmtKind {
+  KSExpr(TExpr?)
+  KSReturn(TExpr?)
+  KSIf(TExpr, TStmt, TStmt?)
+  KSWhile(TExpr, TStmt)
+  KSDoWhile(TStmt, TExpr)
+  KSFor(TStmt?, TExpr?, TExpr?, TStmt)
+  KSBlock(Array[TStmt])
+  KSBreak(Int)
+  KSContinue(Int)
+  KSDefer(TStmt)
+  KSLabel(String, TStmt)
+  KSGoto(String)
+  KSGotoPtr(TExpr)
+  KSSwitch(TExpr, Array[(Int64, TStmt)], TStmt?, Int)
+  KSCaseMark(Array[Int64], Bool, TStmt)
+  KSDecl(String, CType, TExpr?, Int)
+  KSAggInit(String, CType, Array[(Int, TExpr, Int, Int)], Int)
+  KSEmpty
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,44 @@
+#ifndef __QPCC_QBE_STDIO_H
+#define __QPCC_QBE_STDIO_H
+
+#include <stddef.h>
+typedef struct _IO_FILE FILE;
+extern FILE *__stdinp;
+extern FILE *__stdoutp;
+extern FILE *__stderrp;
+#define stdin __stdinp
+#define stdout __stdoutp
+#define stderr __stderrp
+int printf(char *, ...);
+int fprintf(FILE *, char *, ...);
+int sprintf(char *, char *, ...);
+int snprintf(char *, size_t, char *, ...);
+int vfprintf(FILE *, char *, __builtin_va_list);
+int vprintf(char *, __builtin_va_list);
+int vsnprintf(char *, size_t, char *, __builtin_va_list);
+int vsprintf(char *, char *, __builtin_va_list);
+int puts(char *);
+int fputs(char *, FILE *);
+int fputc(int, FILE *);
+int putchar(int);
+int fgetc(FILE *);
+int getc(FILE *);
+int ungetc(int, FILE *);
+int fscanf(FILE *, char *, ...);
+int sscanf(char *, char *, ...);
+int scanf(char *, ...);
+int fputc(int, FILE *);
+int putc(int, FILE *);
+char *fgets(char *, int, FILE *);
+FILE *fopen(char *, char *);
+int fclose(FILE *);
+int fflush(FILE *);
+size_t fread(void *, size_t, size_t, FILE *);
+size_t fwrite(void *, size_t, size_t, FILE *);
+int remove(char *);
+int rename(char *, char *);
+#ifndef EOF
+#define EOF (-1)
+#endif
+
+#endif /* __QPCC_QBE_STDIO_H */

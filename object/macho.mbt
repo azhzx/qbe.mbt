@@ -107,12 +107,16 @@ pub const ARM64_RELOC_GOT_LOAD_PAGEOFF12 = 6
 pub const ARM64_RELOC_POINTER_TO_GOT = 7
 
 ///|
+pub const ARM64_RELOC_ADDEND = 10
+
+///|
 pub(all) struct MachoReloc {
   offset : Int // r_address: byte offset in the section
-  sym : Int // symbol table index
+  sym : Int // symbol table index (or the addend for ARM64_RELOC_ADDEND)
   pcrel : Bool
   length : Int // 2 => 4 bytes
   rtype : Int
+  is_extern : Bool
 }
 
 ///|
@@ -309,7 +313,7 @@ pub fn write_object(
       let info = (r.sym & 0xFFFFFF) |
         ((if r.pcrel { 1 } else { 0 }) << 24) |
         ((r.length & 3) << 25) |
-        (1 << 27) |
+        ((if r.is_extern { 1 } else { 0 }) << 27) |
         ((r.rtype & 0xF) << 28)
       push_u32(out, info)
     }

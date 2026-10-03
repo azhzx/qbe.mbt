@@ -174,18 +174,16 @@ fn dom_inter(f : @types.Fn, b1 : Int, b2 : Int) -> Int {
   }
   let mut b1 = b1
   let mut b2 = b2
+  // C cfg.c inter(): the intersection walks by RPO index, which is Blk.id in
+  // the reference but rpo_id here (block ids are the definition order).
   while b1 != b2 {
-    while b1 > b2 {
-      b1 = f.blks[b1].idom
-      if b1 < 0 {
-        break
-      }
+    if f.blks[b1].rpo_id < f.blks[b2].rpo_id {
+      let t = b1
+      b1 = b2
+      b2 = t
     }
-    while b1 < b2 && b1 >= 0 {
-      b2 = f.blks[b2].idom
-      if b2 < 0 {
-        break
-      }
+    while f.blks[b1].rpo_id > f.blks[b2].rpo_id {
+      b1 = f.blks[b1].idom
     }
   }
   b1

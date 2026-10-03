@@ -183,6 +183,27 @@ test "arm64 bin: simple add matches clang" {
 }
 
 ///|
+test "arm64 bin: shifted compare immediate keeps lsl #12" {
+  let src =
+    #|export
+    #|function w $below(w %a) {
+    #|@start
+    #|  %c =w cultw %a, 8192
+    #|  ret %c
+    #|}
+    #|
+  let (f, interner, _typs) = arm64_emit_parse_pipeline(src)
+  let words = emit_arm64_bin_fn(f, interner, false)
+  let mut found = false
+  for word in words {
+    if word == 0x7140081F {
+      found = true
+    }
+  }
+  assert_true(found)
+}
+
+///|
 test "arm64 bin: loop branches match clang" {
   let src =
     #|export
@@ -214,6 +235,27 @@ test "arm64 bin: loop branches match clang" {
      0xA8C17BFDL, // ldp x29, x30, [sp], 16
      0xD65F03C0L, // ret
   ])
+}
+
+///|
+test "arm64 bin: sign-extended word constants use a 64-bit register" {
+  let src =
+    #|export function l $sign() {
+    #|@start
+    #|  %word =w sub 0, 1
+    #|  %wide =l extsw %word
+    #|  ret %wide
+    #|}
+    #|
+  let (f, interner, _typs) = arm64_emit_parse_pipeline(src)
+  let words = emit_arm64_bin_fn(f, interner, false)
+  let mut has_movn_x_zero = false
+  for word in words {
+    if (word & 0xFFE00000) == 0x92800000 {
+      has_movn_x_zero = true
+    }
+  }
+  assert_true(has_movn_x_zero)
 }
 
 ///|

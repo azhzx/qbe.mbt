@@ -32,6 +32,7 @@ priv struct Insert {
   isphi : Bool
   num : Int
   bid : Int
+  rpo_id : Int // RPO index of bid (the key the reference sorts inserts on)
   off : Int
   ins : @types.Ins
   phi_m : Slice
@@ -69,6 +70,7 @@ fn iins(
     isphi: false,
     num: st.inum,
     bid: l.blk,
+    rpo_id: st.fn_.blks[l.blk].rpo_id,
     off: l.off,
     ins,
     phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw, },
@@ -338,6 +340,7 @@ fn def(
     isphi: true,
     num: st.inum,
     bid: b,
+    rpo_id: st.fn_.blks[b].rpo_id,
     off: 0,
     ins: @types.Ins::new_void(
       @types.Nop,
@@ -379,8 +382,10 @@ fn def(
 // Comparator for the insertion log (C icmp).
 // Phis in the same block compare equal (return 0), like the reference.
 fn icmp(a : Insert, b : Insert) -> Int {
-  if a.bid != b.bid {
-    return a.bid - b.bid
+  // The reference sorts by block->id, which fillrpo sets to the RPO index.
+  // MoonBit's block id is the definition order, so key on the RPO index.
+  if a.rpo_id != b.rpo_id {
+    return a.rpo_id - b.rpo_id
   }
   if a.isphi && b.isphi {
     // The reference's qsort preserves the insertion order of equal-key phis
@@ -478,6 +483,7 @@ pub fn loadopt(
     isphi: false,
     num: 0,
     bid: fn_.nblk(),
+    rpo_id: fn_.nblk(),
     off: 0,
     ins: @types.Ins::new_void(
       @types.Nop,
@@ -492,14 +498,14 @@ pub fn loadopt(
   for n in 0..<fn_.rpo.length() {
     let b_id = fn_.rpo[n]
     // Prepend new phi nodes to the block
-    while st.ilog[ist].bid == b_id && st.ilog[ist].isphi {
+    while st.ilog[ist].rpo_id == n && st.ilog[ist].isphi {
       fn_.blks[b_id].phi.insert(0, st.ilog[ist].phi_p)
       ist = ist + 1
     }
     let mut ni = 0
     let ib : Array[@types.Ins] = []
     while true {
-      if st.ilog[ist].bid == b_id && st.ilog[ist].off == ni {
+      if st.ilog[ist].rpo_id == n && st.ilog[ist].off == ni {
         ib.push(st.ilog[ist].ins)
         ist = ist + 1
       } else {

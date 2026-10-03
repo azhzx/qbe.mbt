@@ -29,6 +29,9 @@ priv struct Arm64BinState {
   calls : Array[(Int, String)]
   // Global-address fixups: (adrp word, add word, dest reg, symbol, byte offset).
   addrs : Array[(Int, Int, Int, String, Int)]
+  // Names defined in this object; anything else needs a GOT load.
+  defined : Array[String]
+  mut cur_op : String
   mut frame : Int
   mut padding : Int
 }
@@ -38,6 +41,7 @@ fn arm64_bin_new(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
+  defined : Array[String],
 ) -> Arm64BinState {
   Arm64BinState::{
     fn_,
@@ -48,6 +52,8 @@ fn arm64_bin_new(
     fixups: [],
     calls: [],
     addrs: [],
+    defined,
+    cur_op: "",
     frame: 0,
     padding: 0,
   }
@@ -253,27 +259,89 @@ fn arm64_bin_loadcon(
 ) -> Unit raise {
   if con.kind == @types.CAddr {
     // adrp/add with a placeholder page/offset; the module emitter patches both
-    // once the data section is laid out.
+    // once the data section is laid out. Symbols that are not defined in this
+    // object are reached through the GOT (adrp + ldr).
     let rd = arm64_bin_reg(r)
-    st.addrs.push(
-      (
-        st.words.length(),
-        st.words.length() + 1,
-        rd,
-        st.interner.get(con.label),
-        con.bits.i.to_int(),
-      ),
-    )
+    let name = st.interner.get(con.label)
+    // The relocation pair computes only the symbol's base address; any offset
+    // is added afterwards. This mirrors clang and avoids
+    // ARM64_RELOC_ADDEND, which the linker rejects for these objects.
+    st.addrs.push((st.words.length(), st.words.length() + 1, rd, name, 0))
     st.words.push(@object.enc_adrp(rd, 0))
-    st.words.push(@object.enc_add_imm(rd, rd, 0))
+    if con.is_local || st.defined.contains(name) {
+      st.words.push(@object.enc_add_imm(rd, rd, 0))
+    } else {
+      st.words.push(@object.enc_ldst(3, 1, rd, rd, 0))
+    }
+    let mut off = con.bits.i.to_int()
+    let neg = off < 0
+    if neg {
+      off = -off
+    }
+    let lo = off & 0xFFF
+    if lo != 0 {
+      st.words.push(
+        if neg {
+          @object.enc_sub_imm_sf(true, rd, rd, lo)
+        } else {
+          @object.enc_add_imm_sf(true, rd, rd, lo)
+        },
+      )
+    }
+    let hi = off >> 12
+    if hi != 0 && hi <= 0xFFF {
+      let imm = (hi & 0xFFF) | (1 << 12)
+      st.words.push(
+        if neg {
+          @object.enc_sub_imm_sf(true, rd, rd, imm)
+        } else {
+          @object.enc_add_imm_sf(true, rd, rd, imm)
+        },
+      )
+    } else if hi > 0xFFF {
+      // The shifted imm12 form only reaches 0xfffff, so a larger offset goes
+      // through a scratch register (IP0 is reserved and not allocatable).
+      let scratch = arm64_bin_reg(@types.ARM64_IP0)
+      let n = off.to_int64().reinterpret_as_uint64()
+      st.words.push(
+        @object.enc_movz_sf(true, scratch, (n & 0xFFFFUL).to_int(), 0),
+      )
+      let mut sh = 16
+      let mut m = n >> 16
+      while m != 0UL {
+        st.words.push(
+          @object.enc_movk_sf(true, scratch, (m & 0xFFFFUL).to_int(), sh / 16),
+        )
+        m = m >> 16
+        sh = sh + 16
+      }
+      st.words.push(
+        if neg {
+          @object.enc_sub_reg_sf(true, rd, rd, scratch)
+        } else {
+          @object.enc_add_reg_sf(true, rd, rd, scratch)
+        },
+      )
+    }
     return
   }
-  let w = k.wide()
+  // A constant is interned by its bits, so int 0 and double 0.0 share an
+  // entry: prefer the constant's own floatness, falling back to the
+  // instruction class (which is what C uses).
+  let is_s = if con.flt != 0 { con.flt == 1 } else { k == @types.Ks }
+  let is_d = if con.flt != 0 { con.flt == 2 } else { k == @types.Kd }
+  let w = if is_s { 0 } else if is_d { 1 } else { k.wide() }
   let sf = w != 0
   let bits = if sf { 64 } else { 32 }
   let mask = if sf { -1L } else { 0xFFFFFFFFL }
-  let mut n = con.raw_bits()
-  if w == 0 {
+  let mut n = if is_s {
+    con.bits.s.reinterpret_as_uint().to_int64()
+  } else if is_d {
+    con.bits.d.reinterpret_as_int64()
+  } else {
+    con.raw_bits()
+  }
+  if !is_s && !is_d && w == 0 {
     n = arm64_s32(n)
   }
   let rd = arm64_bin_reg(r)
@@ -299,13 +367,20 @@ fn arm64_bin_loadcon(
             }
         }
     }
+    // The single-MOV fast paths still need to move the bit pattern into the
+    // floating-point register file.
+    if is_s {
+      arm64_bin_emit(st, @object.enc_fmov_s_w(rd, rd))
+    } else if is_d {
+      arm64_bin_emit(st, @object.enc_fmov_d_x(rd, rd))
+    }
     return
   }
   arm64_bin_emit(st, @object.enc_movz_sf(sf, rd, (n & 0xFFFFL).to_int(), 0))
   let mut sh = 16
   let mut m = n >> 16
   while m != 0L {
-    if (w == 0 && sh == 32) || sh == 64 {
+    if (!sf && sh == 32) || sh == 64 {
       break
     }
     arm64_bin_emit(
@@ -314,6 +389,11 @@ fn arm64_bin_loadcon(
     )
     m = m >> 16
     sh = sh + 16
+  }
+  if is_s {
+    arm64_bin_emit(st, @object.enc_fmov_s_w(rd, rd))
+  } else if is_d {
+    arm64_bin_emit(st, @object.enc_fmov_d_x(rd, rd))
   }
 }
 
@@ -325,9 +405,8 @@ fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
     if n >> 12 == 0UL {
       n.to_int()
     } else if (n & 0xFFFUL) == 0UL && n >> 24 == 0UL {
-      raise @util.QbeError::Ice(
-        "arm64 bin: imm12 with lsl #12 not supported yet",
-      )
+      // #imm12, lsl #12: the sh bit is bit 12 of the immediate field.
+      (n >> 12).to_int() | (1 << 12)
     } else {
       raise @util.QbeError::Ice("arm64 bin: immediate does not fit #imm12")
     }
@@ -341,7 +420,9 @@ fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int raise {
   if r.is_tmp() {
     arm64_bin_reg(r.tmp_val())
   } else {
-    raise @util.QbeError::Ice("arm64 bin: expected a register operand")
+    raise @util.QbeError::Ice(
+      "arm64 bin: expected a register operand for " + st.cur_op,
+    )
   }
 }
 
@@ -707,6 +788,18 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
       }
     }
+    @types.AtomicLoad => {
+      let (rn, _off) = arm64_bin_mem(st, i.arg1)
+      let sf = i.cls == @types.Kl || i.cls == @types.Kd
+      arm64_bin_emit(st, @object.enc_ldar(sf, rd, rn))
+    }
+    @types.AtomicStore => {
+      let (rn, _off) = arm64_bin_mem(st, i.arg2)
+      let rt = arm64_bin_reg(i.arg1.tmp_val())
+      let sf = i.cls == @types.Kl || i.cls == @types.Kd
+      arm64_bin_emit(st, @object.enc_stlr(sf, rt, rn))
+    }
+    @types.Fence => arm64_bin_emit(st, @object.enc_dmb_ish())
     @types.Loadub => {
       let (rn, off) = arm64_bin_mem(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(0, 1, rd, rn, off))
@@ -777,6 +870,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 
 ///|
 fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
+  st.cur_op = i.op.name()
   let oi = i.op.index()
   let fi = @types.Flagieq.index()
   if oi >= fi && oi <= @types.Flagfuo.index() {
@@ -795,6 +889,41 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()
+      } else if i.to.is_slot() {
+        // Spilled value: copy to its stack slot (C emit.c Ocopy to RSlot).
+        let (rn, off) = arm64_bin_mem(st, i.to)
+        let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
+        let is_fp = i.cls == @types.Ks || i.cls == @types.Kd
+        let rt = if i.arg1.is_con() {
+          // loadcon wants a QBE register id (it maps it itself); the store
+          // needs the physical number, so map it separately. Passing the
+          // mapped number here mapped it twice and materialised the constant
+          // into IP0 while the store read IP1.
+          arm64_bin_loadcon(
+            st,
+            st.fn_.cons[i.arg1.con_val()],
+            @types.ARM64_IP1,
+            i.cls,
+          )
+          arm64_bin_reg(@types.ARM64_IP1)
+        } else {
+          arm64_bin_r(st, i.arg1)
+        }
+        if is_fp {
+          arm64_bin_emit(st, @object.enc_ldst_fp(size, 0, rt, rn, off))
+        } else {
+          arm64_bin_emit(st, @object.enc_ldst(size, 0, rt, rn, off))
+        }
+      } else if i.arg1.is_slot() {
+        // Reload a spilled value (C emit.c Ocopy from RSlot).
+        let (rn, off) = arm64_bin_mem(st, i.arg1)
+        let rd = arm64_bin_reg(i.to.tmp_val())
+        let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
+        if i.cls == @types.Ks || i.cls == @types.Kd {
+          arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, rd, rn, off))
+        } else {
+          arm64_bin_emit(st, @object.enc_ldst(size, 1, rd, rn, off))
+        }
       } else if i.arg1.is_con() {
         arm64_bin_loadcon(
           st,
@@ -1011,8 +1140,9 @@ pub fn emit_arm64_bin_fn_ex(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
+  defined : Array[String],
 ) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise {
-  let st = arm64_bin_new(fn_, interner, apple)
+  let st = arm64_bin_new(fn_, interner, apple, defined)
   arm64_binfn(st)
   (st.words, st.calls, st.addrs)
 }
@@ -1025,7 +1155,7 @@ pub fn emit_arm64_bin_fn(
   interner : @util.Interner,
   apple : Bool,
 ) -> Array[Int] raise {
-  let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+  let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple, [])
   if calls.length() > 0 || addrs.length() > 0 {
     raise @util.QbeError::Ice(
       "arm64 bin: function needs module linking; use emit_arm64_bin_module",
@@ -1116,10 +1246,12 @@ fn arm64_bin_dat_size(d : @types.Dat) -> Int {
 // of every named global (byte offset within the image).
 fn arm64_bin_layout_data(
   datas : Array[@types.Dat],
-) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int)]) {
+) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int, Int)]) {
   let addr_of : Array[(String, Int)] = []
-  // Relocatable pointer entries: (byte offset, target symbol, byte width).
-  let refs : Array[(Int, String, Int)] = []
+  // Relocatable pointer entries: (byte offset, target symbol, byte width,
+  // addend). The addend is what the object's relocation resolves against; the
+  // in-memory image instead stores the fully resolved section address.
+  let refs : Array[(Int, String, Int, Int)] = []
   let mut off = 0
   let mut align = 8
   for d in datas {
@@ -1153,7 +1285,7 @@ fn arm64_bin_layout_data(
             buf[cur + i] = b[i]
           }
         } else if d.is_ref {
-          refs.push((cur, d.ref_name, w))
+          refs.push((cur, d.ref_name, w, d.ref_offset.to_int()))
           let mut base = 0
           for p in addr_of {
             if p.0 == d.ref_name {
@@ -1271,8 +1403,12 @@ fn emit_arm64_bin_module_build(
   let fns : Array[(String, Int)] = []
   let pending : Array[(Int, String)] = []
   let pending_addrs : Array[(Int, Int, Int, String, Int)] = []
+  let defined : Array[String] = []
   for fn_ in funcs {
-    let (w, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+    defined.push(fn_.name)
+  }
+  for fn_ in funcs {
+    let (w, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple, defined)
     let off = words.length()
     fns.push((fn_.name, off))
     for x in w {

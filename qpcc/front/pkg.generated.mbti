@@ -1,0 +1,234 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/qpcc/front"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn is_c23_keyword(String) -> Bool
+
+pub fn is_c2y_keyword(String) -> Bool
+
+pub fn is_keyword(String) -> Bool
+
+pub fn is_keyword_mode(String, StdMode) -> Bool
+
+pub fn is_tagged_keyword(String) -> Bool
+
+pub fn parse(String, mode? : StdMode, tagged_union? : Bool) -> TranslationUnit
+
+pub fn tokenize(String, StdMode, tagged_union? : Bool) -> Array[Token]
+
+// Errors
+
+// Types and methods
+pub(all) enum AlignmentSpec {
+  AlignType(DeclSpec, Declarator)
+  AlignExpr(Expr)
+}
+
+pub(all) enum BlockItem {
+  BStmt(Stmt)
+  BDecl(DeclSpec, Array[InitDeclarator])
+}
+
+pub struct DeclSpec {
+  storage : Array[String]
+  qualifiers : Array[String]
+  type_specs : Array[TypeSpec]
+  func_specs : Array[String]
+  align : Array[AlignmentSpec]
+  attrs : Array[String]
+}
+
+pub(all) enum Declarator {
+  DName(String)
+  DAbstract
+  DPointer(Array[String], Declarator)
+  DArray(Declarator, Expr?, Bool)
+  DFunction(Declarator, Array[ParamDecl], Bool)
+}
+
+pub struct DesignatedInit {
+  designators : Array[Designator]
+  init : Initializer
+}
+
+pub(all) enum Designator {
+  DField(String)
+  DIndex(Expr)
+  DRange(Expr, Expr)
+}
+
+pub struct EnumItem {
+  name : String
+  value : Expr?
+}
+
+pub(all) enum Expr {
+  EInt(String)
+  EFloat(String)
+  EImag(String)
+  EChar(String)
+  EString(Array[String])
+  EIdent(String)
+  EBool(Bool)
+  ENullptr
+  EBinary(String, Expr, Expr)
+  EUnary(String, Expr)
+  EPostfix(String, Expr)
+  ECond(Expr, Expr, Expr)
+  EAssign(String, Expr, Expr)
+  ECast(DeclSpec, Declarator, Expr)
+  ESizeofExpr(Expr)
+  ESizeofType(DeclSpec, Declarator)
+  EAlignofType(DeclSpec, Declarator)
+  EMaxofType(DeclSpec, Declarator)
+  EMinofType(DeclSpec, Declarator)
+  ECountofExpr(Expr)
+  ECountofType(DeclSpec, Declarator)
+  EAlignofExpr(Expr)
+  ETagOf(Expr)
+  EGetTag(DeclSpec, Declarator, String)
+  ETypesCompatible(DeclSpec, Declarator, DeclSpec, Declarator)
+  ECall(Expr, Array[Expr])
+  EIndex(Expr, Expr)
+  EMember(Expr, String, Bool)
+  ECompound(DeclSpec, Declarator, Initializer)
+  EGeneric(Expr, Array[GenericAssoc])
+  EComma(Expr, Expr)
+  EStmtExpr(Array[BlockItem])
+  EOffsetof(DeclSpec, Declarator, Array[Designator])
+  EVaArg(Expr, DeclSpec, Declarator)
+  ETemp
+}
+
+pub struct ExternalDecl {
+  kind : ExternalDeclKind
+  pos : Span
+}
+
+pub(all) enum ExternalDeclKind {
+  EFunc(DeclSpec, Declarator, Stmt)
+  EDecl(DeclSpec, Array[InitDeclarator])
+  EStaticAssert(Expr, String?)
+  EAsm(String)
+  EPragma(String)
+  EEmpty
+}
+
+pub(all) enum ForInit {
+  FDecl(DeclSpec, Array[InitDeclarator])
+  FExpr(Expr)
+}
+
+pub struct GenericAssoc {
+  spec : DeclSpec?
+  decl : Declarator?
+  expr : Expr
+}
+
+pub struct InitDeclarator {
+  decl : Declarator
+  init : Initializer?
+  bits : Expr?
+}
+
+pub(all) enum Initializer {
+  IExpr(Expr)
+  IList(Array[DesignatedInit])
+}
+
+pub struct ParamDecl {
+  spec : DeclSpec
+  decl : Declarator
+}
+
+pub struct Span {
+  line : Int
+  col : Int
+}
+
+pub(all) enum StdMode {
+  C11
+  C23
+  C2y
+} derive(Eq)
+
+pub struct Stmt {
+  kind : StmtKind
+  pos : Span
+}
+
+pub(all) enum StmtKind {
+  SCompound(Array[BlockItem])
+  SExpr(Expr?)
+  SIf(Expr, Stmt, Stmt?)
+  SSwitch(Expr, Stmt)
+  SWhile(Expr, Stmt)
+  SDoWhile(Stmt, Expr)
+  SFor(ForInit?, Expr?, Expr?, Stmt)
+  SGoto(String)
+  SGotoPtr(Expr)
+  SContinue(String?)
+  SBreak(String?)
+  SDefer(Stmt)
+  SReturn(Expr?)
+  SLabel(String, Stmt?)
+  SCase(Expr, Stmt?)
+  SCaseRange(Expr, Expr, Stmt?)
+  SDefault(Stmt?)
+  SDecl(DeclSpec, Array[InitDeclarator])
+  SStaticAssert(Expr, String?)
+  SAsm(String)
+  SPragma(String)
+  SEmpty
+}
+
+pub(all) enum StructDecl {
+  SDecl(DeclSpec, Array[InitDeclarator])
+  SStaticAssert(Expr, String?)
+  SPragma(String)
+  SAnon(DeclSpec)
+}
+
+pub struct Token {
+  kind : TokenKind
+  line : Int
+  col : Int
+}
+pub fn Token::text(Self) -> String
+
+pub(all) enum TokenKind {
+  Ident(String)
+  Keyword(String)
+  IntLit(String)
+  FloatLit(String)
+  ImagLit(String)
+  StringLit(String)
+  CharLit(String)
+  Punct(String)
+  Eof
+} derive(Eq, @debug.Debug)
+
+pub struct TranslationUnit {
+  decls : Array[ExternalDecl]
+}
+
+pub(all) enum TypeSpec {
+  TKw(String)
+  TStruct(String?, Array[StructDecl])
+  TUnion(String?, Array[StructDecl])
+  TTaggedUnion(String?, Array[StructDecl])
+  TEnum(String?, Array[EnumItem], DeclSpec?)
+  TTypedefName(String)
+  TTypeofExpr(Expr)
+  TTypeofType(DeclSpec, Declarator)
+  TAtomicSpec(DeclSpec, Declarator)
+  TBitInt(Expr)
+}
+
+// Type aliases
+
+// Traits

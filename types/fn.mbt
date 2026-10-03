@@ -173,6 +173,14 @@ pub fn Fn::get_con_by(self : Self, con : Con) -> Int {
 }
 
 ///|
+// The undefined constant (C's UNDEF sentinel).  It is distinct from the
+// zero constant: coalesce turns a load with no reaching store into
+// "copy UNDEF", while CON_Z is the ordinary zero constant.
+pub fn Fn::undef(self : Self) -> Int {
+  self.get_con_by(Con::new())
+}
+
+///|
 // Get a constant reference for an integer value
 pub fn Fn::get_con(self : Self, val : Int64) -> Int {
   for i in 0..<self.cons.length() {

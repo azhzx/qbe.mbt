@@ -58,7 +58,9 @@ pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
     }
   }
   for t in 0..<fn_.tmps.length() {
-    let mx = if t < @types.Tmp0 { ((1L << 32) - 1L).to_int() } else { 0 }
+    // C uses UINT_MAX here; on a 32-bit MoonBit Int that value wraps to -1,
+    // which would sort register temporaries last instead of first.
+    let mx = if t < @types.Tmp0 { 2147483647 } else { 0 }
     fn_.tmps[t].cost = mx
     fn_.tmps[t].nuse = 0
     fn_.tmps[t].ndef = 0

@@ -393,9 +393,8 @@ pub fn coalesce(
     let tdef = fn_.blks[db].ins[di]
     if tdef.op.is_load() {
       tdef.op = @types.Copy
-      // The MoonBit port represents C's UNDEF by the zero constant (see
-      // ssa/ssa.mbt getstk), so use the interned zero here too.
-      tdef.arg1 = @types.Ref::con(fn_.get_con(0))
+      // C mem.c: i->arg[0] = UNDEF (the sentinel, not the zero constant).
+      tdef.arg1 = @types.Ref::con(fn_.undef())
       continue
     }
     set_nop(tdef)

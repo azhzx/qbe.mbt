@@ -111,7 +111,7 @@ fn arm64_cmpop(c : Int) -> Int {
     13 => 10 // Cfge -> Cfle
     16 => 17 // Cfo -> Cfuo
     17 => 16 // Cfuo -> Cfo
-    _ => 0 // eq/ne are self-inverse
+    _ => c // eq/ne/fne/feq are self-inverse
   }
 }
 
@@ -320,8 +320,24 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     return
   }
   if i.op == @types.Alloc4 || i.op == @types.Alloc8 || i.op == @types.Alloc16 {
-    // C arm64/isel.c sel(): dynamic allocs lower via salloc().
+    // C arm64/isel.c sel() + util.c salloc(): dynamic allocs lower via
+    // salloc(), and a constant size is rounded up at compile time.
     st.fn_.has_dynalloc = true
+    if i.arg1.is_con() {
+      let sz = st.fn_.cons[i.arg1.con_val()].bits.i
+      if sz < 0L || sz >= 2147483632L {
+        raise @util.QbeError::Ice("invalid alloc size {sz}")
+      }
+      let aligned = (sz + 15L) & -16L
+      let c = arm64_isel_getcon(st, aligned)
+      arm64_isel_emit(
+        st,
+        @types.Ins::new(@types.Salloc, @types.Kl, i.to, c, @types.Ref::none()),
+      )
+      let aidx = st.buf.length() - 1
+      st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
+      return
+    }
     let r0 = arm64_isel_newtmp(st, @types.Kl)
     let r1 = arm64_isel_newtmp(st, @types.Kl)
     let m16 = arm64_isel_getcon(st, -16L)

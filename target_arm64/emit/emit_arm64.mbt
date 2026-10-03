@@ -234,6 +234,15 @@ let arm64_omap : Array[(Int, Int, String)] = [
   (@types.Acmp.index(), ARM64_KI, "cmp %0, %1"),
   (@types.Acmn.index(), ARM64_KI, "cmn %0, %1"),
   (@types.Afcmp.index(), ARM64_KA, "fcmpe %0, %1"),
+  (@types.AtomicLoad.index(), @types.Kw.code(), "ldar %W=, %M0"),
+  (@types.AtomicLoad.index(), @types.Kl.code(), "ldar %=, %M0"),
+  (@types.AtomicLoad.index(), @types.Ks.code(), "ldar %S=, %M0"),
+  (@types.AtomicLoad.index(), @types.Kd.code(), "ldar %D=, %M0"),
+  (@types.AtomicStore.index(), @types.Kw.code(), "stlr %W0, %M1"),
+  (@types.AtomicStore.index(), @types.Kl.code(), "stlr %L0, %M1"),
+  (@types.AtomicStore.index(), @types.Ks.code(), "stlr %S0, %M1"),
+  (@types.AtomicStore.index(), @types.Kd.code(), "stlr %D0, %M1"),
+  (@types.Fence.index(), @types.Kw.code(), "dmb ish"),
 ]
 
 ///|
@@ -459,6 +468,29 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
     @types.Copy =>
       if i.to.eq(i.arg1) {
         ()
+      } else if i.to.is_slot() {
+        // C arm64/emit.c: a copy into a slot becomes a store of the source.
+        let slot = i.to
+        let mut src = i.arg1
+        if !(src.is_tmp() && src.tmp_val() < @types.Tmp0) {
+          let ip1 = @types.Ref::tmp(@types.ARM64_IP1)
+          arm64_emitins(
+            st,
+            @types.Ins::new(@types.Copy, i.cls, ip1, i.arg1, @types.Ref::none()),
+          )
+          src = ip1
+        }
+        let op = @types.Op::from_index(@types.Storew.index() + i.cls.code())
+        arm64_emitins(
+          st,
+          @types.Ins::new(op, @types.Kw, @types.Ref::none(), src, slot),
+        )
+      } else if i.arg1.is_slot() {
+        // C arm64/emit.c: a copy from a slot becomes a load.
+        arm64_emitins(
+          st,
+          @types.Ins::new(@types.Load, i.cls, i.to, i.arg1, @types.Ref::none()),
+        )
       } else if i.arg1.is_con() {
         let c = st.fn_.cons[i.arg1.con_val()]
         arm64_loadcon(st, c, i.to.tmp_val(), i.cls)

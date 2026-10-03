@@ -47,8 +47,15 @@ pub fn emit_arm64_object(
   let fns : Array[(String, Int)] = []
   let calls : Array[(Int, String)] = []
   let addrs : Array[(Int, Int, Int, String, Int)] = []
+  let defined : Array[String] = []
   for fn_ in funcs {
-    let (w, c, a) = emit_arm64_bin_fn_ex(fn_, interner, apple)
+    defined.push(fn_.name)
+  }
+  for d in datas {
+    defined.push(d.str)
+  }
+  for fn_ in funcs {
+    let (w, c, a) = emit_arm64_bin_fn_ex(fn_, interner, apple, defined)
     let off = text_words.length()
     fns.push((fn_.name, off))
     for x in w {
@@ -101,8 +108,14 @@ pub fn emit_arm64_object(
   let data_relocs : Array[@object.MachoReloc] = []
   for r in data_refs {
     let w = r.2
+    // A non-pcrel ARM64_RELOC_UNSIGNED takes its addend from the bytes at the
+    // relocation site, so store the symbol-relative offset there.
+    let mut v = r.3
+    if v < 0 {
+      v = v + (1 << (w * 8))
+    }
     for i in 0..<w {
-      data_bytes[r.0 + i] = 0
+      data_bytes[r.0 + i] = (v >> (i * 8)) & 0xFF
     }
     let i = arm64_obj_sym(syms, index, r.1, 0, 0, true)
     data_relocs.push(@object.MachoReloc::{
@@ -115,6 +128,7 @@ pub fn emit_arm64_object(
         2
       },
       rtype: @object.ARM64_RELOC_UNSIGNED,
+      is_extern: true,
     })
   }
 
@@ -129,23 +143,47 @@ pub fn emit_arm64_object(
       pcrel: true,
       length: 2,
       rtype: @object.ARM64_RELOC_BRANCH26,
+      is_extern: true,
     })
   }
   for a in addrs {
+    // A directly referenced symbol that is defined in this object can use a
+    // plain adrp/add; an external one must go through the GOT.
+    let is_def = defined.contains(a.3)
     let i = arm64_obj_sym(syms, index, a.3, 0, 0, true)
     text_relocs.push(@object.MachoReloc::{
       offset: a.0 * 4,
       sym: i,
       pcrel: true,
       length: 2,
-      rtype: @object.ARM64_RELOC_PAGE21,
+      rtype: if is_def {
+        @object.ARM64_RELOC_PAGE21
+      } else {
+        @object.ARM64_RELOC_GOT_LOAD_PAGE21
+      },
+      is_extern: true,
     })
+    if a.4 != 0 {
+      text_relocs.push(@object.MachoReloc::{
+        offset: a.1 * 4,
+        sym: a.4,
+        pcrel: false,
+        length: 2,
+        rtype: @object.ARM64_RELOC_ADDEND,
+        is_extern: false,
+      })
+    }
     text_relocs.push(@object.MachoReloc::{
       offset: a.1 * 4,
       sym: i,
       pcrel: false,
       length: 2,
-      rtype: @object.ARM64_RELOC_PAGEOFF12,
+      rtype: if is_def {
+        @object.ARM64_RELOC_PAGEOFF12
+      } else {
+        @object.ARM64_RELOC_GOT_LOAD_PAGEOFF12
+      },
+      is_extern: true,
     })
   }
 

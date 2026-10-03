@@ -1085,6 +1085,27 @@ let optab : Array[OpInfo] = [
     false,
     (0, 0, 1),
   ),
+  mk(
+    "atomicload",
+    cls(["m", "m", "m", "m"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 1),
+  ),
+  mk(
+    "atomicstore",
+    cls(["w", "e", "e", "e"]),
+    cls(["m", "m", "m", "m"]),
+    false,
+    (1, 0, 0),
+  ),
+  mk(
+    "fence",
+    cls(["w", "e", "e", "e"]),
+    cls(["w", "e", "e", "e"]),
+    false,
+    (0, 0, 1),
+  ),
 ]
 
 ///|
@@ -1253,6 +1274,9 @@ pub fn Op::from_index(i : Int) -> Op {
     143 => Blit0
     144 => Blit1
     145 => Dbgloc
+    146 => AtomicLoad
+    147 => AtomicStore
+    148 => Fence
     _ => Oxxx
   }
 }
@@ -1407,5 +1431,8 @@ pub fn Op::index(self : Op) -> Int {
     Blit0 => 143
     Blit1 => 144
     Dbgloc => 145
+    AtomicLoad => 146
+    AtomicStore => 147
+    Fence => 148
   }
 }

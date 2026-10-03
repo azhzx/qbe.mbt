@@ -49,3 +49,14 @@ under the Apache License 2.0; the toolchain `CREDITS.md` additionally lists:
 
 These are components of the MoonBit toolchain; qbe.mbt redistributes only the
 runtime objects named above.
+
+## QPCC (Qopple C Compiler)
+
+`qpcc/` is an original MoonBit program written for this repository. Its design
+is informed by:
+
+- chibicc — MIT License, Copyright (c) 2019 Rui Ueyama
+  (<https://github.com/rui314/chibicc>)
+- mbtcc — Apache License 2.0 (<https://github.com/moonbitlang/mbtcc>)
+
+No third-party source code was copied into `qpcc/`.
