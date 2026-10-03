@@ -252,8 +252,9 @@ switch (_Tag_of(x)) {
   指针写入同样绕过 tag：`&x.m` 允许，但此时不变量由程序员负责。
 - 初始化器必须写出成员名，如 `{ .as_int = 100 }`。位置元素（`{ 1 }`、`{ 0 }`）
   或空列表（`{}`）都会被诊断。多个 designator 时最后者生效（同 union）。
-- 只有 `_Tagged_union Tag` 是类型名（没有裸 `Tag` 别名），要短名字请写
-  `typedef _Tagged_union Value value_t;`。
+- tagged union 可以用 `_Tagged_union Tag` 命名，也可以用 typedef：tag 是
+  可选的，所以 `typedef _Tagged_union { ... } Value;` 定义匿名形式，之后
+  `Value` 就代表该类型（`_Get_tag` 同理）。写了 tag 时没有裸的别名。
 - clang 完全不支持这些，因此夹具是 QPCC-only（`// expect-exit N`），按预期
   退出码校验。
 ## 已知缺口一览

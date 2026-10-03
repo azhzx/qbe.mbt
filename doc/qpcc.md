@@ -262,8 +262,10 @@ Semantics and limitations:
 - An initializer must name a member, as in `{ .as_int = 100 }`. A positional
   element (`{ 1 }`, `{ 0 }`) or an empty list (`{}`) is diagnosed. The last
   designator wins, as for a union.
-- Only `_Tagged_union Tag` names the type (there is no bare `Tag` alias), so
-  `typedef _Tagged_union Value value_t;` is how to get a short name.
+- A tagged union is named either as `_Tagged_union Tag` or through a typedef:
+  the tag is optional, so `typedef _Tagged_union { ... } Value;` defines an
+  anonymous one and `Value` then stands for the type everywhere (including
+  `_Get_tag`). There is no bare alias for a tag that was written.
 - clang implements none of this, so the fixtures are QPCC-only
   (`// expect-exit N`) and are checked against their expected exit code.
 ## Known gaps at a glance
