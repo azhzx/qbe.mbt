@@ -285,3 +285,10 @@
     the mem/ssa UNDEF sentinel is distinct from the zero constant; the object
     emitter no longer maps the IP1 scratch twice; the QPCC CI job runs on
     macos-26; TODO.md records the remaining known issues
+
+2026.10.3: v0.31.0
+    QPCC gains C2y support, opt-in with -std=c2y: _Maxof/_Minof (N3628),
+    _Countof (N3369), named loops (N3355: break/continue with a label, label
+    chains naming one statement) and _Defer statements (TS 25755/N3590,
+    cleanup semantics on every block exit); hand-written stddefer.h and
+    stdcountof.h; the oracle grows to 144 fixtures

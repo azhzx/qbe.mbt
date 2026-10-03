@@ -3,7 +3,7 @@
 # The installer served from https://i2pl.com/install-qbe-mbt.sh only downloads
 # one of these assets; it never builds from source.
 #
-# Push a version tag (e.g. v0.30.0) to publish a release, or run the workflow
+# Push a version tag (e.g. v0.31.0) to publish a release, or run the workflow
 # manually to build the matrix and keep the binaries as workflow artifacts.
 #
 # Asset names deliberately carry no version so that the installer can use

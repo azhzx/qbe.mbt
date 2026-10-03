@@ -182,6 +182,30 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 固定底层类型的 enum（`enum E : unsigned char`） | 是 | `enum_fixed` |
 | 语句位置的 `[[fallthrough]]` | 是 | `fallthrough_attr` |
 
+## C2y（`-std=c2y`）
+
+C2y 语法需显式开启 `-std=c2y`；C11 与 C23 行为不变。
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Maxof(type-name)` / `_Minof(type-name)`（N3628） | 是 | `maxminof`；要求整型，`_Bool` 被拒绝，结果是该类型自身的常量 |
+| `_Countof(expr)` / `_Countof(type-name)`（N3369） | 是 | `countof`；操作数必须是数组类型 |
+| 命名循环（N3355）：循环/switch 前的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
+| `_Defer` 语句（TS 25755 / N3590） | 是 | `defer_basic`、`defer_header` |
+
+`defer` 与 `countof` 两种拼写来自两个手写头文件：
+`qpcc/include/qbe/stddefer.h`（`defer` -> `_Defer`）与
+`qpcc/include/qbe/stdcountof.h`（`countof` -> `_Countof`），由外部预处理器通过
+`clang -E -P -I <qpcc>/qpcc/include/qbe` 找到；QPCC 自身只认下划线关键字。
+
+已知限制：
+
+- `_Defer` 在所在块退出时按逆序执行，退出路径包括自然结束、`return`、
+  `break`、`continue`、向外 `goto`。会跳出 `_Defer` 语句自身的跳转、以及
+  跳入它的 `goto`，都会被诊断；`longjmp` 跨过 defer 是未定义行为（按 TS）。
+- clang 尚未实现 `_Maxof`/`_Minof`、命名循环与 `_Defer`，因此这些夹具是
+  QPCC-only（`// expect-exit N`），按其预期退出码校验而非与 clang 对照。
+
 ## 已知缺口一览
 
 - 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。

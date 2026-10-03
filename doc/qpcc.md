@@ -184,6 +184,33 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | fixed underlying enum types (`enum E : unsigned char`) | yes | `enum_fixed` |
 | `[[fallthrough]]` in statement position | yes | `fallthrough_attr` |
 
+## C2y (`-std=c2y`)
+
+C2y syntax is opt-in through `-std=c2y`; C11 and C23 are unchanged.
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Maxof(type-name)` / `_Minof(type-name)` (N3628) | yes | `maxminof`; an integer type is required, `_Bool` is rejected, and the result is a constant of that same type |
+| `_Countof(expr)` / `_Countof(type-name)` (N3369) | yes | `countof`; the operand must have array type |
+| named loops (N3355): `label:` on a loop or switch, `break label;`, `continue label;` | yes | `named_loops` |
+| `_Defer` statements (TS 25755 / N3590) | yes | `defer_basic`, `defer_header` |
+
+The `defer` and `countof` spellings come from two hand-written headers,
+`qpcc/include/qbe/stddefer.h` (`defer` -> `_Defer`) and
+`qpcc/include/qbe/stdcountof.h` (`countof` -> `_Countof`), which the
+external preprocessor finds with `clang -E -P -I <qpcc>/qpcc/include/qbe`.
+QPCC itself only knows the underscore keywords.
+
+Known limitations:
+
+- `_Defer` runs when its enclosing block is left, in reverse order, on any
+  exit (falling off the end, `return`, `break`, `continue`, `goto` out).
+  A jump that would leave the `_Defer` statement itself, and a `goto` into
+  it, are diagnosed; `longjmp` past a defer is undefined, as the TS says.
+- clang does not implement `_Maxof`/`_Minof`, named loops or `_Defer` yet,
+  so those fixtures are QPCC-only (`// expect-exit N`), checked against their
+  expected exit code rather than a clang reference.
+
 ## Known gaps at a glance
 
 - The preprocessor is external (`clang -E`); no `#include`/`#define` handling.
