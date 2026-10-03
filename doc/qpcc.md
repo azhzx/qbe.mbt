@@ -1,0 +1,198 @@
+# QPCC — C language support
+
+QPCC (`qpcc/`) is the C front end and code generator that lowers C to the
+qbe.mbt IR builder and from there to Mach-O arm64. This page is the feature
+matrix: what it accepts and lowers, what is partial, and what is missing.
+
+## Evidence
+
+- `sh qpcc/test.sh` — the clang oracle over `qpcc/tests/*.c` (134 fixtures):
+  each file is compiled with clang and with QPCC, both objects are linked, both
+  binaries run, and exit code and stdout are compared. All 134 pass.
+- `moon test --target native qpcc/front qpcc/sema` — lexer/parser and semantic
+  analyser whitebox tests.
+- `examples/qpcc-selfhost/` — QPCC compiles the whole of vendored QBE and the
+  resulting binary passes 58/58 semantic fixtures.
+- `qpcc/chibicc-tests/` — a vendored chibicc subset kept as a reference corpus
+  (not run by `test.sh`).
+
+The fixture column below names the oracle cases that cover a feature, or
+"sweep" for a hand-run end-to-end check.
+
+## Modes
+
+| Mode | Flag | Notes |
+| --- | --- | --- |
+| C11 | default, `-std=c11` | the baseline |
+| C23 | `-std=c23` | C23 syntax on top of the same front end; partial (see below) |
+
+The C preprocessor is **external**: run `clang -E -P` before QPCC when the
+input uses `#include`/`#define`. The driver only strips the remaining lines
+that begin with `#`, so a bare `#define`d name is *not* expanded.
+
+## Legend
+
+- **yes** — compiled, linked and run correctly.
+- **partial** — accepted, but a semantic or layout detail is missing.
+- **no** — rejected or unsupported.
+
+## Types
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `void`, `_Bool` | yes | `bool` |
+| `char`, `signed`/`unsigned char` | yes | `char`, `uchar` |
+| `short`, `int`, `long`, `long long` | yes | `short`, `longlong`, `arith` |
+| signed/unsigned arithmetic, conversions, usual arithmetic conversions | yes | `unsigned`, `ushr`, `uint_widen`, `shift_signedness`, `op_size` |
+| `float`, `double` | yes | `float`, `float2` |
+| `long double` (8 bytes on arm64) | yes | sweep |
+| `_Complex` (arithmetic, literals, `__real__`/`__imag__`, mixed) | yes | `complex_add`, `complex_addmix`, `complex_cmp`, `complex_compound`, `complex_div`, `complex_float`, `complex_lit`, `complex_mixed`, `complex_mul`, `complex_real_imag`, `complex_sub`, `complex_unary` |
+| `__int128` | yes | sweep |
+| pointers | yes | `ptr`, `ptr2`, `ptr_index_diff`, `alias_shape` |
+| arrays, including multi-dimensional | yes | `arr`, `arr_member`, `arr_member_loop`, `static_ptr2d`, `static_ptr2d_b`, `static_ptr2d_c` |
+| variable-length arrays | partial | `sizeof_vec`; indexing works, but `sizeof` returns the pointer/element size, not the runtime length |
+| functions and function pointers | yes | `fnptr`, `fnptr2`, `fnptr_param` |
+| `_BitInt(N)` | yes (C23) | sweep |
+| `char8_t` | no | parse error |
+| `_Decimal*`, `_Fract`, `_Accum` | no | — |
+
+## Declarations and storage
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `typedef`, typedef chains | yes | `typedef`, `typedefptr`, `typedefstruct`, `bf_typedef` |
+| globals, tentative definitions, BSS | yes | `global`, `global2`, `globals`, `bss_zero`, `global_struct`, `global_ptr`, `global_stride`, `global_bitfield` |
+| `static` locals and file-scope `static` | yes | `static_ptr`, `static_ptr2d`, `static_desig` |
+| `extern` | yes | `chibicc-tests/tests/extern.c` |
+| `const`, `volatile` | yes | sweep |
+| `restrict` (and `__restrict`) | yes | sweep |
+| `inline` (and `__inline`) | yes | sweep |
+| `register`, `auto` | yes | sweep |
+| `_Thread_local` / `__thread` | yes | sweep |
+| `_Alignas` (locals and globals) | yes | `alignas`, `alignas_global` |
+| `_Alignof` | yes | `alignof` |
+| `_Noreturn` | yes | sweep |
+| `__attribute__((unused))`, `((noreturn))` | yes | sweep |
+| `__attribute__((packed))` | partial | parsed but ignored — it does not change `sizeof` |
+| `__attribute__((aligned(N)))` | partial | parsed but ignored — it does not change alignment |
+| `__auto_type` | no | explicit "not supported" error |
+| K&R (old-style) function definitions | no | — |
+| nested functions | no | parse error |
+
+## Aggregates and layout
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `struct` | yes | `struct`, `structarr`, `structptr`, `structsz`, `struct_ptr_index`, `global_struct` |
+| `union` | yes | `union` |
+| anonymous `struct`/`union` members | yes | sweep |
+| `enum` (explicit values, gaps, duplicates) | yes | `enum`, `enum_gap`, `shift_enum` |
+| by-value struct arguments and returns, nested aggregates | yes | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
+| bitfields — unsigned fields, globals, arguments | yes | `bitfield`, `bitfield_2929`, `bitfield_top`, `bf_arg`, `bf_global`, `bf_pos`, `global_bitfield` |
+| bitfields — some signed combinations | partial | `struct { int a:3; int b:2; }` misreads the field values |
+| flexible array members | partial | `sizeof` is right, storage is the caller's job |
+| `#pragma pack` | no | preprocessor is external |
+
+## Initializers
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| scalar and aggregate initializers | yes | `initarr`, `initstruct`, `compound_char`, `compound_zero` |
+| designated initializers (arrays, structs, order, gaps) | yes | `designated_dec`, `designated_gap`, `designated_inc`, `designated_int`, `designated_order`, `designated_ptr` |
+| compound literals, including at file scope | yes | `file_compound_ptr` |
+| string initializers | yes | `str`, `string` |
+| address-constant initializers and relocations | yes | `static_desig`, `global_ptr` |
+| `sizeof` of a string literal or a string-initialised `char[]` | partial | `sizeof("ab")` is 8 and `sizeof(char s[] = "ab")` is 0, not 3 |
+
+## Expressions and operators
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| arithmetic, bitwise, comparison, logical operators | yes | `arith`, `logic`, `op_tab`, `optab_shape` |
+| short-circuit `&&` / `\|\|` and `\|\|` chains | yes | `shortcircuit`, `or_short` |
+| conditional `?:`, including the GNU `a ?: b` | yes | `cond`, `cond_arm_width` |
+| assignment and compound assignment, `++`/`--` | yes | sweep |
+| casts, integer promotions, word/wide conversions | yes | `cast`, `widen_word_const`, `store_wide_const`, `uint_widen` |
+| `sizeof` of types, expressions and arrays | yes | `sizeof`, `sizeof_ins`, `sizeof_vec`, `op_size` |
+| `_Generic` | yes | `generic`, `generic2` |
+| `_Static_assert` | yes | `staticassert` |
+| `__builtin_offsetof`, `__builtin_types_compatible_p`, `__builtin_constant_p`, `__builtin_expect`, `__builtin_unreachable` | yes | sweep |
+| `typeof`/`__typeof__`/`typeof_unqual`, `__alignof__` | yes | sweep |
+| statement expressions `({ ... })`, including inside macros | yes | sweep |
+| `__extension__` | yes | sweep |
+| `__real__`, `__imag__` | yes | `complex_real_imag` |
+| `__builtin_va_arg`, `<stdarg.h>` | yes | after `clang -E`; sweep |
+| `__builtin_va_list` as an assignable value | no | `aq = ap` hits an internal error |
+| `__auto_type` | no | see above |
+
+## Statements and control flow
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `if`/`else`, `for`, `while`, `do`/`while` | yes | `if`, `for`, `while`, `dowhile` |
+| `switch`/`case`/`default`, fallthrough, jump into `default` | yes | `switch`, `switchfall`, `switch_into_default`, `switch_duff2` |
+| `break`, `continue`, `goto` (forward and loops) | yes | `gotofwd`, `gotoloop` |
+| computed goto `goto *p` and `&&label` | yes | `computed_goto` |
+| Duff's device | yes | `duff`, `switch_duff2` |
+| case ranges `case 1 ... 5:` | yes | sweep |
+
+## Functions
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| definitions, prototypes, K&R-free declarations | yes | `fib`, `m0_return42`, `three_ref` |
+| variadic definitions (`va_start`/`va_arg`/`va_end`/`va_copy`) | yes | `vararg`, `vararg_def` |
+| indirect calls | yes | `fnptr`, `fnptr2`, `fnptr_param` |
+| inline assembly / `asm` labels | no | `asm` label panics; inline `asm` is not lowered |
+
+## Literals and strings
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| integer literals (decimal, hex, octal, binary), suffixes | yes | `big_const`, `widen_word_const` |
+| floating literals | yes | `float`, `float2` |
+| character literals, `u8'x'` | yes | sweep |
+| string literals with escapes | partial | a plain string works; `"a\nb"` can fail to parse |
+| wide/UTF strings `L`, `u`, `U` | no | parses, but the elements are wrong at run time |
+| C23 digit separators (`1'000`) | no | parse error |
+
+## Atomics
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| sequentially consistent load/store (`ldar`/`stlr`) and fences (`dmb ish`) | yes | `atomics` |
+| read-modify-write forms (exchange, compare-exchange, fetch-add, ...) | no | needs LL/SC or LSE lowering |
+
+## C23 (`-std=c23`)
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `bool`/`true`/`false`, `nullptr` | yes | sweep |
+| `constexpr` | partial | works in ordinary code, but `static_assert` does not evaluate it |
+| `_BitInt(N)` | yes | sweep |
+| `typeof_unqual`, `alignas`/`alignof` | yes | sweep |
+| C23 attributes `[[...]]` (`[[maybe_unused]]`, `[[noreturn]]`) | yes | sweep |
+| `static_assert` over literal constants | yes | sweep |
+| binary literals `0b1010`, `u8'x'` | yes | sweep |
+| `auto` type inference | yes | sweep |
+| `char8_t` | no | parse error |
+| digit separators (`1'000`) | no | parse error |
+| fixed underlying enum types (`enum E : unsigned char`) | no | parse error |
+| `[[fallthrough]]` in statement position | no | parse error |
+
+## Known gaps at a glance
+
+- The preprocessor is external (`clang -E`); no `#include`/`#define` handling.
+- `sizeof` of a string literal or a string-initialised `char[]`.
+- VLA `sizeof`.
+- Some signed bitfield widths.
+- `__attribute__((packed))` and `__attribute__((aligned(N)))` are ignored.
+- Wide/UTF string literals, string escapes in some cases.
+- Atomics: no read-modify-write.
+- `__auto_type`, `asm` labels and nested functions.
+- Diagnostics carry statement-level positions.
+
+## See also
+
+- `qpcc/README.md` — pipeline, usage and limitations.
+- `examples/qpcc-selfhost/` — the self-host build and semantic check.
