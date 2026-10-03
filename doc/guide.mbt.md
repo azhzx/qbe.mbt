@@ -2,7 +2,7 @@
 
 > A MoonBit rewrite of QBE
 
-[中文文档 (Chinese Documentation)](zh/README.md)
+[中文版本 (Chinese Version)](zh/guide.mbt.md)
 
 # Project Documentation
 > **[Qbe.mbt API Documentation](README.md)**

@@ -1,0 +1,198 @@
+# QPCC —— C 语言支持
+
+QPCC（`qpcc/`）是把 C 降低到 qbe.mbt IR builder、再从那里降低到 Mach-O arm64
+的 C 前端与代码生成器。本页是特性矩阵：它接受并降低哪些内容、哪些是部分支持、
+哪些尚缺。
+
+## 证据
+
+- `sh qpcc/test.sh` —— 覆盖 `qpcc/tests/*.c`（134 个 fixture）的 clang oracle：
+  每个文件分别用 clang 和 QPCC 编译，链接两个目标文件，运行两个二进制，
+  并比较退出码与 stdout。全部 134 个通过。
+- `moon test --target native qpcc/front qpcc/sema` —— 词法/语法分析器与语义
+  分析器的白盒测试。
+- `examples/qpcc-selfhost/` —— QPCC 编译整个 vendored QBE，生成的二进制通过
+  58/58 个语义 fixture。
+- `qpcc/chibicc-tests/` —— vendored 的 chibicc 子集，作为参考语料保留
+  （`test.sh` 不运行）。
+
+下表中的 fixture 列给出覆盖某特性的 oracle 用例；"sweep" 表示手工运行的
+端到端检查。
+
+## 模式
+
+| 模式 | 标志 | 说明 |
+| --- | --- | --- |
+| C11 | 默认，`-std=c11` | 基线 |
+| C23 | `-std=c23` | 在同一前端之上启用 C23 语法；部分支持（见下） |
+
+C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 QPCC 之前运行
+`clang -E -P`。驱动只剥离剩余以 `#` 开头的行，因此仅由 `#define` 定义的名字
+*不会*被展开。
+
+## 图例
+
+- **是** —— 编译、链接并正确运行。
+- **部分** —— 被接受，但缺少某个语义或布局细节。
+- **否** —— 被拒绝或不支持。
+
+## 类型
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `void`、`_Bool` | 是 | `bool` |
+| `char`、`signed`/`unsigned char` | 是 | `char`, `uchar` |
+| `short`、`int`、`long`、`long long` | 是 | `short`, `longlong`, `arith` |
+| 有符号/无符号算术、转换、通常算术转换 | 是 | `unsigned`, `ushr`, `uint_widen`, `shift_signedness`, `op_size` |
+| `float`、`double` | 是 | `float`, `float2` |
+| `long double`（arm64 上 8 字节） | 是 | sweep |
+| `_Complex`（算术、字面量、`__real__`/`__imag__`、混合） | 是 | `complex_add`, `complex_addmix`, `complex_cmp`, `complex_compound`, `complex_div`, `complex_float`, `complex_lit`, `complex_mixed`, `complex_mul`, `complex_real_imag`, `complex_sub`, `complex_unary` |
+| `__int128` | 是 | sweep |
+| 指针 | 是 | `ptr`, `ptr2`, `ptr_index_diff`, `alias_shape` |
+| 数组，包括多维 | 是 | `arr`, `arr_member`, `arr_member_loop`, `static_ptr2d`, `static_ptr2d_b`, `static_ptr2d_c` |
+| 变长数组 | 部分 | `sizeof_vec`；索引可用，但 `sizeof` 返回指针/元素大小，而不是运行时长度 |
+| 函数与函数指针 | 是 | `fnptr`, `fnptr2`, `fnptr_param` |
+| `_BitInt(N)` | 是（C23） | sweep |
+| `char8_t` | 否 | 解析错误 |
+| `_Decimal*`、`_Fract`、`_Accum` | 否 | — |
+
+## 声明与存储
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `typedef`、typedef 链 | 是 | `typedef`, `typedefptr`, `typedefstruct`, `bf_typedef` |
+| 全局变量、暂定定义、BSS | 是 | `global`, `global2`, `globals`, `bss_zero`, `global_struct`, `global_ptr`, `global_stride`, `global_bitfield` |
+| `static` 局部变量与文件作用域 `static` | 是 | `static_ptr`, `static_ptr2d`, `static_desig` |
+| `extern` | 是 | `chibicc-tests/tests/extern.c` |
+| `const`、`volatile` | 是 | sweep |
+| `restrict`（以及 `__restrict`） | 是 | sweep |
+| `inline`（以及 `__inline`） | 是 | sweep |
+| `register`、`auto` | 是 | sweep |
+| `_Thread_local` / `__thread` | 是 | sweep |
+| `_Alignas`（局部变量与全局变量） | 是 | `alignas`, `alignas_global` |
+| `_Alignof` | 是 | `alignof` |
+| `_Noreturn` | 是 | sweep |
+| `__attribute__((unused))`、`((noreturn))` | 是 | sweep |
+| `__attribute__((packed))` | 部分 | 已解析但被忽略 —— 它不改变 `sizeof` |
+| `__attribute__((aligned(N)))` | 部分 | 已解析但被忽略 —— 它不改变对齐 |
+| `__auto_type` | 否 | 显式的 "not supported" 错误 |
+| K&R（旧式）函数定义 | 否 | — |
+| 嵌套函数 | 否 | 解析错误 |
+
+## 聚合与布局
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `struct` | 是 | `struct`, `structarr`, `structptr`, `structsz`, `struct_ptr_index`, `global_struct` |
+| `union` | 是 | `union` |
+| 匿名的 `struct`/`union` 成员 | 是 | sweep |
+| `enum`（显式值、缺口、重复） | 是 | `enum`, `enum_gap`, `shift_enum` |
+| 按值传递的结构体参数与返回值、嵌套聚合 | 是 | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
+| 位域 —— 无符号字段、全局变量、参数 | 是 | `bitfield`, `bitfield_2929`, `bitfield_top`, `bf_arg`, `bf_global`, `bf_pos`, `global_bitfield` |
+| 位域 —— 某些有符号组合 | 部分 | `struct { int a:3; int b:2; }` 会误读字段值 |
+| 柔性数组成员 | 部分 | `sizeof` 正确，存储由调用方负责 |
+| `#pragma pack` | 否 | 预处理器是外部的 |
+
+## 初始化器
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| 标量与聚合初始化器 | 是 | `initarr`, `initstruct`, `compound_char`, `compound_zero` |
+| 指定初始化器（数组、结构体、顺序、缺口） | 是 | `designated_dec`, `designated_gap`, `designated_inc`, `designated_int`, `designated_order`, `designated_ptr` |
+| 复合字面量，包括文件作用域 | 是 | `file_compound_ptr` |
+| 字符串初始化器 | 是 | `str`, `string` |
+| 地址常量初始化器与重定位 | 是 | `static_desig`, `global_ptr` |
+| 字符串字面量或由字符串初始化的 `char[]` 的 `sizeof` | 部分 | `sizeof("ab")` 是 8，`sizeof(char s[] = "ab")` 是 0，而不是 3 |
+
+## 表达式与运算符
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| 算术、位、比较、逻辑运算符 | 是 | `arith`, `logic`, `op_tab`, `optab_shape` |
+| 短路 `&&` / `\|\|` 与 `\|\|` 链 | 是 | `shortcircuit`, `or_short` |
+| 条件 `?:`，包括 GNU 的 `a ?: b` | 是 | `cond`, `cond_arm_width` |
+| 赋值与复合赋值、`++`/`--` | 是 | sweep |
+| 强制转换、整型提升、word/wide 转换 | 是 | `cast`, `widen_word_const`, `store_wide_const`, `uint_widen` |
+| 类型、表达式与数组的 `sizeof` | 是 | `sizeof`, `sizeof_ins`, `sizeof_vec`, `op_size` |
+| `_Generic` | 是 | `generic`, `generic2` |
+| `_Static_assert` | 是 | `staticassert` |
+| `__builtin_offsetof`、`__builtin_types_compatible_p`、`__builtin_constant_p`、`__builtin_expect`、`__builtin_unreachable` | 是 | sweep |
+| `typeof`/`__typeof__`/`typeof_unqual`、`__alignof__` | 是 | sweep |
+| 语句表达式 `({ ... })`，包括在宏内部 | 是 | sweep |
+| `__extension__` | 是 | sweep |
+| `__real__`、`__imag__` | 是 | `complex_real_imag` |
+| `__builtin_va_arg`、`<stdarg.h>` | 是 | `clang -E` 之后；sweep |
+| `__builtin_va_list` 作为可赋值的值 | 否 | `aq = ap` 触发内部错误 |
+| `__auto_type` | 否 | 见上文 |
+
+## 语句与控制流
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `if`/`else`、`for`、`while`、`do`/`while` | 是 | `if`, `for`, `while`, `dowhile` |
+| `switch`/`case`/`default`、贯穿、跳入 `default` | 是 | `switch`, `switchfall`, `switch_into_default`, `switch_duff2` |
+| `break`、`continue`、`goto`（向前跳转与循环） | 是 | `gotofwd`, `gotoloop` |
+| 计算 goto `goto *p` 与 `&&label` | 是 | `computed_goto` |
+| Duff 设备 | 是 | `duff`, `switch_duff2` |
+| case 范围 `case 1 ... 5:` | 是 | sweep |
+
+## 函数
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| 定义、原型、无 K&R 的声明 | 是 | `fib`, `m0_return42`, `three_ref` |
+| 变参定义（`va_start`/`va_arg`/`va_end`/`va_copy`） | 是 | `vararg`, `vararg_def` |
+| 间接调用 | 是 | `fnptr`, `fnptr2`, `fnptr_param` |
+| 内联汇编 / `asm` 标签 | 否 | `asm` 标签会 panic；内联 `asm` 不会被降低 |
+
+## 字面量与字符串
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| 整数字面量（十进制、十六进制、八进制、二进制）、后缀 | 是 | `big_const`, `widen_word_const` |
+| 浮点字面量 | 是 | `float`, `float2` |
+| 字符字面量、`u8'x'` | 是 | sweep |
+| 带转义的字符串字面量 | 部分 | 普通字符串可用；`"a\nb"` 可能解析失败 |
+| 宽/UTF 字符串 `L`、`u`、`U` | 否 | 能解析，但运行时元素错误 |
+| C23 数字分隔符（`1'000`） | 否 | 解析错误 |
+
+## 原子操作
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| 顺序一致的加载/存储（`ldar`/`stlr`）与屏障（`dmb ish`） | 是 | `atomics` |
+| 读-改-写形式（exchange、compare-exchange、fetch-add 等） | 否 | 需要 LL/SC 或 LSE 降低 |
+
+## C23（`-std=c23`）
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `bool`/`true`/`false`、`nullptr` | 是 | sweep |
+| `constexpr` | 部分 | 在普通代码中可用，但 `static_assert` 不会对它求值 |
+| `_BitInt(N)` | 是 | sweep |
+| `typeof_unqual`、`alignas`/`alignof` | 是 | sweep |
+| C23 属性 `[[...]]`（`[[maybe_unused]]`、`[[noreturn]]`） | 是 | sweep |
+| 针对字面量常量的 `static_assert` | 是 | sweep |
+| 二进制字面量 `0b1010`、`u8'x'` | 是 | sweep |
+| `auto` 类型推导 | 是 | sweep |
+| `char8_t` | 否 | 解析错误 |
+| 数字分隔符（`1'000`） | 否 | 解析错误 |
+| 固定底层类型的 enum（`enum E : unsigned char`） | 否 | 解析错误 |
+| 语句位置的 `[[fallthrough]]` | 否 | 解析错误 |
+
+## 已知缺口一览
+
+- 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。
+- 字符串字面量或由字符串初始化的 `char[]` 的 `sizeof`。
+- VLA 的 `sizeof`。
+- 某些有符号位域宽度。
+- `__attribute__((packed))` 与 `__attribute__((aligned(N)))` 被忽略。
+- 宽/UTF 字符串字面量，某些情况下的字符串转义。
+- 原子操作：没有读-改-写。
+- `__auto_type`、`asm` 标签与嵌套函数。
+- 诊断信息携带语句级位置。
+
+## 另见
+
+- `qpcc/README.md` —— 流水线、用法与限制。
+- `examples/qpcc-selfhost/` —— 自举构建与语义检查。

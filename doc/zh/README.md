@@ -2,6 +2,8 @@
 
 本目录提供 qbe.mbt 编译后端各 MoonBit 包的接口说明，依据各包的 `pkg.generated.mbti`（`moon info` 生成）以及源码注释。
 
+> 📖 项目深入指南（架构、流水线、算法、测试）：[guide.mbt.md](guide.mbt.md)
+
 调试信息（`dbgfile`/`dbgloc` → `.file`/`.loc`）：[debug_info.md](debug_info.md)。
 
 ## 包一览
@@ -136,6 +138,9 @@
 ## 项目相关
 
 - 总体介绍：[README.mbt.md](../../README.mbt.md)
+- 调试信息（`dbgfile`/`dbgloc` → `.file`/`.loc`）：[debug_info.md](debug_info.md)
+- QPCC C 语言支持：[qpcc.md](qpcc.md)
+- 踩坑总集：[pitfalls.md](pitfalls.md)
 - 演示样例：[demo/](../../demo/README.md)
 - 回归测试：[test/](../../test/)
 - 编码规范：[AGENTS.md](../../AGENTS.md)

@@ -1,5 +1,7 @@
 # QPCC — C language support
 
+[中文版本 (Chinese Version)](zh/qpcc.md)
+
 QPCC (`qpcc/`) is the C front end and code generator that lowers C to the
 qbe.mbt IR builder and from there to Mach-O arm64. This page is the feature
 matrix: what it accepts and lowers, what is partial, and what is missing.

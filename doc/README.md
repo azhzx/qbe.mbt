@@ -141,6 +141,7 @@ every debug flag and for the emitted assembly.
 - Overview: [README.mbt.md](../README.mbt.md)
 - Debug information (`dbgfile`/`dbgloc`): [debug_info.md](debug_info.md)
 - QPCC C language support: [qpcc.md](qpcc.md)
+- QPCC pitfalls (fixed bugs and toolchain traps): [pitfalls.md](pitfalls.md)
 - Demo examples: [demo/](../demo/README.md)
 - Regression tests: [test/](../test/)
 - Coding conventions: [AGENTS.md](../AGENTS.md)
