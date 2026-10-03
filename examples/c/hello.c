@@ -1,6 +1,11 @@
 #include <stdio.h>
 
 int main(void) {
-  printf("hello from QPCC\n");
+  auto txt = ({
+    printf("A\n");
+    printf("B\n");
+    "hello from QPCC\n";
+  });
+  printf("%s", txt);
   return 0;
 }
