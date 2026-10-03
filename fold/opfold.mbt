@@ -195,7 +195,8 @@ fn foldint(
           lab = cl.label
           typ = @types.CAddr
         }
-        l
+        // See gvn: a float constant's bits live in bits.d / bits.s.
+        cl.raw_bits()
       }
       _ => abort("unreachable")
     }

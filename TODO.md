@@ -38,10 +38,6 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   defines them), unlike `<stdcountof.h>` (N3469) and `<stddefer.h>`
   (TS 25755).
 
-- Pre-existing, unrelated to `_Tagged_union`: a 16-byte struct containing a
-  `double` is passed by value incorrectly (8- and 12-byte structs are fine,
-  and clang agrees on the 16-byte case).
-
 
 ## Latent risk
 

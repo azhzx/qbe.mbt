@@ -516,7 +516,9 @@ fn c_foldint(
           typ = @types.CAddr
           lab = cl.label
         }
-        l
+        // A float constant keeps its bits in bits.d / bits.s (C's Con.bits is
+        // a union, this port's is not), so reinterpret rather than read bits.i.
+        cl.raw_bits()
       }
       _ => return None
     }
