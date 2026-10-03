@@ -9,13 +9,15 @@
 # A relative file argument is resolved against the directory holding this
 # script, so the examples can be selected from any working directory. Any
 # further arguments are passed to the compiled program, not treated as more
-# C files. A file may pin its language mode with a `// std=c2y` first line;
-# C2y examples then also see qpcc/include/qbe (stddefer.h, stdcountof.h).
+# C files. A `// std=c2y` first line selects C2y mode; the bundled
+# qpcc/include/qbe directory is always on the include path so the
+# hand-written stddefer.h / stdcountof.h aliases resolve.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 exe="$root/_build/native/debug/build/qpcc/cmd/cmd.exe"
+inc="$root/qpcc/include/qbe"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -29,21 +31,13 @@ run_one() {
   base=$(basename "$src" .c)
   hdr=$(head -2 "$src")
   std=""
-  inc=""
   case "$hdr" in
-    *"std=c2y"*)
-      std="-std=c2y"
-      inc="$root/qpcc/include/qbe"
-      ;;
+    *"std=c2y"*) std="-std=c2y" ;;
     *"std=c23"*) std="-std=c23" ;;
   esac
 
   echo "=== $base ==="
-  if [ -n "$inc" ]; then
-    clang -E -P $std -I "$inc" "$src" > "$tmp/$base.i"
-  else
-    clang -E -P $std "$src" > "$tmp/$base.i"
-  fi
+  clang -E -P $std -I "$inc" "$src" > "$tmp/$base.i"
   "$exe" "$tmp/$base.i" $std -o "$tmp/$base.o"
   clang "$tmp/$base.o" -o "$tmp/$base"
   set +e
@@ -65,10 +59,14 @@ fi
 # Otherwise the first argument is the source file; the rest go to the program.
 src=$1
 shift
-case "$src" in
-  /*) ;;
-  *) src="$here/$src" ;;
-esac
+# A relative path may be relative to the caller's directory or to this
+# script's directory; prefer the former when it exists.
+if [ ! -f "$src" ]; then
+  case "$src" in
+    /*) ;;
+    *) src="$here/$src" ;;
+  esac
+fi
 if [ ! -f "$src" ]; then
   echo "no such file: $src" >&2
   exit 1
