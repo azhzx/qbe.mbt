@@ -55,7 +55,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | variable-length arrays | partial | `sizeof_vec`; indexing works, but `sizeof` returns the pointer/element size, not the runtime length |
 | functions and function pointers | yes | `fnptr`, `fnptr2`, `fnptr_param` |
 | `_BitInt(N)` | yes (C23) | sweep |
-| `char8_t` | no | parse error |
+| `char8_t` | yes (C23) | `char8_t`; a built-in name for `unsigned char` |
 | `_Decimal*`, `_Fract`, `_Accum` | no | — |
 
 ## Declarations and storage
@@ -89,6 +89,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `union` | yes | `union` |
 | anonymous `struct`/`union` members | yes | sweep |
 | `enum` (explicit values, gaps, duplicates) | yes | `enum`, `enum_gap`, `shift_enum` |
+| C23 `enum E : T` fixed underlying type | yes | `enum_fixed`; the enum is its underlying integer type |
 | by-value struct arguments and returns, nested aggregates | yes | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
 | bitfields — unsigned fields, globals, arguments | yes | `bitfield`, `bitfield_2929`, `bitfield_top`, `bf_arg`, `bf_global`, `bf_pos`, `global_bitfield` |
 | bitfields — some signed combinations | partial | `struct { int a:3; int b:2; }` misreads the field values |
@@ -125,7 +126,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `__real__`, `__imag__` | yes | `complex_real_imag` |
 | `__builtin_va_arg`, `<stdarg.h>` | yes | after `clang -E`; sweep |
 | `__builtin_va_list` as an assignable value | no | `aq = ap` hits an internal error |
-| `__auto_type` | no | see above |
+| C23 `auto` inference and `__auto_type` | yes | `auto_infer`; a single plain declarator with an initializer |
 
 ## Statements and control flow
 
@@ -137,6 +138,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | computed goto `goto *p` and `&&label` | yes | `computed_goto` |
 | Duff's device | yes | `duff`, `switch_duff2` |
 | case ranges `case 1 ... 5:` | yes | sweep |
+| C23 `[[fallthrough]]` in statement position | yes | `fallthrough_attr` |
 
 ## Functions
 
@@ -170,17 +172,17 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | Feature | Status | Evidence |
 | --- | --- | --- |
 | `bool`/`true`/`false`, `nullptr` | yes | sweep |
-| `constexpr` | partial | works in ordinary code, but `static_assert` does not evaluate it |
+| `constexpr` | yes | `constexpr_assert`; an object usable in constant expressions |
 | `_BitInt(N)` | yes | sweep |
 | `typeof_unqual`, `alignas`/`alignof` | yes | sweep |
 | C23 attributes `[[...]]` (`[[maybe_unused]]`, `[[noreturn]]`) | yes | sweep |
 | `static_assert` over literal constants | yes | sweep |
 | binary literals `0b1010`, `u8'x'` | yes | sweep |
-| `auto` type inference | yes | sweep |
-| `char8_t` | no | parse error |
-| digit separators (`1'000`) | no | parse error |
-| fixed underlying enum types (`enum E : unsigned char`) | no | parse error |
-| `[[fallthrough]]` in statement position | no | parse error |
+| `auto` type inference | yes | `auto_infer` |
+| `char8_t` | yes | `char8_t` |
+| digit separators (`1'000`) | yes | `digit_sep` |
+| fixed underlying enum types (`enum E : unsigned char`) | yes | `enum_fixed` |
+| `[[fallthrough]]` in statement position | yes | `fallthrough_attr` |
 
 ## Known gaps at a glance
 
@@ -191,7 +193,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 - `__attribute__((packed))` and `__attribute__((aligned(N)))` are ignored.
 - Wide/UTF string literals, string escapes in some cases.
 - Atomics: no read-modify-write.
-- `__auto_type`, `asm` labels and nested functions.
+- `asm` labels and nested functions.
 - Diagnostics carry statement-level positions.
 
 ## See also

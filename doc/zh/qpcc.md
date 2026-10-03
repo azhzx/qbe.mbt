@@ -53,7 +53,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 变长数组 | 部分 | `sizeof_vec`；索引可用，但 `sizeof` 返回指针/元素大小，而不是运行时长度 |
 | 函数与函数指针 | 是 | `fnptr`, `fnptr2`, `fnptr_param` |
 | `_BitInt(N)` | 是（C23） | sweep |
-| `char8_t` | 否 | 解析错误 |
+| `char8_t` | 是（C23） | `char8_t`；`unsigned char` 的内建名字 |
 | `_Decimal*`、`_Fract`、`_Accum` | 否 | — |
 
 ## 声明与存储
@@ -75,7 +75,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `__attribute__((unused))`、`((noreturn))` | 是 | sweep |
 | `__attribute__((packed))` | 部分 | 已解析但被忽略 —— 它不改变 `sizeof` |
 | `__attribute__((aligned(N)))` | 部分 | 已解析但被忽略 —— 它不改变对齐 |
-| `__auto_type` | 否 | 显式的 "not supported" 错误 |
+| C23 `auto` 推导与 `__auto_type` | 是 | `auto_infer`；单个裸声明符且有初始化器 |
 | K&R（旧式）函数定义 | 否 | — |
 | 嵌套函数 | 否 | 解析错误 |
 
@@ -87,6 +87,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `union` | 是 | `union` |
 | 匿名的 `struct`/`union` 成员 | 是 | sweep |
 | `enum`（显式值、缺口、重复） | 是 | `enum`, `enum_gap`, `shift_enum` |
+| C23 `enum E : T` 固定底层类型 | 是 | `enum_fixed`；枚举即其底层整型 |
 | 按值传递的结构体参数与返回值、嵌套聚合 | 是 | `ins_byval`, `ref_byval`, `nested`, `aggregate_double` |
 | 位域 —— 无符号字段、全局变量、参数 | 是 | `bitfield`, `bitfield_2929`, `bitfield_top`, `bf_arg`, `bf_global`, `bf_pos`, `global_bitfield` |
 | 位域 —— 某些有符号组合 | 部分 | `struct { int a:3; int b:2; }` 会误读字段值 |
@@ -123,7 +124,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `__real__`、`__imag__` | 是 | `complex_real_imag` |
 | `__builtin_va_arg`、`<stdarg.h>` | 是 | `clang -E` 之后；sweep |
 | `__builtin_va_list` 作为可赋值的值 | 否 | `aq = ap` 触发内部错误 |
-| `__auto_type` | 否 | 见上文 |
+| C23 `auto` 推导与 `__auto_type` | 是 | `auto_infer` |
 
 ## 语句与控制流
 
@@ -135,6 +136,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 计算 goto `goto *p` 与 `&&label` | 是 | `computed_goto` |
 | Duff 设备 | 是 | `duff`, `switch_duff2` |
 | case 范围 `case 1 ... 5:` | 是 | sweep |
+| C23 语句位置的 `[[fallthrough]]` | 是 | `fallthrough_attr` |
 
 ## 函数
 
@@ -168,17 +170,17 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | 特性 | 状态 | 证据 |
 | --- | --- | --- |
 | `bool`/`true`/`false`、`nullptr` | 是 | sweep |
-| `constexpr` | 部分 | 在普通代码中可用，但 `static_assert` 不会对它求值 |
+| `constexpr` | 是 | `constexpr_assert`；可作为常量表达式中的对象 |
 | `_BitInt(N)` | 是 | sweep |
 | `typeof_unqual`、`alignas`/`alignof` | 是 | sweep |
 | C23 属性 `[[...]]`（`[[maybe_unused]]`、`[[noreturn]]`） | 是 | sweep |
 | 针对字面量常量的 `static_assert` | 是 | sweep |
 | 二进制字面量 `0b1010`、`u8'x'` | 是 | sweep |
-| `auto` 类型推导 | 是 | sweep |
-| `char8_t` | 否 | 解析错误 |
-| 数字分隔符（`1'000`） | 否 | 解析错误 |
-| 固定底层类型的 enum（`enum E : unsigned char`） | 否 | 解析错误 |
-| 语句位置的 `[[fallthrough]]` | 否 | 解析错误 |
+| `auto` 类型推导 | 是 | `auto_infer` |
+| `char8_t` | 是 | `char8_t` |
+| 数字分隔符（`1'000`） | 是 | `digit_sep` |
+| 固定底层类型的 enum（`enum E : unsigned char`） | 是 | `enum_fixed` |
+| 语句位置的 `[[fallthrough]]` | 是 | `fallthrough_attr` |
 
 ## 已知缺口一览
 
@@ -189,7 +191,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 - `__attribute__((packed))` 与 `__attribute__((aligned(N)))` 被忽略。
 - 宽/UTF 字符串字面量，某些情况下的字符串转义。
 - 原子操作：没有读-改-写。
-- `__auto_type`、`asm` 标签与嵌套函数。
+- `asm` 标签与嵌套函数。
 - 诊断信息携带语句级位置。
 
 ## 另见
