@@ -34,8 +34,9 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   `_Defer`, so `maxminof.c`, `named_loops.c`, `defer_basic.c` and
   `defer_header.c` are QPCC-only (`// expect-exit N`) and are checked
   against their expected exit code instead of a clang reference.
-- `_Maxof`/`_Minof` have no `<stdmaxof.h>`/`<stdminof.h>` companion
-  header (the proposals define none), so they exist only as keywords.
+- `<stdmaxof.h>`/`<stdminof.h>` are QPCC extensions (no WG14 proposal
+  defines them), unlike `<stdcountof.h>` (N3469) and `<stddefer.h>`
+  (TS 25755).
 
 ## Latent risk
 

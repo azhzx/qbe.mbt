@@ -28,4 +28,4 @@ links with clang and runs the result, printing the exit code. The bundled
 | `hello.c` | a first program: `printf` through the bundled `stdio.h` |
 | `fib.c` | recursion and a loop |
 | `args.c` | `argc`/`argv` and passing arguments through `run.sh` |
-| `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof`, `_Minof`, a named loop and `_Defer` / `defer` |
+| `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof` / `maxof`, `_Minof` / `minof`, a named loop and `_Defer` / `defer` |

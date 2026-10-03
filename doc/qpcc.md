@@ -201,10 +201,11 @@ C2y syntax is opt-in through `-std=c2y`; C11 and C23 are unchanged.
 | named loops (N3355): `label:` on a loop or switch, `break label;`, `continue label;` | yes | `named_loops` |
 | `_Defer` statements (TS 25755 / N3590) | yes | `defer_basic`, `defer_header` |
 
-The `defer` and `countof` spellings come from two hand-written headers,
-`qpcc/include/qbe/stddefer.h` (`defer` -> `_Defer`) and
-`qpcc/include/qbe/stdcountof.h` (`countof` -> `_Countof`), which the
-external preprocessor finds with `clang -E -P -I <qpcc>/qpcc/include/qbe`.
+The friendly spellings come from hand-written headers under
+`qpcc/include/qbe/`: `stddefer.h` (`defer` -> `_Defer`), `stdcountof.h`
+(`countof` -> `_Countof`), and the QPCC extensions `stdmaxof.h`
+(`maxof` -> `_Maxof`) and `stdminof.h` (`minof` -> `_Minof`). The external
+preprocessor finds them with `clang -E -P -I <qpcc>/qpcc/include/qbe`;
 QPCC itself only knows the underscore keywords.
 
 Known limitations:

@@ -199,10 +199,11 @@ C2y 语法需显式开启 `-std=c2y`；C11 与 C23 行为不变。
 | 命名循环（N3355）：循环/switch 前的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
 | `_Defer` 语句（TS 25755 / N3590） | 是 | `defer_basic`、`defer_header` |
 
-`defer` 与 `countof` 两种拼写来自两个手写头文件：
-`qpcc/include/qbe/stddefer.h`（`defer` -> `_Defer`）与
-`qpcc/include/qbe/stdcountof.h`（`countof` -> `_Countof`），由外部预处理器通过
-`clang -E -P -I <qpcc>/qpcc/include/qbe` 找到；QPCC 自身只认下划线关键字。
+易读拼写来自 `qpcc/include/qbe/` 下的手写头文件：`stddefer.h`
+（`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`），以及
+QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
+（`minof` -> `_Minof`）。外部预处理器通过
+`clang -E -P -I <qpcc>/qpcc/include/qbe` 找到它们；QPCC 自身只认下划线关键字。
 
 已知限制：
 
