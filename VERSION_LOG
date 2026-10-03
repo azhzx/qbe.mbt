@@ -293,10 +293,13 @@
     cleanup semantics on every block exit); hand-written stddefer.h and
     stdcountof.h; the oracle grows to 144 fixtures
 2026.10.3: v0.32.0
-    QPCC gains _Tagged_union (a QPCC extension behind -f_tagged_union): a
-    synthetic int tag at offset 0, members overlapping after it, member
-    stores that also write the tag, _Tag_of/_Get_tag and designated
-    initializers. Also fixes a comparison result-class bug that miscompiled
-    float comparisons inside &&/|| (plain structs too) and a put_int
-    off-by-one that dropped the first byte of a static initializer. The
-    oracle grows to 147 fixtures
+    QPCC gains _Tagged_union (a QPCC extension behind -f_tagged_union): the
+    tag is optional (so typedef + anonymous works), a synthetic int sits at
+    offset 0 with the members overlapping after it, _Tag_of/_Get_tag and
+    designated initializers work, and a member cannot be assigned directly
+    (change the value as a whole). Also fixes a comparison result-class bug
+    that miscompiled float comparisons inside &&/|| (plain structs too), a
+    put_int off-by-one that dropped the first byte of a static initializer,
+    a cast fold that read a float constant bits as an integer, `auto` not
+    being inferred in C2y, and _Defer bodies not walked for locals/labels.
+    The oracle grows to 151 fixtures
