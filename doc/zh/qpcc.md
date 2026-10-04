@@ -70,7 +70,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `inline`（以及 `__inline`） | 是 | sweep |
 | `register`、`auto` | 是 | sweep |
 | `_Thread_local` / `__thread` | 是 | sweep |
-| `_Alignas`（局部变量与全局变量） | 是 | `alignas`, `alignas_global` |
+| `_Alignas`（局部变量与全局变量，栈对齐最大 16 字节） | 部分 | `alignas`、`alignas_global`；更大的请求会报错 |
 | `_Alignof` | 是 | `alignof` |
 | `_Noreturn` | 是 | sweep |
 | `__attribute__((unused))`、`((noreturn))` | 是 | sweep |

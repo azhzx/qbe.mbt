@@ -58,8 +58,25 @@ pub fn RunAsmModule::load_shared(asm : String) -> RunAsmModule raise {
 }
 
 ///|
+// Quote one argument for the legacy native shell runner.
+fn shell_quote(s : String) -> String {
+  let out = StringBuilder::StringBuilder()
+  out.write_char('\'')
+  for c in s {
+    if c == '\'' {
+      out.write_string("'\\''")
+    } else {
+      out.write_char(c)
+    }
+  }
+  out.write_char('\'')
+  out.to_string()
+}
+
 // Compile WAT to wasm (moon-wasm-opt) and run `func` with `args` under node.
 // Returns whatever the invocation printed (the result).
+
+///|
 pub fn run_wasm(
   wat : String,
   func : String,
@@ -72,9 +89,21 @@ pub fn run_wasm(
     0 {
     raise @util.QbeError::CompileError("run-wasm: cannot write " + wat_path)
   }
-  let opt = "$HOME/.moon/bin/moon-wasm-opt"
+  if func.is_empty() {
+    raise @util.QbeError::CompileError("run-wasm: empty export name")
+  }
+  for c in func {
+    if !(c.is_ascii_alphabetic() || c.is_ascii_digit() || c == '_' || c == '.') {
+      raise @util.QbeError::CompileError("run-wasm: invalid export name")
+    }
+  }
   let rc = @native.mbt_native_run(
-    @native.cstr(opt + " " + wat_path + " -o " + wasm_path),
+    @native.cstr(
+      "$HOME/.moon/bin/moon-wasm-opt " +
+      shell_quote(wat_path) +
+      " -o " +
+      shell_quote(wasm_path),
+    ),
   )
   if rc != 0 {
     raise @util.QbeError::CompileError(
@@ -87,10 +116,18 @@ pub fn run_wasm(
   }
   let mut argstr = ""
   for a in args {
-    argstr = argstr + " " + a
+    argstr = argstr + " " + shell_quote(a)
   }
   let out = @native.mbt_native_capture(
-    @native.cstr("node " + js_path + " " + wasm_path + " " + func + argstr),
+    @native.cstr(
+      "node " +
+      shell_quote(js_path) +
+      " " +
+      shell_quote(wasm_path) +
+      " " +
+      shell_quote(func) +
+      argstr,
+    ),
   )
   ignore(@native.mbt_native_unlink(@native.cstr(wat_path)))
   ignore(@native.mbt_native_unlink(@native.cstr(wasm_path)))

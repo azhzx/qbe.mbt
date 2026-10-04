@@ -72,7 +72,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `inline` (and `__inline`) | yes | sweep |
 | `register`, `auto` | yes | sweep |
 | `_Thread_local` / `__thread` | yes | sweep |
-| `_Alignas` (locals and globals) | yes | `alignas`, `alignas_global` |
+| `_Alignas` (locals and globals, up to 16-byte stack alignment) | partial | `alignas`, `alignas_global`; larger requests are diagnosed |
 | `_Alignof` | yes | `alignof` |
 | `_Noreturn` | yes | sweep |
 | `__attribute__((unused))`, `((noreturn))` | yes | sweep |

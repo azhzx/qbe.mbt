@@ -148,15 +148,34 @@ moonbit_bytes_t mbt_native_capture(moonbit_bytes_t cmd) {
   if (!f) return moonbit_make_bytes(0, 0);
   size_t cap = 256, len = 0;
   char *buf = malloc(cap);
+  if (!buf) {
+    pclose(f);
+    return moonbit_make_bytes(0, 0);
+  }
   size_t n;
   while ((n = fread(buf + len, 1, cap - len, f)) > 0) {
     len += n;
     if (len == cap) {
+      if (cap > SIZE_MAX / 2) {
+        free(buf);
+        pclose(f);
+        return moonbit_make_bytes(0, 0);
+      }
       cap *= 2;
-      buf = realloc(buf, cap);
+      char *next = realloc(buf, cap);
+      if (!next) {
+        free(buf);
+        pclose(f);
+        return moonbit_make_bytes(0, 0);
+      }
+      buf = next;
     }
   }
   pclose(f);
+  if (len > INT32_MAX) {
+    free(buf);
+    return moonbit_make_bytes(0, 0);
+  }
   moonbit_bytes_t b = moonbit_make_bytes((int32_t)len, 0);
   memcpy(b, buf, len);
   free(buf);

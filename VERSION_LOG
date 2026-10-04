@@ -303,3 +303,11 @@
     a cast fold that read a float constant bits as an integer, `auto` not
     being inferred in C2y, and _Defer bodies not walked for locals/labels.
     The oracle grows to 151 fixtures
+
+2026.10.4: v0.33.0
+    fix interpreter stack restoration across nested alloc/vararg calls;
+    reject non-void bare ret and unterminated strings; preserve data-symbol
+    offsets; validate JIT code ranges; shell-quote --run-wasm arguments;
+    diagnose unsupported _Alignas values above the 16-byte QBE stack ABI;
+    harden native output capture against allocation failure and length overflow;
+    add regression tests for parser, interpreter, JIT and QPCC fixes

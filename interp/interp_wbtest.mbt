@@ -343,6 +343,35 @@ test "interp: unknown function reports an error" {
 }
 
 ///|
+test "interp: recursive alloc calls restore the caller stack" {
+  let r = interp_run(
+    (
+      #|function l $main(l %n) {
+      #|@start
+      #|  %c =l cslel %n, 0
+      #|  jnz %c, @base, @rec
+      #|@base
+      #|  ret 7
+      #|@rec
+      #|  %p =l alloc8 64
+      #|  %m =l sub %n, 1
+      #|  %x =l call $main(l %m)
+      #|  storel %x, %p
+      #|  %y =l load %p
+      #|  ret %y
+      #|}
+      #|
+    ),
+    args=[InterpValue::VInt(200L)],
+  )
+  match r {
+    Ok(InterpValue::VInt(v)) => assert_eq(v, 7L)
+    Ok(_) => fail("wrong kind")
+    Err(m) => fail("err: \\{m}")
+  }
+}
+
+///|
 test "interp: step limit terminates infinite loops" {
   let r = interp_run(
     (

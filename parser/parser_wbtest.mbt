@@ -121,6 +121,36 @@ test "printfn round-trip is idempotent" {
 }
 
 ///|
+test "non-void bare ret is rejected" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  ret
+    #|}
+    #|
+  let tokens = @lexer.Lexer::new(src, "test").tokenize()
+  let p = Parser::new(tokens, "test")
+  try p.parse() catch {
+    @util.QbeError::ParseError(_, _, msg) =>
+      assert_true(msg.contains("return value"))
+    _ => fail("expected a parse error")
+  } noraise {
+    _ => fail("expected a parse error")
+  }
+}
+
+///|
+test "data references retain positive offsets" {
+  let src =
+    #|data $p = { l $base + 8 }
+    #|
+  let (funcs, datas, _, _) = parse_all(src)
+  assert_eq(funcs.length(), 0)
+  assert_true(datas[2].is_ref)
+  assert_eq(datas[2].ref_offset, 8L)
+}
+
+///|
 test "parse errors raise QbeError" {
   let tokens = @lexer.Lexer::new("function w %bad\n", "test").tokenize()
   let p = Parser::new(tokens, "test")

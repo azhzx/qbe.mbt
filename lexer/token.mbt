@@ -41,6 +41,7 @@ pub(all) enum TokenKind {
   TRbr // }
   TDot3 // ... (variadic)
   TArrow // -> (for exported data)
+  TPlus // + in data reference offsets
 
   // Raw identifier (opcode or type class, parser decides)
   TId // identifier
@@ -99,6 +100,7 @@ pub fn Token::kind_str(self : Token) -> String {
     TRbr => "}"
     TDot3 => "..."
     TArrow => "->"
+    TPlus => "+"
     TId => "id"
     TErr => "error"
   }
@@ -141,6 +143,7 @@ pub fn TokenKind::to_string(self : TokenKind) -> String {
     TRbr => "}"
     TDot3 => "..."
     TArrow => "->"
+    TPlus => "+"
     TId => "id"
     TErr => "error"
   }

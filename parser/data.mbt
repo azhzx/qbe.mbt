@@ -112,7 +112,15 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
             TGlo => {
               // Reference to a global symbol
               let ref_name = self.tokens[self.pos - 1].raw
-              @types.Dat::ref_to(ref_name, 0L)
+              let mut ref_offset = 0L
+              if self.peek_kind() == TPlus {
+                ignore(self.next())
+                if self.next_nl() != TInt {
+                  raise self.error("integer offset expected after +")
+                }
+                ref_offset = parse_int64(self.tokens[self.pos - 1].raw)
+              }
+              @types.Dat::ref_to(ref_name, ref_offset)
             }
             TStr => {
               // String literal

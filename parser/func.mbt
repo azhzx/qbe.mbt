@@ -257,6 +257,9 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       }
       // Check if there's a return value
       if self.peek_kind() == TNl {
+        if self.rcls < 5 && self.tokens[self.pos - 1].raw == "ret" {
+          raise self.error("return value expected")
+        }
         curb.jmp.kind = @types.Jret0
       } else if self.rcls < 5 {
         let r = self.parseref()
