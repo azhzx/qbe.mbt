@@ -11,11 +11,14 @@ pub struct ExecBlock {
 // so the JIT loader can patch relocations before protecting it.
 pub fn ExecBlock::load_module_rw(
   image : Bytes,
-  _code_bytes : Int,
+  code_bytes : Int,
 ) -> ExecBlock raise {
   let n = image.length()
   if n == 0 {
     abort("run-asm: empty module image")
+  }
+  if code_bytes < 0 || code_bytes > n {
+    abort("run-asm: invalid code size")
   }
   let addr = @native.mbt_native_alloc(n)
   if addr == 0L {
@@ -28,6 +31,9 @@ pub fn ExecBlock::load_module_rw(
 ///|
 // Make the first code_bytes executable (RX); the data that follows stays RW.
 pub fn ExecBlock::protect(self : ExecBlock, code_bytes : Int) -> Unit raise {
+  if code_bytes < 0 || code_bytes > self.size {
+    abort("run-asm: invalid code size")
+  }
   if @native.mbt_native_protect(self.addr, code_bytes) != 0 {
     abort("run-asm: mprotect failed")
   }

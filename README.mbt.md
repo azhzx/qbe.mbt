@@ -45,6 +45,11 @@
 - `dbgfile`/`dbgloc` line info is emitted for amd64/arm64/rv64/la64 and matches
   `vendor/qbe` on every debug flag; `-g` adds a DWARF4 CU (subprograms, variables,
   types, `.debug_loc`) + CFI (`.eh_frame`), verified end to end under `lldb`
+- The parser rejects non-void bare `ret` and unterminated strings, preserves
+  positive data-symbol offsets, and the interpreter restores stack state across
+  nested allocation and vararg calls. JIT module metadata is range-checked;
+  `--run-wasm` quotes paths and arguments; QPCC reports `_Alignas` requests
+  above the 16-byte stack ABI limit instead of silently lowering them.
 
 ## Roadmap
 - Debug info: per-scope variable ranges, rv64/la64 CFI, and DWARF in the

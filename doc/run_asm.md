@@ -111,7 +111,9 @@ runs the export under `node`. Example:
 The wasm backend lowers QBE's CFG to a dispatch loop (`br_table`), so loops and
 phi nodes work, and it also supports internal calls/recursion, floating-point
 comparisons and `data` segments. External imports (`printf` et al.) and
-variadic calls are not emitted yet.
+variadic calls are not emitted yet. The function name must be a plain export
+identifier; paths and arguments are quoted before they reach the native process
+runner, so shell metacharacters are not interpreted.
 
 ## Tests
 

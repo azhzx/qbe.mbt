@@ -49,6 +49,8 @@ priv struct Frame {
   mut call_args : Array[InterpValue]
   // start of this frame's vararg buffer (the va_start target)
   va_base : UInt64
+  // caller stack pointer restored when this frame returns
+  caller_sp : UInt64
 }
 
 ///|
@@ -240,6 +242,9 @@ fn Interp::call_function(
       varargs.push(args[k])
     }
   }
+  // Preserve the caller's stack pointer; all callee-owned vararg and alloc
+  // storage must be released when the call returns.
+  let caller_sp = self.sp
   // Materialize the varargs as 8-byte slots the callee's va_arg walks. The
   // buffer sits above the callee's frame, so its own allocs cannot clobber it.
   let va_base : UInt64 = if varargs.length() == 0 {
@@ -259,6 +264,7 @@ fn Interp::call_function(
     frame_sp: self.sp,
     call_args: [],
     va_base,
+    caller_sp,
   }
   self.enter_block(frame, f.start_id, -1, depth)
 }
@@ -412,6 +418,7 @@ fn Interp::enter_block(
       _ =>
         raise @util.QbeError::CompileError("interpreter: unsupported jump kind")
     }
+    self.sp = frame.caller_sp
     return result
   }
 }

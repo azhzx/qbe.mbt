@@ -86,14 +86,16 @@ fn read_number(s : StringView) -> (String, Bool, StringView) {
 // Read a string literal (between double quotes).
 // Escape sequences are kept raw, as the C lexer does (only an unescaped "
 // terminates the string).
-fn read_string(s : StringView) -> (String, StringView) {
+fn read_string(s : StringView) -> (String, StringView, Bool) {
   let builder = StringBuilder::StringBuilder()
   let mut esc = false
+  let mut closed = false
   let mut rest : StringView = s
   for cur = s {
     match cur {
       ['"', .. r] if !esc => {
         rest = r
+        closed = true
         break
       }
       [c, .. r] => {
@@ -105,7 +107,7 @@ fn read_string(s : StringView) -> (String, StringView) {
       [] => break
     }
   }
-  (builder.to_string(), rest)
+  (builder.to_string(), rest, closed)
 }
 
 ///|
@@ -246,6 +248,12 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       }
 
       // Punctuation
+      ['+', .. rest] => {
+        tokens.push(Token::new(TPlus, line, col, "+"))
+        col = col + 1
+        idx = idx + 1
+        continue rest
+      }
       ['=', .. rest] => {
         tokens.push(Token::new(TEq, line, col, "="))
         col = col + 1
@@ -285,8 +293,13 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
 
       // String literal
       ['"', ..] as c => {
-        let (str, r) = read_string(c[1:])
-        tokens.push(Token::new(TStr, line, col, str))
+        let (str, r, closed) = read_string(c[1:])
+        if closed {
+          tokens.push(Token::new(TStr, line, col, str))
+        } else {
+          tokens.push(Token::new(TErr, line, col, str))
+          err_msgs.push("unterminated string at \{source_file}:\{line}:\{col}")
+        }
         // raw length = 1 (open quote) + str length + 1 (close quote)
         let len = 1 + str.length() + 1
         col = col + len

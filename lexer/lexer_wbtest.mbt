@@ -87,6 +87,13 @@ test "lone colon is an error" {
 }
 
 ///|
+test "unterminated strings produce an error token" {
+  let tokens = Lexer::new("b \\\"unterminated", "test").tokenize()
+  assert_true(tokens[0].kind == TId)
+  assert_true(tokens[1].kind == TErr)
+}
+
+///|
 test "float literal prefixes s_ and d_" {
   let tokens = Lexer::new("s_1.5 d_2.25\n", "test").tokenize()
   assert_true(tokens[0].kind == TFlt && tokens[0].raw == "s_1.5")
