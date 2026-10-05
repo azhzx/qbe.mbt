@@ -169,6 +169,26 @@ runs it and checks `add(20,22)=42 tri(10)=55 fib(10)=55`. It is skipped on
 hosts that are not macOS/aarch64; the IL and assembly tests run everywhere the
 foreign library builds.
 
+## Tests
+
+`cargo test` runs three suites:
+
+- `tests/integration.rs` - the end-to-end surface: IL text, arm64 assembly,
+  the Mach-O object (linked with `cc` and executed), the in-memory JIT, libc
+  and host-function calls, debug info and variadics.
+- `tests/instructions.rs` - instruction-level coverage: every integer and
+  floating point binary operator, all ten `IntCC` and all eight `FloatCC`
+  conditions (including NaN), f32 constants with promote/demote, the six
+  integer widening conversions, loads and stores over `alloc4`/`alloc8`/
+  `alloc16`, the narrowing loads, a writable data global, the error paths (an
+  unresolvable JIT symbol, an empty module), the export flag and type letters,
+  the gas flavors, and the signature/type helpers.
+- unit tests inside `src`.
+
+Tests that execute code run only on macOS arm64, where the object and JIT
+backends are supported; IL and assembly assertions run wherever the foreign
+library builds.
+
 ## Vendored archives
 
 The prebuilt archives under `vendor/<target-triple>/` are produced by the
@@ -189,6 +209,12 @@ and are linked with `-lm` (plus `-lpthread` on Linux).
   target-independent text.
 - **`emit_object`/`emit_asm` consume** the module (the backend passes run
   once); `emit_il` may be called before them.
+- **The JIT traps on the 64-bit class extension ops**: JITing a function whose
+  body is `extsb`/`extub`/`extsh`/`extuh`/`extsw`/`extuw` over a 64-bit value
+  raises SIGILL, even though the same module emitted as an object links and
+  runs correctly and the interpreter (`qbe --run`) returns the right answer.
+  Use `emit_object` for those functions; the ignored `jit_extension_traps`
+  test in `tests/instructions.rs` records it.
 - Strings and blobs cross the boundary as MoonBit `Bytes`; `src/shim.c` owns
   the `moonbit_make_bytes` / `Moonbit_array_length` / `moonbit_decref` details
   so Rust never touches the object header layout.
