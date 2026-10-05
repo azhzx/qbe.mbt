@@ -1,0 +1,608 @@
+# a 100-rung compare/jump ladder
+# each rung is its own block; only one is entered, the rest are cold
+
+function w $ladder(w %a) {
+@start
+	%c0 =w ceqw %a, 0
+	jnz %c0, @h0, @n0
+@n0
+	%c1 =w ceqw %a, 1
+	jnz %c1, @h1, @n1
+@n1
+	%c2 =w ceqw %a, 2
+	jnz %c2, @h2, @n2
+@n2
+	%c3 =w ceqw %a, 3
+	jnz %c3, @h3, @n3
+@n3
+	%c4 =w ceqw %a, 4
+	jnz %c4, @h4, @n4
+@n4
+	%c5 =w ceqw %a, 5
+	jnz %c5, @h5, @n5
+@n5
+	%c6 =w ceqw %a, 6
+	jnz %c6, @h6, @n6
+@n6
+	%c7 =w ceqw %a, 7
+	jnz %c7, @h7, @n7
+@n7
+	%c8 =w ceqw %a, 8
+	jnz %c8, @h8, @n8
+@n8
+	%c9 =w ceqw %a, 9
+	jnz %c9, @h9, @n9
+@n9
+	%c10 =w ceqw %a, 10
+	jnz %c10, @h10, @n10
+@n10
+	%c11 =w ceqw %a, 11
+	jnz %c11, @h11, @n11
+@n11
+	%c12 =w ceqw %a, 12
+	jnz %c12, @h12, @n12
+@n12
+	%c13 =w ceqw %a, 13
+	jnz %c13, @h13, @n13
+@n13
+	%c14 =w ceqw %a, 14
+	jnz %c14, @h14, @n14
+@n14
+	%c15 =w ceqw %a, 15
+	jnz %c15, @h15, @n15
+@n15
+	%c16 =w ceqw %a, 16
+	jnz %c16, @h16, @n16
+@n16
+	%c17 =w ceqw %a, 17
+	jnz %c17, @h17, @n17
+@n17
+	%c18 =w ceqw %a, 18
+	jnz %c18, @h18, @n18
+@n18
+	%c19 =w ceqw %a, 19
+	jnz %c19, @h19, @n19
+@n19
+	%c20 =w ceqw %a, 20
+	jnz %c20, @h20, @n20
+@n20
+	%c21 =w ceqw %a, 21
+	jnz %c21, @h21, @n21
+@n21
+	%c22 =w ceqw %a, 22
+	jnz %c22, @h22, @n22
+@n22
+	%c23 =w ceqw %a, 23
+	jnz %c23, @h23, @n23
+@n23
+	%c24 =w ceqw %a, 24
+	jnz %c24, @h24, @n24
+@n24
+	%c25 =w ceqw %a, 25
+	jnz %c25, @h25, @n25
+@n25
+	%c26 =w ceqw %a, 26
+	jnz %c26, @h26, @n26
+@n26
+	%c27 =w ceqw %a, 27
+	jnz %c27, @h27, @n27
+@n27
+	%c28 =w ceqw %a, 28
+	jnz %c28, @h28, @n28
+@n28
+	%c29 =w ceqw %a, 29
+	jnz %c29, @h29, @n29
+@n29
+	%c30 =w ceqw %a, 30
+	jnz %c30, @h30, @n30
+@n30
+	%c31 =w ceqw %a, 31
+	jnz %c31, @h31, @n31
+@n31
+	%c32 =w ceqw %a, 32
+	jnz %c32, @h32, @n32
+@n32
+	%c33 =w ceqw %a, 33
+	jnz %c33, @h33, @n33
+@n33
+	%c34 =w ceqw %a, 34
+	jnz %c34, @h34, @n34
+@n34
+	%c35 =w ceqw %a, 35
+	jnz %c35, @h35, @n35
+@n35
+	%c36 =w ceqw %a, 36
+	jnz %c36, @h36, @n36
+@n36
+	%c37 =w ceqw %a, 37
+	jnz %c37, @h37, @n37
+@n37
+	%c38 =w ceqw %a, 38
+	jnz %c38, @h38, @n38
+@n38
+	%c39 =w ceqw %a, 39
+	jnz %c39, @h39, @n39
+@n39
+	%c40 =w ceqw %a, 40
+	jnz %c40, @h40, @n40
+@n40
+	%c41 =w ceqw %a, 41
+	jnz %c41, @h41, @n41
+@n41
+	%c42 =w ceqw %a, 42
+	jnz %c42, @h42, @n42
+@n42
+	%c43 =w ceqw %a, 43
+	jnz %c43, @h43, @n43
+@n43
+	%c44 =w ceqw %a, 44
+	jnz %c44, @h44, @n44
+@n44
+	%c45 =w ceqw %a, 45
+	jnz %c45, @h45, @n45
+@n45
+	%c46 =w ceqw %a, 46
+	jnz %c46, @h46, @n46
+@n46
+	%c47 =w ceqw %a, 47
+	jnz %c47, @h47, @n47
+@n47
+	%c48 =w ceqw %a, 48
+	jnz %c48, @h48, @n48
+@n48
+	%c49 =w ceqw %a, 49
+	jnz %c49, @h49, @n49
+@n49
+	%c50 =w ceqw %a, 50
+	jnz %c50, @h50, @n50
+@n50
+	%c51 =w ceqw %a, 51
+	jnz %c51, @h51, @n51
+@n51
+	%c52 =w ceqw %a, 52
+	jnz %c52, @h52, @n52
+@n52
+	%c53 =w ceqw %a, 53
+	jnz %c53, @h53, @n53
+@n53
+	%c54 =w ceqw %a, 54
+	jnz %c54, @h54, @n54
+@n54
+	%c55 =w ceqw %a, 55
+	jnz %c55, @h55, @n55
+@n55
+	%c56 =w ceqw %a, 56
+	jnz %c56, @h56, @n56
+@n56
+	%c57 =w ceqw %a, 57
+	jnz %c57, @h57, @n57
+@n57
+	%c58 =w ceqw %a, 58
+	jnz %c58, @h58, @n58
+@n58
+	%c59 =w ceqw %a, 59
+	jnz %c59, @h59, @n59
+@n59
+	%c60 =w ceqw %a, 60
+	jnz %c60, @h60, @n60
+@n60
+	%c61 =w ceqw %a, 61
+	jnz %c61, @h61, @n61
+@n61
+	%c62 =w ceqw %a, 62
+	jnz %c62, @h62, @n62
+@n62
+	%c63 =w ceqw %a, 63
+	jnz %c63, @h63, @n63
+@n63
+	%c64 =w ceqw %a, 64
+	jnz %c64, @h64, @n64
+@n64
+	%c65 =w ceqw %a, 65
+	jnz %c65, @h65, @n65
+@n65
+	%c66 =w ceqw %a, 66
+	jnz %c66, @h66, @n66
+@n66
+	%c67 =w ceqw %a, 67
+	jnz %c67, @h67, @n67
+@n67
+	%c68 =w ceqw %a, 68
+	jnz %c68, @h68, @n68
+@n68
+	%c69 =w ceqw %a, 69
+	jnz %c69, @h69, @n69
+@n69
+	%c70 =w ceqw %a, 70
+	jnz %c70, @h70, @n70
+@n70
+	%c71 =w ceqw %a, 71
+	jnz %c71, @h71, @n71
+@n71
+	%c72 =w ceqw %a, 72
+	jnz %c72, @h72, @n72
+@n72
+	%c73 =w ceqw %a, 73
+	jnz %c73, @h73, @n73
+@n73
+	%c74 =w ceqw %a, 74
+	jnz %c74, @h74, @n74
+@n74
+	%c75 =w ceqw %a, 75
+	jnz %c75, @h75, @n75
+@n75
+	%c76 =w ceqw %a, 76
+	jnz %c76, @h76, @n76
+@n76
+	%c77 =w ceqw %a, 77
+	jnz %c77, @h77, @n77
+@n77
+	%c78 =w ceqw %a, 78
+	jnz %c78, @h78, @n78
+@n78
+	%c79 =w ceqw %a, 79
+	jnz %c79, @h79, @n79
+@n79
+	%c80 =w ceqw %a, 80
+	jnz %c80, @h80, @n80
+@n80
+	%c81 =w ceqw %a, 81
+	jnz %c81, @h81, @n81
+@n81
+	%c82 =w ceqw %a, 82
+	jnz %c82, @h82, @n82
+@n82
+	%c83 =w ceqw %a, 83
+	jnz %c83, @h83, @n83
+@n83
+	%c84 =w ceqw %a, 84
+	jnz %c84, @h84, @n84
+@n84
+	%c85 =w ceqw %a, 85
+	jnz %c85, @h85, @n85
+@n85
+	%c86 =w ceqw %a, 86
+	jnz %c86, @h86, @n86
+@n86
+	%c87 =w ceqw %a, 87
+	jnz %c87, @h87, @n87
+@n87
+	%c88 =w ceqw %a, 88
+	jnz %c88, @h88, @n88
+@n88
+	%c89 =w ceqw %a, 89
+	jnz %c89, @h89, @n89
+@n89
+	%c90 =w ceqw %a, 90
+	jnz %c90, @h90, @n90
+@n90
+	%c91 =w ceqw %a, 91
+	jnz %c91, @h91, @n91
+@n91
+	%c92 =w ceqw %a, 92
+	jnz %c92, @h92, @n92
+@n92
+	%c93 =w ceqw %a, 93
+	jnz %c93, @h93, @n93
+@n93
+	%c94 =w ceqw %a, 94
+	jnz %c94, @h94, @n94
+@n94
+	%c95 =w ceqw %a, 95
+	jnz %c95, @h95, @n95
+@n95
+	%c96 =w ceqw %a, 96
+	jnz %c96, @h96, @n96
+@n96
+	%c97 =w ceqw %a, 97
+	jnz %c97, @h97, @n97
+@n97
+	%c98 =w ceqw %a, 98
+	jnz %c98, @h98, @n98
+@n98
+	%c99 =w ceqw %a, 99
+	jnz %c99, @h99, @n99
+@n99
+	%rd =w copy 99
+	ret %rd
+@h99
+	%r99 =w copy 99
+	ret %r99
+@h98
+	%r98 =w copy 98
+	ret %r98
+@h97
+	%r97 =w copy 97
+	ret %r97
+@h96
+	%r96 =w copy 96
+	ret %r96
+@h95
+	%r95 =w copy 95
+	ret %r95
+@h94
+	%r94 =w copy 94
+	ret %r94
+@h93
+	%r93 =w copy 93
+	ret %r93
+@h92
+	%r92 =w copy 92
+	ret %r92
+@h91
+	%r91 =w copy 91
+	ret %r91
+@h90
+	%r90 =w copy 90
+	ret %r90
+@h89
+	%r89 =w copy 89
+	ret %r89
+@h88
+	%r88 =w copy 88
+	ret %r88
+@h87
+	%r87 =w copy 87
+	ret %r87
+@h86
+	%r86 =w copy 86
+	ret %r86
+@h85
+	%r85 =w copy 85
+	ret %r85
+@h84
+	%r84 =w copy 84
+	ret %r84
+@h83
+	%r83 =w copy 83
+	ret %r83
+@h82
+	%r82 =w copy 82
+	ret %r82
+@h81
+	%r81 =w copy 81
+	ret %r81
+@h80
+	%r80 =w copy 80
+	ret %r80
+@h79
+	%r79 =w copy 79
+	ret %r79
+@h78
+	%r78 =w copy 78
+	ret %r78
+@h77
+	%r77 =w copy 77
+	ret %r77
+@h76
+	%r76 =w copy 76
+	ret %r76
+@h75
+	%r75 =w copy 75
+	ret %r75
+@h74
+	%r74 =w copy 74
+	ret %r74
+@h73
+	%r73 =w copy 73
+	ret %r73
+@h72
+	%r72 =w copy 72
+	ret %r72
+@h71
+	%r71 =w copy 71
+	ret %r71
+@h70
+	%r70 =w copy 70
+	ret %r70
+@h69
+	%r69 =w copy 69
+	ret %r69
+@h68
+	%r68 =w copy 68
+	ret %r68
+@h67
+	%r67 =w copy 67
+	ret %r67
+@h66
+	%r66 =w copy 66
+	ret %r66
+@h65
+	%r65 =w copy 65
+	ret %r65
+@h64
+	%r64 =w copy 64
+	ret %r64
+@h63
+	%r63 =w copy 63
+	ret %r63
+@h62
+	%r62 =w copy 62
+	ret %r62
+@h61
+	%r61 =w copy 61
+	ret %r61
+@h60
+	%r60 =w copy 60
+	ret %r60
+@h59
+	%r59 =w copy 59
+	ret %r59
+@h58
+	%r58 =w copy 58
+	ret %r58
+@h57
+	%r57 =w copy 57
+	ret %r57
+@h56
+	%r56 =w copy 56
+	ret %r56
+@h55
+	%r55 =w copy 55
+	ret %r55
+@h54
+	%r54 =w copy 54
+	ret %r54
+@h53
+	%r53 =w copy 53
+	ret %r53
+@h52
+	%r52 =w copy 52
+	ret %r52
+@h51
+	%r51 =w copy 51
+	ret %r51
+@h50
+	%r50 =w copy 50
+	ret %r50
+@h49
+	%r49 =w copy 49
+	ret %r49
+@h48
+	%r48 =w copy 48
+	ret %r48
+@h47
+	%r47 =w copy 47
+	ret %r47
+@h46
+	%r46 =w copy 46
+	ret %r46
+@h45
+	%r45 =w copy 45
+	ret %r45
+@h44
+	%r44 =w copy 44
+	ret %r44
+@h43
+	%r43 =w copy 43
+	ret %r43
+@h42
+	%r42 =w copy 42
+	ret %r42
+@h41
+	%r41 =w copy 41
+	ret %r41
+@h40
+	%r40 =w copy 40
+	ret %r40
+@h39
+	%r39 =w copy 39
+	ret %r39
+@h38
+	%r38 =w copy 38
+	ret %r38
+@h37
+	%r37 =w copy 37
+	ret %r37
+@h36
+	%r36 =w copy 36
+	ret %r36
+@h35
+	%r35 =w copy 35
+	ret %r35
+@h34
+	%r34 =w copy 34
+	ret %r34
+@h33
+	%r33 =w copy 33
+	ret %r33
+@h32
+	%r32 =w copy 32
+	ret %r32
+@h31
+	%r31 =w copy 31
+	ret %r31
+@h30
+	%r30 =w copy 30
+	ret %r30
+@h29
+	%r29 =w copy 29
+	ret %r29
+@h28
+	%r28 =w copy 28
+	ret %r28
+@h27
+	%r27 =w copy 27
+	ret %r27
+@h26
+	%r26 =w copy 26
+	ret %r26
+@h25
+	%r25 =w copy 25
+	ret %r25
+@h24
+	%r24 =w copy 24
+	ret %r24
+@h23
+	%r23 =w copy 23
+	ret %r23
+@h22
+	%r22 =w copy 22
+	ret %r22
+@h21
+	%r21 =w copy 21
+	ret %r21
+@h20
+	%r20 =w copy 20
+	ret %r20
+@h19
+	%r19 =w copy 19
+	ret %r19
+@h18
+	%r18 =w copy 18
+	ret %r18
+@h17
+	%r17 =w copy 17
+	ret %r17
+@h16
+	%r16 =w copy 16
+	ret %r16
+@h15
+	%r15 =w copy 15
+	ret %r15
+@h14
+	%r14 =w copy 14
+	ret %r14
+@h13
+	%r13 =w copy 13
+	ret %r13
+@h12
+	%r12 =w copy 12
+	ret %r12
+@h11
+	%r11 =w copy 11
+	ret %r11
+@h10
+	%r10 =w copy 10
+	ret %r10
+@h9
+	%r9 =w copy 9
+	ret %r9
+@h8
+	%r8 =w copy 8
+	ret %r8
+@h7
+	%r7 =w copy 7
+	ret %r7
+@h6
+	%r6 =w copy 6
+	ret %r6
+@h5
+	%r5 =w copy 5
+	ret %r5
+@h4
+	%r4 =w copy 4
+	ret %r4
+@h3
+	%r3 =w copy 3
+	ret %r3
+@h2
+	%r2 =w copy 2
+	ret %r2
+@h1
+	%r1 =w copy 1
+	ret %r1
+@h0
+	%r0 =w copy 0
+	ret %r0
+}
