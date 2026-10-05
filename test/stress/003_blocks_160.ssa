@@ -1,0 +1,488 @@
+# a chain of 160 basic blocks
+# CFG scale: dominators, liveness and spill cost across many blocks
+
+function w $blocks(w %a) {
+@start
+	%t0 =w copy %a
+	jmp @b0
+@b0
+	%t1 =w add %t0, 1
+	jmp @b1
+@b1
+	%t2 =w add %t1, 1
+	jmp @b2
+@b2
+	%t3 =w add %t2, 1
+	jmp @b3
+@b3
+	%t4 =w add %t3, 1
+	jmp @b4
+@b4
+	%t5 =w add %t4, 1
+	jmp @b5
+@b5
+	%t6 =w add %t5, 1
+	jmp @b6
+@b6
+	%t7 =w add %t6, 1
+	jmp @b7
+@b7
+	%t8 =w add %t7, 1
+	jmp @b8
+@b8
+	%t9 =w add %t8, 1
+	jmp @b9
+@b9
+	%t10 =w add %t9, 1
+	jmp @b10
+@b10
+	%t11 =w add %t10, 1
+	jmp @b11
+@b11
+	%t12 =w add %t11, 1
+	jmp @b12
+@b12
+	%t13 =w add %t12, 1
+	jmp @b13
+@b13
+	%t14 =w add %t13, 1
+	jmp @b14
+@b14
+	%t15 =w add %t14, 1
+	jmp @b15
+@b15
+	%t16 =w add %t15, 1
+	jmp @b16
+@b16
+	%t17 =w add %t16, 1
+	jmp @b17
+@b17
+	%t18 =w add %t17, 1
+	jmp @b18
+@b18
+	%t19 =w add %t18, 1
+	jmp @b19
+@b19
+	%t20 =w add %t19, 1
+	jmp @b20
+@b20
+	%t21 =w add %t20, 1
+	jmp @b21
+@b21
+	%t22 =w add %t21, 1
+	jmp @b22
+@b22
+	%t23 =w add %t22, 1
+	jmp @b23
+@b23
+	%t24 =w add %t23, 1
+	jmp @b24
+@b24
+	%t25 =w add %t24, 1
+	jmp @b25
+@b25
+	%t26 =w add %t25, 1
+	jmp @b26
+@b26
+	%t27 =w add %t26, 1
+	jmp @b27
+@b27
+	%t28 =w add %t27, 1
+	jmp @b28
+@b28
+	%t29 =w add %t28, 1
+	jmp @b29
+@b29
+	%t30 =w add %t29, 1
+	jmp @b30
+@b30
+	%t31 =w add %t30, 1
+	jmp @b31
+@b31
+	%t32 =w add %t31, 1
+	jmp @b32
+@b32
+	%t33 =w add %t32, 1
+	jmp @b33
+@b33
+	%t34 =w add %t33, 1
+	jmp @b34
+@b34
+	%t35 =w add %t34, 1
+	jmp @b35
+@b35
+	%t36 =w add %t35, 1
+	jmp @b36
+@b36
+	%t37 =w add %t36, 1
+	jmp @b37
+@b37
+	%t38 =w add %t37, 1
+	jmp @b38
+@b38
+	%t39 =w add %t38, 1
+	jmp @b39
+@b39
+	%t40 =w add %t39, 1
+	jmp @b40
+@b40
+	%t41 =w add %t40, 1
+	jmp @b41
+@b41
+	%t42 =w add %t41, 1
+	jmp @b42
+@b42
+	%t43 =w add %t42, 1
+	jmp @b43
+@b43
+	%t44 =w add %t43, 1
+	jmp @b44
+@b44
+	%t45 =w add %t44, 1
+	jmp @b45
+@b45
+	%t46 =w add %t45, 1
+	jmp @b46
+@b46
+	%t47 =w add %t46, 1
+	jmp @b47
+@b47
+	%t48 =w add %t47, 1
+	jmp @b48
+@b48
+	%t49 =w add %t48, 1
+	jmp @b49
+@b49
+	%t50 =w add %t49, 1
+	jmp @b50
+@b50
+	%t51 =w add %t50, 1
+	jmp @b51
+@b51
+	%t52 =w add %t51, 1
+	jmp @b52
+@b52
+	%t53 =w add %t52, 1
+	jmp @b53
+@b53
+	%t54 =w add %t53, 1
+	jmp @b54
+@b54
+	%t55 =w add %t54, 1
+	jmp @b55
+@b55
+	%t56 =w add %t55, 1
+	jmp @b56
+@b56
+	%t57 =w add %t56, 1
+	jmp @b57
+@b57
+	%t58 =w add %t57, 1
+	jmp @b58
+@b58
+	%t59 =w add %t58, 1
+	jmp @b59
+@b59
+	%t60 =w add %t59, 1
+	jmp @b60
+@b60
+	%t61 =w add %t60, 1
+	jmp @b61
+@b61
+	%t62 =w add %t61, 1
+	jmp @b62
+@b62
+	%t63 =w add %t62, 1
+	jmp @b63
+@b63
+	%t64 =w add %t63, 1
+	jmp @b64
+@b64
+	%t65 =w add %t64, 1
+	jmp @b65
+@b65
+	%t66 =w add %t65, 1
+	jmp @b66
+@b66
+	%t67 =w add %t66, 1
+	jmp @b67
+@b67
+	%t68 =w add %t67, 1
+	jmp @b68
+@b68
+	%t69 =w add %t68, 1
+	jmp @b69
+@b69
+	%t70 =w add %t69, 1
+	jmp @b70
+@b70
+	%t71 =w add %t70, 1
+	jmp @b71
+@b71
+	%t72 =w add %t71, 1
+	jmp @b72
+@b72
+	%t73 =w add %t72, 1
+	jmp @b73
+@b73
+	%t74 =w add %t73, 1
+	jmp @b74
+@b74
+	%t75 =w add %t74, 1
+	jmp @b75
+@b75
+	%t76 =w add %t75, 1
+	jmp @b76
+@b76
+	%t77 =w add %t76, 1
+	jmp @b77
+@b77
+	%t78 =w add %t77, 1
+	jmp @b78
+@b78
+	%t79 =w add %t78, 1
+	jmp @b79
+@b79
+	%t80 =w add %t79, 1
+	jmp @b80
+@b80
+	%t81 =w add %t80, 1
+	jmp @b81
+@b81
+	%t82 =w add %t81, 1
+	jmp @b82
+@b82
+	%t83 =w add %t82, 1
+	jmp @b83
+@b83
+	%t84 =w add %t83, 1
+	jmp @b84
+@b84
+	%t85 =w add %t84, 1
+	jmp @b85
+@b85
+	%t86 =w add %t85, 1
+	jmp @b86
+@b86
+	%t87 =w add %t86, 1
+	jmp @b87
+@b87
+	%t88 =w add %t87, 1
+	jmp @b88
+@b88
+	%t89 =w add %t88, 1
+	jmp @b89
+@b89
+	%t90 =w add %t89, 1
+	jmp @b90
+@b90
+	%t91 =w add %t90, 1
+	jmp @b91
+@b91
+	%t92 =w add %t91, 1
+	jmp @b92
+@b92
+	%t93 =w add %t92, 1
+	jmp @b93
+@b93
+	%t94 =w add %t93, 1
+	jmp @b94
+@b94
+	%t95 =w add %t94, 1
+	jmp @b95
+@b95
+	%t96 =w add %t95, 1
+	jmp @b96
+@b96
+	%t97 =w add %t96, 1
+	jmp @b97
+@b97
+	%t98 =w add %t97, 1
+	jmp @b98
+@b98
+	%t99 =w add %t98, 1
+	jmp @b99
+@b99
+	%t100 =w add %t99, 1
+	jmp @b100
+@b100
+	%t101 =w add %t100, 1
+	jmp @b101
+@b101
+	%t102 =w add %t101, 1
+	jmp @b102
+@b102
+	%t103 =w add %t102, 1
+	jmp @b103
+@b103
+	%t104 =w add %t103, 1
+	jmp @b104
+@b104
+	%t105 =w add %t104, 1
+	jmp @b105
+@b105
+	%t106 =w add %t105, 1
+	jmp @b106
+@b106
+	%t107 =w add %t106, 1
+	jmp @b107
+@b107
+	%t108 =w add %t107, 1
+	jmp @b108
+@b108
+	%t109 =w add %t108, 1
+	jmp @b109
+@b109
+	%t110 =w add %t109, 1
+	jmp @b110
+@b110
+	%t111 =w add %t110, 1
+	jmp @b111
+@b111
+	%t112 =w add %t111, 1
+	jmp @b112
+@b112
+	%t113 =w add %t112, 1
+	jmp @b113
+@b113
+	%t114 =w add %t113, 1
+	jmp @b114
+@b114
+	%t115 =w add %t114, 1
+	jmp @b115
+@b115
+	%t116 =w add %t115, 1
+	jmp @b116
+@b116
+	%t117 =w add %t116, 1
+	jmp @b117
+@b117
+	%t118 =w add %t117, 1
+	jmp @b118
+@b118
+	%t119 =w add %t118, 1
+	jmp @b119
+@b119
+	%t120 =w add %t119, 1
+	jmp @b120
+@b120
+	%t121 =w add %t120, 1
+	jmp @b121
+@b121
+	%t122 =w add %t121, 1
+	jmp @b122
+@b122
+	%t123 =w add %t122, 1
+	jmp @b123
+@b123
+	%t124 =w add %t123, 1
+	jmp @b124
+@b124
+	%t125 =w add %t124, 1
+	jmp @b125
+@b125
+	%t126 =w add %t125, 1
+	jmp @b126
+@b126
+	%t127 =w add %t126, 1
+	jmp @b127
+@b127
+	%t128 =w add %t127, 1
+	jmp @b128
+@b128
+	%t129 =w add %t128, 1
+	jmp @b129
+@b129
+	%t130 =w add %t129, 1
+	jmp @b130
+@b130
+	%t131 =w add %t130, 1
+	jmp @b131
+@b131
+	%t132 =w add %t131, 1
+	jmp @b132
+@b132
+	%t133 =w add %t132, 1
+	jmp @b133
+@b133
+	%t134 =w add %t133, 1
+	jmp @b134
+@b134
+	%t135 =w add %t134, 1
+	jmp @b135
+@b135
+	%t136 =w add %t135, 1
+	jmp @b136
+@b136
+	%t137 =w add %t136, 1
+	jmp @b137
+@b137
+	%t138 =w add %t137, 1
+	jmp @b138
+@b138
+	%t139 =w add %t138, 1
+	jmp @b139
+@b139
+	%t140 =w add %t139, 1
+	jmp @b140
+@b140
+	%t141 =w add %t140, 1
+	jmp @b141
+@b141
+	%t142 =w add %t141, 1
+	jmp @b142
+@b142
+	%t143 =w add %t142, 1
+	jmp @b143
+@b143
+	%t144 =w add %t143, 1
+	jmp @b144
+@b144
+	%t145 =w add %t144, 1
+	jmp @b145
+@b145
+	%t146 =w add %t145, 1
+	jmp @b146
+@b146
+	%t147 =w add %t146, 1
+	jmp @b147
+@b147
+	%t148 =w add %t147, 1
+	jmp @b148
+@b148
+	%t149 =w add %t148, 1
+	jmp @b149
+@b149
+	%t150 =w add %t149, 1
+	jmp @b150
+@b150
+	%t151 =w add %t150, 1
+	jmp @b151
+@b151
+	%t152 =w add %t151, 1
+	jmp @b152
+@b152
+	%t153 =w add %t152, 1
+	jmp @b153
+@b153
+	%t154 =w add %t153, 1
+	jmp @b154
+@b154
+	%t155 =w add %t154, 1
+	jmp @b155
+@b155
+	%t156 =w add %t155, 1
+	jmp @b156
+@b156
+	%t157 =w add %t156, 1
+	jmp @b157
+@b157
+	%t158 =w add %t157, 1
+	jmp @b158
+@b158
+	%t159 =w add %t158, 1
+	jmp @b159
+@b159
+	%t160 =w add %t159, 1
+	ret %t160
+}

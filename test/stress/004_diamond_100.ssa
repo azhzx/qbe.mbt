@@ -1,0 +1,808 @@
+# 100 diamond joins with phi nodes
+# each join has 2 predecessors; the phi order follows block layout
+
+export
+function w $diamond(w %a) {
+@start
+	%c0 =w csltw %a, 0
+	jnz %c0, @t0, @e0
+@t0
+	jmp @j0
+@e0
+	jmp @j0
+@j0
+	%p0 =w phi @t0 1, @e0 2
+	%c1 =w csltw %p0, 1
+	jnz %c1, @t1, @e1
+@t1
+	jmp @j1
+@e1
+	jmp @j1
+@j1
+	%p1 =w phi @t1 2, @e1 3
+	%c2 =w csltw %p1, 2
+	jnz %c2, @t2, @e2
+@t2
+	jmp @j2
+@e2
+	jmp @j2
+@j2
+	%p2 =w phi @t2 3, @e2 4
+	%c3 =w csltw %p2, 3
+	jnz %c3, @t3, @e3
+@t3
+	jmp @j3
+@e3
+	jmp @j3
+@j3
+	%p3 =w phi @t3 4, @e3 5
+	%c4 =w csltw %p3, 4
+	jnz %c4, @t4, @e4
+@t4
+	jmp @j4
+@e4
+	jmp @j4
+@j4
+	%p4 =w phi @t4 5, @e4 6
+	%c5 =w csltw %p4, 5
+	jnz %c5, @t5, @e5
+@t5
+	jmp @j5
+@e5
+	jmp @j5
+@j5
+	%p5 =w phi @t5 6, @e5 7
+	%c6 =w csltw %p5, 6
+	jnz %c6, @t6, @e6
+@t6
+	jmp @j6
+@e6
+	jmp @j6
+@j6
+	%p6 =w phi @t6 7, @e6 8
+	%c7 =w csltw %p6, 7
+	jnz %c7, @t7, @e7
+@t7
+	jmp @j7
+@e7
+	jmp @j7
+@j7
+	%p7 =w phi @t7 8, @e7 9
+	%c8 =w csltw %p7, 8
+	jnz %c8, @t8, @e8
+@t8
+	jmp @j8
+@e8
+	jmp @j8
+@j8
+	%p8 =w phi @t8 9, @e8 10
+	%c9 =w csltw %p8, 9
+	jnz %c9, @t9, @e9
+@t9
+	jmp @j9
+@e9
+	jmp @j9
+@j9
+	%p9 =w phi @t9 10, @e9 11
+	%c10 =w csltw %p9, 10
+	jnz %c10, @t10, @e10
+@t10
+	jmp @j10
+@e10
+	jmp @j10
+@j10
+	%p10 =w phi @t10 11, @e10 12
+	%c11 =w csltw %p10, 11
+	jnz %c11, @t11, @e11
+@t11
+	jmp @j11
+@e11
+	jmp @j11
+@j11
+	%p11 =w phi @t11 12, @e11 13
+	%c12 =w csltw %p11, 12
+	jnz %c12, @t12, @e12
+@t12
+	jmp @j12
+@e12
+	jmp @j12
+@j12
+	%p12 =w phi @t12 13, @e12 14
+	%c13 =w csltw %p12, 13
+	jnz %c13, @t13, @e13
+@t13
+	jmp @j13
+@e13
+	jmp @j13
+@j13
+	%p13 =w phi @t13 14, @e13 15
+	%c14 =w csltw %p13, 14
+	jnz %c14, @t14, @e14
+@t14
+	jmp @j14
+@e14
+	jmp @j14
+@j14
+	%p14 =w phi @t14 15, @e14 16
+	%c15 =w csltw %p14, 15
+	jnz %c15, @t15, @e15
+@t15
+	jmp @j15
+@e15
+	jmp @j15
+@j15
+	%p15 =w phi @t15 16, @e15 17
+	%c16 =w csltw %p15, 16
+	jnz %c16, @t16, @e16
+@t16
+	jmp @j16
+@e16
+	jmp @j16
+@j16
+	%p16 =w phi @t16 17, @e16 18
+	%c17 =w csltw %p16, 17
+	jnz %c17, @t17, @e17
+@t17
+	jmp @j17
+@e17
+	jmp @j17
+@j17
+	%p17 =w phi @t17 18, @e17 19
+	%c18 =w csltw %p17, 18
+	jnz %c18, @t18, @e18
+@t18
+	jmp @j18
+@e18
+	jmp @j18
+@j18
+	%p18 =w phi @t18 19, @e18 20
+	%c19 =w csltw %p18, 19
+	jnz %c19, @t19, @e19
+@t19
+	jmp @j19
+@e19
+	jmp @j19
+@j19
+	%p19 =w phi @t19 20, @e19 21
+	%c20 =w csltw %p19, 20
+	jnz %c20, @t20, @e20
+@t20
+	jmp @j20
+@e20
+	jmp @j20
+@j20
+	%p20 =w phi @t20 21, @e20 22
+	%c21 =w csltw %p20, 21
+	jnz %c21, @t21, @e21
+@t21
+	jmp @j21
+@e21
+	jmp @j21
+@j21
+	%p21 =w phi @t21 22, @e21 23
+	%c22 =w csltw %p21, 22
+	jnz %c22, @t22, @e22
+@t22
+	jmp @j22
+@e22
+	jmp @j22
+@j22
+	%p22 =w phi @t22 23, @e22 24
+	%c23 =w csltw %p22, 23
+	jnz %c23, @t23, @e23
+@t23
+	jmp @j23
+@e23
+	jmp @j23
+@j23
+	%p23 =w phi @t23 24, @e23 25
+	%c24 =w csltw %p23, 24
+	jnz %c24, @t24, @e24
+@t24
+	jmp @j24
+@e24
+	jmp @j24
+@j24
+	%p24 =w phi @t24 25, @e24 26
+	%c25 =w csltw %p24, 25
+	jnz %c25, @t25, @e25
+@t25
+	jmp @j25
+@e25
+	jmp @j25
+@j25
+	%p25 =w phi @t25 26, @e25 27
+	%c26 =w csltw %p25, 26
+	jnz %c26, @t26, @e26
+@t26
+	jmp @j26
+@e26
+	jmp @j26
+@j26
+	%p26 =w phi @t26 27, @e26 28
+	%c27 =w csltw %p26, 27
+	jnz %c27, @t27, @e27
+@t27
+	jmp @j27
+@e27
+	jmp @j27
+@j27
+	%p27 =w phi @t27 28, @e27 29
+	%c28 =w csltw %p27, 28
+	jnz %c28, @t28, @e28
+@t28
+	jmp @j28
+@e28
+	jmp @j28
+@j28
+	%p28 =w phi @t28 29, @e28 30
+	%c29 =w csltw %p28, 29
+	jnz %c29, @t29, @e29
+@t29
+	jmp @j29
+@e29
+	jmp @j29
+@j29
+	%p29 =w phi @t29 30, @e29 31
+	%c30 =w csltw %p29, 30
+	jnz %c30, @t30, @e30
+@t30
+	jmp @j30
+@e30
+	jmp @j30
+@j30
+	%p30 =w phi @t30 31, @e30 32
+	%c31 =w csltw %p30, 31
+	jnz %c31, @t31, @e31
+@t31
+	jmp @j31
+@e31
+	jmp @j31
+@j31
+	%p31 =w phi @t31 32, @e31 33
+	%c32 =w csltw %p31, 32
+	jnz %c32, @t32, @e32
+@t32
+	jmp @j32
+@e32
+	jmp @j32
+@j32
+	%p32 =w phi @t32 33, @e32 34
+	%c33 =w csltw %p32, 33
+	jnz %c33, @t33, @e33
+@t33
+	jmp @j33
+@e33
+	jmp @j33
+@j33
+	%p33 =w phi @t33 34, @e33 35
+	%c34 =w csltw %p33, 34
+	jnz %c34, @t34, @e34
+@t34
+	jmp @j34
+@e34
+	jmp @j34
+@j34
+	%p34 =w phi @t34 35, @e34 36
+	%c35 =w csltw %p34, 35
+	jnz %c35, @t35, @e35
+@t35
+	jmp @j35
+@e35
+	jmp @j35
+@j35
+	%p35 =w phi @t35 36, @e35 37
+	%c36 =w csltw %p35, 36
+	jnz %c36, @t36, @e36
+@t36
+	jmp @j36
+@e36
+	jmp @j36
+@j36
+	%p36 =w phi @t36 37, @e36 38
+	%c37 =w csltw %p36, 37
+	jnz %c37, @t37, @e37
+@t37
+	jmp @j37
+@e37
+	jmp @j37
+@j37
+	%p37 =w phi @t37 38, @e37 39
+	%c38 =w csltw %p37, 38
+	jnz %c38, @t38, @e38
+@t38
+	jmp @j38
+@e38
+	jmp @j38
+@j38
+	%p38 =w phi @t38 39, @e38 40
+	%c39 =w csltw %p38, 39
+	jnz %c39, @t39, @e39
+@t39
+	jmp @j39
+@e39
+	jmp @j39
+@j39
+	%p39 =w phi @t39 40, @e39 41
+	%c40 =w csltw %p39, 40
+	jnz %c40, @t40, @e40
+@t40
+	jmp @j40
+@e40
+	jmp @j40
+@j40
+	%p40 =w phi @t40 41, @e40 42
+	%c41 =w csltw %p40, 41
+	jnz %c41, @t41, @e41
+@t41
+	jmp @j41
+@e41
+	jmp @j41
+@j41
+	%p41 =w phi @t41 42, @e41 43
+	%c42 =w csltw %p41, 42
+	jnz %c42, @t42, @e42
+@t42
+	jmp @j42
+@e42
+	jmp @j42
+@j42
+	%p42 =w phi @t42 43, @e42 44
+	%c43 =w csltw %p42, 43
+	jnz %c43, @t43, @e43
+@t43
+	jmp @j43
+@e43
+	jmp @j43
+@j43
+	%p43 =w phi @t43 44, @e43 45
+	%c44 =w csltw %p43, 44
+	jnz %c44, @t44, @e44
+@t44
+	jmp @j44
+@e44
+	jmp @j44
+@j44
+	%p44 =w phi @t44 45, @e44 46
+	%c45 =w csltw %p44, 45
+	jnz %c45, @t45, @e45
+@t45
+	jmp @j45
+@e45
+	jmp @j45
+@j45
+	%p45 =w phi @t45 46, @e45 47
+	%c46 =w csltw %p45, 46
+	jnz %c46, @t46, @e46
+@t46
+	jmp @j46
+@e46
+	jmp @j46
+@j46
+	%p46 =w phi @t46 47, @e46 48
+	%c47 =w csltw %p46, 47
+	jnz %c47, @t47, @e47
+@t47
+	jmp @j47
+@e47
+	jmp @j47
+@j47
+	%p47 =w phi @t47 48, @e47 49
+	%c48 =w csltw %p47, 48
+	jnz %c48, @t48, @e48
+@t48
+	jmp @j48
+@e48
+	jmp @j48
+@j48
+	%p48 =w phi @t48 49, @e48 50
+	%c49 =w csltw %p48, 49
+	jnz %c49, @t49, @e49
+@t49
+	jmp @j49
+@e49
+	jmp @j49
+@j49
+	%p49 =w phi @t49 50, @e49 51
+	%c50 =w csltw %p49, 50
+	jnz %c50, @t50, @e50
+@t50
+	jmp @j50
+@e50
+	jmp @j50
+@j50
+	%p50 =w phi @t50 51, @e50 52
+	%c51 =w csltw %p50, 51
+	jnz %c51, @t51, @e51
+@t51
+	jmp @j51
+@e51
+	jmp @j51
+@j51
+	%p51 =w phi @t51 52, @e51 53
+	%c52 =w csltw %p51, 52
+	jnz %c52, @t52, @e52
+@t52
+	jmp @j52
+@e52
+	jmp @j52
+@j52
+	%p52 =w phi @t52 53, @e52 54
+	%c53 =w csltw %p52, 53
+	jnz %c53, @t53, @e53
+@t53
+	jmp @j53
+@e53
+	jmp @j53
+@j53
+	%p53 =w phi @t53 54, @e53 55
+	%c54 =w csltw %p53, 54
+	jnz %c54, @t54, @e54
+@t54
+	jmp @j54
+@e54
+	jmp @j54
+@j54
+	%p54 =w phi @t54 55, @e54 56
+	%c55 =w csltw %p54, 55
+	jnz %c55, @t55, @e55
+@t55
+	jmp @j55
+@e55
+	jmp @j55
+@j55
+	%p55 =w phi @t55 56, @e55 57
+	%c56 =w csltw %p55, 56
+	jnz %c56, @t56, @e56
+@t56
+	jmp @j56
+@e56
+	jmp @j56
+@j56
+	%p56 =w phi @t56 57, @e56 58
+	%c57 =w csltw %p56, 57
+	jnz %c57, @t57, @e57
+@t57
+	jmp @j57
+@e57
+	jmp @j57
+@j57
+	%p57 =w phi @t57 58, @e57 59
+	%c58 =w csltw %p57, 58
+	jnz %c58, @t58, @e58
+@t58
+	jmp @j58
+@e58
+	jmp @j58
+@j58
+	%p58 =w phi @t58 59, @e58 60
+	%c59 =w csltw %p58, 59
+	jnz %c59, @t59, @e59
+@t59
+	jmp @j59
+@e59
+	jmp @j59
+@j59
+	%p59 =w phi @t59 60, @e59 61
+	%c60 =w csltw %p59, 60
+	jnz %c60, @t60, @e60
+@t60
+	jmp @j60
+@e60
+	jmp @j60
+@j60
+	%p60 =w phi @t60 61, @e60 62
+	%c61 =w csltw %p60, 61
+	jnz %c61, @t61, @e61
+@t61
+	jmp @j61
+@e61
+	jmp @j61
+@j61
+	%p61 =w phi @t61 62, @e61 63
+	%c62 =w csltw %p61, 62
+	jnz %c62, @t62, @e62
+@t62
+	jmp @j62
+@e62
+	jmp @j62
+@j62
+	%p62 =w phi @t62 63, @e62 64
+	%c63 =w csltw %p62, 63
+	jnz %c63, @t63, @e63
+@t63
+	jmp @j63
+@e63
+	jmp @j63
+@j63
+	%p63 =w phi @t63 64, @e63 65
+	%c64 =w csltw %p63, 64
+	jnz %c64, @t64, @e64
+@t64
+	jmp @j64
+@e64
+	jmp @j64
+@j64
+	%p64 =w phi @t64 65, @e64 66
+	%c65 =w csltw %p64, 65
+	jnz %c65, @t65, @e65
+@t65
+	jmp @j65
+@e65
+	jmp @j65
+@j65
+	%p65 =w phi @t65 66, @e65 67
+	%c66 =w csltw %p65, 66
+	jnz %c66, @t66, @e66
+@t66
+	jmp @j66
+@e66
+	jmp @j66
+@j66
+	%p66 =w phi @t66 67, @e66 68
+	%c67 =w csltw %p66, 67
+	jnz %c67, @t67, @e67
+@t67
+	jmp @j67
+@e67
+	jmp @j67
+@j67
+	%p67 =w phi @t67 68, @e67 69
+	%c68 =w csltw %p67, 68
+	jnz %c68, @t68, @e68
+@t68
+	jmp @j68
+@e68
+	jmp @j68
+@j68
+	%p68 =w phi @t68 69, @e68 70
+	%c69 =w csltw %p68, 69
+	jnz %c69, @t69, @e69
+@t69
+	jmp @j69
+@e69
+	jmp @j69
+@j69
+	%p69 =w phi @t69 70, @e69 71
+	%c70 =w csltw %p69, 70
+	jnz %c70, @t70, @e70
+@t70
+	jmp @j70
+@e70
+	jmp @j70
+@j70
+	%p70 =w phi @t70 71, @e70 72
+	%c71 =w csltw %p70, 71
+	jnz %c71, @t71, @e71
+@t71
+	jmp @j71
+@e71
+	jmp @j71
+@j71
+	%p71 =w phi @t71 72, @e71 73
+	%c72 =w csltw %p71, 72
+	jnz %c72, @t72, @e72
+@t72
+	jmp @j72
+@e72
+	jmp @j72
+@j72
+	%p72 =w phi @t72 73, @e72 74
+	%c73 =w csltw %p72, 73
+	jnz %c73, @t73, @e73
+@t73
+	jmp @j73
+@e73
+	jmp @j73
+@j73
+	%p73 =w phi @t73 74, @e73 75
+	%c74 =w csltw %p73, 74
+	jnz %c74, @t74, @e74
+@t74
+	jmp @j74
+@e74
+	jmp @j74
+@j74
+	%p74 =w phi @t74 75, @e74 76
+	%c75 =w csltw %p74, 75
+	jnz %c75, @t75, @e75
+@t75
+	jmp @j75
+@e75
+	jmp @j75
+@j75
+	%p75 =w phi @t75 76, @e75 77
+	%c76 =w csltw %p75, 76
+	jnz %c76, @t76, @e76
+@t76
+	jmp @j76
+@e76
+	jmp @j76
+@j76
+	%p76 =w phi @t76 77, @e76 78
+	%c77 =w csltw %p76, 77
+	jnz %c77, @t77, @e77
+@t77
+	jmp @j77
+@e77
+	jmp @j77
+@j77
+	%p77 =w phi @t77 78, @e77 79
+	%c78 =w csltw %p77, 78
+	jnz %c78, @t78, @e78
+@t78
+	jmp @j78
+@e78
+	jmp @j78
+@j78
+	%p78 =w phi @t78 79, @e78 80
+	%c79 =w csltw %p78, 79
+	jnz %c79, @t79, @e79
+@t79
+	jmp @j79
+@e79
+	jmp @j79
+@j79
+	%p79 =w phi @t79 80, @e79 81
+	%c80 =w csltw %p79, 80
+	jnz %c80, @t80, @e80
+@t80
+	jmp @j80
+@e80
+	jmp @j80
+@j80
+	%p80 =w phi @t80 81, @e80 82
+	%c81 =w csltw %p80, 81
+	jnz %c81, @t81, @e81
+@t81
+	jmp @j81
+@e81
+	jmp @j81
+@j81
+	%p81 =w phi @t81 82, @e81 83
+	%c82 =w csltw %p81, 82
+	jnz %c82, @t82, @e82
+@t82
+	jmp @j82
+@e82
+	jmp @j82
+@j82
+	%p82 =w phi @t82 83, @e82 84
+	%c83 =w csltw %p82, 83
+	jnz %c83, @t83, @e83
+@t83
+	jmp @j83
+@e83
+	jmp @j83
+@j83
+	%p83 =w phi @t83 84, @e83 85
+	%c84 =w csltw %p83, 84
+	jnz %c84, @t84, @e84
+@t84
+	jmp @j84
+@e84
+	jmp @j84
+@j84
+	%p84 =w phi @t84 85, @e84 86
+	%c85 =w csltw %p84, 85
+	jnz %c85, @t85, @e85
+@t85
+	jmp @j85
+@e85
+	jmp @j85
+@j85
+	%p85 =w phi @t85 86, @e85 87
+	%c86 =w csltw %p85, 86
+	jnz %c86, @t86, @e86
+@t86
+	jmp @j86
+@e86
+	jmp @j86
+@j86
+	%p86 =w phi @t86 87, @e86 88
+	%c87 =w csltw %p86, 87
+	jnz %c87, @t87, @e87
+@t87
+	jmp @j87
+@e87
+	jmp @j87
+@j87
+	%p87 =w phi @t87 88, @e87 89
+	%c88 =w csltw %p87, 88
+	jnz %c88, @t88, @e88
+@t88
+	jmp @j88
+@e88
+	jmp @j88
+@j88
+	%p88 =w phi @t88 89, @e88 90
+	%c89 =w csltw %p88, 89
+	jnz %c89, @t89, @e89
+@t89
+	jmp @j89
+@e89
+	jmp @j89
+@j89
+	%p89 =w phi @t89 90, @e89 91
+	%c90 =w csltw %p89, 90
+	jnz %c90, @t90, @e90
+@t90
+	jmp @j90
+@e90
+	jmp @j90
+@j90
+	%p90 =w phi @t90 91, @e90 92
+	%c91 =w csltw %p90, 91
+	jnz %c91, @t91, @e91
+@t91
+	jmp @j91
+@e91
+	jmp @j91
+@j91
+	%p91 =w phi @t91 92, @e91 93
+	%c92 =w csltw %p91, 92
+	jnz %c92, @t92, @e92
+@t92
+	jmp @j92
+@e92
+	jmp @j92
+@j92
+	%p92 =w phi @t92 93, @e92 94
+	%c93 =w csltw %p92, 93
+	jnz %c93, @t93, @e93
+@t93
+	jmp @j93
+@e93
+	jmp @j93
+@j93
+	%p93 =w phi @t93 94, @e93 95
+	%c94 =w csltw %p93, 94
+	jnz %c94, @t94, @e94
+@t94
+	jmp @j94
+@e94
+	jmp @j94
+@j94
+	%p94 =w phi @t94 95, @e94 96
+	%c95 =w csltw %p94, 95
+	jnz %c95, @t95, @e95
+@t95
+	jmp @j95
+@e95
+	jmp @j95
+@j95
+	%p95 =w phi @t95 96, @e95 97
+	%c96 =w csltw %p95, 96
+	jnz %c96, @t96, @e96
+@t96
+	jmp @j96
+@e96
+	jmp @j96
+@j96
+	%p96 =w phi @t96 97, @e96 98
+	%c97 =w csltw %p96, 97
+	jnz %c97, @t97, @e97
+@t97
+	jmp @j97
+@e97
+	jmp @j97
+@j97
+	%p97 =w phi @t97 98, @e97 99
+	%c98 =w csltw %p97, 98
+	jnz %c98, @t98, @e98
+@t98
+	jmp @j98
+@e98
+	jmp @j98
+@j98
+	%p98 =w phi @t98 99, @e98 100
+	%c99 =w csltw %p98, 99
+	jnz %c99, @t99, @e99
+@t99
+	jmp @j99
+@e99
+	jmp @j99
+@j99
+	%p99 =w phi @t99 100, @e99 101
+	ret %p99
+}

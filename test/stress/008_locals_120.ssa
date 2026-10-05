@@ -1,0 +1,486 @@
+# 120 stack slots, each stored then loaded
+# promote/coalesce have many slots to chew on; spill cost sees them all
+
+function w $locals() {
+@start
+	%p0 =l alloc8 1
+	%p1 =l alloc8 1
+	%p2 =l alloc8 1
+	%p3 =l alloc8 1
+	%p4 =l alloc8 1
+	%p5 =l alloc8 1
+	%p6 =l alloc8 1
+	%p7 =l alloc8 1
+	%p8 =l alloc8 1
+	%p9 =l alloc8 1
+	%p10 =l alloc8 1
+	%p11 =l alloc8 1
+	%p12 =l alloc8 1
+	%p13 =l alloc8 1
+	%p14 =l alloc8 1
+	%p15 =l alloc8 1
+	%p16 =l alloc8 1
+	%p17 =l alloc8 1
+	%p18 =l alloc8 1
+	%p19 =l alloc8 1
+	%p20 =l alloc8 1
+	%p21 =l alloc8 1
+	%p22 =l alloc8 1
+	%p23 =l alloc8 1
+	%p24 =l alloc8 1
+	%p25 =l alloc8 1
+	%p26 =l alloc8 1
+	%p27 =l alloc8 1
+	%p28 =l alloc8 1
+	%p29 =l alloc8 1
+	%p30 =l alloc8 1
+	%p31 =l alloc8 1
+	%p32 =l alloc8 1
+	%p33 =l alloc8 1
+	%p34 =l alloc8 1
+	%p35 =l alloc8 1
+	%p36 =l alloc8 1
+	%p37 =l alloc8 1
+	%p38 =l alloc8 1
+	%p39 =l alloc8 1
+	%p40 =l alloc8 1
+	%p41 =l alloc8 1
+	%p42 =l alloc8 1
+	%p43 =l alloc8 1
+	%p44 =l alloc8 1
+	%p45 =l alloc8 1
+	%p46 =l alloc8 1
+	%p47 =l alloc8 1
+	%p48 =l alloc8 1
+	%p49 =l alloc8 1
+	%p50 =l alloc8 1
+	%p51 =l alloc8 1
+	%p52 =l alloc8 1
+	%p53 =l alloc8 1
+	%p54 =l alloc8 1
+	%p55 =l alloc8 1
+	%p56 =l alloc8 1
+	%p57 =l alloc8 1
+	%p58 =l alloc8 1
+	%p59 =l alloc8 1
+	%p60 =l alloc8 1
+	%p61 =l alloc8 1
+	%p62 =l alloc8 1
+	%p63 =l alloc8 1
+	%p64 =l alloc8 1
+	%p65 =l alloc8 1
+	%p66 =l alloc8 1
+	%p67 =l alloc8 1
+	%p68 =l alloc8 1
+	%p69 =l alloc8 1
+	%p70 =l alloc8 1
+	%p71 =l alloc8 1
+	%p72 =l alloc8 1
+	%p73 =l alloc8 1
+	%p74 =l alloc8 1
+	%p75 =l alloc8 1
+	%p76 =l alloc8 1
+	%p77 =l alloc8 1
+	%p78 =l alloc8 1
+	%p79 =l alloc8 1
+	%p80 =l alloc8 1
+	%p81 =l alloc8 1
+	%p82 =l alloc8 1
+	%p83 =l alloc8 1
+	%p84 =l alloc8 1
+	%p85 =l alloc8 1
+	%p86 =l alloc8 1
+	%p87 =l alloc8 1
+	%p88 =l alloc8 1
+	%p89 =l alloc8 1
+	%p90 =l alloc8 1
+	%p91 =l alloc8 1
+	%p92 =l alloc8 1
+	%p93 =l alloc8 1
+	%p94 =l alloc8 1
+	%p95 =l alloc8 1
+	%p96 =l alloc8 1
+	%p97 =l alloc8 1
+	%p98 =l alloc8 1
+	%p99 =l alloc8 1
+	%p100 =l alloc8 1
+	%p101 =l alloc8 1
+	%p102 =l alloc8 1
+	%p103 =l alloc8 1
+	%p104 =l alloc8 1
+	%p105 =l alloc8 1
+	%p106 =l alloc8 1
+	%p107 =l alloc8 1
+	%p108 =l alloc8 1
+	%p109 =l alloc8 1
+	%p110 =l alloc8 1
+	%p111 =l alloc8 1
+	%p112 =l alloc8 1
+	%p113 =l alloc8 1
+	%p114 =l alloc8 1
+	%p115 =l alloc8 1
+	%p116 =l alloc8 1
+	%p117 =l alloc8 1
+	%p118 =l alloc8 1
+	%p119 =l alloc8 1
+	storew 0, %p0
+	storew 1, %p1
+	storew 2, %p2
+	storew 3, %p3
+	storew 4, %p4
+	storew 5, %p5
+	storew 6, %p6
+	storew 7, %p7
+	storew 8, %p8
+	storew 9, %p9
+	storew 10, %p10
+	storew 11, %p11
+	storew 12, %p12
+	storew 13, %p13
+	storew 14, %p14
+	storew 15, %p15
+	storew 16, %p16
+	storew 17, %p17
+	storew 18, %p18
+	storew 19, %p19
+	storew 20, %p20
+	storew 21, %p21
+	storew 22, %p22
+	storew 23, %p23
+	storew 24, %p24
+	storew 25, %p25
+	storew 26, %p26
+	storew 27, %p27
+	storew 28, %p28
+	storew 29, %p29
+	storew 30, %p30
+	storew 31, %p31
+	storew 32, %p32
+	storew 33, %p33
+	storew 34, %p34
+	storew 35, %p35
+	storew 36, %p36
+	storew 37, %p37
+	storew 38, %p38
+	storew 39, %p39
+	storew 40, %p40
+	storew 41, %p41
+	storew 42, %p42
+	storew 43, %p43
+	storew 44, %p44
+	storew 45, %p45
+	storew 46, %p46
+	storew 47, %p47
+	storew 48, %p48
+	storew 49, %p49
+	storew 50, %p50
+	storew 51, %p51
+	storew 52, %p52
+	storew 53, %p53
+	storew 54, %p54
+	storew 55, %p55
+	storew 56, %p56
+	storew 57, %p57
+	storew 58, %p58
+	storew 59, %p59
+	storew 60, %p60
+	storew 61, %p61
+	storew 62, %p62
+	storew 63, %p63
+	storew 64, %p64
+	storew 65, %p65
+	storew 66, %p66
+	storew 67, %p67
+	storew 68, %p68
+	storew 69, %p69
+	storew 70, %p70
+	storew 71, %p71
+	storew 72, %p72
+	storew 73, %p73
+	storew 74, %p74
+	storew 75, %p75
+	storew 76, %p76
+	storew 77, %p77
+	storew 78, %p78
+	storew 79, %p79
+	storew 80, %p80
+	storew 81, %p81
+	storew 82, %p82
+	storew 83, %p83
+	storew 84, %p84
+	storew 85, %p85
+	storew 86, %p86
+	storew 87, %p87
+	storew 88, %p88
+	storew 89, %p89
+	storew 90, %p90
+	storew 91, %p91
+	storew 92, %p92
+	storew 93, %p93
+	storew 94, %p94
+	storew 95, %p95
+	storew 96, %p96
+	storew 97, %p97
+	storew 98, %p98
+	storew 99, %p99
+	storew 100, %p100
+	storew 101, %p101
+	storew 102, %p102
+	storew 103, %p103
+	storew 104, %p104
+	storew 105, %p105
+	storew 106, %p106
+	storew 107, %p107
+	storew 108, %p108
+	storew 109, %p109
+	storew 110, %p110
+	storew 111, %p111
+	storew 112, %p112
+	storew 113, %p113
+	storew 114, %p114
+	storew 115, %p115
+	storew 116, %p116
+	storew 117, %p117
+	storew 118, %p118
+	storew 119, %p119
+	%v0 =w load %p0
+	%v1 =w load %p1
+	%u1 =w add %v0, %v1
+	%v2 =w load %p2
+	%u2 =w add %u1, %v2
+	%v3 =w load %p3
+	%u3 =w add %u2, %v3
+	%v4 =w load %p4
+	%u4 =w add %u3, %v4
+	%v5 =w load %p5
+	%u5 =w add %u4, %v5
+	%v6 =w load %p6
+	%u6 =w add %u5, %v6
+	%v7 =w load %p7
+	%u7 =w add %u6, %v7
+	%v8 =w load %p8
+	%u8 =w add %u7, %v8
+	%v9 =w load %p9
+	%u9 =w add %u8, %v9
+	%v10 =w load %p10
+	%u10 =w add %u9, %v10
+	%v11 =w load %p11
+	%u11 =w add %u10, %v11
+	%v12 =w load %p12
+	%u12 =w add %u11, %v12
+	%v13 =w load %p13
+	%u13 =w add %u12, %v13
+	%v14 =w load %p14
+	%u14 =w add %u13, %v14
+	%v15 =w load %p15
+	%u15 =w add %u14, %v15
+	%v16 =w load %p16
+	%u16 =w add %u15, %v16
+	%v17 =w load %p17
+	%u17 =w add %u16, %v17
+	%v18 =w load %p18
+	%u18 =w add %u17, %v18
+	%v19 =w load %p19
+	%u19 =w add %u18, %v19
+	%v20 =w load %p20
+	%u20 =w add %u19, %v20
+	%v21 =w load %p21
+	%u21 =w add %u20, %v21
+	%v22 =w load %p22
+	%u22 =w add %u21, %v22
+	%v23 =w load %p23
+	%u23 =w add %u22, %v23
+	%v24 =w load %p24
+	%u24 =w add %u23, %v24
+	%v25 =w load %p25
+	%u25 =w add %u24, %v25
+	%v26 =w load %p26
+	%u26 =w add %u25, %v26
+	%v27 =w load %p27
+	%u27 =w add %u26, %v27
+	%v28 =w load %p28
+	%u28 =w add %u27, %v28
+	%v29 =w load %p29
+	%u29 =w add %u28, %v29
+	%v30 =w load %p30
+	%u30 =w add %u29, %v30
+	%v31 =w load %p31
+	%u31 =w add %u30, %v31
+	%v32 =w load %p32
+	%u32 =w add %u31, %v32
+	%v33 =w load %p33
+	%u33 =w add %u32, %v33
+	%v34 =w load %p34
+	%u34 =w add %u33, %v34
+	%v35 =w load %p35
+	%u35 =w add %u34, %v35
+	%v36 =w load %p36
+	%u36 =w add %u35, %v36
+	%v37 =w load %p37
+	%u37 =w add %u36, %v37
+	%v38 =w load %p38
+	%u38 =w add %u37, %v38
+	%v39 =w load %p39
+	%u39 =w add %u38, %v39
+	%v40 =w load %p40
+	%u40 =w add %u39, %v40
+	%v41 =w load %p41
+	%u41 =w add %u40, %v41
+	%v42 =w load %p42
+	%u42 =w add %u41, %v42
+	%v43 =w load %p43
+	%u43 =w add %u42, %v43
+	%v44 =w load %p44
+	%u44 =w add %u43, %v44
+	%v45 =w load %p45
+	%u45 =w add %u44, %v45
+	%v46 =w load %p46
+	%u46 =w add %u45, %v46
+	%v47 =w load %p47
+	%u47 =w add %u46, %v47
+	%v48 =w load %p48
+	%u48 =w add %u47, %v48
+	%v49 =w load %p49
+	%u49 =w add %u48, %v49
+	%v50 =w load %p50
+	%u50 =w add %u49, %v50
+	%v51 =w load %p51
+	%u51 =w add %u50, %v51
+	%v52 =w load %p52
+	%u52 =w add %u51, %v52
+	%v53 =w load %p53
+	%u53 =w add %u52, %v53
+	%v54 =w load %p54
+	%u54 =w add %u53, %v54
+	%v55 =w load %p55
+	%u55 =w add %u54, %v55
+	%v56 =w load %p56
+	%u56 =w add %u55, %v56
+	%v57 =w load %p57
+	%u57 =w add %u56, %v57
+	%v58 =w load %p58
+	%u58 =w add %u57, %v58
+	%v59 =w load %p59
+	%u59 =w add %u58, %v59
+	%v60 =w load %p60
+	%u60 =w add %u59, %v60
+	%v61 =w load %p61
+	%u61 =w add %u60, %v61
+	%v62 =w load %p62
+	%u62 =w add %u61, %v62
+	%v63 =w load %p63
+	%u63 =w add %u62, %v63
+	%v64 =w load %p64
+	%u64 =w add %u63, %v64
+	%v65 =w load %p65
+	%u65 =w add %u64, %v65
+	%v66 =w load %p66
+	%u66 =w add %u65, %v66
+	%v67 =w load %p67
+	%u67 =w add %u66, %v67
+	%v68 =w load %p68
+	%u68 =w add %u67, %v68
+	%v69 =w load %p69
+	%u69 =w add %u68, %v69
+	%v70 =w load %p70
+	%u70 =w add %u69, %v70
+	%v71 =w load %p71
+	%u71 =w add %u70, %v71
+	%v72 =w load %p72
+	%u72 =w add %u71, %v72
+	%v73 =w load %p73
+	%u73 =w add %u72, %v73
+	%v74 =w load %p74
+	%u74 =w add %u73, %v74
+	%v75 =w load %p75
+	%u75 =w add %u74, %v75
+	%v76 =w load %p76
+	%u76 =w add %u75, %v76
+	%v77 =w load %p77
+	%u77 =w add %u76, %v77
+	%v78 =w load %p78
+	%u78 =w add %u77, %v78
+	%v79 =w load %p79
+	%u79 =w add %u78, %v79
+	%v80 =w load %p80
+	%u80 =w add %u79, %v80
+	%v81 =w load %p81
+	%u81 =w add %u80, %v81
+	%v82 =w load %p82
+	%u82 =w add %u81, %v82
+	%v83 =w load %p83
+	%u83 =w add %u82, %v83
+	%v84 =w load %p84
+	%u84 =w add %u83, %v84
+	%v85 =w load %p85
+	%u85 =w add %u84, %v85
+	%v86 =w load %p86
+	%u86 =w add %u85, %v86
+	%v87 =w load %p87
+	%u87 =w add %u86, %v87
+	%v88 =w load %p88
+	%u88 =w add %u87, %v88
+	%v89 =w load %p89
+	%u89 =w add %u88, %v89
+	%v90 =w load %p90
+	%u90 =w add %u89, %v90
+	%v91 =w load %p91
+	%u91 =w add %u90, %v91
+	%v92 =w load %p92
+	%u92 =w add %u91, %v92
+	%v93 =w load %p93
+	%u93 =w add %u92, %v93
+	%v94 =w load %p94
+	%u94 =w add %u93, %v94
+	%v95 =w load %p95
+	%u95 =w add %u94, %v95
+	%v96 =w load %p96
+	%u96 =w add %u95, %v96
+	%v97 =w load %p97
+	%u97 =w add %u96, %v97
+	%v98 =w load %p98
+	%u98 =w add %u97, %v98
+	%v99 =w load %p99
+	%u99 =w add %u98, %v99
+	%v100 =w load %p100
+	%u100 =w add %u99, %v100
+	%v101 =w load %p101
+	%u101 =w add %u100, %v101
+	%v102 =w load %p102
+	%u102 =w add %u101, %v102
+	%v103 =w load %p103
+	%u103 =w add %u102, %v103
+	%v104 =w load %p104
+	%u104 =w add %u103, %v104
+	%v105 =w load %p105
+	%u105 =w add %u104, %v105
+	%v106 =w load %p106
+	%u106 =w add %u105, %v106
+	%v107 =w load %p107
+	%u107 =w add %u106, %v107
+	%v108 =w load %p108
+	%u108 =w add %u107, %v108
+	%v109 =w load %p109
+	%u109 =w add %u108, %v109
+	%v110 =w load %p110
+	%u110 =w add %u109, %v110
+	%v111 =w load %p111
+	%u111 =w add %u110, %v111
+	%v112 =w load %p112
+	%u112 =w add %u111, %v112
+	%v113 =w load %p113
+	%u113 =w add %u112, %v113
+	%v114 =w load %p114
+	%u114 =w add %u113, %v114
+	%v115 =w load %p115
+	%u115 =w add %u114, %v115
+	%v116 =w load %p116
+	%u116 =w add %u115, %v116
+	%v117 =w load %p117
+	%u117 =w add %u116, %v117
+	%v118 =w load %p118
+	%u118 =w add %u117, %v118
+	%v119 =w load %p119
+	%u119 =w add %u118, %v119
+	ret %u119
+}
