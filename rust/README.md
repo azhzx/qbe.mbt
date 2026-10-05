@@ -169,6 +169,28 @@ runs it and checks `add(20,22)=42 tri(10)=55 fib(10)=55`. It is skipped on
 hosts that are not macOS/aarch64; the IL and assembly tests run everywhere the
 foreign library builds.
 
+## Tests
+
+`cargo test` runs three suites:
+
+- `tests/integration.rs` - the end-to-end surface: IL text, arm64 assembly,
+  the Mach-O object (linked with `cc` and executed), the in-memory JIT, libc
+  and host-function calls, debug info and variadics.
+- `tests/instructions.rs` - instruction-level coverage: every integer and
+  floating point binary operator, all ten `IntCC` and all eight `FloatCC`
+  conditions (including NaN), f32 constants with promote/demote, the six
+  integer widening conversions, loads and stores over `alloc4`/`alloc8`/
+  `alloc16`, the narrowing loads, a writable data global, the error paths (an
+  unresolvable JIT symbol, an empty module), the export flag and type letters,
+  the gas flavors, and the signature/type helpers.
+- unit tests inside `src`.
+
+Tests that execute code run only on macOS arm64, where the object and JIT
+backends are supported; IL and assembly assertions run wherever the foreign
+library builds. Executing tests exercise both the object path (emit_object,
+link with cc, run) and the in-memory JIT, and a failed build, link or run is
+a test failure rather than a silent skip.
+
 ## Vendored archives
 
 The prebuilt archives under `vendor/<target-triple>/` are produced by the

@@ -174,6 +174,21 @@ fn build_from_source(repo: &Path, manifest: &Path, out: &Path, target_os: &str) 
         repo.join("ir_builder_capi").display()
     );
     println!("cargo:rerun-if-changed={}", repo.join("native").display());
+    // Any MoonBit source change must invalidate the linked archive, so watch
+    // every package (cargo watches directories recursively).
+    println!("cargo:rerun-if-changed={}", repo.join("moon.mod").display());
+    println!("cargo:rerun-if-changed={}", repo.join("qbe.mbt").display());
+    if let Ok(entries) = std::fs::read_dir(repo) {
+        let mut dirs: Vec<PathBuf> = entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.join("moon.pkg").exists())
+            .collect();
+        dirs.sort();
+        for d in dirs {
+            println!("cargo:rerun-if-changed={}", d.display());
+        }
+    }
 }
 
 fn locate_runtime(repo: &Path) -> Option<PathBuf> {
@@ -216,7 +231,7 @@ fn locate_capi(repo: &Path, out: &Path, include: &Path) -> PathBuf {
         // The compiler emits the object before the (unwanted) executable link
         // that a foreign_library always attempts; tolerate the failure.
         let _ = Command::new("moon")
-            .args(["build", "--target", "native", "ir_builder_capi"])
+            .args(["build", "--target", "native"])
             .current_dir(repo)
             .status();
     }

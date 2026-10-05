@@ -730,9 +730,12 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     @types.Extsw =>
       arm64_bin_emit(st, @object.enc_sxtw(rd, arm64_bin_r(st, i.arg1)))
     @types.Extub =>
-      arm64_bin_emit(st, @object.enc_uxtb_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+      // C arm64/emit.c: "uxtb %W=, %W0" - the destination is the 32-bit view
+      // for both classes; the 32-bit write already clears the upper half.
+      arm64_bin_emit(st, @object.enc_uxtb(rd, arm64_bin_r(st, i.arg1)))
     @types.Extuh =>
-      arm64_bin_emit(st, @object.enc_uxth_sf(sf, rd, arm64_bin_r(st, i.arg1)))
+      // C arm64/emit.c: "uxth %W=, %W0".
+      arm64_bin_emit(st, @object.enc_uxth(rd, arm64_bin_r(st, i.arg1)))
     @types.Extuw =>
       // Zero-extend word to long: a 32-bit mov clears the upper half.
       arm64_bin_emit(
