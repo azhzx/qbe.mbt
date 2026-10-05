@@ -144,4 +144,12 @@ test "arm64 enc: floating point" {
   check_word(enc_sxth_sf(false, 0, 1), 0x13003C20L)
   check_word(enc_uxtb_sf(false, 0, 1), 0x53001C20L)
   check_word(enc_uxth_sf(false, 0, 1), 0x53003C20L)
+  // 64-bit forms: SBFM/UBFM require N == sf. With N = 0 and sf = 1 the
+  // encoding is unallocated and executing it raises SIGILL, so these words
+  // are pinned exactly.
+  check_word(enc_sxtb_sf(true, 0, 1), 0x93401C20L)
+  check_word(enc_sxth_sf(true, 0, 1), 0x93403C20L)
+  check_word(enc_uxtb_sf(true, 0, 1), 0xD3401C20L)
+  check_word(enc_uxth_sf(true, 0, 1), 0xD3403C20L)
+  check_word(enc_sxtw(0, 1), 0x93407C20L)
 }

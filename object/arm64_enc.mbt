@@ -833,12 +833,14 @@ pub fn enc_sxth_sf(sf : Bool, rd : Int, rn : Int) -> Int {
 
 ///|
 pub fn enc_uxtb_sf(sf : Bool, rd : Int, rn : Int) -> Int {
-  enc_bitfield(sf, 2, 0, rd, rn, 0, 7)
+  // N mirrors sf, as in SBFM: with N = 0 and sf = 1 the encoding is
+  // unallocated and the CPU raises SIGILL.
+  enc_bitfield(sf, 2, sfbit(sf), rd, rn, 0, 7)
 }
 
 ///|
 pub fn enc_uxth_sf(sf : Bool, rd : Int, rn : Int) -> Int {
-  enc_bitfield(sf, 2, 0, rd, rn, 0, 15)
+  enc_bitfield(sf, 2, sfbit(sf), rd, rn, 0, 15)
 }
 
 ///|

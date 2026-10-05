@@ -5,10 +5,9 @@
 //! The interpreter/JIT/object backends are arm64, so the tests that execute
 //! code return early elsewhere. IL/asm assertions run everywhere.
 //!
-//! One JIT defect found while writing these tests is recorded as an ignored test
-//! at the bottom rather than hidden; the arm64 assembly emitted for the same
-//! operations is byte-identical to the reference QBE, and the object path
-//! executes them correctly.
+//! Tests that execute code run through both the object path and the JIT; every
+//! operation here also appears in the arm64 assembly, which is byte-identical
+//! to the reference QBE.
 
 use qopple::{Context, FloatCC, IntCC, Signature, Type};
 
@@ -261,39 +260,44 @@ fn int_widening_il() {
         assert!(il.contains(k), "IL lacks {k}:\n{il}");
     }
 }
-/// Emit the module as a Mach-O object, link it with a C driver and run it.
-/// Returns the child's stdout, or None when the platform cannot run arm64
-/// code or the link/run failed.
-fn link_and_run(m: &mut qopple::Module, tag: &str, driver: &str) -> Option<String> {
+/// Emit the module as a Mach-O object, link it with a C driver and run it and
+/// return the child's stdout. Returns an empty string on hosts that cannot run
+/// arm64 code; anywhere else a failure to build, link or run panics, so a
+/// broken object path cannot silently pass a test.
+fn link_and_run(m: &mut qopple::Module, tag: &str, driver: &str) -> String {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static SEQ: AtomicUsize = AtomicUsize::new(0);
     if !CAN_JIT {
-        return None;
+        return String::new();
     }
-    let obj = m.emit_object().ok()?;
+    let obj = m.emit_object().expect("emit_object");
     let n = SEQ.fetch_add(1, Ordering::SeqCst);
     let dir = std::env::temp_dir().join(format!("qopple_{tag}_{}_{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).ok()?;
-    std::fs::write(dir.join("m.o"), &obj).ok()?;
-    std::fs::write(dir.join("d.c"), driver).ok()?;
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    std::fs::write(dir.join("m.o"), &obj).expect("write object");
+    std::fs::write(dir.join("d.c"), driver).expect("write driver");
     let exe = dir.join("run");
     let built = std::process::Command::new("cc")
         .arg("-o")
         .arg(&exe)
         .arg(dir.join("d.c"))
         .arg(dir.join("m.o"))
-        .status()
-        .ok()?;
-    if !built.success() {
-        return None;
-    }
-    let out = std::process::Command::new(&exe).output().ok()?;
+        .output()
+        .expect("cc");
+    assert!(
+        built.status.success(),
+        "cc failed: {}",
+        String::from_utf8_lossy(&built.stderr)
+    );
+    let out = std::process::Command::new(&exe).output().expect("run");
     let _ = std::fs::remove_dir_all(&dir);
-    if !out.status.success() {
-        return None;
-    }
-    Some(String::from_utf8_lossy(&out.stdout).into_owned())
+    assert!(
+        out.status.success(),
+        "program failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8_lossy(&out.stdout).into_owned()
 }
 
 /// Sign/zero extension from every narrow width, executed through the object
@@ -307,9 +311,9 @@ fn int_widening_runs() {
     let cases: &[(&str, &str, i64, i64)] = &[
         ("su8", "extsb", 0xFF, -1),
         ("uu8", "extub", 0xFF, 0xFF),
-        ("su16", "extsh", 0x8000, -1),
+        ("su16", "extsh", 0x8000, -32768),
         ("uu16", "extuh", 0x8000, 0x8000),
-        ("su32", "extsw", 0x8000_0000, -1),
+        ("su32", "extsw", 0x8000_0000, -2147483648),
         ("uu32", "extuw", 0x8000_0000, 0x8000_0000),
     ];
     for &(name, _, _, _) in cases {
@@ -339,10 +343,7 @@ fn int_widening_runs() {
     }
     driver.push_str("  printf(\"ok\\n\");\n  return 0;\n}\n");
 
-    let Some(out) = link_and_run(&mut m, "widen", &driver) else {
-        return;
-    };
-    assert_eq!(out.trim(), "ok");
+    assert_eq!(link_and_run(&mut m, "widen", &driver).trim(), "ok");
 }
 
 /// Loads and stores over alloc4/alloc8/alloc16, executed through the object
@@ -377,10 +378,7 @@ fn load_store_runs() {
         assert!(il.contains(op), "IL lacks {op}:\n{il}");
     }
     let driver = "#include <stdio.h>\nextern int mem(int);\nint main(void){ int a = mem(7), b = mem(-3); printf(\"%d %d\\n\", a, b); return (a == 21 && b == -9) ? 0 : 1; }\n";
-    let Some(out) = link_and_run(&mut m, "mem", driver) else {
-        return;
-    };
-    assert_eq!(out.trim(), "21 -9");
+    assert_eq!(link_and_run(&mut m, "mem", driver).trim(), "21 -9");
 }
 
 /// The narrowing loads extend exactly as their names promise, through the
@@ -408,10 +406,10 @@ fn narrow_loads_run() {
         b.ins().return_(&[r]);
     }
     let driver = "#include <stdio.h>\nextern int loadsb(void), loadub(void), loadsh(void), loaduh(void), loadsw(void);\nint main(void){ int a=loadsb(),b=loadub(),c=loadsh(),d=loaduh(),e=loadsw(); printf(\"%d %d %d %d %d\\n\",a,b,c,d,e); return (a==-1&&b==255&&c==255&&d==255&&e==255)?0:1; }\n";
-    let Some(out) = link_and_run(&mut m, "narrow", driver) else {
-        return;
-    };
-    assert_eq!(out.trim(), "-1 255 255 255 255");
+    assert_eq!(
+        link_and_run(&mut m, "narrow", driver).trim(),
+        "-1 255 255 255 255"
+    );
 }
 
 /// A data global is addressable and usable as a counter, through the object
@@ -434,10 +432,7 @@ fn global_load_store_runs() {
     let il = m.emit_il();
     assert!(il.contains("$counter"), "{il}");
     let driver = "#include <stdio.h>\nextern int bump(void);\nint main(void){ int a=bump(),b=bump(),c=bump(); printf(\"%d %d %d\\n\",a,b,c); return (a==1&&b==2&&c==3)?0:1; }\n";
-    let Some(out) = link_and_run(&mut m, "global", driver) else {
-        return;
-    };
-    assert_eq!(out.trim(), "1 2 3");
+    assert_eq!(link_and_run(&mut m, "global", driver).trim(), "1 2 3");
 }
 
 /// A call to a symbol the JIT cannot resolve is an error, not a crash.
@@ -578,27 +573,42 @@ fn signature_and_type_helpers() {
     assert!(!Type::I64.is_float());
 }
 
-/// KNOWN DEFECT, ignored on purpose: JITing a function whose body is a 64-bit
-/// extsb/extub/extsh/extuh/extsw/extuw traps with SIGILL. The same module
-/// emitted as an object, linked and run gives the right answers (see
-/// int_widening_runs), and the interpreter (qbe --run) is correct too, so the
-/// defect is in the JIT entry point rather than in the arm64 backend.
+/// The JIT runs the widening conversions, including the 64-bit class forms
+/// where the destination register is the 32-bit view (a 32-bit write clears
+/// the upper half, as the reference prints `uxtb %W=, %W0`).
 #[test]
-#[ignore = "JIT traps on l-class extension ops; object path is correct"]
-fn jit_extension_traps() {
+fn int_widening_jit() {
     if !CAN_JIT {
         return;
     }
-    let ctx = Context::new();
-    let mut m = ctx.create_module();
-    let f = m.add_function("uu8", Signature::new([Type::I64], Some(Type::I64)));
-    {
-        let mut b = m.builder(f);
-        let x = b.params()[0];
-        let r = b.ins().extend_u8(x, Type::I64);
-        b.ins().return_(&[r]);
+    // One module per conversion so a failure names the operation.
+    let cases: &[(&str, i64, i64)] = &[
+        ("su8", 0xFF, -1),
+        ("uu8", 0xFF, 0xFF),
+        ("su16", 0x8000, -32768),
+        ("uu16", 0x8000, 0x8000),
+        ("su32", 0x8000_0000, -2147483648),
+        ("uu32", 0x8000_0000, 0x8000_0000),
+    ];
+    for &(name, arg, want) in cases {
+        let ctx = Context::new();
+        let mut m = ctx.create_module();
+        let f = m.add_function(name, Signature::new([Type::I64], Some(Type::I64)));
+        {
+            let mut b = m.builder(f);
+            let x = b.params()[0];
+            let r = match name {
+                "su8" => b.ins().extend_s8(x, Type::I64),
+                "uu8" => b.ins().extend_u8(x, Type::I64),
+                "su16" => b.ins().extend_s16(x, Type::I64),
+                "uu16" => b.ins().extend_u16(x, Type::I64),
+                "su32" => b.ins().extend_s32(x),
+                _ => b.ins().extend_u32(x),
+            };
+            b.ins().return_(&[r]);
+        }
+        let jit = m.jit().unwrap();
+        let f: extern "C" fn(i64) -> i64 = jit.get_fn(name).unwrap();
+        assert_eq!(f(arg), want, "{name}({arg})");
     }
-    let jit = m.jit().unwrap();
-    let f: extern "C" fn(i64) -> i64 = jit.get_fn("uu8").unwrap();
-    assert_eq!(f(0xFF), 0xFF);
 }

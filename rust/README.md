@@ -187,7 +187,9 @@ foreign library builds.
 
 Tests that execute code run only on macOS arm64, where the object and JIT
 backends are supported; IL and assembly assertions run wherever the foreign
-library builds.
+library builds. Executing tests exercise both the object path (emit_object,
+link with cc, run) and the in-memory JIT, and a failed build, link or run is
+a test failure rather than a silent skip.
 
 ## Vendored archives
 
@@ -209,12 +211,6 @@ and are linked with `-lm` (plus `-lpthread` on Linux).
   target-independent text.
 - **`emit_object`/`emit_asm` consume** the module (the backend passes run
   once); `emit_il` may be called before them.
-- **The JIT traps on the 64-bit class extension ops**: JITing a function whose
-  body is `extsb`/`extub`/`extsh`/`extuh`/`extsw`/`extuw` over a 64-bit value
-  raises SIGILL, even though the same module emitted as an object links and
-  runs correctly and the interpreter (`qbe --run`) returns the right answer.
-  Use `emit_object` for those functions; the ignored `jit_extension_traps`
-  test in `tests/instructions.rs` records it.
 - Strings and blobs cross the boundary as MoonBit `Bytes`; `src/shim.c` owns
   the `moonbit_make_bytes` / `Moonbit_array_length` / `moonbit_decref` details
   so Rust never touches the object header layout.
