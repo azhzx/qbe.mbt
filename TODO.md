@@ -41,6 +41,15 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   Repro: `python compare.py -dS test/stress/_006_args_w_32.ssa`. The three
   files are `_`-prefixed so they stay out of the exact differential until the
   pass matches.
+  Narrowed so far: the two implementations agree on `limit`'s input and
+  output sets *and* on the order `slot()` is called in (verified with matching
+  instrumentation on both sides), so the difference is upstream of the rewrite,
+  in the per-block live-set computation inside `spill` (`dopm` / `merge` /
+  the section-2 instruction scan). It is a tie-break among temps whose spill
+  cost is equal, not a wrong result, and swapping the reference's unstable
+  `qsort` for a stable sort does *not* remove it, so there is a real
+  algorithmic deviation to find. Cost is all-equal here, which is why
+  `test/regalloc/` never hit it.
 
 - **`test/stress/_006_args_w_32.ssa` makes the emitter ICE.** Plain
   assembly emission (no `-d` flag) fails with `ICE: invalid second
