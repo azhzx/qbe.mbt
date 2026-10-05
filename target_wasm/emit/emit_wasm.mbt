@@ -603,25 +603,50 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       wat_writeln(st, "global.set $sp")
     }
     @types.Extsb => {
-      emit_ref(st, ins.arg1, @types.Kw)
-      wat_writeln(st, "i32.extend8_s")
+      // The wide form is a 64-bit extension: emitting i32.extend8_s for an
+      // l-class result produces i32 where i64 is expected and the wasm
+      // validator rejects the module.
+      if ins.cls == @types.Kl {
+        emit_ref(st, ins.arg1, @types.Kl)
+        wat_writeln(st, "i64.extend8_s")
+      } else {
+        emit_ref(st, ins.arg1, @types.Kw)
+        wat_writeln(st, "i32.extend8_s")
+      }
       set_dest(st, ins)
     }
     @types.Extsh => {
-      emit_ref(st, ins.arg1, @types.Kw)
-      wat_writeln(st, "i32.extend16_s")
+      if ins.cls == @types.Kl {
+        emit_ref(st, ins.arg1, @types.Kl)
+        wat_writeln(st, "i64.extend16_s")
+      } else {
+        emit_ref(st, ins.arg1, @types.Kw)
+        wat_writeln(st, "i32.extend16_s")
+      }
       set_dest(st, ins)
     }
     @types.Extub => {
-      emit_ref(st, ins.arg1, @types.Kw)
-      wat_writeln(st, "i32.const 255")
-      wat_writeln(st, "i32.and")
+      if ins.cls == @types.Kl {
+        emit_ref(st, ins.arg1, @types.Kl)
+        wat_writeln(st, "i64.const 255")
+        wat_writeln(st, "i64.and")
+      } else {
+        emit_ref(st, ins.arg1, @types.Kw)
+        wat_writeln(st, "i32.const 255")
+        wat_writeln(st, "i32.and")
+      }
       set_dest(st, ins)
     }
     @types.Extuh => {
-      emit_ref(st, ins.arg1, @types.Kw)
-      wat_writeln(st, "i32.const 65535")
-      wat_writeln(st, "i32.and")
+      if ins.cls == @types.Kl {
+        emit_ref(st, ins.arg1, @types.Kl)
+        wat_writeln(st, "i64.const 65535")
+        wat_writeln(st, "i64.and")
+      } else {
+        emit_ref(st, ins.arg1, @types.Kw)
+        wat_writeln(st, "i32.const 65535")
+        wat_writeln(st, "i32.and")
+      }
       set_dest(st, ins)
     }
     @types.Extsw => {
