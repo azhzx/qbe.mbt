@@ -27,12 +27,20 @@ elsewhere). It exits non-zero if any fixture differs.
 == 4/4  reference build and corpus comparison
 
 artifacts:      /…/.qpcc_build/qbe-qpcc
-test corpus:    21 identical, 55 differing, 76 total
+test corpus:    55 identical, 21 differing, 76 total
 ```
 
 The corpus line is read as a scoreboard: a fixture counts as identical only if
 both compilers produce exactly the same output and the same exit status, so
-anything the script still reports as differing is a real gap.
+anything the script still reports as differing is a real gap. The script exits
+non-zero whenever anything differs, so a non-zero status here is the scoreboard
+reporting open gaps, not a failing unit test - it is deliberately not part of
+CI, which runs `qpcc/test.sh` (151 fixtures) and `semantic-check.sh` instead.
+
+The 21 remaining differences are code-generation choices, not miscompiles:
+`semantic-check.sh` reports 58/58 "both correct" and 0 one-sided failures over
+the same corpus, and the diffs are extra `mov`s and different `cmov`/scratch
+registers, i.e. register allocation rather than wrong code.
 
 ## What each step shows
 
