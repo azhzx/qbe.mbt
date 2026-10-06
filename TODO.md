@@ -50,6 +50,16 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   `qsort` for a stable sort does *not* remove it, so there is a real
   algorithmic deviation to find. Cost is all-equal here, which is why
   `test/regalloc/` never hit it.
+  Localized to a single instruction: with the 16-word-argument repro, the
+  first difference in `callee_w` (a one-block function, so section 1 is
+  trivial) is at instruction 17. The live set after it is
+  {15,16,67..79,81} for the reference and {15,16,66..79} for us: the reference
+  turns arg[0] (temp 66) into a slot and keeps 81 live, we keep 66 and see no
+  second operand. Every instruction up to and including 16 agrees, as does
+  `to=82` at 17, so the two agree entering the scan and part company inside
+  it. When aligning dumps: C's `i->op` is an optab index while our
+  `Op::index()` is a different numbering, and `st.buf` is the *output*
+  buffer, not `b.ins` - compare the block's input instruction stream.
 
 - **`test/stress/_006_args_w_32.ssa` makes the emitter ICE.** Plain
   assembly emission (no `-d` flag) fails with `ICE: invalid second
