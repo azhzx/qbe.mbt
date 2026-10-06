@@ -119,3 +119,17 @@ pass helpers (`_live`, `_rpo`, `_spill*`) and the three `stress/` inputs
 that still diverge from the reference (see `TODO.md`, "Known divergences").
 `tools/bench.py --all` includes them, so they keep being exercised for timing
 even while they are out of the byte-exact gate.
+
+The three `stress/` entries are there for a different reason than the
+benchmarks: they are the inputs on which the reference disagrees with itself.
+`spill.c`'s `limit` sorts tied spill costs with `qsort`, whose order for
+equal keys is implementation defined, so a build linked against Apple's
+`qsort` picks a different temporary to spill than one linked against glibc's
+mergesort. On those inputs the port agrees with a *stable* `qsort`; to
+reproduce that locally, copy `vendor/qbe`, replace the two `qsort` calls in
+`spill.c` with a stable sort, build, and point `QBE_REF` at it:
+
+    QBE_REF=/path/to/stable/qbe python compare.py --cat stress
+
+Every other input in this directory is byte-identical to the vendored
+reference on all three targets.

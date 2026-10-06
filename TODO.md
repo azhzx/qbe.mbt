@@ -41,25 +41,34 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   Repro: `python compare.py -dS test/stress/_006_args_w_32.ssa`. The three
   files are `_`-prefixed so they stay out of the exact differential until the
   pass matches.
-  Narrowed so far: the two implementations agree on `limit`'s input and
-  output sets *and* on the order `slot()` is called in (verified with matching
-  instrumentation on both sides), so the difference is upstream of the rewrite,
-  in the per-block live-set computation inside `spill` (`dopm` / `merge` /
-  the section-2 instruction scan). It is a tie-break among temps whose spill
-  cost is equal, not a wrong result, and swapping the reference's unstable
-  `qsort` for a stable sort does *not* remove it, so there is a real
-  algorithmic deviation to find. Cost is all-equal here, which is why
-  `test/regalloc/` never hit it.
-  Localized to a single instruction: with the 16-word-argument repro, the
-  first difference in `callee_w` (a one-block function, so section 1 is
-  trivial) is at instruction 17. The live set after it is
-  {15,16,67..79,81} for the reference and {15,16,66..79} for us: the reference
-  turns arg[0] (temp 66) into a slot and keeps 81 live, we keep 66 and see no
-  second operand. Every instruction up to and including 16 agrees, as does
-  `to=82` at 17, so the two agree entering the scan and part company inside
-  it. When aligning dumps: C's `i->op` is an optab index while our
-  `Op::index()` is a different numbering, and `st.buf` is the *output*
-  buffer, not `b.ins` - compare the block's input instruction stream.
+  **Root cause (settled): this is the reference's own nondeterminism, not a
+  port bug.** `limit` sorts the candidate temporaries with `qsort`, and when
+  the spill costs tie the comparator returns 0, so the order - and therefore
+  which temporaries get spilled - is whatever the C library's `qsort` happens
+  to do. Our port uses MoonBit's `Array::sort_by`, which is *also* an unstable
+  sort. Two unstable sorts agree on every one of the 420 corpus inputs (the
+  arm64 assembly differential is 420/420 with the port as it stands) but part
+  company on a handful of tie-heavy stress inputs.
+
+  Evidence:
+  - instrumenting `limit` on both sides shows the same input set, the same
+    `k`, the same empty `fst`, and different sorted orders: the reference
+    produces `16 15 67 ... 79 81 66` where we produce the collected order
+    `15 16 66 ... 79 81`, so a different temporary is spilled;
+  - rebuilding the reference with a *stable* insertion sort in place of
+    `qsort` (Apple's is unstable there) makes it **byte-identical** to the
+    port at `-dS` for the 15..32 argument repros - zero differences;
+  - conversely, making *our* sort explicitly stable is not an option: it
+    changes which temporary is spilled and drops the corpus arm64 assembly
+    differential from 420/420 to 71/420.
+
+  So the port matches the reference on the whole corpus, and the divergence
+  is confined to inputs that tie on spill cost. Matching those would mean
+  reimplementing one specific libc's `qsort` (Apple's locally, glibc's in
+  CI), which would make the compiler's output depend on the build host - the
+  opposite of what a byte-exact port wants. The three inputs stay
+  `_`-prefixed, and anyone who wants to verify them locally can rebuild the
+  reference with a stable sort.
 
 - **`test/stress/_006_args_w_32.ssa` makes the emitter ICE.** Plain
   assembly emission (no `-d` flag) fails with `ICE: invalid second
