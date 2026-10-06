@@ -445,7 +445,12 @@ pub fn spill(
       if !ins.to.is_none() {
         let tt = ins.to.tmp_val()
         store(st, ins.to, fn_.tmps[tt].slot)
-        v.clr(tt)
+        // C: if (t >= Tmp0) bsclr(v, t) - a register destination keeps its
+        // bit, only a real temporary is cleared ("in case i->to was a dead
+        // temporary").
+        if tt >= @types.Tmp0 {
+          v.clr(tt)
+        }
       }
       s_emiti(st, b.ins[idx])
       let r = v.bits[0]
