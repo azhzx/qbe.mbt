@@ -36,7 +36,7 @@ run_qpcc() {
 # visible instead of hidden in a comment at the top of a source file.
 flags_for() {
   case "$(basename "$1")" in
-    lambda.c | taggedunion.c | onestop.c) printf '%s' "-std=cqe" ;;
+    lambda.c | taggedunion.c | onestop.c | template.c) printf '%s' "-std=cqe" ;;
     fib.c | c2y.c) printf '%s' "-std=c2y" ;;
     *) printf '%s' "" ;;
   esac
@@ -53,13 +53,21 @@ run_one() {
   set -e
   echo "(exit $rc)"
   echo
+  return $rc
 }
 
 # No arguments: run every *.c in this directory with the flags from the table.
 if [ "$#" -eq 0 ]; then
+  # A failing example must fail the run, or "run everything" is a green gate
+  # that hides exactly what it exists to catch.
+  fails=0
   for c in "$here"/*.c; do
-    run_one "$c"
+    run_one "$c" || fails=$((fails + 1))
   done
+  if [ "$fails" -ne 0 ]; then
+    echo "run.sh: $fails example(s) failed" >&2
+    exit 1
+  fi
   exit 0
 fi
 
