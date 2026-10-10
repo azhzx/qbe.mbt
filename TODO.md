@@ -105,6 +105,12 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   why the `_Generic` duplicate-association check skips that pair. Giving
   `CChar` a third state touches every `CChar(_)` match in the port.
 
+- **A global variable cannot be initialised with a closure.** The environment
+  is a local of the enclosing function, so there is none at file scope. This is
+  now a diagnostic rather than a null function pointer. Decision (2026-10-11):
+  do not lower it into a static pair; the environment would have to become a
+  global object of its own, which is a new feature rather than a bug fix.
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under `test/`

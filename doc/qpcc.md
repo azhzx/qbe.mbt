@@ -420,6 +420,21 @@ header and used in any `.c` file with no per-TU state. Repeating an
 instantiation is a no-op: the second definition is dropped rather than building
 a second layout, which keeps uses on either side of it compatible.
 
+### Closures cannot live in globals
+
+A `_Lambda` expression builds a `{ function, environment }` pair whose
+environment is a local of the enclosing function. A file-scope variable has no
+enclosing function, so a global cannot be initialised with a closure:
+
+```c
+static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
+/* error: a global variable cannot be initialised with a closure */
+```
+
+Move the closure inside a function, or store a plain function pointer instead.
+The front end reports this rather than emitting a null function pointer, which
+would compile, link and then segfault on the first call.
+
 ## Diagnostics
 
 Errors come out rustc-shaped: the message, a `-->` location, the offending

@@ -74,7 +74,7 @@ The installer detects your OS and architecture and downloads the matching
 release asset — `qbe-macos-aarch64`, `qbe-linux-x86_64` or
 `qbe-linux-aarch64` — verifying its SHA-256 checksum before installing it on
 your `PATH`. (Intel macOS has no MoonBit toolchain and is not supported.)
-Use `--version v0.37.0` to pin a release, `--bin-dir DIR` to choose the
+Use `--version v0.37.1` to pin a release, `--bin-dir DIR` to choose the
 directory, or `--no-path` to leave your shell configuration alone.
 
 ### From source

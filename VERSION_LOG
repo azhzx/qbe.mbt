@@ -359,6 +359,15 @@
     port models Con.bits as a struct rather than C's union. bits.i now always
     carries the raw bits, so the whole class is gone. New fixture
     struct_float_byval.c; the oracle grows to 159
+
+2026.10.11: v0.37.1
+    A _Lambda expression's environment is a local of the enclosing function, so
+    a file-scope variable cannot be initialised with a closure. That case used
+    to emit a null function pointer: the object compiled and linked, and the
+    program segfaulted on the first call with no diagnostic. It is now an
+    error, documented in doc/qpcc.md and doc/zh/qpcc.md, with a wbtest. Lowering
+    a global lambda into a static { function, environment } pair is left for
+    later; TODO.md records the decision.
 2026.10.10: v0.37.0
     Four things on top of 0.36.0. `_Generic` now enforces C11 6.5.1.1: two
     associations may not specify compatible types, an association needs a
