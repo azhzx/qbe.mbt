@@ -382,6 +382,50 @@ Semantics and limitations:
   which the type of a `_Lambda` expression (and so `auto`) carries; the
   written type `_Lambda T (params)` names no environment and is diagnosed.
 
+## Pseudo-templates
+
+A QPCC extension, available in `-std=cqe`. An identifier that ends in `_`
+followed by `([` takes a comma-separated list of type spellings and stands for
+the identifier with a hash of that spelling appended:
+
+```c
+#define MkResult(T, E) typedef tagunion { T ok; E err; } Result_([T, E]);
+
+MkResult(int, int)
+MkResult(int, float)
+
+Result_([int, int]) a = { .ok = 100 };
+```
+
+The arguments are matched **by spelling**, not resolved, so `int` and
+`signed int` are different instantiations, and a typo silently names a type
+that no declaration ever defined. This is what makes the feature "pseudo": it
+is a naming convention the front end understands, not a generic type system.
+
+The name is a stable hash of the spelling, so the same instantiation spells the
+same identifier in every translation unit - the typedef can be written in a
+header and used in any `.c` file with no per-TU state. Repeating an
+instantiation is a no-op: the second definition is dropped rather than building
+a second layout, which keeps uses on either side of it compatible.
+
+## Diagnostics
+
+Errors come out rustc-shaped: the message, a `-->` location, the offending
+source line and a caret run under the span.
+
+```
+error: use of undeclared identifier: undefined_thing
+  --> bad.c:3:3
+  |
+3 |   int y = undefined_thing;
+  |   ^^^^^^
+```
+
+Syntax errors use the same layout (the parser is fatal, so there is only ever
+one). A diagnostic raised while checking a declaration points at the
+declaration, not the exact sub-expression, because expressions do not carry
+spans yet.
+
 ## Known gaps at a glance
 
 - The plain form has no preprocessor of its own: `qpcc input.c` strips `#`

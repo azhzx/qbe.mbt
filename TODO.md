@@ -98,6 +98,13 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   (TS 25755).
 
 
+- **`char` and `signed char` are the same type to QPCC.** `CType` has
+  `CChar(Bool)`, so plain `char` is modelled as `CChar(true)`, the same as
+  `signed char`. C keeps `char`, `signed char` and `unsigned char` apart,
+  so `_Generic(x, char: a, signed char: b)` cannot tell them apart, which is
+  why the `_Generic` duplicate-association check skips that pair. Giving
+  `CChar` a third state touches every `CChar(_)` match in the port.
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under `test/`

@@ -359,3 +359,19 @@
     port models Con.bits as a struct rather than C's union. bits.i now always
     carries the raw bits, so the whole class is gone. New fixture
     struct_float_byval.c; the oracle grows to 159
+2026.10.10: v0.37.0
+    Four things on top of 0.36.0. `_Generic` now enforces C11 6.5.1.1: two
+    associations may not specify compatible types, an association needs a
+    complete object type, and a selection has at most one default; the pair
+    char/signed char is exempt because this port models both as CChar(true),
+    which is recorded in TODO.md. N3914's four convertibility macros
+    (__STDC_PTR_CONV_*) are predefined in C2y and CQE - the driver has to pass
+    them to clang, since clang does not know them. Pseudo-templates land:
+    `Name_([T1, T2])` mangles to the head plus an FNV-1a hash of the argument
+    spelling, which makes the name identical across translation units, and a
+    repeated instantiation is dropped instead of building a second layout.
+    Diagnostics are rustc-shaped: Diag carries a length, Token and Span carry
+    one too, local declarations carry a span (BDecl), and the parser and the
+    driver share front/report.mbt to print the message, a `-->` location, the
+    source line and a caret run. The oracle grows to 162 (generic3, template,
+    anyfunc_macros, struct_float_byval included)

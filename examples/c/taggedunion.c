@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <lambda.h>
 #include <taggedunion.h>
 
 typedef tagunion {
