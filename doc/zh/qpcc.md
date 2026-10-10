@@ -372,23 +372,7 @@ static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
 把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
 那种情况会编译通过、链接通过，然后在第一次调用时段错误。
 
-### 全局变量不能存闭包
 
-在 `_Lambda` 表达式构造的 `{ 函数, 环境 }` 二元组里，环境是外围函数的局部变量。
-文件作用域没有外围函数，因此全局变量不能用闭包初始化：
-
-```c
-static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
-/* error: a global variable cannot be initialised with a closure */
-```
-
-把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
-那种情况会编译通过、链接通过，然后在第一次调用时段错误。
-
-## 伪模板
-
-QPCC 扩展，在 \`-std=cqe\` 下可用。以 \`_\` 结尾的标识符后接 \`([\` 时，会取一个
-逗号分隔的类型拼写列表，并代表"该标识符 + 该拼写的哈希"：
 
 \`\`\`c
 #define MkResult(T, E) typedef tagunion { T ok; E err; } Result_([T, E]);
