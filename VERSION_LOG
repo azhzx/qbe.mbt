@@ -336,4 +336,8 @@
     forwards everything after -- to the program, and reports missing clang
     clearly. The driver's errors now name the original source file rather than
     the temporary preprocessed one and exit 1 without a panic trace. New FFI:
-    `mbt_native_exit`. The oracle grows to 158 checks
+    `mbt_native_exit`. Calls to a function with no declaration in scope now
+    warn, because such a call to a variadic callee has to use the vararg ABI
+    and cannot be inferred (implicit declarations stay accepted for the
+    non-variadic libc helpers the self-host build relies on). The oracle grows
+    to 158 checks
