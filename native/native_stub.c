@@ -188,6 +188,13 @@ int32_t mbt_native_run(moonbit_bytes_t cmd) {
   return rc;
 }
 
+/* Terminate the process with `code`, so a driver can forward the exit status
+ * of a program it ran. */
+MOONBIT_FFI_EXPORT
+void mbt_native_exit(int32_t code) {
+  exit((int)code);
+}
+
 /* ---- dynamic linking -------------------------------------------------- */
 
 MOONBIT_FFI_EXPORT

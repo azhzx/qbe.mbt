@@ -50,6 +50,8 @@ pub fn mbt_native_dlopen(Bytes) -> Int64
 
 pub fn mbt_native_dlsym(Int64, Bytes) -> Int64
 
+pub fn mbt_native_exit(Int) -> Unit
+
 pub fn mbt_native_free(Int64, Int) -> Unit
 
 pub fn mbt_native_host_supported() -> Int

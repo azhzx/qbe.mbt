@@ -327,3 +327,13 @@
     behaviour); `void x = f();` evaluates the call and declares nothing; new
     hand-written headers taggedunion.h, function_pointer.h and lambda.h; the
     oracle grows to 155 fixtures
+
+2026.10.10: v0.35.0
+    QPCC gains `qpcc run`: it drives clang for the preprocessing (`clang -E -P`,
+    with the hand-written headers on the include path) and the linking, so an
+    ordinary C file can be compiled and executed in one step; it forwards the
+    program's exit status, passes -I/-D/-U through to the preprocessor,
+    forwards everything after -- to the program, and reports missing clang
+    clearly. The driver's errors now name the original source file rather than
+    the temporary preprocessed one and exit 1 without a panic trace. New FFI:
+    `mbt_native_exit`. The oracle grows to 158 checks

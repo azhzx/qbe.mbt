@@ -39,6 +39,26 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 - **partial** — accepted, but a semantic or layout detail is missing.
 - **no** — rejected or unsupported.
 
+## Running a program
+
+```sh
+qpcc run hello.c            # preprocess, compile, link and run
+qpcc run hello.c -- one two # ... with program arguments
+```
+
+`qpcc run` drives clang for the parts QPCC does not own: it preprocesses the
+input with `clang -E -P` (so `#include` and `#define` work, and the headers
+under `qpcc/include/qbe/` are on the include path when run from the
+repository root; set `QPCC_INCLUDE` to override), compiles the result with
+QPCC, links it with clang and executes it, forwarding the program's exit
+status. `-I`, `-D` and `-U` are passed to the preprocessor, and everything
+after `--` goes to the program. It needs clang on PATH and says so if it is
+missing.
+
+The plain form is still available and does not need clang: `qpcc input.c
+--emit obj|asm|qbe` writes an object, assembly or QBE IL, and the preprocessor
+is then external.
+
 ## Types
 
 | Feature | Status | Evidence |
@@ -346,7 +366,9 @@ Semantics and limitations:
 
 ## Known gaps at a glance
 
-- The preprocessor is external (`clang -E`); no `#include`/`#define` handling.
+- The plain form has no preprocessor of its own: `qpcc input.c` strips `#`
+  lines and expects `clang -E` to have run first. Use `qpcc run`, which does
+  the preprocessing (and the linking) for you.
 - `sizeof` of a string literal or a string-initialised `char[]`.
 - VLA `sizeof`.
 - Some signed bitfield widths.

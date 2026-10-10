@@ -37,6 +37,22 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 - **部分** —— 被接受，但缺少某个语义或布局细节。
 - **否** —— 被拒绝或不支持。
 
+## 运行程序
+
+```sh
+qpcc run hello.c            # 预处理、编译、链接并运行
+qpcc run hello.c -- one two # ... 并传入程序参数
+```
+
+`qpcc run` 负责 QPCC 自己不做的部分：先用 `clang -E -P` 预处理输入（因此
+`#include`、`#define` 都可用；在仓库根目录下运行时 `qpcc/include/qbe/` 下的
+头文件自动在包含路径中，可用 `QPCC_INCLUDE` 覆盖），再用 QPCC 编译，用 clang
+链接并执行，并把程序的退出码原样转发。`-I`、`-D`、`-U` 会传给预处理器，
+`--` 之后的参数全部交给程序。它需要 PATH 上有 clang，缺失时会明确报错。
+
+原有形式仍然保留且不需要 clang：`qpcc input.c --emit obj|asm|qbe` 输出目标文件、
+汇编或 QBE IR，此时预处理器仍需外部完成。
+
 ## 类型
 
 | 特性 | 状态 | 证据 |
@@ -328,7 +344,8 @@ _Lambda(a, &b) int (void) { ... }
 
 ## 已知缺口一览
 
-- 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。
+- 普通形式没有自带预处理器：`qpcc input.c` 会丢弃 `#` 开头的行，需要先跑
+  `clang -E`。请改用 `qpcc run`，它替你完成预处理（与链接）。
 - 字符串字面量或由字符串初始化的 `char[]` 的 `sizeof`。
 - VLA 的 `sizeof`。
 - 某些有符号位域宽度。
