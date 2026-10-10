@@ -4,29 +4,35 @@ Small C programs compiled by QPCC (the C front end in `qpcc/`) and linked
 with clang.
 
 ```sh
-sh examples/c/run.sh                 # run every *.c in this directory
-sh examples/c/run.sh hello.c         # run one file
-sh examples/c/run.sh args.c 1 2      # run it with argv[1]=1 argv[2]=2
+sh examples/c/run.sh                          # run every *.c in this directory
+sh examples/c/run.sh hello.c                  # run one file (C11)
+sh examples/c/run.sh -std=c2y lambda.c        # flags are passed to `qpcc run`
+sh examples/c/run.sh args.c -- 1 2            # ... and after -- to the program
 ```
 
-Exactly one source file is compiled per invocation; the first argument is
-the file and any further arguments are passed to the compiled program, not
-treated as more C files. A relative file argument is tried against the
-current directory first and then against this directory, so both
-`run.sh c2y.c` and `run.sh examples/c/c2y.c` work. A missing file is
-reported with a non-zero exit.
+Exactly one source file is compiled per invocation; the first argument that
+is not an option is the file, and everything after `--` is passed to the
+compiled program rather than treated as more C files. A relative file
+argument is tried against the current directory first and then against this
+directory, so both `run.sh c2y.c` and `run.sh examples/c/c2y.c` work. A
+missing file is reported with a non-zero exit.
 
-The script builds `qpcc/cmd`, preprocesses the `*.c` with `clang -E -P`
-(QPCC's preprocessor is external), compiles it to a Mach-O arm64 object,
-links with clang and runs the result, printing the exit code. The bundled
-`qpcc/include/qbe` is always on the include path, so the hand-written
-`stddefer.h` and `stdcountof.h` aliases resolve; a first line containing
-`std=c2y` additionally selects C2y mode.
+The script is a thin wrapper over `qpcc run`, which preprocesses with
+`clang -E -P`, compiles with QPCC, links with clang and runs the result,
+printing the exit code. The bundled `qpcc/include/qbe` is on the include
+path, so the hand-written `stddefer.h`, `stdcountof.h`, `taggedunion.h`,
+`function_pointer.h` and `lambda.h` aliases resolve.
+
+**Nothing is sniffed out of the sources**: an example that needs a mode says
+so on the command line, or is listed in the table inside `run.sh`, which is
+what the "run everything" pass uses.
 
 | File | Shows |
 | --- | --- |
 | `hello.c` | a first program: `printf` through the bundled `stdio.h` |
 | `fib.c` | recursion and a loop |
 | `args.c` | `argc`/`argv` and passing arguments through `run.sh` |
-| `tagged_union.c` | `-f_tagged_union`: a tagged union with `_Dynamic_tag` / `_Static_tag` |
+| `tagged_union.c` | `-std=c23 -f_tagged_union`: a tagged union with `_Dynamic_tag` / `_Static_tag` |
+| `onestop.c` | `-std=c2y -f_tagged_union`: the same through the `<taggedunion.h>` aliases, plus `auto` |
+| `lambda.c` | `-std=c2y`: a closure with `_Lambda` / `lambda`, and `_Closure_environment` reaching the captured environment |
 | `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof` / `maxof`, `_Minof` / `minof`, a named loop and `_Defer` / `defer` |
