@@ -311,3 +311,19 @@
     diagnose unsupported _Alignas values above the 16-byte QBE stack ABI;
     harden native output capture against allocation failure and length overflow;
     add regression tests for parser, interpreter, JIT and QPCC fixes
+
+2026.10.10: v0.34.0
+    QPCC extensions: _Get_tag/_Tag_of are renamed _Static_tag/_Dynamic_tag
+    (one is a compile-time discriminator for a named member, the other reads
+    the stored runtime tag); _Function_pointer writes a function pointer type
+    in prefix form (_Function_pointer int (int, char *) a; -- the return type
+    and parameter list come first) and, bare, is the storage type for any
+    function pointer from N3914: convertible to and from every function
+    pointer type and void *, not callable without a cast, and still distinct
+    from a real function pointer type in _Generic; _Lambda(a, &b) T (params)
+    { body } closures with by-value and by-reference captures plus
+    _Closure_environment, lowered to a { fn, env } pair whose environment
+    holds the captures in the enclosing frame (escaping is undefined
+    behaviour); `void x = f();` evaluates the call and declares nothing; new
+    hand-written headers taggedunion.h, function_pointer.h and lambda.h; the
+    oracle grows to 155 fixtures

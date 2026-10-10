@@ -77,6 +77,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `__attribute__((packed))` | 部分 | 已解析但被忽略 —— 它不改变 `sizeof` |
 | `__attribute__((aligned(N)))` | 部分 | 已解析但被忽略 —— 它不改变对齐 |
 | C23 `auto` 推导与 `__auto_type` | 是 | `auto_infer`；单个裸声明符且有初始化器 |
+| `void x = expr;` —— 求值 `expr`，不声明任何对象 | 是 | `void_init`；该名字不进局部变量表，裸 `void x;` 仍被拒绝 |
 | K&R（旧式）函数定义 | 否 | — |
 | 嵌套函数 | 否 | 解析错误 |
 
@@ -198,12 +199,19 @@ C2y 语法需显式开启 `-std=c2y`；C11 与 C23 行为不变。
 | `_Countof(expr)` / `_Countof(type-name)`（N3369） | 是 | `countof`；操作数必须是数组类型 |
 | 命名循环（N3355）：循环/switch 前的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
 | `_Defer` 语句（TS 25755 / N3590） | 是 | `defer_basic`、`defer_header` |
+| `_Function_pointer T (params) name` 与前缀式裸 `_Function_pointer` | 是 | `function_pointer` |
+| `_Lambda(捕获列表) T (params) { body }` 闭包、`_Closure_environment` | 是 | `lambda` |
 
 易读拼写来自 `qpcc/include/qbe/` 下的手写头文件：`stddefer.h`
-（`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`），以及
+（`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`）、
 QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
-（`minof` -> `_Minof`）。外部预处理器通过
-`clang -E -P -I <qpcc>/qpcc/include/qbe` 找到它们；QPCC 自身只认下划线关键字。
+（`minof` -> `_Minof`），以及本仓库自有扩展的头文件：`taggedunion.h`
+（`tagunion` -> `_Tagged_union`、`static_tag` -> `_Static_tag`、
+`dynamic_tag` -> `_Dynamic_tag`）、`function_pointer.h`
+（`function_pointer` -> `_Function_pointer`）与 `lambda.h`（`lambda` ->
+`_Lambda`、`closure_environment` -> `_Closure_environment`）。外部预处理器
+通过 `clang -E -P -I <qpcc>/qpcc/include/qbe` 找到它们；QPCC 自身只认下划线
+关键字。
 
 已知限制：
 
@@ -226,9 +234,9 @@ _Tagged_union Value {
 
 _Tagged_union Value x = { .as_int = 100 };
 x = (_Tagged_union Value){ .as_float = 1.5f };  /* 同时设置 tag */
-switch (_Tag_of(x)) {
-  case _Get_tag(_Tagged_union Value, as_int): break;
-  case _Get_tag(_Tagged_union Value, as_float): break;
+switch (_Dynamic_tag(x)) {
+  case _Static_tag(_Tagged_union Value, as_int): break;
+  case _Static_tag(_Tagged_union Value, as_float): break;
 }
 ```
 
@@ -237,8 +245,8 @@ switch (_Tag_of(x)) {
 | `_Tagged_union Tag { members }` | 是 | `tagged_union` |
 | 自然布局：偏移 0 是 `int` tag，成员在其后重叠 | 是 | `{ int; float }` 为 8 字节，`{ int; double }` 为 16 |
 | 读 `x.m` | 是 | `tagged_union` |
-| `_Tag_of(x)`，`int` 右值 | 是 | `tagged_union` |
-| `_Get_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
+| `_Dynamic_tag(x)`，`int` 右值 | 是 | `tagged_union` |
+| `_Static_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
 | 设计化初始化：局部、复合字面量、全局、静态 | 是 | `tagged_union`、`tagged_union_static` |
 
 语义与限制：
@@ -254,9 +262,70 @@ switch (_Tag_of(x)) {
   或空列表（`{}`）都会被诊断。多个 designator 时最后者生效（同 union）。
 - tagged union 可以用 `_Tagged_union Tag` 命名，也可以用 typedef：tag 是
   可选的，所以 `typedef _Tagged_union { ... } Value;` 定义匿名形式，之后
-  `Value` 就代表该类型（`_Get_tag` 同理）。写了 tag 时没有裸的别名。
+  `Value` 就代表该类型（`_Static_tag` 同理）。写了 tag 时没有裸的别名。
 - clang 完全不支持这些，因此夹具是 QPCC-only（`// expect-exit N`），按预期
   退出码校验。
+## `_Function_pointer`（`-std=c2y`）
+
+函数指针类型的前缀写法，同时提供
+[N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm)
+（"Any func* - A Universal Function Pointer Storage Type"）所述的通用函数指针
+存储类型：
+
+```c
+_Function_pointer int (int, char *) a;   /* 等价 int (*a)(int, char *) */
+_Function_pointer b = a;                 /* 可存放任意函数指针 */
+int (*c)(int, char *) = b;               /* 再转回具体类型 */
+```
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` | 是 | `function_pointer` |
+| 裸 `_Function_pointer`，与任意函数指针类型双向转换 | 是 | `function_pointer` |
+| `_Function_pointer` 与 `void *` 双向转换 | 是 | `function_pointer`；目标平台地址空间统一，因此支持 N3914 的可选转换 |
+| 不经强制转换不可调用（N3914 4.1） | 是 | 会诊断为 "a _Function_pointer cannot be called" |
+| `_Generic` 仍能把它与真正的函数指针类型区分开（N3914 4.6） | 是 | `function_pointer` |
+
+写出的类型就是 `T (*)(params)`，因此可与声明符、数组组合：
+`_Function_pointer int (int) table[2];`。`<function_pointer.h>` 提供易读拼写
+`function_pointer`。
+
+## `_Lambda` 闭包（`-std=c2y`）
+
+```c
+int a = 100, b = 20;
+auto f = _Lambda(a, &b) int (int x, int y) { return a + (*b) + x + y; };
+int *pb = _Closure_environment(f)->b;   /* 捕获到的环境 */
+```
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Lambda(捕获列表) T (params) { body }` | 是 | `lambda` |
+| 闭包类型 `_Lambda T (params)` | 是 | `lambda` |
+| `_Closure_environment(e)`，环境指针 | 是 | `lambda` |
+| 按值与按引用捕获 | 是 | `lambda` |
+
+闭包是一个两字的值 `{ 函数指针, 环境指针 }`；写出的类型只是签名，因此签名相同
+的两个闭包是同一类型，可以赋值与拷贝。环境是一个合成结构体，按捕获顺序每个捕获
+一个字段：按值捕获存放变量**创建时**的值，按引用捕获存放它的地址。函数体变成一个
+隐藏函数，其首个参数是环境；体内捕获名绑定到对应的环境字段，因此按值捕获读写的是
+副本，按引用捕获则是那个存下来的指针：
+
+```c
+_Lambda(a, &b) int (void) { ... }
+/* 体内：a 的类型是 int，b 的类型是 int * */
+```
+
+语义与限制：
+
+- 环境位于外层函数的栈帧，因此闭包存活超过其创建作用域是未定义行为。
+- 调用闭包时由编译器补上环境作为隐藏的首个实参；被调用的闭包必须是左值。
+- 若把一个闭包赋给捕获集合不同的另一个闭包，不会诊断；此后读环境是未定义行为，
+  与"读取标记联合中不是当前标记的成员"同一性质。
+- `_Closure_environment` 需要"捕获环境已知"的闭包，这正是 `_Lambda` 表达式
+  （以及 `auto`）的类型所携带的；写出的类型 `_Lambda T (params)` 不含环境，
+  会被诊断。
+
 ## 已知缺口一览
 
 - 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。

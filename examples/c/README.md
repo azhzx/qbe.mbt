@@ -28,5 +28,5 @@ links with clang and runs the result, printing the exit code. The bundled
 | `hello.c` | a first program: `printf` through the bundled `stdio.h` |
 | `fib.c` | recursion and a loop |
 | `args.c` | `argc`/`argv` and passing arguments through `run.sh` |
-| `tagged_union.c` | `-f_tagged_union`: a tagged union with `_Tag_of` / `_Get_tag` |
+| `tagged_union.c` | `-f_tagged_union`: a tagged union with `_Dynamic_tag` / `_Static_tag` |
 | `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof` / `maxof`, `_Minof` / `minof`, a named loop and `_Defer` / `defer` |

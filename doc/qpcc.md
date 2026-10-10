@@ -79,6 +79,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `__attribute__((packed))` | partial | parsed but ignored — it does not change `sizeof` |
 | `__attribute__((aligned(N)))` | partial | parsed but ignored — it does not change alignment |
 | `__auto_type` | no | explicit "not supported" error |
+| `void x = expr;` — evaluates `expr` and declares nothing | yes | `void_init`; the name never reaches the local table, and a bare `void x;` is still rejected |
 | K&R (old-style) function definitions | no | — |
 | nested functions | no | parse error |
 
@@ -200,11 +201,18 @@ C2y syntax is opt-in through `-std=c2y`; C11 and C23 are unchanged.
 | `_Countof(expr)` / `_Countof(type-name)` (N3369) | yes | `countof`; the operand must have array type |
 | named loops (N3355): `label:` on a loop or switch, `break label;`, `continue label;` | yes | `named_loops` |
 | `_Defer` statements (TS 25755 / N3590) | yes | `defer_basic`, `defer_header` |
+| `_Function_pointer T (params) name` and bare `_Function_pointer` | yes | `function_pointer` |
+| `_Lambda(captures) T (params) { body }` closures, `_Closure_environment` | yes | `lambda` |
 
 The friendly spellings come from hand-written headers under
 `qpcc/include/qbe/`: `stddefer.h` (`defer` -> `_Defer`), `stdcountof.h`
-(`countof` -> `_Countof`), and the QPCC extensions `stdmaxof.h`
-(`maxof` -> `_Maxof`) and `stdminof.h` (`minof` -> `_Minof`). The external
+(`countof` -> `_Countof`), the QPCC extensions `stdmaxof.h`
+(`maxof` -> `_Maxof`) and `stdminof.h` (`minof` -> `_Minof`), and the
+headers for this repository's own extensions: `taggedunion.h`
+(`tagunion` -> `_Tagged_union`, `static_tag` -> `_Static_tag`,
+`dynamic_tag` -> `_Dynamic_tag`), `function_pointer.h`
+(`function_pointer` -> `_Function_pointer`) and `lambda.h` (`lambda` ->
+`_Lambda`, `closure_environment` -> `_Closure_environment`). The external
 preprocessor finds them with `clang -E -P -I <qpcc>/qpcc/include/qbe`;
 QPCC itself only knows the underscore keywords.
 
@@ -232,9 +240,9 @@ _Tagged_union Value {
 
 _Tagged_union Value x = { .as_int = 100 };
 x = (_Tagged_union Value){ .as_float = 1.5f };  /* sets the tag */
-switch (_Tag_of(x)) {
-  case _Get_tag(_Tagged_union Value, as_int): break;
-  case _Get_tag(_Tagged_union Value, as_float): break;
+switch (_Dynamic_tag(x)) {
+  case _Static_tag(_Tagged_union Value, as_int): break;
+  case _Static_tag(_Tagged_union Value, as_float): break;
 }
 ```
 
@@ -243,8 +251,8 @@ switch (_Tag_of(x)) {
 | `_Tagged_union Tag { members }` | yes | `tagged_union` |
 | natural layout: an `int` tag at offset 0, the members overlapping after it | yes | `{ int; float }` is 8 bytes, `{ int; double }` is 16 |
 | `x.m` read | yes | `tagged_union` |
-| `_Tag_of(x)`, an `int` rvalue | yes | `tagged_union` |
-| `_Get_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
+| `_Dynamic_tag(x)`, an `int` rvalue | yes | `tagged_union` |
+| `_Static_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
 | designated initializers: local, compound literal, global, static | yes | `tagged_union`, `tagged_union_static` |
 
 Semantics and limitations:
@@ -265,9 +273,77 @@ Semantics and limitations:
 - A tagged union is named either as `_Tagged_union Tag` or through a typedef:
   the tag is optional, so `typedef _Tagged_union { ... } Value;` defines an
   anonymous one and `Value` then stands for the type everywhere (including
-  `_Get_tag`). There is no bare alias for a tag that was written.
+  `_Static_tag`). There is no bare alias for a tag that was written.
 - clang implements none of this, so the fixtures are QPCC-only
   (`// expect-exit N`) and are checked against their expected exit code.
+## `_Function_pointer` (`-std=c2y`)
+
+The prefix spelling of a function pointer type, together with the storage type
+for any function pointer described by
+[N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm)
+("Any func* - A Universal Function Pointer Storage Type"):
+
+```c
+_Function_pointer int (int, char *) a;   /* int (*a)(int, char *) */
+_Function_pointer b = a;                 /* stores any function pointer */
+int (*c)(int, char *) = b;               /* ... and comes back out */
+```
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` | yes | `function_pointer` |
+| bare `_Function_pointer`, convertible to and from every function pointer type | yes | `function_pointer` |
+| `_Function_pointer` <-> `void *` both ways | yes | `function_pointer`; the target platforms have a unified address space, so the optional N3914 conversions are supported |
+| not callable without a cast (N3914 4.1) | yes | diagnosed: "a _Function_pointer cannot be called" |
+| `_Generic` still tells the storage type apart from a real function pointer type (N3914 4.6) | yes | `function_pointer` |
+
+The written type is exactly `T (*)(params)`, so `_Function_pointer` composes
+with declarators and arrays: `_Function_pointer int (int) table[2];`.
+`<function_pointer.h>` provides the friendly `function_pointer` spelling.
+
+## `_Lambda` closures (`-std=c2y`)
+
+```c
+int a = 100, b = 20;
+auto f = _Lambda(a, &b) int (int x, int y) { return a + (*b) + x + y; };
+int *pb = _Closure_environment(f)->b;   /* the captured environment */
+```
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Lambda(captures) T (params) { body }` | yes | `lambda` |
+| the closure type `_Lambda T (params)` | yes | `lambda` |
+| `_Closure_environment(e)`, the environment pointer | yes | `lambda` |
+| by-value and by-reference captures | yes | `lambda` |
+
+A closure is a two-word `{ function pointer, environment pointer }` value; the
+written type is just the signature, so two closures with the same signature have
+the same type and can be assigned and copied. The environment is a synthesized
+struct with one field per capture, in capture order: a by-value capture stores
+the variable's value at creation time, a by-reference capture stores its
+address. The body becomes a hidden function whose leading parameter is the
+environment, and inside it a capture name is bound to its environment field, so
+a by-value capture reads and writes the copy and a by-reference capture is the
+stored pointer:
+
+```c
+_Lambda(a, &b) int (void) { ... }
+/* in the body: a has type int, b has type int * */
+```
+
+Semantics and limitations:
+
+- The environment is a local of the enclosing function, so a closure that
+  outlives the scope it was created in is undefined behaviour.
+- Calling a closure supplies the environment as the hidden leading argument;
+  the closure must be an lvalue.
+- Assigning a closure whose captures differ from the one that created it is
+  not diagnosed; reading the environment is then undefined behaviour, in the
+  same spirit as reading the wrong member of a tagged union.
+- `_Closure_environment` needs a closure whose captured environment is known,
+  which the type of a `_Lambda` expression (and so `auto`) carries; the
+  written type `_Lambda T (params)` names no environment and is diagnosed.
+
 ## Known gaps at a glance
 
 - The preprocessor is external (`clang -E`); no `#include`/`#define` handling.
