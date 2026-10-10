@@ -359,6 +359,32 @@ _Lambda(a, &b) int (void) { ... }
   （以及 `auto`）的类型所携带的；写出的类型 `_Lambda T (params)` 不含环境，
   会被诊断。
 
+### 全局变量不能存闭包
+
+\`_Lambda\` 表达式构造的是 \`{ 函数, 环境 }\` 二元组，而环境是外围函数的局部变量。
+文件作用域没有外围函数，因此全局变量不能用闭包初始化：
+
+\`\`\`c
+static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
+/* error: a global variable cannot be initialised with a closure */
+\`\`\`
+
+把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
+那种情况会编译通过、链接通过，然后在第一次调用时段错误。
+
+### 全局变量不能存闭包
+
+在 `_Lambda` 表达式构造的 `{ 函数, 环境 }` 二元组里，环境是外围函数的局部变量。
+文件作用域没有外围函数，因此全局变量不能用闭包初始化：
+
+```c
+static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
+/* error: a global variable cannot be initialised with a closure */
+```
+
+把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
+那种情况会编译通过、链接通过，然后在第一次调用时段错误。
+
 ## 伪模板
 
 QPCC 扩展，在 \`-std=cqe\` 下可用。以 \`_\` 结尾的标识符后接 \`([\` 时，会取一个
@@ -390,19 +416,6 @@ Result_([int, int]) a = { .ok = 100 };
 可以写在头文件里，在任意 \`.c\` 中使用，不需要任何跨 TU 状态。重复实例化是空操作：
 第二份定义会被丢弃而不是再建一个布局，这样它两侧的使用仍然兼容。
 
-### 全局变量不能存闭包
-
-\`_Lambda\` 表达式构造的是 \`{ 函数, 环境 }\` 二元组，而环境是外围函数的局部变量。
-文件作用域没有外围函数，因此全局变量不能用闭包初始化：
-
-\`\`\`c
-static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
-/* error: a global variable cannot be initialised with a closure */
-\`\`\`
-
-把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
-那种情况会编译通过、链接通过，然后在第一次调用时段错误。
-
 ## 诊断
 
 错误输出采用 rustc 形状：消息、\`-->\` 位置、出错源码行，以及 span 下的波浪线。
@@ -430,6 +443,8 @@ error: use of undeclared identifier: undefined_thing
 - 原子操作：没有读-改-写。
 - `asm` 标签与嵌套函数。
 - 诊断信息携带语句级位置。
+- 文件作用域的变量不能用闭包初始化：`_Lambda` 表达式的环境是外围函数的局部变
+  量，文件作用域没有外围函数。这种情况会明确报错，而不是发出空函数指针。
 
 ## 另见
 
