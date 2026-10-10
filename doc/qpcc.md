@@ -466,6 +466,9 @@ spans yet.
 - Atomics: no read-modify-write.
 - `asm` labels and nested functions.
 - Diagnostics carry statement-level positions.
+- Types are per translation unit. A struct declared in two files is laid out the
+  same way from the same declaration, so the ABI agrees, but nothing compares
+  the two declarations; a mismatch is undefined behaviour, as in C.
 - A file-scope variable cannot be initialised with a closure: a `_Lambda`
   expression's environment is a local of the enclosing function, so there is
   none at file scope. It is diagnosed rather than turned into a null function
