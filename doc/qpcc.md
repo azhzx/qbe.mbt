@@ -402,6 +402,18 @@ The arguments are matched **by spelling**, not resolved, so `int` and
 that no declaration ever defined. This is what makes the feature "pseudo": it
 is a naming convention the front end understands, not a generic type system.
 
+Identifier characters glued to an instantiation without whitespace join the
+name, the way the preprocessor pastes tokens, so one instantiation can carry a
+family of associated declarations:
+
+```c
+#define MkResult(T, E) \
+  typedef tagunion { T value; E error; } Result_([T, E]); \
+  _Bool Result_([T, E])_is_ok(Result_([T, E]) r) { ... }
+```
+
+`Result_([T, E])_is_ok` is one identifier; `Result_([T, E]) r` is two.
+
 The name is a stable hash of the spelling, so the same instantiation spells the
 same identifier in every translation unit - the typedef can be written in a
 header and used in any `.c` file with no per-TU state. Repeating an
