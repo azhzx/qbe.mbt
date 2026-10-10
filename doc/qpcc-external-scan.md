@@ -108,6 +108,100 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | 'openssl/ssl.h' | 1 |
 | 'lz4hc.h' | 1 |
 
+## 6. 逐条发现
+
+### 6.1 头号问题：自带头遮蔽系统头，缺标准宏（11+ 文件）
+
+qpcc 用 `-I qpcc/include/qbe` 提供 20 个头文件。`-I` 是**优先**搜索，
+于是 `<stdint.h>` `<stdio.h>` `<stdlib.h>` `<limits.h>` `<unistd.h>` 全部命中 qpcc 的版本，
+而它们**没有**这些标准宏：
+
+| 宏 | 本该来自 | qpcc 自带头 | 系统头 |
+| --- | --- | --- | --- |
+| `SIZE_MAX` | `<stdint.h>` | ✗ 缺 | ✓ 有 |
+| `INTMAX_MIN` | `<stdint.h>` | ✗ 缺 | ✓ 有 |
+| `EXIT_FAILURE` / `EXIT_SUCCESS` | `<stdlib.h>` | ✗ 缺 | ✓ 有 |
+| `BUFSIZ` / `L_tmpnam` / `SEEK_END` | `<stdio.h>` | ✗ 缺 | ✓ 有 |
+| `USHRT_MAX` | `<limits.h>` | ✗ 缺 | ✓ 有 |
+| `STDOUT_FILENO` | `<unistd.h>` | ✗ 缺 | ✓ 有 |
+
+受影响文件数（`use of undeclared identifier`）：`SIZE_MAX` 7、`EXIT_FAILURE` 3、
+`EXIT_SUCCESS` 2、`BUFSIZ` 2，另有 `USHRT_MAX`/`STDOUT_FILENO`/`SEEK_END`/`L_tmpnam`/`INTMAX_MIN` 各 1。
+
+**这是最容易修、收益最大的一条**：补齐宏即可，不涉及语言实现。
+dash 的 `arith_yacc.c` 正因 `INTMAX_MIN` 失败。
+
+### 6.2 解析失败七成来自 macOS 系统头的 Apple 扩展（17 / 23 文件）
+
+| 现场 | 文件数 | 源头 |
+| --- | ---: | --- |
+| `extern _Float16 __fabsf16(_Float16) __attribute__((availability(...)))` | 12 | macOS `<math.h>` |
+| `int (^)(const struct dirent *)` / `typedef void (^os_block_t)(void);` | 5 | Apple **Blocks**（`<dirent.h>` 等）|
+
+**SQLite 也栽在这里** —— 它那个唯一的失败点就是第 6527 行的
+`typedef void (^os_block_t)(void);`，来自系统头而非 SQLite 自己的代码。
+
+所以：**这 17 个失败很可能是 macOS 特有的**，在 Linux/glibc 上大概率消失。
+把 qpcc 放到 Linux 上重跑是下一个该做的实验。
+
+剩下的 6 个是项目自身代码（`va_list ap;`、`static bool client_send_packet(...)`、
+`static Client *client_malloc(...)`、`else if(!strcmp("-n", argv[i]))` 等），才是真正的前端缺口。
+
+### 6.3 后端 ICE（3 个文件，真 bug）
+
+| 项目 | 文件 | 消息 |
+| --- | --- | --- |
+| bzip2 | `compress.c` | `ICE: arm64 bin: expected a register operand for mul` |
+| bzip2 | `decompress.c` | `ld.8698 violates ssa invariant` |
+| lua | `src/ldo.c` | `ICE: arm64 bin: unhandled jump` |
+
+三个都在**代码生成阶段**（前端已通过 `--check`），是 arm64 后端的真实缺陷，
+分别指向：乘法的内存操作数、SSA 不变量被破坏、未处理的跳转。
+
+### 6.4 `sizeof("字面量")` 静默给错值
+
+```c
+printf("%zu %zu %zu\n", sizeof("ab"), sizeof(int), sizeof("abcdef"));
+/* qpcc  : 8 4 8   ← 字面量退化成了指针 */
+/* clang : 3 4 7   */
+```
+
+文档里「`sizeof` of a string literal」列为已知缺口，但**静默给错值**比报错危险。
+建议至少降级为诊断。
+
+### 6.5 诊断走 stdout
+
+`qpcc` 的所有诊断（含致命解析错误）走 **stdout**。本次扫描第一遍把 stdout 丢进 `/dev/null`，
+结果日志里只剩 `PanicError` 栈，**完全看不到错误信息**。对「qpcc 作为编译器的可脚本化性」
+这是硬伤，修复优先级应当很高。
+
+## 7. 方法的局限（所以数字是下界）
+
+1. **`-D` 注入有 bug**：从 `Makefile` 抓到的 `-DVERSION=\"0\"` 反斜杠没消干净，
+   `sic.c` 因此报 `expected ")"` —— 那是扫描器的错，不是 qpcc 的。
+2. **没有复刻各项目的 include 路径**：lz4 的 `xxhash.h`、dash 的 `token.h`/`nodes.h`（由它的构建生成）、
+   yyjson 的 `-I src`、miniz 的 CMake 产物，都没给，导致 66 个文件没走到 qpcc。
+3. 因此**真实通过率只会比 65% 高，不会低**。
+
+## 8. 复现
+
+```sh
+# 抓源（仓库外，不提交）
+SRC=/tmp/qpcc-scan/src
+git clone --depth 1 https://git.suckless.org/sic $SRC/sic
+# … 其余见 /tmp/qpcc-scan/fetch.sh
+
+# 扫描：clang 预处理 → qpcc --check → qpcc -o
+sh /tmp/qpcc-scan/scan3.sh          # 结果写 /tmp/qpcc-scan/out2/summary.tsv
+sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
+```
+
+## 9. 未做的事（按用户要求）
+
+- **没有修复任何一条**；没有改任何第三方源码；没有提交第三方源码。
+- 没有用各项目自带的 Makefile 判定构建（qpcc 没有 `-c`、没有多文件驱动）。
+- SQLite 只用默认 amalgamation 配置，未加 `SQLITE_ENABLE_*`。
+
 ## 附录 A. 逐文件明细
 
 | 项目 | 文件 | 阶段 | 结果 | 首个诊断 |
@@ -313,97 +407,3 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | zlib | zlib/trees.c | OK | OK | - |
 | zlib | zlib/uncompr.c | OK | OK | - |
 | zlib | zlib/zutil.c | OK | OK | - |
-
-## 6. 逐条发现
-
-### 6.1 头号问题：自带头遮蔽系统头，缺标准宏（11+ 文件）
-
-qpcc 用 `-I qpcc/include/qbe` 提供 20 个头文件。`-I` 是**优先**搜索，
-于是 `<stdint.h>` `<stdio.h>` `<stdlib.h>` `<limits.h>` `<unistd.h>` 全部命中 qpcc 的版本，
-而它们**没有**这些标准宏：
-
-| 宏 | 本该来自 | qpcc 自带头 | 系统头 |
-| --- | --- | --- | --- |
-| `SIZE_MAX` | `<stdint.h>` | ✗ 缺 | ✓ 有 |
-| `INTMAX_MIN` | `<stdint.h>` | ✗ 缺 | ✓ 有 |
-| `EXIT_FAILURE` / `EXIT_SUCCESS` | `<stdlib.h>` | ✗ 缺 | ✓ 有 |
-| `BUFSIZ` / `L_tmpnam` / `SEEK_END` | `<stdio.h>` | ✗ 缺 | ✓ 有 |
-| `USHRT_MAX` | `<limits.h>` | ✗ 缺 | ✓ 有 |
-| `STDOUT_FILENO` | `<unistd.h>` | ✗ 缺 | ✓ 有 |
-
-受影响文件数（`use of undeclared identifier`）：`SIZE_MAX` 7、`EXIT_FAILURE` 3、
-`EXIT_SUCCESS` 2、`BUFSIZ` 2，另有 `USHRT_MAX`/`STDOUT_FILENO`/`SEEK_END`/`L_tmpnam`/`INTMAX_MIN` 各 1。
-
-**这是最容易修、收益最大的一条**：补齐宏即可，不涉及语言实现。
-dash 的 `arith_yacc.c` 正因 `INTMAX_MIN` 失败。
-
-### 6.2 解析失败七成来自 macOS 系统头的 Apple 扩展（17 / 23 文件）
-
-| 现场 | 文件数 | 源头 |
-| --- | ---: | --- |
-| `extern _Float16 __fabsf16(_Float16) __attribute__((availability(...)))` | 12 | macOS `<math.h>` |
-| `int (^)(const struct dirent *)` / `typedef void (^os_block_t)(void);` | 5 | Apple **Blocks**（`<dirent.h>` 等）|
-
-**SQLite 也栽在这里** —— 它那个唯一的失败点就是第 6527 行的
-`typedef void (^os_block_t)(void);`，来自系统头而非 SQLite 自己的代码。
-
-所以：**这 17 个失败很可能是 macOS 特有的**，在 Linux/glibc 上大概率消失。
-把 qpcc 放到 Linux 上重跑是下一个该做的实验。
-
-剩下的 6 个是项目自身代码（`va_list ap;`、`static bool client_send_packet(...)`、
-`static Client *client_malloc(...)`、`else if(!strcmp("-n", argv[i]))` 等），才是真正的前端缺口。
-
-### 6.3 后端 ICE（3 个文件，真 bug）
-
-| 项目 | 文件 | 消息 |
-| --- | --- | --- |
-| bzip2 | `compress.c` | `ICE: arm64 bin: expected a register operand for mul` |
-| bzip2 | `decompress.c` | `ld.8698 violates ssa invariant` |
-| lua | `src/ldo.c` | `ICE: arm64 bin: unhandled jump` |
-
-三个都在**代码生成阶段**（前端已通过 `--check`），是 arm64 后端的真实缺陷，
-分别指向：乘法的内存操作数、SSA 不变量被破坏、未处理的跳转。
-
-### 6.4 `sizeof("字面量")` 静默给错值
-
-```c
-printf("%zu %zu %zu\n", sizeof("ab"), sizeof(int), sizeof("abcdef"));
-/* qpcc  : 8 4 8   ← 字面量退化成了指针 */
-/* clang : 3 4 7   */
-```
-
-文档里「`sizeof` of a string literal」列为已知缺口，但**静默给错值**比报错危险。
-建议至少降级为诊断。
-
-### 6.5 诊断走 stdout
-
-`qpcc` 的所有诊断（含致命解析错误）走 **stdout**。本次扫描第一遍把 stdout 丢进 `/dev/null`，
-结果日志里只剩 `PanicError` 栈，**完全看不到错误信息**。对「qpcc 作为编译器的可脚本化性」
-这是硬伤，修复优先级应当很高。
-
-## 7. 方法的局限（所以数字是下界）
-
-1. **`-D` 注入有 bug**：从 `Makefile` 抓到的 `-DVERSION=\"0\"` 反斜杠没消干净，
-   `sic.c` 因此报 `expected ")"` —— 那是扫描器的错，不是 qpcc 的。
-2. **没有复刻各项目的 include 路径**：lz4 的 `xxhash.h`、dash 的 `token.h`/`nodes.h`（由它的构建生成）、
-   yyjson 的 `-I src`、miniz 的 CMake 产物，都没给，导致 66 个文件没走到 qpcc。
-3. 因此**真实通过率只会比 65% 高，不会低**。
-
-## 8. 复现
-
-```sh
-# 抓源（仓库外，不提交）
-SRC=/tmp/qpcc-scan/src
-git clone --depth 1 https://git.suckless.org/sic $SRC/sic
-# … 其余见 /tmp/qpcc-scan/fetch.sh
-
-# 扫描：clang 预处理 → qpcc --check → qpcc -o
-sh /tmp/qpcc-scan/scan3.sh          # 结果写 /tmp/qpcc-scan/out2/summary.tsv
-sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
-```
-
-## 9. 未做的事（按用户要求）
-
-- **没有修复任何一条**；没有改任何第三方源码；没有提交第三方源码。
-- 没有用各项目自带的 Makefile 判定构建（qpcc 没有 `-c`、没有多文件驱动）。
-- SQLite 只用默认 amalgamation 配置，未加 `SQLITE_ENABLE_*`。
