@@ -1,4 +1,4 @@
-// std=c2y tagged
+// std=cqe
 #include <stdio.h>
 #include <time.h>
 

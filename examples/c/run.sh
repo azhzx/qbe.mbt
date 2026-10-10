@@ -36,9 +36,8 @@ run_qpcc() {
 # visible instead of hidden in a comment at the top of a source file.
 flags_for() {
   case "$(basename "$1")" in
-    lambda.c | fib.c | c2y.c) printf '%s' "-std=c2y" ;;
-    onestop.c) printf '%s' "-std=c2y -f_tagged_union" ;;
-    tagged_union.c) printf '%s' "-std=c23 -f_tagged_union" ;;
+    lambda.c | taggedunion.c | onestop.c) printf '%s' "-std=cqe" ;;
+    fib.c | c2y.c) printf '%s' "-std=c2y" ;;
     *) printf '%s' "" ;;
   esac
 }

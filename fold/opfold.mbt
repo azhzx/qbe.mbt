@@ -240,7 +240,7 @@ fn foldflt(
     @types.Con::{
       kind: @types.CBits,
       label: 0,
-      bits: @types.ConBits::{ i: 0, d: xd, s: 0.0, },
+      bits: @types.ConBits::{ i: xd.reinterpret_as_int64(), d: xd, s: 0.0, },
       flt: 2,
       is_local: false,
     }
@@ -261,7 +261,11 @@ fn foldflt(
     @types.Con::{
       kind: @types.CBits,
       label: 0,
-      bits: @types.ConBits::{ i: 0, d: 0.0, s: xs, },
+      bits: @types.ConBits::{
+        i: xs.reinterpret_as_uint().to_int64(),
+        d: 0.0,
+        s: xs,
+      },
       flt: 1,
       is_local: false,
     }

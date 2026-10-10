@@ -32,7 +32,7 @@ what the "run everything" pass uses.
 | `hello.c` | a first program: `printf` through the bundled `stdio.h` |
 | `fib.c` | recursion and a loop |
 | `args.c` | `argc`/`argv` and passing arguments through `run.sh` |
-| `tagged_union.c` | `-std=c23 -f_tagged_union`: a tagged union with `_Dynamic_tag` / `_Static_tag` |
-| `onestop.c` | `-std=c2y -f_tagged_union`: the same through the `<taggedunion.h>` aliases, plus `auto` |
-| `lambda.c` | `-std=c2y`: a closure with `_Lambda` / `lambda`, and `_Closure_environment` reaching the captured environment |
+| `taggedunion.c` | `-std=cqe`: a tagged union through the `<taggedunion.h>` aliases, with `_Dynamic_tag` / `_Static_tag` |
+| `onestop.c` | `-std=cqe`: the same, plus a closure through `<lambda.h>` |
+| `lambda.c` | `-std=cqe`: a closure with `_Lambda` / `lambda`, and `_Closure_environment` reaching the captured environment |
 | `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof` / `maxof`, `_Minof` / `minof`, a named loop and `_Defer` / `defer` |

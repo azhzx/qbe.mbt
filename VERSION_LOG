@@ -341,3 +341,21 @@
     and cannot be inferred (implicit declarations stay accepted for the
     non-variadic libc helpers the self-host build relies on). The oracle grows
     to 158 checks
+
+2026.10.10: v0.36.0
+    QPCC splits the language modes: `-std=c2y` is now exactly C2y, and the
+    QPCC-only extensions (closures, the _Function_pointer prefix form, the
+    tagged union, `void x = expr;`) move to a new `-std=cqe` ("C with QPCC
+    extensions"). Using one of those keywords under `-std=c2y` is diagnosed
+    with a pointer at `-std=cqe` instead of a plain syntax error. clang has no
+    `-std=cqe`, so the preprocessing step and the reference builds use the C2y
+    spelling. -f_tagged_union still enables the tagged union on its own in any
+    mode. Docs and examples move to the new flag;
+    examples/c/taggedunion.c joins them. Also fixes a miscompile found on the
+    way: a struct with a float member passed by value read the wrong bits,
+    because ssa/load.mbt's cast() helper was a broken simplification of C
+    load.c's (it discarded its results and always emitted Kl extuw), and
+    because the fold and gvn read bits.i of a float constant - 0, since this
+    port models Con.bits as a struct rather than C's union. bits.i now always
+    carries the raw bits, so the whole class is gone. New fixture
+    struct_float_byval.c; the oracle grows to 159

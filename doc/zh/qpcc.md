@@ -26,6 +26,7 @@ QPCC（`qpcc/`）是把 C 降低到 qbe.mbt IR builder、再从那里降低到 M
 | C11 | 默认，`-std=c11` | 基线 |
 | C23 | `-std=c23` | 在同一前端之上启用 C23 语法；部分支持（见下） |
 | C2y | `-std=c2y` | 在同一前端之上启用 C2y 语法；见 C2y 小节 |
+| CQE | `-std=cqe` | C2y **加上 QPCC 扩展**（"C with QPCC extensions"）；非标准，见 CQE 小节 |
 
 C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 QPCC 之前运行
 `clang -E -P`。驱动只剥离剩余以 `#` 开头的行，因此仅由 `#define` 定义的名字
@@ -215,8 +216,7 @@ C2y 语法需显式开启 `-std=c2y`；C11 与 C23 行为不变。
 | `_Countof(expr)` / `_Countof(type-name)`（N3369） | 是 | `countof`；操作数必须是数组类型 |
 | 命名循环（N3355）：循环/switch 前的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
 | `_Defer` 语句（TS 25755 / N3590） | 是 | `defer_basic`、`defer_header` |
-| `_Function_pointer T (params) name` 与前缀式裸 `_Function_pointer` | 是 | `function_pointer` |
-| `_Lambda(捕获列表) T (params) { body }` 闭包、`_Closure_environment` | 是 | `lambda` |
+QPCC 私有扩展不在此模式内，见下面的 CQE。
 
 易读拼写来自 `qpcc/include/qbe/` 下的手写头文件：`stddefer.h`
 （`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`）、
@@ -237,7 +237,24 @@ QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
 - clang 尚未实现 `_Maxof`/`_Minof`、命名循环与 `_Defer`，因此这些夹具是
   QPCC-only（`// expect-exit N`），按其预期退出码校验而非与 clang 对照。
 
-## `_Tagged_union`（`-f_tagged_union`）
+## CQE（`-std=cqe`）
+
+`-std=cqe` = **C2y 加 QPCC 扩展**。它存在的意义是让 `-std=c2y` 保持纯粹的
+C2y：下表中的东西都不是标准，需要 QPCC 模式；而上面那些 C2y 提案
+（`_Countof`、`_Maxof`/`_Minof`、命名循环、`_Defer`）在普通 `-std=c2y`
+下即可用。
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` 与前缀式裸 `_Function_pointer` | 是 | `function_pointer` |
+| `_Lambda(捕获列表) T (params) { body }` 闭包、`_Closure_environment` | 是 | `lambda` |
+| `_Tagged_union` / `_Static_tag` / `_Dynamic_tag` | 是 | `tagged_union`、`taggedunion_header` |
+| `void x = expr;` 不声明对象，只求值 | 是 | `void_init` |
+
+标记联合在任何模式下也可用 `-f_tagged_union` 单独开启。在 `-std=c2y` 下使用
+QPCC 关键字会得到指向 `-std=cqe` 的诊断，而不是含糊的语法错误。
+
+## `_Tagged_union`（`-f_tagged_union`，或 `-std=cqe`）
 
 QPCC 私有扩展，没有 WG14 提案。需显式开启 `-f_tagged_union`；未开启时这三个
 关键字只是普通标识符，C11/C23/C2y 行为不变。
@@ -281,7 +298,7 @@ switch (_Dynamic_tag(x)) {
   `Value` 就代表该类型（`_Static_tag` 同理）。写了 tag 时没有裸的别名。
 - clang 完全不支持这些，因此夹具是 QPCC-only（`// expect-exit N`），按预期
   退出码校验。
-## `_Function_pointer`（`-std=c2y`）
+## `_Function_pointer`（`-std=cqe`）
 
 函数指针类型的前缀写法，同时提供
 [N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm)
@@ -306,7 +323,7 @@ int (*c)(int, char *) = b;               /* 再转回具体类型 */
 `_Function_pointer int (int) table[2];`。`<function_pointer.h>` 提供易读拼写
 `function_pointer`。
 
-## `_Lambda` 闭包（`-std=c2y`）
+## `_Lambda` 闭包（`-std=cqe`）
 
 ```c
 int a = 100, b = 20;

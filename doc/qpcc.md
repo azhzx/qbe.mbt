@@ -28,6 +28,7 @@ The fixture column below names the oracle cases that cover a feature, or
 | C11 | default, `-std=c11` | the baseline |
 | C23 | `-std=c23` | C23 syntax on top of the same front end; partial (see below) |
 | C2y | `-std=c2y` | C2y syntax on top of the same front end; see the C2y section |
+| CQE | `-std=cqe` | C2y **plus the QPCC extensions** ("C with QPCC extensions"); non-standard, see the CQE section |
 
 The C preprocessor is **external**: run `clang -E -P` before QPCC when the
 input uses `#include`/`#define`. The driver only strips the remaining lines
@@ -221,8 +222,7 @@ C2y syntax is opt-in through `-std=c2y`; C11 and C23 are unchanged.
 | `_Countof(expr)` / `_Countof(type-name)` (N3369) | yes | `countof`; the operand must have array type |
 | named loops (N3355): `label:` on a loop or switch, `break label;`, `continue label;` | yes | `named_loops` |
 | `_Defer` statements (TS 25755 / N3590) | yes | `defer_basic`, `defer_header` |
-| `_Function_pointer T (params) name` and bare `_Function_pointer` | yes | `function_pointer` |
-| `_Lambda(captures) T (params) { body }` closures, `_Closure_environment` | yes | `lambda` |
+The QPCC-only keywords are **not** part of this mode; see CQE below.
 
 The friendly spellings come from hand-written headers under
 `qpcc/include/qbe/`: `stddefer.h` (`defer` -> `_Defer`), `stdcountof.h`
@@ -246,7 +246,25 @@ Known limitations:
   so those fixtures are QPCC-only (`// expect-exit N`), checked against their
   expected exit code rather than a clang reference.
 
-## `_Tagged_union` (`-f_tagged_union`)
+## CQE (`-std=cqe`)
+
+`-std=cqe` is **C2y plus the QPCC extensions**. It exists so that
+`-std=c2y` stays exactly C2y: everything below is non-standard and needs the
+QPCC mode, while the C2y proposals above (`_Countof`, `_Maxof`/`_Minof`,
+named loops, `_Defer`) work under plain `-std=c2y`.
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` and bare `_Function_pointer` | yes | `function_pointer` |
+| `_Lambda(captures) T (params) { body }` closures, `_Closure_environment` | yes | `lambda` |
+| `_Tagged_union` / `_Static_tag` / `_Dynamic_tag` | yes | `tagged_union`, `taggedunion_header` |
+| `void x = expr;` declares nothing and only evaluates `expr` | yes | `void_init` |
+
+The tagged union is also available on its own in any mode through
+`-f_tagged_union`. Using a QPCC keyword under `-std=c2y` is diagnosed with a
+pointer at `-std=cqe` rather than left as a plain syntax error.
+
+## `_Tagged_union` (`-f_tagged_union`, or `-std=cqe`)
 
 A QPCC extension with no WG14 proposal behind it. It is opt-in through
 `-f_tagged_union`; without the flag the three keywords are ordinary
@@ -296,7 +314,7 @@ Semantics and limitations:
   `_Static_tag`). There is no bare alias for a tag that was written.
 - clang implements none of this, so the fixtures are QPCC-only
   (`// expect-exit N`) and are checked against their expected exit code.
-## `_Function_pointer` (`-std=c2y`)
+## `_Function_pointer` (`-std=cqe`)
 
 The prefix spelling of a function pointer type, together with the storage type
 for any function pointer described by
@@ -321,7 +339,7 @@ The written type is exactly `T (*)(params)`, so `_Function_pointer` composes
 with declarators and arrays: `_Function_pointer int (int) table[2];`.
 `<function_pointer.h>` provides the friendly `function_pointer` spelling.
 
-## `_Lambda` closures (`-std=c2y`)
+## `_Lambda` closures (`-std=cqe`)
 
 ```c
 int a = 100, b = 20;

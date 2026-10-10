@@ -87,6 +87,8 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
 - `_Defer` diagnoses a jump out of its own statement and a `goto` into it,
   but a `longjmp` past a defer is left undefined (as the TS says) and is not
   diagnosed.
+
+
 - clang implements `_Countof` but not `_Maxof`/`_Minof`, named loops or
   `_Defer`, so `maxminof.c`, `named_loops.c`, `defer_basic.c` and
   `defer_header.c` are QPCC-only (`// expect-exit N`) and are checked

@@ -51,7 +51,9 @@ pub fn Con::double(d : Double) -> Con {
   Con::{
     kind: CBits,
     label: 0,
-    bits: ConBits::{ i: 0, d, s: 0.0, },
+    // bits.i mirrors C's Con.bits union view, so it always carries the raw
+    // bits; the fold, gvn and the emitters read it directly.
+    bits: ConBits::{ i: d.reinterpret_as_int64(), d, s: 0.0, },
     flt: 2,
     is_local: false,
   }
@@ -62,7 +64,7 @@ pub fn Con::single(s : Float) -> Con {
   Con::{
     kind: CBits,
     label: 0,
-    bits: ConBits::{ i: 0, d: 0.0, s, },
+    bits: ConBits::{ i: s.reinterpret_as_uint().to_int64(), d: 0.0, s, },
     flt: 1,
     is_local: false,
   }
@@ -117,13 +119,8 @@ pub fn Con::add(self : Con, other : Con) -> Con {
 ///|
 // Raw bit representation of a constant (for interning, like C's union)
 pub fn Con::raw_bits(self : Con) -> Int64 {
-  if self.kind == CBits && self.flt == 1 {
-    self.bits.s.reinterpret_as_uint().to_int64()
-  } else if self.kind == CBits && self.flt == 2 {
-    self.bits.d.reinterpret_as_int64()
-  } else {
-    self.bits.i
-  }
+  // ConBits is a struct rather than C's union, so bits.i is kept canonical.
+  self.bits.i
 }
 
 ///|
