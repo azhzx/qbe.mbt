@@ -28,6 +28,7 @@ The fixture column below names the oracle cases that cover a feature, or
 | C11 | default, `-std=c11` | the baseline |
 | C23 | `-std=c23` | C23 syntax on top of the same front end; partial (see below) |
 | C2y | `-std=c2y` | C2y syntax on top of the same front end; see the C2y section |
+| CQE | `-std=cqe` | C2y **plus the QPCC extensions** ("C with QPCC extensions"); non-standard, see the CQE section |
 
 The C preprocessor is **external**: run `clang -E -P` before QPCC when the
 input uses `#include`/`#define`. The driver only strips the remaining lines
@@ -38,6 +39,26 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 - **yes** — compiled, linked and run correctly.
 - **partial** — accepted, but a semantic or layout detail is missing.
 - **no** — rejected or unsupported.
+
+## Running a program
+
+```sh
+qpcc run hello.c            # preprocess, compile, link and run
+qpcc run hello.c -- one two # ... with program arguments
+```
+
+`qpcc run` drives clang for the parts QPCC does not own: it preprocesses the
+input with `clang -E -P` (so `#include` and `#define` work, and the headers
+under `qpcc/include/qbe/` are on the include path when run from the
+repository root; set `QPCC_INCLUDE` to override), compiles the result with
+QPCC, links it with clang and executes it, forwarding the program's exit
+status. `-I`, `-D` and `-U` are passed to the preprocessor, and everything
+after `--` goes to the program. It needs clang on PATH and says so if it is
+missing.
+
+The plain form is still available and does not need clang: `qpcc input.c
+--emit obj|asm|qbe` writes an object, assembly or QBE IL, and the preprocessor
+is then external.
 
 ## Types
 
@@ -79,6 +100,7 @@ that begin with `#`, so a bare `#define`d name is *not* expanded.
 | `__attribute__((packed))` | partial | parsed but ignored — it does not change `sizeof` |
 | `__attribute__((aligned(N)))` | partial | parsed but ignored — it does not change alignment |
 | `__auto_type` | no | explicit "not supported" error |
+| `void x = expr;` — evaluates `expr` and declares nothing | yes | `void_init`; the name never reaches the local table, and a bare `void x;` is still rejected |
 | K&R (old-style) function definitions | no | — |
 | nested functions | no | parse error |
 
@@ -200,11 +222,17 @@ C2y syntax is opt-in through `-std=c2y`; C11 and C23 are unchanged.
 | `_Countof(expr)` / `_Countof(type-name)` (N3369) | yes | `countof`; the operand must have array type |
 | named loops (N3355): `label:` on a loop or switch, `break label;`, `continue label;` | yes | `named_loops` |
 | `_Defer` statements (TS 25755 / N3590) | yes | `defer_basic`, `defer_header` |
+The QPCC-only keywords are **not** part of this mode; see CQE below.
 
 The friendly spellings come from hand-written headers under
 `qpcc/include/qbe/`: `stddefer.h` (`defer` -> `_Defer`), `stdcountof.h`
-(`countof` -> `_Countof`), and the QPCC extensions `stdmaxof.h`
-(`maxof` -> `_Maxof`) and `stdminof.h` (`minof` -> `_Minof`). The external
+(`countof` -> `_Countof`), the QPCC extensions `stdmaxof.h`
+(`maxof` -> `_Maxof`) and `stdminof.h` (`minof` -> `_Minof`), and the
+headers for this repository's own extensions: `taggedunion.h`
+(`tagunion` -> `_Tagged_union`, `static_tag` -> `_Static_tag`,
+`dynamic_tag` -> `_Dynamic_tag`), `function_pointer.h`
+(`function_pointer` -> `_Function_pointer`) and `lambda.h` (`lambda` ->
+`_Lambda`, `closure_environment` -> `_Closure_environment`). The external
 preprocessor finds them with `clang -E -P -I <qpcc>/qpcc/include/qbe`;
 QPCC itself only knows the underscore keywords.
 
@@ -218,7 +246,25 @@ Known limitations:
   so those fixtures are QPCC-only (`// expect-exit N`), checked against their
   expected exit code rather than a clang reference.
 
-## `_Tagged_union` (`-f_tagged_union`)
+## CQE (`-std=cqe`)
+
+`-std=cqe` is **C2y plus the QPCC extensions**. It exists so that
+`-std=c2y` stays exactly C2y: everything below is non-standard and needs the
+QPCC mode, while the C2y proposals above (`_Countof`, `_Maxof`/`_Minof`,
+named loops, `_Defer`) work under plain `-std=c2y`.
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` and bare `_Function_pointer` | yes | `function_pointer` |
+| `_Lambda(captures) T (params) { body }` closures, `_Closure_environment` | yes | `lambda` |
+| `_Tagged_union` / `_Static_tag` / `_Dynamic_tag` | yes | `tagged_union`, `taggedunion_header` |
+| `void x = expr;` declares nothing and only evaluates `expr` | yes | `void_init` |
+
+The tagged union is also available on its own in any mode through
+`-f_tagged_union`. Using a QPCC keyword under `-std=c2y` is diagnosed with a
+pointer at `-std=cqe` rather than left as a plain syntax error.
+
+## `_Tagged_union` (`-f_tagged_union`, or `-std=cqe`)
 
 A QPCC extension with no WG14 proposal behind it. It is opt-in through
 `-f_tagged_union`; without the flag the three keywords are ordinary
@@ -232,9 +278,9 @@ _Tagged_union Value {
 
 _Tagged_union Value x = { .as_int = 100 };
 x = (_Tagged_union Value){ .as_float = 1.5f };  /* sets the tag */
-switch (_Tag_of(x)) {
-  case _Get_tag(_Tagged_union Value, as_int): break;
-  case _Get_tag(_Tagged_union Value, as_float): break;
+switch (_Dynamic_tag(x)) {
+  case _Static_tag(_Tagged_union Value, as_int): break;
+  case _Static_tag(_Tagged_union Value, as_float): break;
 }
 ```
 
@@ -243,8 +289,8 @@ switch (_Tag_of(x)) {
 | `_Tagged_union Tag { members }` | yes | `tagged_union` |
 | natural layout: an `int` tag at offset 0, the members overlapping after it | yes | `{ int; float }` is 8 bytes, `{ int; double }` is 16 |
 | `x.m` read | yes | `tagged_union` |
-| `_Tag_of(x)`, an `int` rvalue | yes | `tagged_union` |
-| `_Get_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
+| `_Dynamic_tag(x)`, an `int` rvalue | yes | `tagged_union` |
+| `_Static_tag(_Tagged_union T, m)`, an integer constant expression | yes | `tagged_union` (`_Static_assert` and `case`) |
 | designated initializers: local, compound literal, global, static | yes | `tagged_union`, `tagged_union_static` |
 
 Semantics and limitations:
@@ -265,12 +311,153 @@ Semantics and limitations:
 - A tagged union is named either as `_Tagged_union Tag` or through a typedef:
   the tag is optional, so `typedef _Tagged_union { ... } Value;` defines an
   anonymous one and `Value` then stands for the type everywhere (including
-  `_Get_tag`). There is no bare alias for a tag that was written.
+  `_Static_tag`). There is no bare alias for a tag that was written.
 - clang implements none of this, so the fixtures are QPCC-only
   (`// expect-exit N`) and are checked against their expected exit code.
+## `_Function_pointer` (`-std=cqe`)
+
+The prefix spelling of a function pointer type, together with the storage type
+for any function pointer described by
+[N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm)
+("Any func* - A Universal Function Pointer Storage Type"):
+
+```c
+_Function_pointer int (int, char *) a;   /* int (*a)(int, char *) */
+_Function_pointer b = a;                 /* stores any function pointer */
+int (*c)(int, char *) = b;               /* ... and comes back out */
+```
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` | yes | `function_pointer` |
+| bare `_Function_pointer`, convertible to and from every function pointer type | yes | `function_pointer` |
+| `_Function_pointer` <-> `void *` both ways | yes | `function_pointer`; the target platforms have a unified address space, so the optional N3914 conversions are supported |
+| not callable without a cast (N3914 4.1) | yes | diagnosed: "a _Function_pointer cannot be called" |
+| `_Generic` still tells the storage type apart from a real function pointer type (N3914 4.6) | yes | `function_pointer` |
+
+The written type is exactly `T (*)(params)`, so `_Function_pointer` composes
+with declarators and arrays: `_Function_pointer int (int) table[2];`.
+`<function_pointer.h>` provides the friendly `function_pointer` spelling.
+
+## `_Lambda` closures (`-std=cqe`)
+
+```c
+int a = 100, b = 20;
+auto f = _Lambda(a, &b) int (int x, int y) { return a + (*b) + x + y; };
+int *pb = _Closure_environment(f)->b;   /* the captured environment */
+```
+
+| Feature | Status | Evidence |
+| --- | --- | --- |
+| `_Lambda(captures) T (params) { body }` | yes | `lambda` |
+| the closure type `_Lambda T (params)` | yes | `lambda` |
+| `_Closure_environment(e)`, the environment pointer | yes | `lambda` |
+| by-value and by-reference captures | yes | `lambda` |
+
+A closure is a two-word `{ function pointer, environment pointer }` value; the
+written type is just the signature, so two closures with the same signature have
+the same type and can be assigned and copied. The environment is a synthesized
+struct with one field per capture, in capture order: a by-value capture stores
+the variable's value at creation time, a by-reference capture stores its
+address. The body becomes a hidden function whose leading parameter is the
+environment, and inside it a capture name is bound to its environment field, so
+a by-value capture reads and writes the copy and a by-reference capture is the
+stored pointer:
+
+```c
+_Lambda(a, &b) int (void) { ... }
+/* in the body: a has type int, b has type int * */
+```
+
+Semantics and limitations:
+
+- The environment is a local of the enclosing function, so a closure that
+  outlives the scope it was created in is undefined behaviour.
+- Calling a closure supplies the environment as the hidden leading argument;
+  the closure must be an lvalue.
+- Assigning a closure whose captures differ from the one that created it is
+  not diagnosed; reading the environment is then undefined behaviour, in the
+  same spirit as reading the wrong member of a tagged union.
+- `_Closure_environment` needs a closure whose captured environment is known,
+  which the type of a `_Lambda` expression (and so `auto`) carries; the
+  written type `_Lambda T (params)` names no environment and is diagnosed.
+
+### Closures cannot live in globals
+
+A `_Lambda` expression builds a `{ function, environment }` pair whose
+environment is a local of the enclosing function. A file-scope variable has no
+enclosing function, so a global cannot be initialised with a closure:
+
+```c
+static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
+/* error: a global variable cannot be initialised with a closure */
+```
+
+Move the closure inside a function, or store a plain function pointer instead.
+The front end reports this rather than emitting a null function pointer, which
+would compile, link and then segfault on the first call.
+
+## Pseudo-templates
+
+A QPCC extension, available in `-std=cqe`. An identifier that ends in `_`
+followed by `([` takes a comma-separated list of type spellings and stands for
+the identifier with a hash of that spelling appended:
+
+```c
+#define MkResult(T, E) typedef tagunion { T ok; E err; } Result_([T, E]);
+
+MkResult(int, int)
+MkResult(int, float)
+
+Result_([int, int]) a = { .ok = 100 };
+```
+
+The arguments are matched **by spelling**, not resolved, so `int` and
+`signed int` are different instantiations, and a typo silently names a type
+that no declaration ever defined. This is what makes the feature "pseudo": it
+is a naming convention the front end understands, not a generic type system.
+
+Identifier characters glued to an instantiation without whitespace join the
+name, the way the preprocessor pastes tokens, so one instantiation can carry a
+family of associated declarations:
+
+```c
+#define MkResult(T, E) \
+  typedef tagunion { T value; E error; } Result_([T, E]); \
+  _Bool Result_([T, E])_is_ok(Result_([T, E]) r) { ... }
+```
+
+`Result_([T, E])_is_ok` is one identifier; `Result_([T, E]) r` is two.
+
+The name is a stable hash of the spelling, so the same instantiation spells the
+same identifier in every translation unit - the typedef can be written in a
+header and used in any `.c` file with no per-TU state. Repeating an
+instantiation is a no-op: the second definition is dropped rather than building
+a second layout, which keeps uses on either side of it compatible.
+
+## Diagnostics
+
+Errors come out rustc-shaped: the message, a `-->` location, the offending
+source line and a caret run under the span.
+
+```
+error: use of undeclared identifier: undefined_thing
+  --> bad.c:3:3
+  |
+3 |   int y = undefined_thing;
+  |   ^^^^^^
+```
+
+Syntax errors use the same layout (the parser is fatal, so there is only ever
+one). A diagnostic raised while checking a declaration points at the
+declaration, not the exact sub-expression, because expressions do not carry
+spans yet.
+
 ## Known gaps at a glance
 
-- The preprocessor is external (`clang -E`); no `#include`/`#define` handling.
+- The plain form has no preprocessor of its own: `qpcc input.c` strips `#`
+  lines and expects `clang -E` to have run first. Use `qpcc run`, which does
+  the preprocessing (and the linking) for you.
 - `sizeof` of a string literal or a string-initialised `char[]`.
 - VLA `sizeof`.
 - Some signed bitfield widths.
@@ -279,6 +466,13 @@ Semantics and limitations:
 - Atomics: no read-modify-write.
 - `asm` labels and nested functions.
 - Diagnostics carry statement-level positions.
+- Types are per translation unit. A struct declared in two files is laid out the
+  same way from the same declaration, so the ABI agrees, but nothing compares
+  the two declarations; a mismatch is undefined behaviour, as in C.
+- A file-scope variable cannot be initialised with a closure: a `_Lambda`
+  expression's environment is a local of the enclosing function, so there is
+  none at file scope. It is diagnosed rather than turned into a null function
+  pointer.
 
 ## See also
 

@@ -1,4 +1,4 @@
-// std=c2y tagged
+// std=cqe
 #include <stdio.h>
 #include <time.h>
 
@@ -16,7 +16,7 @@ typedef _Tagged_union {
 
 static int 
 tag_of(Value v) { 
-  return (int)_Tag_of(v); 
+  return (int)_Dynamic_tag(v); 
 }
 
 static int 
@@ -31,7 +31,7 @@ main()
     printf("tag %d int %d\n", tag_of(v), v.as_int);
 
     v = (Value){ .as_float = 1.5f };
-    auto is_float = (_Tag_of(v) == _Get_tag(Value, as_float));
+    auto is_float = (_Dynamic_tag(v) == _Static_tag(Value, as_float));
     auto same = (v.as_float == 1.5f);
     printf("tag %d float %d same %d\n", tag_of(v), is_float, same);
 

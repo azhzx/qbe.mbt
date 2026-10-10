@@ -1,0 +1,73 @@
+# 24 parameters mixing the w/l/s/d classes
+# exercises the mixed integer/float argument registers and stack slots
+
+export
+function w $callee_mixed(w %a0, l %a1, s %a2, d %a3, w %a4, l %a5, s %a6, d %a7, w %a8, l %a9, s %a10, d %a11, w %a12, l %a13, s %a14, d %a15, w %a16, l %a17, s %a18, d %a19, w %a20, l %a21, s %a22, d %a23) {
+@start
+	%b0 =w copy %a0
+	%b1 =l copy %a1
+	%b2 =s copy %a2
+	%b3 =d copy %a3
+	%b4 =w copy %a4
+	%b5 =l copy %a5
+	%b6 =s copy %a6
+	%b7 =d copy %a7
+	%b8 =w copy %a8
+	%b9 =l copy %a9
+	%b10 =s copy %a10
+	%b11 =d copy %a11
+	%b12 =w copy %a12
+	%b13 =l copy %a13
+	%b14 =s copy %a14
+	%b15 =d copy %a15
+	%b16 =w copy %a16
+	%b17 =l copy %a17
+	%b18 =s copy %a18
+	%b19 =d copy %a19
+	%b20 =w copy %a20
+	%b21 =l copy %a21
+	%b22 =s copy %a22
+	%b23 =d copy %a23
+	%i1 =l add %b0, %b1
+	%i4 =l add %i1, %b4
+	%i5 =l add %i4, %b5
+	%i8 =l add %i5, %b8
+	%i9 =l add %i8, %b9
+	%i12 =l add %i9, %b12
+	%i13 =l add %i12, %b13
+	%i16 =l add %i13, %b16
+	%i17 =l add %i16, %b17
+	%i20 =l add %i17, %b20
+	%i21 =l add %i20, %b21
+	%e3 =d exts %b2
+	%f3 =d add %e3, %b3
+	%e6 =s truncd %f3
+	%f6 =s add %e6, %b6
+	%e7 =d exts %f6
+	%f7 =d add %e7, %b7
+	%e10 =s truncd %f7
+	%f10 =s add %e10, %b10
+	%e11 =d exts %f10
+	%f11 =d add %e11, %b11
+	%e14 =s truncd %f11
+	%f14 =s add %e14, %b14
+	%e15 =d exts %f14
+	%f15 =d add %e15, %b15
+	%e18 =s truncd %f15
+	%f18 =s add %e18, %b18
+	%e19 =d exts %f18
+	%f19 =d add %e19, %b19
+	%e22 =s truncd %f19
+	%f22 =s add %e22, %b22
+	%e23 =d exts %f22
+	%f23 =d add %e23, %b23
+	%r =w copy 0
+	ret %r
+}
+
+export
+function w $args_mixed() {
+@start
+	%r =w call $callee_mixed(w 1, l 2, s 3, d 4, w 5, l 6, s 7, d 8, w 9, l 10, s 11, d 12, w 13, l 14, s 15, d 16, w 17, l 18, s 19, d 20, w 21, l 22, s 23, d 24)
+	ret %r
+}

@@ -1,0 +1,44 @@
+# three nested loops 24 x 16 x 12
+# deep CFG with an accumulator in memory, so promote must cope with the value live across all three headers
+
+function w $loop_nest() {
+@start
+	%i =w copy 0
+	%acc =w copy 0
+	%sp =l alloc8 1
+	storew 0, %sp
+	jmp @h0
+@h0
+	%i2 =w phi @start %i, @l0 %i3
+	%c0 =w csltw %i2, 24
+	jnz %c0, @b0, @end
+@b0
+	%j =w copy 0
+	jmp @h1
+@h1
+	%j2 =w phi @b0 %j, @l1 %j3
+	%c1 =w csltw %j2, 16
+	jnz %c1, @b1, @l0
+@b1
+	%k =w copy 0
+	jmp @h2
+@h2
+	%k2 =w phi @b1 %k, @b2 %k3
+	%c2 =w csltw %k2, 12
+	jnz %c2, @b2, @l1
+@b2
+	%cur =w load %sp
+	%nx =w add %cur, 1
+	storew %nx, %sp
+	%k3 =w add %k2, 1
+	jmp @h2
+@l1
+	%j3 =w add %j2, 1
+	jmp @h1
+@l0
+	%i3 =w add %i2, 1
+	jmp @h0
+@end
+	%res =w load %sp
+	ret %res
+}

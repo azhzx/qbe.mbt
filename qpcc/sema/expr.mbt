@@ -227,6 +227,9 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
       mk_expr(TCond(tc, tt, tf), common_type(tt.ty, tf.ty), false)
     }
     @front.ECall(callee, args) => check_call(callee, args, ctx)
+    @front.ELambda(caps, ret, params, va, body) =>
+      check_lambda(caps, ret, params, va, body, ctx)
+    @front.EClosureEnv(e) => check_closure_env(e, ctx)
     @front.ECast(spec, d, x) => {
       let base = declspec_to_type(spec, ctx)
       let ty = build_type(d, base, ctx)
@@ -354,7 +357,7 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
         }
       }
     }
-    @front.ETagOf(x) => {
+    @front.EDynamicTag(x) => {
       let tx = check_expr(x, ctx)
       match decay(tx.ty) {
         CStruct(i) | CUnion(i) =>
@@ -362,20 +365,20 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
             if tx.lvalue {
               mk_expr(TMember(tx, 0), CInt(true), false)
             } else {
-              ctx.diags.error("_Tag_of needs an lvalue")
+              ctx.diags.error("_Dynamic_tag needs an lvalue")
               err_expr(ctx)
             }
           } else {
-            ctx.diags.error("_Tag_of needs a _Tagged_union")
+            ctx.diags.error("_Dynamic_tag needs a _Tagged_union")
             err_expr(ctx)
           }
         _ => {
-          ctx.diags.error("_Tag_of needs a _Tagged_union")
+          ctx.diags.error("_Dynamic_tag needs a _Tagged_union")
           err_expr(ctx)
         }
       }
     }
-    @front.EGetTag(spec, d, m) => {
+    @front.EStaticTag(spec, d, m) => {
       let ty = build_type(d, declspec_to_type(spec, ctx), ctx)
       match ty {
         CStruct(i) | CUnion(i) =>
@@ -388,11 +391,11 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
               }
             }
           } else {
-            ctx.diags.error("_Get_tag needs a _Tagged_union")
+            ctx.diags.error("_Static_tag needs a _Tagged_union")
             err_expr(ctx)
           }
         _ => {
-          ctx.diags.error("_Get_tag needs a _Tagged_union")
+          ctx.diags.error("_Static_tag needs a _Tagged_union")
           err_expr(ctx)
         }
       }
@@ -402,6 +405,10 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
       let tct = decay(tc.ty)
       let mut chosen : TExpr? = None
       let mut dflt : TExpr? = None
+      // C11 6.5.1.1: no two associations may specify compatible types, and a
+      // generic selection has at most one default.
+      let seen : Array[CType] = []
+      let mut have_default = false
       for a in assocs {
         match a.spec {
           Some(spec) => {
@@ -411,11 +418,40 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
               None => @front.DAbstract
             }
             let ty = build_type(d, base, ctx)
+            for prev in seen {
+              // C keeps char, signed char and unsigned char apart, but this
+              // port models plain char as CChar(true) - the same as signed
+              // char - so comparing that pair would reject valid selections.
+              // Skip it rather than report a false positive; see TODO.md.
+              let both_char = match (prev, ty) {
+                (CChar(_), CChar(_)) => true
+                _ => false
+              }
+              if !both_char && ty_eq(prev, ty) {
+                ctx.diags.error(
+                  "two _Generic associations have compatible types",
+                )
+              }
+            }
+            seen.push(ty)
+            match ty {
+              CVoid | CFunc(_, _, _) =>
+                ctx.diags.error(
+                  "a _Generic association needs a complete object type",
+                )
+              _ => ()
+            }
             if ty_eq(ty, tct) {
               chosen = Some(check_expr(a.expr, ctx))
             }
           }
-          None => dflt = Some(check_expr(a.expr, ctx))
+          None => {
+            if have_default {
+              ctx.diags.error("a _Generic selection has at most one default")
+            }
+            have_default = true
+            dflt = Some(check_expr(a.expr, ctx))
+          }
         }
       }
       match chosen {
@@ -644,6 +680,17 @@ fn check_call(
   match callee {
     @front.EIdent(n) =>
       if ctx.scopes.lookup(n) is None {
+        // C99 removed implicit declarations. QPCC still accepts them, because
+        // its own self-host build relies on the non-variadic libc helpers the
+        // QBE sources call without a prototype, but a call without a prototype
+        // to a genuinely variadic callee (printf and friends) has to use the
+        // vararg ABI and cannot be inferred here - the arguments are passed
+        // wrong. Say so rather than emit silently wrong code.
+        ctx.diags.warning(
+          "implicit declaration of function '" +
+          n +
+          "'; include the header or declare it before use (a variadic callee needs its prototype)",
+        )
         ctx.scopes.define({
           name: n,
           gname: "",
@@ -681,6 +728,29 @@ fn check_call(
   let tc = check_expr(callee, ctx)
   let targs : Array[TExpr] = []
   let fty = decay(tc.ty)
+  // QPCC closures: a call goes through the pair, with the environment passed
+  // as the hidden leading argument.
+  match fty {
+    CClosure(r, ps, env) => {
+      if !tc.lvalue {
+        ctx.diags.error("a closure call needs an lvalue closure")
+      }
+      let env_ty = if env >= 0 { CPtr(CStruct(env)) } else { CPtr(CVoid) }
+      let fparams : Array[CType] = [env_ty]
+      for p in ps {
+        fparams.push(p)
+      }
+      let fn_ty = CPtr(CFunc(r, fparams, false))
+      let fnp = mk_expr(TMember(tc, 0), fn_ty, false)
+      let envp = mk_expr(TClosureEnv(tc), env_ty, false)
+      let cargs : Array[TExpr] = [envp]
+      for a in args {
+        cargs.push(check_expr(a, ctx))
+      }
+      return mk_expr(TCall("", fnp, cargs), r, false)
+    }
+    _ => ()
+  }
   let (name, ret, params, va) = match fty {
     CPtr(CFunc(r, ps, v)) => {
       let nm = match callee {
@@ -695,6 +765,15 @@ fn check_call(
         _ => ""
       }
       (nm, r, ps, v)
+    }
+    CPtr(CAnyFunc) => {
+      // N3914: the any-function-pointer storage type is deliberately not
+      // callable - there is no single ABI for "all function calls". A cast to
+      // the concrete signature is required first.
+      ctx.diags.error(
+        "a _Function_pointer cannot be called; cast it to a function pointer type first",
+      )
+      ("", CInt(false), [], true)
     }
     _ => {
       ctx.diags.error("called object is not a function")

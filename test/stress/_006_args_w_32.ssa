@@ -1,0 +1,47 @@
+# 32 word parameters, far past the 8 GPR limit
+# most arguments are passed on the stack; the callee must reload them
+
+export
+function w $callee_w(w %a0, w %a1, w %a2, w %a3, w %a4, w %a5, w %a6, w %a7, w %a8, w %a9, w %a10, w %a11, w %a12, w %a13, w %a14, w %a15, w %a16, w %a17, w %a18, w %a19, w %a20, w %a21, w %a22, w %a23, w %a24, w %a25, w %a26, w %a27, w %a28, w %a29, w %a30, w %a31) {
+@start
+	%acc0 =w copy %a0
+	%acc1 =w add %acc0, %a1
+	%acc2 =w add %acc1, %a2
+	%acc3 =w add %acc2, %a3
+	%acc4 =w add %acc3, %a4
+	%acc5 =w add %acc4, %a5
+	%acc6 =w add %acc5, %a6
+	%acc7 =w add %acc6, %a7
+	%acc8 =w add %acc7, %a8
+	%acc9 =w add %acc8, %a9
+	%acc10 =w add %acc9, %a10
+	%acc11 =w add %acc10, %a11
+	%acc12 =w add %acc11, %a12
+	%acc13 =w add %acc12, %a13
+	%acc14 =w add %acc13, %a14
+	%acc15 =w add %acc14, %a15
+	%acc16 =w add %acc15, %a16
+	%acc17 =w add %acc16, %a17
+	%acc18 =w add %acc17, %a18
+	%acc19 =w add %acc18, %a19
+	%acc20 =w add %acc19, %a20
+	%acc21 =w add %acc20, %a21
+	%acc22 =w add %acc21, %a22
+	%acc23 =w add %acc22, %a23
+	%acc24 =w add %acc23, %a24
+	%acc25 =w add %acc24, %a25
+	%acc26 =w add %acc25, %a26
+	%acc27 =w add %acc26, %a27
+	%acc28 =w add %acc27, %a28
+	%acc29 =w add %acc28, %a29
+	%acc30 =w add %acc29, %a30
+	%acc31 =w add %acc30, %a31
+	ret %acc31
+}
+
+export
+function w $args_w() {
+@start
+	%r =w call $callee_w(w 1, w 2, w 3, w 4, w 5, w 6, w 7, w 8, w 9, w 10, w 11, w 12, w 13, w 14, w 15, w 16, w 17, w 18, w 19, w 20, w 21, w 22, w 23, w 24, w 25, w 26, w 27, w 28, w 29, w 30, w 31, w 32)
+	ret %r
+}

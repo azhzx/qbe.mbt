@@ -96,15 +96,27 @@ fn cast(
   if cls0 == cls || (cls == @types.Kw && cls0 == @types.Kl) {
     return r
   }
-  if cls.wide() == cls0.wide() {
-    iins(st, cls, @types.Cast, r, @types.Ref::none(), l)
-  } else {
-    let mut r1 = r
+  let mut r0 = r
+  if cls0.wide() < cls.wide() {
+    // Widening: a float source reinterprets to a word first, then zero-extends
+    // to a long, and a double target reinterprets again.
     if cls0 == @types.Ks {
-      r1 = iins(st, @types.Kw, @types.Cast, r1, @types.Ref::none(), l)
+      r0 = iins(st, @types.Kw, @types.Cast, r0, @types.Ref::none(), l)
     }
-    iins(st, @types.Kl, @types.Extuw, r1, @types.Ref::none(), l)
+    r0 = iins(st, @types.Kl, @types.Extuw, r0, @types.Ref::none(), l)
+    if cls == @types.Kd {
+      r0 = iins(st, @types.Kd, @types.Cast, r0, @types.Ref::none(), l)
+    }
+  } else {
+    // Same width or narrowing.
+    if cls0 == @types.Kd && cls != @types.Kl {
+      r0 = iins(st, @types.Kl, @types.Cast, r0, @types.Ref::none(), l)
+    }
+    if cls0 != @types.Kd || cls != @types.Kw {
+      r0 = iins(st, cls, @types.Cast, r0, @types.Ref::none(), l)
+    }
   }
+  r0
 }
 
 ///|

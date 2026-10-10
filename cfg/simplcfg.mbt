@@ -161,10 +161,15 @@ pub fn simplcfg(
         empty[js2[id]] &&
         jmpeq(jtype, jarg, js1, js2, js1[id], js2[id]) &&
         jmpnophi(fn_, js1[js1[id]], js2[js1[id]]) {
-        jtype[id] = jtype[js1[id]]
-        jarg[id] = jarg[js1[id]]
-        js1[id] = js1[js1[id]]
-        js2[id] = js2[js1[id]]
+        // C does *j = jmp[j->s1->id], a whole-struct copy from one index.
+        // Assigning field by field instead would read the already updated
+        // js1[id] when computing js2[id] (and index with -1 for a block that
+        // falls through to a return), so snapshot the source index first.
+        let t1 = js1[id]
+        jtype[id] = jtype[t1]
+        jarg[id] = jarg[t1]
+        js1[id] = js1[t1]
+        js2[id] = js2[t1]
         done = false
       }
     }

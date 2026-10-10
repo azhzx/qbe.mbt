@@ -2,6 +2,9 @@
 /// Sema context: scopes, layouts and diagnostics.
 pub struct Ctx {
   scopes : ScopeStack
+  // The language mode. Only the QPCC-only relaxations consult it: the lexer
+  // has already decided which words are keywords.
+  mode : @front.StdMode
   layouts : Array[Layout]
   diags : Diags
   mut ret_ty : CType?
@@ -293,7 +296,7 @@ pub fn const_eval_int(e : @front.Expr, ctx : Ctx) -> Int64 {
         const_eval_int(f, ctx)
       }
     @front.ECast(_, _, x) => const_eval_int(x, ctx)
-    @front.EGetTag(spec, d, m) =>
+    @front.EStaticTag(spec, d, m) =>
       match build_type(d, declspec_to_type(spec, ctx), ctx) {
         CStruct(i) | CUnion(i) =>
           match tag_of(ctx.layouts[i], m) {
@@ -342,6 +345,7 @@ pub fn const_eval_int(e : @front.Expr, ctx : Ctx) -> Int64 {
 fn check_external(d : @front.ExternalDecl, ctx : Ctx) -> Unit {
   ctx.diags.cur_line = d.pos.line
   ctx.diags.cur_col = d.pos.col
+  ctx.diags.cur_len = d.pos.len
   match d.kind {
     @front.EDecl(spec, decls) => {
       let base = declspec_to_type(spec, ctx)
@@ -534,6 +538,7 @@ fn check_external(d : @front.ExternalDecl, ctx : Ctx) -> Unit {
         is_vararg,
         is_export: !(storage_of(spec) is StStatic),
         body: tb,
+        closure: None,
       })
     }
     @front.EStaticAssert(e, _msg) =>
@@ -546,9 +551,13 @@ fn check_external(d : @front.ExternalDecl, ctx : Ctx) -> Unit {
 
 ///|
 /// Check a translation unit: build types, layouts and symbols.
-pub fn check(tu : @front.TranslationUnit) -> CheckedProgram {
+pub fn check(
+  tu : @front.TranslationUnit,
+  mode? : @front.StdMode = @front.Cqe,
+) -> CheckedProgram {
   let ctx = Ctx::{
     scopes: ScopeStack::new(),
+    mode,
     layouts: [],
     diags: Diags::new(),
     ret_ty: None,

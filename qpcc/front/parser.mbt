@@ -4,11 +4,23 @@
 
 ///|
 priv struct Parser {
+  // Kept for diagnostics: `fail` renders the offending line.
+  src : String
+  display : String
   toks : Array[Token]
   mut pos : Int
   typedefs : Map[String, Bool]
+  // QPCC pseudo-templates: the instantiation names a declaration has already
+  // defined, so a repeat can be dropped instead of building a second layout.
+  template_defs : Map[String, Bool]
   mode : StdMode
   tagged_union : Bool
+}
+
+///|
+/// C23 features are available in every mode above C11.
+fn Parser::at_least_c23(self : Parser) -> Bool {
+  self.mode != C11
 }
 
 ///|
@@ -29,7 +41,7 @@ fn Parser::peek_n(self : Parser, n : Int) -> Token {
 ///|
 fn[T] Parser::fail(self : Parser, msg : String) -> T {
   let t = self.peek()
-  abort("qpcc/front: " + msg + " at line " + t.line.to_string())
+  abort(render_diag(self.display, self.src, "error", msg, t.line, t.col, t.len))
 }
 
 ///|
@@ -91,6 +103,17 @@ fn Parser::expect_ident(self : Parser) -> String {
   match self.eat_ident() {
     Some(n) => n
     None => self.fail("expected identifier")
+  }
+}
+
+///|
+/// `(` starts a capture list when it is empty or begins with a name or `&`.
+/// A type keyword after it means those parentheses belong to the return type.
+fn Parser::at_capture_list(self : Parser) -> Bool {
+  match self.peek_n(1).kind {
+    Punct(")") | Punct("&") => true
+    Ident(_) => true
+    _ => false
   }
 }
 
@@ -165,6 +188,8 @@ fn Parser::is_type_start_at(self : Parser, off : Int) -> Bool {
       k == "struct" ||
       k == "union" ||
       k == "_Tagged_union" ||
+      k == "_Function_pointer" ||
+      (k == "_Lambda" && self.is_type_start_at(off + 1)) ||
       k == "enum" ||
       k == "typeof" ||
       k == "__typeof" ||
@@ -261,7 +286,7 @@ fn Parser::skip_balanced(
 
 ///|
 fn Parser::at_c23_attr(self : Parser) -> Bool {
-  self.mode == C23 && self.at_punct("[") && self.peek_n(1).kind is Punct("[")
+  self.at_least_c23() && self.at_punct("[") && self.peek_n(1).kind is Punct("[")
 }
 
 ///|
@@ -529,6 +554,27 @@ fn Parser::parse_declspec(self : Parser) -> DeclSpec {
             []
           }
           type_specs.push(TUnion(tag, body))
+        } else if k == "_Lambda" {
+          // _Lambda T (params) -- the written closure type.
+          self.pos = self.pos + 1
+          let ret = self.parse_declspec()
+          self.expect_punct("(")
+          let (params, va) = self.parse_param_list()
+          type_specs.push(TClosure(ret, params, va))
+        } else if k == "_Function_pointer" {
+          self.pos = self.pos + 1
+          if self.is_type_start() {
+            // _Function_pointer T (params) -- the function pointer type
+            // T (*)(params), written with the return type first.
+            let ret = self.parse_declspec()
+            self.expect_punct("(")
+            let (params, va) = self.parse_param_list()
+            type_specs.push(TFuncPtr(ret, params, va))
+          } else {
+            // A bare _Function_pointer is the any-function-pointer storage
+            // type; a declarator follows.
+            type_specs.push(TFuncPtrAny)
+          }
         } else if k == "_Tagged_union" {
           self.pos = self.pos + 1
           let tag = self.eat_ident()
@@ -590,7 +636,7 @@ fn Parser::parse_declspec(self : Parser) -> DeclSpec {
           go = false
         }
       Punct("[") =>
-        if self.mode == C23 && self.peek_n(1).kind is Punct("[") {
+        if self.at_least_c23() && self.peek_n(1).kind is Punct("[") {
           let a = self.parse_c23_attrs()
           for x in a {
             attrs.push(x)
@@ -611,7 +657,7 @@ fn Parser::parse_declspec(self : Parser) -> DeclSpec {
   // C23 `auto` with no type specifier infers the type from the initializer.
   // Mark it with the same internal specifier that `__auto_type` produces so
   // the semantic analyser handles both through one path.
-  if (self.mode == C23 || self.mode == C2y) && type_specs.length() == 0 {
+  if self.at_least_c23() && type_specs.length() == 0 {
     let mut is_auto = false
     for s in storage {
       if s == "auto" {
@@ -825,7 +871,7 @@ fn decl_name(d : Declarator) -> String? {
 ///|
 fn Parser::parse_external_decl(self : Parser) -> ExternalDecl {
   let tok = self.peek()
-  let pos = Span::{ line: tok.line, col: tok.col, }
+  let pos = Span::{ line: tok.line, col: tok.col, len: tok.len, }
   { kind: self.parse_external_decl_kind(), pos, }
 }
 
@@ -874,6 +920,29 @@ fn Parser::parse_external_decl_kind(self : Parser) -> ExternalDeclKind {
   }
   self.expect_punct(";")
   self.declare_typedefs(spec, decls)
+  // A second instantiation with the same arguments would define the same
+  // typedef again and resolve the aggregate body into a second layout, so uses
+  // before it would stop matching uses after it. The definition is identical,
+  // so drop the repeat.
+  let mut all_seen = decls.length() > 0
+  for d in decls {
+    let n = match decl_name(d.decl) {
+      Some(n) => n
+      None => ""
+    }
+    if !(is_template_name(n) && self.template_defs.contains(n)) {
+      all_seen = false
+    }
+  }
+  if all_seen {
+    return EEmpty
+  }
+  for d in decls {
+    match decl_name(d.decl) {
+      Some(n) => if is_template_name(n) { self.template_defs.set(n, true) }
+      None => ()
+    }
+  }
   EDecl(spec, decls)
 }
 
@@ -920,7 +989,7 @@ fn is_function_declarator(d : Declarator) -> Bool {
 ///|
 fn Parser::parse_compound_stmt(self : Parser) -> Stmt {
   let tok = self.peek()
-  let pos = Span::{ line: tok.line, col: tok.col, }
+  let pos = Span::{ line: tok.line, col: tok.col, len: tok.len, }
   { kind: self.parse_compound(), pos, }
 }
 
@@ -937,9 +1006,11 @@ fn Parser::parse_compound(self : Parser) -> StmtKind {
     }
     if self.at_decl_start() &&
       !(self.peek().kind is Ident(_) && self.peek_n(1).kind is Punct(":")) {
+      let dtok = self.peek()
+      let dpos = Span::{ line: dtok.line, col: dtok.col, len: dtok.len, }
       let spec = self.parse_declspec()
       if self.eat_punct(";") {
-        items.push(BDecl(spec, []))
+        items.push(BDecl(spec, [], dpos))
         continue
       }
       let decls : Array[InitDeclarator] = [self.parse_init_declarator()]
@@ -948,7 +1019,7 @@ fn Parser::parse_compound(self : Parser) -> StmtKind {
       }
       self.expect_punct(";")
       self.declare_typedefs(spec, decls)
-      items.push(BDecl(spec, decls))
+      items.push(BDecl(spec, decls, dpos))
     } else {
       items.push(BStmt(self.parse_stmt()))
     }
@@ -959,7 +1030,7 @@ fn Parser::parse_compound(self : Parser) -> StmtKind {
 ///|
 fn Parser::parse_stmt(self : Parser) -> Stmt {
   let tok = self.peek()
-  let pos = Span::{ line: tok.line, col: tok.col, }
+  let pos = Span::{ line: tok.line, col: tok.col, len: tok.len, }
   { kind: self.parse_stmt_kind(), pos, }
 }
 
@@ -1252,6 +1323,8 @@ fn Parser::parse_cast_expr(self : Parser) -> Expr {
         k == "struct" ||
         k == "union" ||
         k == "_Tagged_union" ||
+        k == "_Function_pointer" ||
+        (k == "_Lambda" && self.is_type_start_at(2)) ||
         k == "enum" ||
         k == "_Atomic" ||
         k == "typeof" ||
@@ -1328,14 +1401,14 @@ fn Parser::parse_unary_expr(self : Parser) -> Expr {
       self.pos = self.pos + 1
       EUnary(k, self.parse_cast_expr())
     }
-    Keyword("_Tag_of") => {
+    Keyword("_Dynamic_tag") => {
       self.pos = self.pos + 1
       self.expect_punct("(")
       let e = self.parse_expr()
       self.expect_punct(")")
-      ETagOf(e)
+      EDynamicTag(e)
     }
-    Keyword("_Get_tag") => {
+    Keyword("_Static_tag") => {
       self.pos = self.pos + 1
       self.expect_punct("(")
       let spec = self.parse_declspec()
@@ -1343,7 +1416,7 @@ fn Parser::parse_unary_expr(self : Parser) -> Expr {
       self.expect_punct(",")
       let m = self.expect_ident()
       self.expect_punct(")")
-      EGetTag(spec, d, m)
+      EStaticTag(spec, d, m)
     }
     Keyword("sizeof") => {
       self.pos = self.pos + 1
@@ -1354,6 +1427,8 @@ fn Parser::parse_unary_expr(self : Parser) -> Expr {
             k == "struct" ||
             k == "union" ||
             k == "_Tagged_union" ||
+            k == "_Function_pointer" ||
+            (k == "_Lambda" && self.is_type_start_at(2)) ||
             k == "enum" ||
             k == "_Atomic" ||
             k == "typeof" ||
@@ -1597,6 +1672,25 @@ fn Parser::parse_primary_expr(self : Parser) -> Expr {
       EString(parts)
     }
     Ident(n) => {
+      if self.mode == C2y && is_qpcc_keyword(n) {
+        self.fail(
+          "'" +
+          n +
+          "' is a QPCC extension and -std=c2y leaves it an ordinary identifier; compile with -std=cqe",
+        )
+      }
+      // An instantiation followed by a braced initializer is a compound
+      // literal; the `_([` shape cannot start anything else, so the usual
+      // parentheses are optional.
+      if is_template_name(n) && self.peek_n(1).kind is Punct("{") {
+        let name = n
+        self.pos = self.pos + 1
+        let spec = empty_declspec()
+        spec.type_specs.push(TTypedefName(name))
+        return self.parse_postfix_tail(
+          ECompound(spec, DAbstract, self.parse_initializer()),
+        )
+      }
       self.pos = self.pos + 1
       EIdent(n)
     }
@@ -1611,6 +1705,41 @@ fn Parser::parse_primary_expr(self : Parser) -> Expr {
     Keyword("nullptr") => {
       self.pos = self.pos + 1
       ENullptr
+    }
+    Keyword("_Lambda") => {
+      // QPCC closures: [_Lambda(a, &b)] T (params) { body }. The capture list
+      // is optional, so a closure that captures nothing reads like the type.
+      self.pos = self.pos + 1
+      let caps : Array[Capture] = []
+      if self.at_punct("(") && self.at_capture_list() {
+        self.pos = self.pos + 1
+        if !self.eat_punct(")") {
+          let mut go = true
+          while go {
+            let by_ref = self.eat_punct("&")
+            let n = self.expect_ident()
+            caps.push({ name: n, by_ref, })
+            if self.eat_punct(",") {
+              continue
+            }
+            self.expect_punct(")")
+            go = false
+          }
+        }
+      }
+      let ret = self.parse_declspec()
+      self.expect_punct("(")
+      let (params, va) = self.parse_param_list()
+      let body = self.parse_compound_stmt()
+      ELambda(caps, ret, params, va, body)
+    }
+    Keyword("_Closure_environment") => {
+      // QPCC closures: the environment stored in a closure value.
+      self.pos = self.pos + 1
+      self.expect_punct("(")
+      let e = self.parse_expr()
+      self.expect_punct(")")
+      EClosureEnv(e)
     }
     Punct("(") => {
       self.pos = self.pos + 1
@@ -1647,8 +1776,12 @@ pub fn parse(
   src : String,
   mode? : StdMode = C11,
   tagged_union? : Bool = false,
+  display? : String = "",
 ) -> TranslationUnit {
-  let toks = tokenize(src, mode, tagged_union~)
+  // -std=cqe is C2y plus the QPCC extensions, so the tagged union is part of
+  // the mode; -f_tagged_union still enables it on its own in the other modes.
+  let tagged = tagged_union || mode == Cqe
+  let toks = tokenize(src, mode, tagged_union=tagged)
   let typedefs : Map[String, Bool] = Map::new()
   for
     n in [
@@ -1656,7 +1789,16 @@ pub fn parse(
     ] {
     typedefs.set(n, true)
   }
-  let p = Parser::{ toks, pos: 0, typedefs, mode, tagged_union, }
+  let p = Parser::{
+    src,
+    display,
+    toks,
+    pos: 0,
+    typedefs,
+    template_defs: Map::new(),
+    mode,
+    tagged_union: tagged,
+  }
   let decls : Array[ExternalDecl] = []
   while !(p.peek().kind is Eof) {
     decls.push(p.parse_external_decl())

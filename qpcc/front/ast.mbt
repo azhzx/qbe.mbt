@@ -7,6 +7,8 @@
 pub struct Span {
   line : Int
   col : Int
+  // Length in bytes of the construct, for the caret run in a diagnostic.
+  len : Int
 }
 
 ///|
@@ -45,6 +47,16 @@ pub(all) enum TypeSpec {
   TTypeofType(DeclSpec, Declarator)
   TAtomicSpec(DeclSpec, Declarator)
   TBitInt(Expr)
+  // QPCC: `_Function_pointer T (params)` is the prefix spelling of the
+  // function pointer type `T (*)(params)`: the return type and the parameter
+  // list are written in the order they are read.
+  TFuncPtr(DeclSpec, Array[ParamDecl], Bool)
+  // QPCC: a bare `_Function_pointer` is the storage type for any function
+  // pointer (N3914's `_Any_func*`). It converts to and from every function
+  // pointer type and to and from `void *`, but it cannot be called.
+  TFuncPtrAny
+  // QPCC closures: the written closure type `_Lambda T (params)`.
+  TClosure(DeclSpec, Array[ParamDecl], Bool)
 }
 
 ///|
@@ -74,6 +86,15 @@ pub(all) enum Declarator {
 pub struct ParamDecl {
   spec : DeclSpec
   decl : Declarator
+}
+
+///|
+/// QPCC closures: one entry of a `_Lambda(...)` capture list. `&x` captures
+/// the variable itself (the environment stores its address), a bare `x`
+/// captures its current value.
+pub struct Capture {
+  name : String
+  by_ref : Bool
 }
 
 ///|
@@ -121,7 +142,7 @@ pub struct ExternalDecl {
 ///|
 pub(all) enum BlockItem {
   BStmt(Stmt)
-  BDecl(DeclSpec, Array[InitDeclarator])
+  BDecl(DeclSpec, Array[InitDeclarator], Span)
 }
 
 ///|
@@ -190,8 +211,8 @@ pub(all) enum Expr {
   ECountofType(DeclSpec, Declarator)
   EAlignofExpr(Expr)
   // QPCC -f_tagged_union: runtime tag and compile-time discriminator.
-  ETagOf(Expr)
-  EGetTag(DeclSpec, Declarator, String)
+  EDynamicTag(Expr)
+  EStaticTag(DeclSpec, Declarator, String)
   ETypesCompatible(DeclSpec, Declarator, DeclSpec, Declarator)
   ECall(Expr, Array[Expr])
   EIndex(Expr, Expr)
@@ -202,6 +223,10 @@ pub(all) enum Expr {
   EStmtExpr(Array[BlockItem])
   EOffsetof(DeclSpec, Declarator, Array[Designator])
   EVaArg(Expr, DeclSpec, Declarator)
+  // QPCC closures: `_Lambda(a, &b) T (params) { body }`.
+  ELambda(Array[Capture], DeclSpec, Array[ParamDecl], Bool, Stmt)
+  // QPCC closures: `_Closure_environment(e)`, the captured environment.
+  EClosureEnv(Expr)
   ETemp
 }
 

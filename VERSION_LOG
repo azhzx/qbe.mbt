@@ -311,3 +311,94 @@
     diagnose unsupported _Alignas values above the 16-byte QBE stack ABI;
     harden native output capture against allocation failure and length overflow;
     add regression tests for parser, interpreter, JIT and QPCC fixes
+
+2026.10.10: v0.34.0
+    QPCC extensions: _Get_tag/_Tag_of are renamed _Static_tag/_Dynamic_tag
+    (one is a compile-time discriminator for a named member, the other reads
+    the stored runtime tag); _Function_pointer writes a function pointer type
+    in prefix form (_Function_pointer int (int, char *) a; -- the return type
+    and parameter list come first) and, bare, is the storage type for any
+    function pointer from N3914: convertible to and from every function
+    pointer type and void *, not callable without a cast, and still distinct
+    from a real function pointer type in _Generic; _Lambda(a, &b) T (params)
+    { body } closures with by-value and by-reference captures plus
+    _Closure_environment, lowered to a { fn, env } pair whose environment
+    holds the captures in the enclosing frame (escaping is undefined
+    behaviour); `void x = f();` evaluates the call and declares nothing; new
+    hand-written headers taggedunion.h, function_pointer.h and lambda.h; the
+    oracle grows to 155 fixtures
+
+2026.10.10: v0.35.0
+    QPCC gains `qpcc run`: it drives clang for the preprocessing (`clang -E -P`,
+    with the hand-written headers on the include path) and the linking, so an
+    ordinary C file can be compiled and executed in one step; it forwards the
+    program's exit status, passes -I/-D/-U through to the preprocessor,
+    forwards everything after -- to the program, and reports missing clang
+    clearly. The driver's errors now name the original source file rather than
+    the temporary preprocessed one and exit 1 without a panic trace. New FFI:
+    `mbt_native_exit`. Calls to a function with no declaration in scope now
+    warn, because such a call to a variadic callee has to use the vararg ABI
+    and cannot be inferred (implicit declarations stay accepted for the
+    non-variadic libc helpers the self-host build relies on). The oracle grows
+    to 158 checks
+
+2026.10.10: v0.36.0
+    QPCC splits the language modes: `-std=c2y` is now exactly C2y, and the
+    QPCC-only extensions (closures, the _Function_pointer prefix form, the
+    tagged union, `void x = expr;`) move to a new `-std=cqe` ("C with QPCC
+    extensions"). Using one of those keywords under `-std=c2y` is diagnosed
+    with a pointer at `-std=cqe` instead of a plain syntax error. clang has no
+    `-std=cqe`, so the preprocessing step and the reference builds use the C2y
+    spelling. -f_tagged_union still enables the tagged union on its own in any
+    mode. Docs and examples move to the new flag;
+    examples/c/taggedunion.c joins them. Also fixes a miscompile found on the
+    way: a struct with a float member passed by value read the wrong bits,
+    because ssa/load.mbt's cast() helper was a broken simplification of C
+    load.c's (it discarded its results and always emitted Kl extuw), and
+    because the fold and gvn read bits.i of a float constant - 0, since this
+    port models Con.bits as a struct rather than C's union. bits.i now always
+    carries the raw bits, so the whole class is gone. New fixture
+    struct_float_byval.c; the oracle grows to 159
+
+2026.10.11: v0.37.1
+    A _Lambda expression's environment is a local of the enclosing function, so
+    a file-scope variable cannot be initialised with a closure. That case used
+    to emit a null function pointer: the object compiled and linked, and the
+    program segfaulted on the first call with no diagnostic. It is now an
+    error, documented in doc/qpcc.md and doc/zh/qpcc.md, with a wbtest. Lowering
+    a global lambda into a static { function, environment } pair is left for
+    later; TODO.md records the decision.
+
+2026.10.11: v0.37.2
+    qpcc run reported a signal death as a successful run: it decoded the wait
+    status as (raw >> 8) & 0xff, and for a killed child the low seven bits hold
+    the signal, so a segfault came out as exit 0. It now reports 128 + signal
+    the way a shell does, so the same segfault is 139. New fixture
+    run_signal.c pins it. examples/c/y.c joins the examples: recursion through
+    a closure with the cycle closed by the environment, since C++'s generic
+    lambdas (and so f(f)) have no counterpart here - the file says why.
+2026.10.10: v0.37.0
+    Four things on top of 0.36.0. `_Generic` now enforces C11 6.5.1.1: two
+    associations may not specify compatible types, an association needs a
+    complete object type, and a selection has at most one default; the pair
+    char/signed char is exempt because this port models both as CChar(true),
+    which is recorded in TODO.md. N3914's four convertibility macros
+    (__STDC_PTR_CONV_*) are predefined in C2y and CQE - the driver has to pass
+    them to clang, since clang does not know them. Pseudo-templates land:
+    `Name_([T1, T2])` mangles to the head plus an FNV-1a hash of the argument
+    spelling, which makes the name identical across translation units, and a
+    repeated instantiation is dropped instead of building a second layout.
+    Diagnostics are rustc-shaped: Diag carries a length, Token and Span carry
+    one too, local declarations carry a span (BDecl), and the parser and the
+    driver share front/report.mbt to print the message, a `-->` location, the
+    source line and a caret run. The oracle grows to 162 (generic3, template,
+    anyfunc_macros, struct_float_byval included)
+
+2026.10.11: v0.37.3
+    examples/c/y.c is renamed rec_lambda.c, which is what it is: the knot tied
+    by hand, not a combinator. examples/c/z.c is the Z combinator proper -
+    self-application x x, with the self type-erased to void * because C has no
+    recursive types, and a capture-less core so the closure never refers to a
+    frame that has returned. One core drives both fact and fib, and neither step
+    mentions recursion, which is the point. C cannot return the materialised
+    fixpoint closure, so the caller builds it in its own frame; the file says so.

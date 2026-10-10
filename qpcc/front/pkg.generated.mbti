@@ -14,9 +14,17 @@ pub fn is_keyword(String) -> Bool
 
 pub fn is_keyword_mode(String, StdMode) -> Bool
 
+pub fn is_qpcc_keyword(String) -> Bool
+
 pub fn is_tagged_keyword(String) -> Bool
 
-pub fn parse(String, mode? : StdMode, tagged_union? : Bool) -> TranslationUnit
+pub fn is_template_name(String) -> Bool
+
+pub fn parse(String, mode? : StdMode, tagged_union? : Bool, display? : String) -> TranslationUnit
+
+pub fn render_diag(String, String, String, String, Int, Int, Int) -> String
+
+pub fn source_line(String, Int) -> String
 
 pub fn tokenize(String, StdMode, tagged_union? : Bool) -> Array[Token]
 
@@ -30,7 +38,12 @@ pub(all) enum AlignmentSpec {
 
 pub(all) enum BlockItem {
   BStmt(Stmt)
-  BDecl(DeclSpec, Array[InitDeclarator])
+  BDecl(DeclSpec, Array[InitDeclarator], Span)
+}
+
+pub struct Capture {
+  name : String
+  by_ref : Bool
 }
 
 pub struct DeclSpec {
@@ -89,8 +102,8 @@ pub(all) enum Expr {
   ECountofExpr(Expr)
   ECountofType(DeclSpec, Declarator)
   EAlignofExpr(Expr)
-  ETagOf(Expr)
-  EGetTag(DeclSpec, Declarator, String)
+  EDynamicTag(Expr)
+  EStaticTag(DeclSpec, Declarator, String)
   ETypesCompatible(DeclSpec, Declarator, DeclSpec, Declarator)
   ECall(Expr, Array[Expr])
   EIndex(Expr, Expr)
@@ -101,6 +114,8 @@ pub(all) enum Expr {
   EStmtExpr(Array[BlockItem])
   EOffsetof(DeclSpec, Declarator, Array[Designator])
   EVaArg(Expr, DeclSpec, Declarator)
+  ELambda(Array[Capture], DeclSpec, Array[ParamDecl], Bool, Stmt)
+  EClosureEnv(Expr)
   ETemp
 }
 
@@ -148,12 +163,14 @@ pub struct ParamDecl {
 pub struct Span {
   line : Int
   col : Int
+  len : Int
 }
 
 pub(all) enum StdMode {
   C11
   C23
   C2y
+  Cqe
 } derive(Eq)
 
 pub struct Stmt {
@@ -197,6 +214,7 @@ pub struct Token {
   kind : TokenKind
   line : Int
   col : Int
+  len : Int
 }
 pub fn Token::text(Self) -> String
 
@@ -227,6 +245,9 @@ pub(all) enum TypeSpec {
   TTypeofType(DeclSpec, Declarator)
   TAtomicSpec(DeclSpec, Declarator)
   TBitInt(Expr)
+  TFuncPtr(DeclSpec, Array[ParamDecl], Bool)
+  TFuncPtrAny
+  TClosure(DeclSpec, Array[ParamDecl], Bool)
 }
 
 // Type aliases

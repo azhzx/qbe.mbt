@@ -25,12 +25,28 @@ for c in "$here"/tests/*.c; do
   std=""
   inc=""
   exp=""
+  # clang has no -std=cqe (it only knows c2y), so the preprocessing step and
+  # the reference build use cstd while QPCC gets std. N3914's convertibility
+  # macros are QPCC's, so they are defined on the preprocessing command line.
+  cstd=""
+  defs=""
   case "$hdr" in
+    *"std=cqe"*)
+      std="-std=cqe"
+      cstd="-std=c2y"
+      inc="$here/include/qbe"
+      defs="-D__STDC_PTR_CONV_ANY_FUNC_TO_VOID__=1 -D__STDC_PTR_CONV_VOID_TO_ANY_FUNC__=1 -D__STDC_PTR_CONV_FUNC_TO_VOID__=1 -D__STDC_PTR_CONV_VOID_TO_FUNC__=1"
+      ;;
     *"std=c2y"*)
       std="-std=c2y"
+      cstd="-std=c2y"
       inc="$here/include/qbe"
+      defs="-D__STDC_PTR_CONV_ANY_FUNC_TO_VOID__=1 -D__STDC_PTR_CONV_VOID_TO_ANY_FUNC__=1 -D__STDC_PTR_CONV_FUNC_TO_VOID__=1 -D__STDC_PTR_CONV_VOID_TO_FUNC__=1"
       ;;
-    *"std=c23"*) std="-std=c23" ;;
+    *"std=c23"*)
+      std="-std=c23"
+      cstd="-std=c23"
+      ;;
   esac
   case "$hdr" in
     *"expect-exit"*)
@@ -43,7 +59,7 @@ for c in "$here"/tests/*.c; do
   esac
   qpcc_src=$c
   if [ -n "$inc" ]; then
-    clang -E -P $std -I "$inc" "$c" > "$tmp/$base.i"
+    clang -E -P $cstd $defs -I "$inc" "$c" > "$tmp/$base.i"
     qpcc_src=$tmp/$base.i
   fi
   if [ -n "$exp" ]; then
@@ -67,9 +83,9 @@ for c in "$here"/tests/*.c; do
     continue
   fi
   if [ -n "$inc" ]; then
-    clang $std -I "$inc" "$c" -o "$tmp/$base.ref"
+    clang $cstd -I "$inc" "$c" -o "$tmp/$base.ref"
   else
-    clang $std "$c" -o "$tmp/$base.ref"
+    clang $cstd "$c" -o "$tmp/$base.ref"
   fi
   set +e
   "$tmp/$base.ref" >"$tmp/$base.ref.out" 2>&1
@@ -93,6 +109,29 @@ for c in "$here"/tests/*.c; do
     pass=$((pass + 1))
   fi
 done
+
+# `qpcc run` drives clang for the preprocessing and the linking as well, so
+# the driver can compile and execute a normal C file in one step. Reuse a
+# fixture that already returns 0 on success.
+if "$exe" run -std=cqe "$here/tests/void_init.c" >/dev/null 2>&1; then
+  echo "ok   run (exit 0)"
+  pass=$((pass + 1))
+else
+  echo "FAIL run: qpcc run did not exit 0"
+  fail=$((fail + 1))
+fi
+
+# ... and it forwards the program's exit status.
+if "$exe" run "$here/tests/run_status.c" >/dev/null 2>&1; then
+  echo "FAIL run-status: expected a non-zero exit"
+  fail=$((fail + 1))
+elif [ $? -eq 7 ]; then
+  echo "ok   run-status (exit 7)"
+  pass=$((pass + 1))
+else
+  echo "FAIL run-status: wrong exit status"
+  fail=$((fail + 1))
+fi
 
 echo "qpcc oracle: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -22,13 +22,26 @@ source.c --(clang -E)--> tokens --(front)--> AST
 
 ```sh
 moon build --target native qpcc/cmd
-qpcc input.c -o input.o [--emit obj|asm|qbe] [-std=c11|c23] [--check]
+
+# one step: preprocess, compile, link and run
+qpcc run hello.c [-- args...]
+
+# or drive the pieces yourself
+qpcc input.c -o input.o [--emit obj|asm|qbe] [-std=c11|c23|c2y] [--check]
 clang input.o -o a.out
 ```
 
-The C preprocessor is external: run `clang -E -P` before `qpcc` when the input
-uses `#include`/`#define`. Plain `#` lines are stripped by the driver for
-convenience.
+`qpcc run` drives clang for the parts QPCC does not own: it preprocesses with
+`clang -E -P` (so `#include`/`#define` work and the headers under
+`qpcc/include/qbe/` are found when run from the repository root; `QPCC_INCLUDE`
+overrides that), compiles with QPCC, links with clang, runs the program and
+forwards its exit status. `-I`/`-D`/`-U` go to the preprocessor and everything
+after `--` goes to the program. It needs clang on PATH and says so if it is
+missing.
+
+Without `run` the C preprocessor is external: run `clang -E -P` before `qpcc`
+when the input uses `#include`/`#define`. Plain `#` lines are stripped by the
+driver for convenience.
 
 ## Supported
 
@@ -105,6 +118,7 @@ Supported:
   its enclosing block is left, in reverse order, on any exit (falling off
   the end, `return`, `break`, `continue`, `goto` out). A jump that would
   leave the `_Defer` statement itself, and a `goto` into it, are diagnosed.
+The QPCC-only keywords are not part of this mode: see `-std=cqe` below.
 
 The friendly spellings live in hand-written headers under
 `qpcc/include/qbe/`:
@@ -115,11 +129,61 @@ The friendly spellings live in hand-written headers under
 | `stddefer.h` | `defer` -> `_Defer` (TS 25755) |
 | `stdmaxof.h` | `maxof` -> `_Maxof` (QPCC extension) |
 | `stdminof.h` | `minof` -> `_Minof` (QPCC extension) |
+| `taggedunion.h` | `tagunion` -> `_Tagged_union`, `static_tag` -> `_Static_tag`, `dynamic_tag` -> `_Dynamic_tag` (QPCC extension) |
+| `function_pointer.h` | `function_pointer` -> `_Function_pointer` (N3914) |
+| `lambda.h` | `lambda` -> `_Lambda`, `closure_environment` -> `_Closure_environment` (QPCC extension) |
 
-The last two have no WG14 proposal behind them; they are a QPCC convenience.
+The tagged-union, maxof/minof and lambda headers have no WG14 proposal behind
+them; they are a QPCC convenience.
 Pass `-I <qpcc>/qpcc/include/qbe` to the external preprocessor, as
 `qpcc/test.sh` does for `std=c2y` fixtures. QPCC itself only recognizes the
 underscore keywords.
+
+## Pseudo-templates
+
+`Name_([T1, T2])` is an identifier whose spelling is the head plus a hash of
+the argument spelling, so the same instantiation names the same typedef in
+every translation unit:
+
+```c
+#define MkResult(T, E) typedef tagunion { T ok; E err; } Result_([T, E]);
+MkResult(int, int)
+Result_([int, int]) r = { .ok = 1 };
+```
+
+Identifier characters glued to an instantiation join the name, so
+`Result_([T, E])_is_ok` is one identifier and `Result_([T, E]) r` is two.
+
+Arguments are matched by spelling, not resolved, and a repeat is a no-op. See
+`qpcc/tests/template.c`.
+
+### Closures cannot live in globals
+
+A `_Lambda` expression's environment is a local of the enclosing function, so
+a file-scope variable cannot be initialised with a closure; that is diagnosed
+rather than turned into a null function pointer.
+
+## Diagnostics
+
+Errors are rustc-shaped - `error: msg`, a `-->` location, the source line and
+a caret run under the span - and a `_Generic` selection rejects compatible
+associations and a second `default`.
+
+## CQE status
+
+`-std=cqe` is **C2y plus the QPCC extensions**, so `-std=c2y` stays exactly
+C2y:
+
+- `_Function_pointer`, the prefix spelling of a function pointer type, and the
+  bare form as the storage type for any function pointer (N3914).
+- `_Lambda` closures, with by-value and by-reference captures, and
+  `_Closure_environment` for the captured environment.
+- `_Tagged_union` / `_Static_tag` / `_Dynamic_tag` (also available on their
+  own through `-f_tagged_union` in any mode).
+- `void x = expr;`, which declares no object.
+
+Using a QPCC keyword under `-std=c2y` is diagnosed with a pointer at
+`-std=cqe`.
 
 ## _Tagged_union status
 
@@ -130,9 +194,9 @@ unions:
 _Tagged_union Value { int as_int; float as_float; };
 _Tagged_union Value x = { .as_int = 100 };
 x = (_Tagged_union Value){ .as_float = 1.5f };   // sets the tag
-switch (_Tag_of(x)) {
-  case _Get_tag(_Tagged_union Value, as_int): break;
-  case _Get_tag(_Tagged_union Value, as_float): break;
+switch (_Dynamic_tag(x)) {
+  case _Static_tag(_Tagged_union Value, as_int): break;
+  case _Static_tag(_Tagged_union Value, as_float): break;
 }
 ```
 
@@ -148,6 +212,55 @@ switch (_Tag_of(x)) {
 - The tag is optional, so `typedef _Tagged_union { ... } Value;` defines an
   anonymous one and `Value` stands for the type. clang implements none of
   this, so its fixtures are QPCC-only (`// expect-exit N`).
+## _Function_pointer status
+
+The prefix spelling of a function pointer type, plus the storage type for any
+function pointer from [N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm):
+
+```c
+_Function_pointer int (int, char *) a;   /* int (*a)(int, char *) */
+_Function_pointer b = a;                 /* stores any function pointer */
+int (*c)(int, char *) = b;               /* ... and converts back */
+```
+
+- `_Function_pointer T (params)` is exactly `T (*)(params)`, so it composes
+  with declarators and arrays.
+- The bare form is N3914's `_Any_func*`: it converts implicitly to and from
+  every function pointer type and to and from `void *` (the target platforms
+  have a unified address space, so the optional conversions are supported).
+- It is deliberately **not callable** (N3914 4.1): there is no single ABI for
+  "all function calls", so a cast to the concrete signature is required first.
+  Calling one is diagnosed.
+- `_Generic` still tells it apart from a real function pointer type
+  (N3914 4.6), so adding it changes no existing compatible type.
+
+## _Lambda status
+
+```c
+int a = 100, b = 20;
+auto f = _Lambda(a, &b) int (int x, int y) { return a + (*b) + x + y; };
+int *pb = _Closure_environment(f)->b;
+```
+
+- A closure is a two-word `{ function pointer, environment pointer }` value.
+  The written type `_Lambda T (params)` is just the signature, so two
+  closures with the same signature are the same type and can be assigned and
+  copied.
+- The environment is a synthesized struct with one field per capture, in
+  capture order: a by-value capture stores the variable's value at creation
+  time, a by-reference capture stores its address.
+- The body becomes a hidden function whose leading parameter is the
+  environment. Inside it a capture name is bound to its environment field, so
+  a by-value capture is the copy (`a` has type `int` above) and a
+  by-reference capture is the stored pointer (`b` has type `int *`).
+- The environment is a local of the enclosing function, so a closure that
+  outlives the scope it was created in is undefined behaviour.
+- Calling a closure supplies the environment as the hidden leading argument;
+  the closure must be an lvalue.
+- `_Closure_environment` needs a closure whose captured environment is known,
+  which is what the type of a `_Lambda` expression (and so `auto`) carries;
+  the written type names no environment and is diagnosed.
+
 ## GNU extensions
 
 Checked the same way. Supported:

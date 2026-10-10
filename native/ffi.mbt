@@ -49,6 +49,10 @@ pub extern "c" fn mbt_native_run(cmd : Bytes) -> Int = "mbt_native_run"
 pub extern "c" fn mbt_native_capture(cmd : Bytes) -> Bytes = "mbt_native_capture"
 
 ///|
+// Terminate the process with `code`.
+pub extern "c" fn mbt_native_exit(code : Int) = "mbt_native_exit"
+
+///|
 #borrow(path)
 pub extern "c" fn mbt_native_dlopen(path : Bytes) -> Int64 = "mbt_native_dlopen"
 

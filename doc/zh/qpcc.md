@@ -26,6 +26,7 @@ QPCC（`qpcc/`）是把 C 降低到 qbe.mbt IR builder、再从那里降低到 M
 | C11 | 默认，`-std=c11` | 基线 |
 | C23 | `-std=c23` | 在同一前端之上启用 C23 语法；部分支持（见下） |
 | C2y | `-std=c2y` | 在同一前端之上启用 C2y 语法；见 C2y 小节 |
+| CQE | `-std=cqe` | C2y **加上 QPCC 扩展**（"C with QPCC extensions"）；非标准，见 CQE 小节 |
 
 C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 QPCC 之前运行
 `clang -E -P`。驱动只剥离剩余以 `#` 开头的行，因此仅由 `#define` 定义的名字
@@ -36,6 +37,22 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 - **是** —— 编译、链接并正确运行。
 - **部分** —— 被接受，但缺少某个语义或布局细节。
 - **否** —— 被拒绝或不支持。
+
+## 运行程序
+
+```sh
+qpcc run hello.c            # 预处理、编译、链接并运行
+qpcc run hello.c -- one two # ... 并传入程序参数
+```
+
+`qpcc run` 负责 QPCC 自己不做的部分：先用 `clang -E -P` 预处理输入（因此
+`#include`、`#define` 都可用；在仓库根目录下运行时 `qpcc/include/qbe/` 下的
+头文件自动在包含路径中，可用 `QPCC_INCLUDE` 覆盖），再用 QPCC 编译，用 clang
+链接并执行，并把程序的退出码原样转发。`-I`、`-D`、`-U` 会传给预处理器，
+`--` 之后的参数全部交给程序。它需要 PATH 上有 clang，缺失时会明确报错。
+
+原有形式仍然保留且不需要 clang：`qpcc input.c --emit obj|asm|qbe` 输出目标文件、
+汇编或 QBE IR，此时预处理器仍需外部完成。
 
 ## 类型
 
@@ -77,6 +94,7 @@ C 预处理器是**外部的**：当输入使用 `#include`/`#define` 时，在 
 | `__attribute__((packed))` | 部分 | 已解析但被忽略 —— 它不改变 `sizeof` |
 | `__attribute__((aligned(N)))` | 部分 | 已解析但被忽略 —— 它不改变对齐 |
 | C23 `auto` 推导与 `__auto_type` | 是 | `auto_infer`；单个裸声明符且有初始化器 |
+| `void x = expr;` —— 求值 `expr`，不声明任何对象 | 是 | `void_init`；该名字不进局部变量表，裸 `void x;` 仍被拒绝 |
 | K&R（旧式）函数定义 | 否 | — |
 | 嵌套函数 | 否 | 解析错误 |
 
@@ -198,12 +216,18 @@ C2y 语法需显式开启 `-std=c2y`；C11 与 C23 行为不变。
 | `_Countof(expr)` / `_Countof(type-name)`（N3369） | 是 | `countof`；操作数必须是数组类型 |
 | 命名循环（N3355）：循环/switch 前的 `label:`、`break label;`、`continue label;` | 是 | `named_loops` |
 | `_Defer` 语句（TS 25755 / N3590） | 是 | `defer_basic`、`defer_header` |
+QPCC 私有扩展不在此模式内，见下面的 CQE。
 
 易读拼写来自 `qpcc/include/qbe/` 下的手写头文件：`stddefer.h`
-（`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`），以及
+（`defer` -> `_Defer`）、`stdcountof.h`（`countof` -> `_Countof`）、
 QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
-（`minof` -> `_Minof`）。外部预处理器通过
-`clang -E -P -I <qpcc>/qpcc/include/qbe` 找到它们；QPCC 自身只认下划线关键字。
+（`minof` -> `_Minof`），以及本仓库自有扩展的头文件：`taggedunion.h`
+（`tagunion` -> `_Tagged_union`、`static_tag` -> `_Static_tag`、
+`dynamic_tag` -> `_Dynamic_tag`）、`function_pointer.h`
+（`function_pointer` -> `_Function_pointer`）与 `lambda.h`（`lambda` ->
+`_Lambda`、`closure_environment` -> `_Closure_environment`）。外部预处理器
+通过 `clang -E -P -I <qpcc>/qpcc/include/qbe` 找到它们；QPCC 自身只认下划线
+关键字。
 
 已知限制：
 
@@ -213,7 +237,24 @@ QPCC 扩展的 `stdmaxof.h`（`maxof` -> `_Maxof`）与 `stdminof.h`
 - clang 尚未实现 `_Maxof`/`_Minof`、命名循环与 `_Defer`，因此这些夹具是
   QPCC-only（`// expect-exit N`），按其预期退出码校验而非与 clang 对照。
 
-## `_Tagged_union`（`-f_tagged_union`）
+## CQE（`-std=cqe`）
+
+`-std=cqe` = **C2y 加 QPCC 扩展**。它存在的意义是让 `-std=c2y` 保持纯粹的
+C2y：下表中的东西都不是标准，需要 QPCC 模式；而上面那些 C2y 提案
+（`_Countof`、`_Maxof`/`_Minof`、命名循环、`_Defer`）在普通 `-std=c2y`
+下即可用。
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` 与前缀式裸 `_Function_pointer` | 是 | `function_pointer` |
+| `_Lambda(捕获列表) T (params) { body }` 闭包、`_Closure_environment` | 是 | `lambda` |
+| `_Tagged_union` / `_Static_tag` / `_Dynamic_tag` | 是 | `tagged_union`、`taggedunion_header` |
+| `void x = expr;` 不声明对象，只求值 | 是 | `void_init` |
+
+标记联合在任何模式下也可用 `-f_tagged_union` 单独开启。在 `-std=c2y` 下使用
+QPCC 关键字会得到指向 `-std=cqe` 的诊断，而不是含糊的语法错误。
+
+## `_Tagged_union`（`-f_tagged_union`，或 `-std=cqe`）
 
 QPCC 私有扩展，没有 WG14 提案。需显式开启 `-f_tagged_union`；未开启时这三个
 关键字只是普通标识符，C11/C23/C2y 行为不变。
@@ -226,9 +267,9 @@ _Tagged_union Value {
 
 _Tagged_union Value x = { .as_int = 100 };
 x = (_Tagged_union Value){ .as_float = 1.5f };  /* 同时设置 tag */
-switch (_Tag_of(x)) {
-  case _Get_tag(_Tagged_union Value, as_int): break;
-  case _Get_tag(_Tagged_union Value, as_float): break;
+switch (_Dynamic_tag(x)) {
+  case _Static_tag(_Tagged_union Value, as_int): break;
+  case _Static_tag(_Tagged_union Value, as_float): break;
 }
 ```
 
@@ -237,8 +278,8 @@ switch (_Tag_of(x)) {
 | `_Tagged_union Tag { members }` | 是 | `tagged_union` |
 | 自然布局：偏移 0 是 `int` tag，成员在其后重叠 | 是 | `{ int; float }` 为 8 字节，`{ int; double }` 为 16 |
 | 读 `x.m` | 是 | `tagged_union` |
-| `_Tag_of(x)`，`int` 右值 | 是 | `tagged_union` |
-| `_Get_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
+| `_Dynamic_tag(x)`，`int` 右值 | 是 | `tagged_union` |
+| `_Static_tag(_Tagged_union T, m)`，整型常量表达式 | 是 | `tagged_union`（`_Static_assert` 与 `case`） |
 | 设计化初始化：局部、复合字面量、全局、静态 | 是 | `tagged_union`、`tagged_union_static` |
 
 语义与限制：
@@ -254,12 +295,133 @@ switch (_Tag_of(x)) {
   或空列表（`{}`）都会被诊断。多个 designator 时最后者生效（同 union）。
 - tagged union 可以用 `_Tagged_union Tag` 命名，也可以用 typedef：tag 是
   可选的，所以 `typedef _Tagged_union { ... } Value;` 定义匿名形式，之后
-  `Value` 就代表该类型（`_Get_tag` 同理）。写了 tag 时没有裸的别名。
+  `Value` 就代表该类型（`_Static_tag` 同理）。写了 tag 时没有裸的别名。
 - clang 完全不支持这些，因此夹具是 QPCC-only（`// expect-exit N`），按预期
   退出码校验。
+## `_Function_pointer`（`-std=cqe`）
+
+函数指针类型的前缀写法，同时提供
+[N3914](https://open-std.org/Jtc1/Sc22/WG14/www/docs/n3914.htm)
+（"Any func* - A Universal Function Pointer Storage Type"）所述的通用函数指针
+存储类型：
+
+```c
+_Function_pointer int (int, char *) a;   /* 等价 int (*a)(int, char *) */
+_Function_pointer b = a;                 /* 可存放任意函数指针 */
+int (*c)(int, char *) = b;               /* 再转回具体类型 */
+```
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Function_pointer T (params) name` | 是 | `function_pointer` |
+| 裸 `_Function_pointer`，与任意函数指针类型双向转换 | 是 | `function_pointer` |
+| `_Function_pointer` 与 `void *` 双向转换 | 是 | `function_pointer`；目标平台地址空间统一，因此支持 N3914 的可选转换 |
+| 不经强制转换不可调用（N3914 4.1） | 是 | 会诊断为 "a _Function_pointer cannot be called" |
+| `_Generic` 仍能把它与真正的函数指针类型区分开（N3914 4.6） | 是 | `function_pointer` |
+
+写出的类型就是 `T (*)(params)`，因此可与声明符、数组组合：
+`_Function_pointer int (int) table[2];`。`<function_pointer.h>` 提供易读拼写
+`function_pointer`。
+
+## `_Lambda` 闭包（`-std=cqe`）
+
+```c
+int a = 100, b = 20;
+auto f = _Lambda(a, &b) int (int x, int y) { return a + (*b) + x + y; };
+int *pb = _Closure_environment(f)->b;   /* 捕获到的环境 */
+```
+
+| 特性 | 状态 | 证据 |
+| --- | --- | --- |
+| `_Lambda(捕获列表) T (params) { body }` | 是 | `lambda` |
+| 闭包类型 `_Lambda T (params)` | 是 | `lambda` |
+| `_Closure_environment(e)`，环境指针 | 是 | `lambda` |
+| 按值与按引用捕获 | 是 | `lambda` |
+
+闭包是一个两字的值 `{ 函数指针, 环境指针 }`；写出的类型只是签名，因此签名相同
+的两个闭包是同一类型，可以赋值与拷贝。环境是一个合成结构体，按捕获顺序每个捕获
+一个字段：按值捕获存放变量**创建时**的值，按引用捕获存放它的地址。函数体变成一个
+隐藏函数，其首个参数是环境；体内捕获名绑定到对应的环境字段，因此按值捕获读写的是
+副本，按引用捕获则是那个存下来的指针：
+
+```c
+_Lambda(a, &b) int (void) { ... }
+/* 体内：a 的类型是 int，b 的类型是 int * */
+```
+
+语义与限制：
+
+- 环境位于外层函数的栈帧，因此闭包存活超过其创建作用域是未定义行为。
+- 调用闭包时由编译器补上环境作为隐藏的首个实参；被调用的闭包必须是左值。
+- 若把一个闭包赋给捕获集合不同的另一个闭包，不会诊断；此后读环境是未定义行为，
+  与"读取标记联合中不是当前标记的成员"同一性质。
+- `_Closure_environment` 需要"捕获环境已知"的闭包，这正是 `_Lambda` 表达式
+  （以及 `auto`）的类型所携带的；写出的类型 `_Lambda T (params)` 不含环境，
+  会被诊断。
+
+### 全局变量不能存闭包
+
+\`_Lambda\` 表达式构造的是 \`{ 函数, 环境 }\` 二元组，而环境是外围函数的局部变量。
+文件作用域没有外围函数，因此全局变量不能用闭包初始化：
+
+\`\`\`c
+static _Lambda int (int, int) add = _Lambda int (int x, int y) { ... };
+/* error: a global variable cannot be initialised with a closure */
+\`\`\`
+
+把闭包放进函数里，或改存普通函数指针。前端会明确报错，而不是发出一个空函数指针——
+那种情况会编译通过、链接通过，然后在第一次调用时段错误。
+
+## 伪模板
+
+QPCC 扩展，在 \`-std=cqe\` 下可用。以 \`_\` 结尾的标识符后接 \`([\` 时，会取一个
+逗号分隔的类型拼写列表，并代表"该标识符 + 该拼写的哈希"：
+
+\`\`\`c
+#define MkResult(T, E) typedef tagunion { T ok; E err; } Result_([T, E]);
+
+MkResult(int, int)
+Result_([int, int]) a = { .ok = 100 };
+\`\`\`
+
+参数按**拼写**匹配，不做解析：\`int\` 与 \`signed int\` 是两个不同的实例化，写错
+类型名会静默地指向一个从未定义的名字。这正是它"伪"的地方——是前端认识的一种
+命名约定，而不是泛型类型系统。
+
+紧贴在实例化之后（无空白）的标识符字符会并入名字，与预处理器的 token 粘贴一致，
+于是一次实例化可以携带一族相关声明：
+
+\`\`\`c
+#define MkResult(T, E) \\
+  typedef tagunion { T value; E error; } Result_([T, E]); \\
+  _Bool Result_([T, E])_is_ok(Result_([T, E]) r) { ... }
+\`\`\`
+
+\`Result_([T, E])_is_ok\` 是一个标识符；\`Result_([T, E]) r\` 是两个。
+
+名字是拼写的稳定哈希，因此同一个实例化在任何翻译单元里拼出的标识符都相同：typedef
+可以写在头文件里，在任意 \`.c\` 中使用，不需要任何跨 TU 状态。重复实例化是空操作：
+第二份定义会被丢弃而不是再建一个布局，这样它两侧的使用仍然兼容。
+
+## 诊断
+
+错误输出采用 rustc 形状：消息、\`-->\` 位置、出错源码行，以及 span 下的波浪线。
+
+\`\`\`
+error: use of undeclared identifier: undefined_thing
+  --> bad.c:3:3
+  |
+3 |   int y = undefined_thing;
+  |   ^^^^^^
+\`\`\`
+
+语法错误用同样的版式（解析器是致命的，因此只会有一条）。在检查声明时产生的诊断
+指向该声明，而不是精确的子表达式——因为表达式目前还不带 span。
+
 ## 已知缺口一览
 
-- 预处理器是外部的（`clang -E`）；不处理 `#include`/`#define`。
+- 普通形式没有自带预处理器：`qpcc input.c` 会丢弃 `#` 开头的行，需要先跑
+  `clang -E`。请改用 `qpcc run`，它替你完成预处理（与链接）。
 - 字符串字面量或由字符串初始化的 `char[]` 的 `sizeof`。
 - VLA 的 `sizeof`。
 - 某些有符号位域宽度。
@@ -268,6 +430,10 @@ switch (_Tag_of(x)) {
 - 原子操作：没有读-改-写。
 - `asm` 标签与嵌套函数。
 - 诊断信息携带语句级位置。
+- 类型按翻译单元独立处理。同一个声明在两个文件里排版一致，因此 ABI 相符；但没有
+  跨 TU 的声明一致性检查，不一致属于未定义行为（与 C 相同）。
+- 文件作用域的变量不能用闭包初始化：闭包的环境是外围函数的局部变量，文件作用
+  域没有外围函数。这种情况会明确报错，而不是发出空函数指针。
 
 ## 另见
 

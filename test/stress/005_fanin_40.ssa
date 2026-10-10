@@ -1,0 +1,211 @@
+# a join block with 41 predecessors
+# the largest phi in the suite: @n39 is laid out before @b0.., so it comes first in the phi argument list
+
+export
+function w $fanin(w %a) {
+@start
+	%c0 =w ceqw %a, 0
+	jnz %c0, @b0, @n0
+@n0
+	%c1 =w ceqw %a, 1
+	jnz %c1, @b1, @n1
+@n1
+	%c2 =w ceqw %a, 2
+	jnz %c2, @b2, @n2
+@n2
+	%c3 =w ceqw %a, 3
+	jnz %c3, @b3, @n3
+@n3
+	%c4 =w ceqw %a, 4
+	jnz %c4, @b4, @n4
+@n4
+	%c5 =w ceqw %a, 5
+	jnz %c5, @b5, @n5
+@n5
+	%c6 =w ceqw %a, 6
+	jnz %c6, @b6, @n6
+@n6
+	%c7 =w ceqw %a, 7
+	jnz %c7, @b7, @n7
+@n7
+	%c8 =w ceqw %a, 8
+	jnz %c8, @b8, @n8
+@n8
+	%c9 =w ceqw %a, 9
+	jnz %c9, @b9, @n9
+@n9
+	%c10 =w ceqw %a, 10
+	jnz %c10, @b10, @n10
+@n10
+	%c11 =w ceqw %a, 11
+	jnz %c11, @b11, @n11
+@n11
+	%c12 =w ceqw %a, 12
+	jnz %c12, @b12, @n12
+@n12
+	%c13 =w ceqw %a, 13
+	jnz %c13, @b13, @n13
+@n13
+	%c14 =w ceqw %a, 14
+	jnz %c14, @b14, @n14
+@n14
+	%c15 =w ceqw %a, 15
+	jnz %c15, @b15, @n15
+@n15
+	%c16 =w ceqw %a, 16
+	jnz %c16, @b16, @n16
+@n16
+	%c17 =w ceqw %a, 17
+	jnz %c17, @b17, @n17
+@n17
+	%c18 =w ceqw %a, 18
+	jnz %c18, @b18, @n18
+@n18
+	%c19 =w ceqw %a, 19
+	jnz %c19, @b19, @n19
+@n19
+	%c20 =w ceqw %a, 20
+	jnz %c20, @b20, @n20
+@n20
+	%c21 =w ceqw %a, 21
+	jnz %c21, @b21, @n21
+@n21
+	%c22 =w ceqw %a, 22
+	jnz %c22, @b22, @n22
+@n22
+	%c23 =w ceqw %a, 23
+	jnz %c23, @b23, @n23
+@n23
+	%c24 =w ceqw %a, 24
+	jnz %c24, @b24, @n24
+@n24
+	%c25 =w ceqw %a, 25
+	jnz %c25, @b25, @n25
+@n25
+	%c26 =w ceqw %a, 26
+	jnz %c26, @b26, @n26
+@n26
+	%c27 =w ceqw %a, 27
+	jnz %c27, @b27, @n27
+@n27
+	%c28 =w ceqw %a, 28
+	jnz %c28, @b28, @n28
+@n28
+	%c29 =w ceqw %a, 29
+	jnz %c29, @b29, @n29
+@n29
+	%c30 =w ceqw %a, 30
+	jnz %c30, @b30, @n30
+@n30
+	%c31 =w ceqw %a, 31
+	jnz %c31, @b31, @n31
+@n31
+	%c32 =w ceqw %a, 32
+	jnz %c32, @b32, @n32
+@n32
+	%c33 =w ceqw %a, 33
+	jnz %c33, @b33, @n33
+@n33
+	%c34 =w ceqw %a, 34
+	jnz %c34, @b34, @n34
+@n34
+	%c35 =w ceqw %a, 35
+	jnz %c35, @b35, @n35
+@n35
+	%c36 =w ceqw %a, 36
+	jnz %c36, @b36, @n36
+@n36
+	%c37 =w ceqw %a, 37
+	jnz %c37, @b37, @n37
+@n37
+	%c38 =w ceqw %a, 38
+	jnz %c38, @b38, @n38
+@n38
+	%c39 =w ceqw %a, 39
+	jnz %c39, @b39, @n39
+@n39
+	jmp @join
+@b0
+	jmp @join
+@b1
+	jmp @join
+@b2
+	jmp @join
+@b3
+	jmp @join
+@b4
+	jmp @join
+@b5
+	jmp @join
+@b6
+	jmp @join
+@b7
+	jmp @join
+@b8
+	jmp @join
+@b9
+	jmp @join
+@b10
+	jmp @join
+@b11
+	jmp @join
+@b12
+	jmp @join
+@b13
+	jmp @join
+@b14
+	jmp @join
+@b15
+	jmp @join
+@b16
+	jmp @join
+@b17
+	jmp @join
+@b18
+	jmp @join
+@b19
+	jmp @join
+@b20
+	jmp @join
+@b21
+	jmp @join
+@b22
+	jmp @join
+@b23
+	jmp @join
+@b24
+	jmp @join
+@b25
+	jmp @join
+@b26
+	jmp @join
+@b27
+	jmp @join
+@b28
+	jmp @join
+@b29
+	jmp @join
+@b30
+	jmp @join
+@b31
+	jmp @join
+@b32
+	jmp @join
+@b33
+	jmp @join
+@b34
+	jmp @join
+@b35
+	jmp @join
+@b36
+	jmp @join
+@b37
+	jmp @join
+@b38
+	jmp @join
+@b39
+	jmp @join
+@join
+	%p =w phi @n39 -1, @b0 0, @b1 1, @b2 2, @b3 3, @b4 4, @b5 5, @b6 6, @b7 7, @b8 8, @b9 9, @b10 10, @b11 11, @b12 12, @b13 13, @b14 14, @b15 15, @b16 16, @b17 17, @b18 18, @b19 19, @b20 20, @b21 21, @b22 22, @b23 23, @b24 24, @b25 25, @b26 26, @b27 27, @b28 28, @b29 29, @b30 30, @b31 31, @b32 32, @b33 33, @b34 34, @b35 35, @b36 36, @b37 37, @b38 38, @b39 39
+	ret %p
+}

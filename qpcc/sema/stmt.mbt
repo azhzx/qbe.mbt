@@ -263,6 +263,28 @@ fn check_local_decl(
             storage: StTypedef,
             value: 0L,
           })
+        } else if ty is CVoid && ctx.mode == @front.Cqe {
+          // QPCC extension: `void x = f();` declares no object. The
+          // initializer is evaluated for its side effects and its value
+          // discarded, exactly as if the expression had been written as a
+          // statement of its own. `void x;` has nothing to evaluate and stays
+          // an error.
+          match idecl.init {
+            Some(@front.IExpr(e)) => {
+              let te = check_expr(e, ctx)
+              out.push({ kind: KSExpr(Some(te)), })
+            }
+            _ =>
+              ctx.diags.error("variable '" + n + "' has incomplete type 'void'")
+          }
+        } else if ty is CVoid {
+          // Plain C has no object of type void; the declaration form above is
+          // the QPCC extension and needs -std=cqe.
+          ctx.diags.error(
+            "variable '" +
+            n +
+            "' has incomplete type 'void' (a void declaration needs -std=cqe)",
+          )
         } else {
           let storage = storage_of(spec)
           let lbl_init = match idecl.init {
@@ -318,6 +340,17 @@ fn check_local_decl(
             match idecl.init {
               Some(@front.IExpr(e)) => {
                 let te = check_expr(e, ctx)
+                // A written `_Lambda` type leaves the captured environment
+                // unknown, because the layout belongs to the expression. The
+                // initializer knows it, so take the type from there and
+                // `_Closure_environment` can see the fields.
+                match (ty, te.ty) {
+                  (CClosure(_, _, e0), CClosure(r, ps, e1)) =>
+                    if e0 == -1 && e1 != -1 {
+                      ty = CClosure(r, ps, e1)
+                    }
+                  _ => ()
+                }
                 out.push({ kind: KSDecl(n, ty, Some(te), al), })
               }
               Some(@front.IList(_)) => {
@@ -525,7 +558,14 @@ pub fn check_block_items(
   for it in items {
     match it {
       @front.BStmt(s) => out.push(check_stmt(s, ctx))
-      @front.BDecl(spec, decls) => check_local_decl(spec, decls, ctx, out)
+      @front.BDecl(spec, decls, pos) => {
+        // Local declarations carry their own position; without it a diagnostic
+        // raised while checking the initializer lands on the enclosing block.
+        ctx.diags.cur_line = pos.line
+        ctx.diags.cur_col = pos.col
+        ctx.diags.cur_len = pos.len
+        check_local_decl(spec, decls, ctx, out)
+      }
     }
   }
   out
@@ -535,7 +575,10 @@ pub fn check_block_items(
 fn check_block_item(it : @front.BlockItem, ctx : Ctx) -> TStmt {
   match it {
     @front.BStmt(s) => check_stmt(s, ctx)
-    @front.BDecl(spec, decls) => {
+    @front.BDecl(spec, decls, pos) => {
+      ctx.diags.cur_line = pos.line
+      ctx.diags.cur_col = pos.col
+      ctx.diags.cur_len = pos.len
       let arr : Array[TStmt] = []
       check_local_decl(spec, decls, ctx, arr)
       { kind: KSBlock(arr), }
@@ -719,6 +762,7 @@ fn check_return(e : @front.Expr?, ctx : Ctx) -> TStmt {
 pub fn check_stmt(s : @front.Stmt, ctx : Ctx) -> TStmt {
   ctx.diags.cur_line = s.pos.line
   ctx.diags.cur_col = s.pos.col
+  ctx.diags.cur_len = s.pos.len
   match s.kind {
     @front.SCompound(items) => {
       ctx.scopes.push()
