@@ -393,3 +393,12 @@
     driver share front/report.mbt to print the message, a `-->` location, the
     source line and a caret run. The oracle grows to 162 (generic3, template,
     anyfunc_macros, struct_float_byval included)
+
+2026.10.11: v0.37.3
+    examples/c/y.c is renamed rec_lambda.c, which is what it is: the knot tied
+    by hand, not a combinator. examples/c/z.c is the Z combinator proper -
+    self-application x x, with the self type-erased to void * because C has no
+    recursive types, and a capture-less core so the closure never refers to a
+    frame that has returned. One core drives both fact and fib, and neither step
+    mentions recursion, which is the point. C cannot return the materialised
+    fixpoint closure, so the caller builds it in its own frame; the file says so.
