@@ -117,6 +117,17 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   the definition simply is not external; a library that relies on one external
   definition from an `extern inline` in a chosen translation unit is not
   modelled.
+- **Lua's VM is miscompiled; localized to lvm.o only.** Method: build all of
+  Lua with clang (correct), then swap in one qpcc-compiled object at a time and
+  rerun `for k=1,2 do print(k) end`. Only `lvm.o` breaks it, so the defect is in
+  qpcc's compilation of `src/lvm.c`, not in the backend or the other 33 files.
+  Ruled out along the way: the bytecode (qpcc-built `luac -l` matches), pointer
+  arithmetic on 16-byte structs and typedef'd pointers, and `io.write` itself.
+  The symptom - a numeric `for` never entering its body, and a local becoming
+  garbage (a function value) in a `while` that calls out - looks like a value
+  live across a call being clobbered inside `forprep`, which keeps `pinit`,
+  `plimit` and `pstep` live across `forlimit`. Next: shrink `lvm.c` (or split
+  `forprep`/`forloop` out with stubs) until the swap test stops breaking.
 - **Lua builds, links and runs, but some programs are miscompiled.** After the
   fixes above, all 34 Lua 5.5.1 sources compile, the interpreter links, `lua -v`,
   `lua -e 'print(1+1)'` and a script printing "hi" all work - but
