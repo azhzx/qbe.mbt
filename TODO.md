@@ -128,6 +128,29 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   register allocator** in this port even though `arm64_bin_loadcon` uses it
   transiently, so using IP0 clobbered live values. `enc_ldst` now aborts rather
   than truncating.
+- **REMAINING (Lua), localized to lcode.o: the emitted bytecode has the wrong
+  register.** \`local i=1 while i<=3 do print(i) i=i+1 end\` prints a function
+  instead of 1, 2, 3, and swapping qpcc-compiled objects into a clang-built Lua
+  gives a single offender: lcode.o. The bytecode itself is the oracle - the
+  clang-built luac says
+      GETTABUP 1 0 0 / MOVE 2 0 / CALL 1 2 1   and 3 slots
+  while luac with qpcc's lcode.o says
+      GETTABUP 0 0 0 / MOVE 1 0 / CALL 0 2 1   and 2 slots
+  so the call's base register is one too low and maxstacksize is one too small -
+  the register-reservation path in lcode.c assigns R0, which holds the local.
+  Probes in luaK_reserveregs/freereg/luaK_checkstack show qpcc calling
+  luaK_reserveregs before the freereg of freeexp, i.e. the calls are ordered
+  differently; FuncState's layout and its lu_byte arithmetic match clang
+  exactly, so the fault is in how qpcc compiles that ordering. Next: reduce
+  \`luaK_exp2nextreg\` (dischargevars/freeexp/reserveregs) to a standalone case.
+- **FIXED (Lua): missing declarations in the bundled headers.** An implicitly
+  declared function returns int, so pointer results were truncated: string.h had
+  no strpbrk, and Lua's l_str2d opens with \`const char *pmode = strpbrk(s,
+  ".xXnN")\`, so any literal containing a '.' crashed. stdio.h lacked
+  freopen/tmpfile (FILE* truncated) and fseek/ftell/feof/ferror/clearerr/
+  setvbuf/tmpnam; ctype.h lacked iscntrl/isgraph; stdlib.h lacked system.
+  __builtin_fabs*/sqrt* rewrites now supply the libm prototype. A scan of all 34
+  Lua sources for "implicit declaration" now prints nothing.
 - **REMAINING (Lua), localized to lobject.o: a float constant.** `print(1.0)`
   segfaults, and so does the bare statement `local x = 1.0`; integers
   (`print(1)`) and runtime floats (`print(math.pi)`, which is a table field)
