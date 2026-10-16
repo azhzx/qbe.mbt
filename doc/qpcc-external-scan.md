@@ -175,6 +175,31 @@ printf("%zu %zu %zu\n", sizeof("ab"), sizeof(int), sizeof("abcdef"));
 结果日志里只剩 `PanicError` 栈，**完全看不到错误信息**。对「qpcc 作为编译器的可脚本化性」
 这是硬伤，修复优先级应当很高。
 
+### 6.6 整型提升缺失：比较运算符的静默错编（修 Lua 时发现）
+
+C 在通常算术转换之前会做**整型提升**：`char`/`short`（不论有无符号）提升为 `int`，所以
+`int >= unsigned char` 是**有符号**比较。qpcc 只问「任一操作数是否无符号」，于是把它编成了
+无符号比较。
+
+后果是静默算错：任何**负值**与小无符号类型比较都会翻。Lua 的 `lcode.c` 里有
+
+```c
+static void freereg (FuncState *fs, int reg) {
+  if (reg >= luaY_nvarstack(fs)) { fs->freereg--; ... }
+}
+```
+
+`reg` 是 `int`，`luaY_nvarstack` 返回 `lu_byte`。寄存器号为 `-1` 时被当成 `0xFFFFFFFF`，
+条件误判为真，`freereg` 多减一次，之后整段字节码的寄存器号全部偏移 1 —— 表现为
+`local i=1 while i<=3 do print(i) i=i+1 end` 把循环变量覆盖成 `print`。
+
+已修（先做提升，再让无符号类型在「宽度不小于有符号」时才胜出），回归用例
+`qpcc/tests/promote_cmp.c`。
+
+**对方法的提醒**：这一类**编译成功但结果错**的问题，本报告的「OK」计数**完全看不到**。
+差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
+所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
+
 ## 7. 方法的局限（所以数字是下界）
 
 1. **`-D` 注入有 bug**：从 `Makefile` 抓到的 `-DVERSION=\"0\"` 反斜杠没消干净，
