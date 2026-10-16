@@ -128,6 +128,22 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   register allocator** in this port even though `arm64_bin_loadcon` uses it
   transiently, so using IP0 clobbered live values. `enc_ldst` now aborts rather
   than truncating.
+- **FIXED: integer promotion.** C promotes char and short to int before the
+  usual arithmetic conversions, so `int >= unsigned char` is a SIGNED
+  comparison; qpcc asked only whether either operand was unsigned. Lua's
+  freereg does `if (reg >= luaY_nvarstack(fs))` with reg an int and
+  luaY_nvarstack returning lu_byte, so a -1 register was compared as
+  0xFFFFFFFF, freereg was decremented when it should not have been, and every
+  later register in the emitted bytecode shifted by one. That is why
+  `local i=1 while i<=3 do print(i) i=i+1 end` overwrote i with print's value.
+  The differential never caught it because it feeds IR, not C, so qpcc's C to
+  IR conversion for comparison operators was untested there. Fixture:
+  qpcc/tests/promote_cmp.c; oracle 167/167.
+- **RESOLVED (Lua): it builds, links and runs correctly.** All 34 sources
+  compile, and lua -v, arithmetic, strings, tables, closures, metatables,
+  coroutines, pcall, numeric and float for loops, while loops and recursion
+  (fib(20) = 6765, fact(20) = 2432902008176640000) all produce the right answers.
+  The historical notes below record how it was found.
 - **REMAINING (Lua), localized to lcode.o: the emitted bytecode has the wrong
   register.** \`local i=1 while i<=3 do print(i) i=i+1 end\` prints a function
   instead of 1, 2, 3, and swapping qpcc-compiled objects into a clang-built Lua
