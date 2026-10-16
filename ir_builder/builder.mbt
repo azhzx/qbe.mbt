@@ -733,10 +733,39 @@ fn Builder::finalize(self : Builder) -> Unit {
   for e in self.pending {
     let phis = self.funcs[e.fid].blks[e.dest].phi
     for i in 0..<phis.length() {
-      let v = if i < e.args.length() {
-        self.val_ref(e.args[i])
-      } else {
-        @types.Ref::none()
+      if i >= e.args.length() {
+        // A short edge would leave the phi with a missing operand. The IR is
+        // then invalid, and the backend used to compile it into silently wrong
+        // code - which is how a miscompiled Lua for-loop looked like one that
+        // simply never ran. Fail loudly instead.
+        abort(
+          "qbe: phi for block " +
+          self.funcs[e.fid].blks[e.dest].name +
+          " of function " +
+          self.funcs[e.fid].name +
+          " has " +
+          phis.length().to_string() +
+          " parameters but the edge from block " +
+          self.funcs[e.fid].blks[e.pred].name +
+          " supplies " +
+          e.args.length().to_string(),
+        )
+      }
+      let v = self.val_ref(e.args[i])
+      if v.is_none() {
+        // Same failure mode one step later: the edge supplied an argument id
+        // that names no value, so the phi operand is empty and the IR is
+        // invalid. The backend used to compile that into silently wrong code.
+        abort(
+          "qbe: phi for block " +
+          self.funcs[e.fid].blks[e.dest].name +
+          " of function " +
+          self.funcs[e.fid].name +
+          " got an empty operand for parameter " +
+          i.to_string() +
+          " from block " +
+          self.funcs[e.fid].blks[e.pred].name,
+        )
       }
       phis[i].args.push(@types.PhiArg::{ value: v, blk_id: e.pred, })
     }
