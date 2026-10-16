@@ -131,6 +131,15 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   works" result was a coincidence - the overflow landed on `main`'s `stk[]`,
   which happened to hold 1. Suspect the promotion in `mem/promote.mbt`
   (pitfalls 3.4) and the frame-size computation in `mem/`.
+  Refinement: the frame is not too small, the slots are *aliased*. The machine
+  code addresses exactly two slots, `add x1, x29, #0x20` and `add x1, x29,
+  #0x28`, for 18 allocations, so the lifetime analysis merged slots that are
+  live at the same time. The one unusual construct in `forprep` is the
+  variadic `luaG_runerror` call; replacing the six `luaG_*` calls in
+  `forprep`/`forlimit` with `abort()` makes the loop *run* (two iterations)
+  though the control variable is still garbage - so varargs feed into the
+  liveness used for coalescing. Next: `mem/coalesce.mbt`'s liveness around
+  variadic calls (`call ... ...`), with `doc/live.md` as the reference.
 - **Lua's VM is miscompiled; localized to lvm.o only.** Method: build all of
   Lua with clang (correct), then swap in one qpcc-compiled object at a time and
   rerun `for k=1,2 do print(k) end`. Only `lvm.o` breaks it, so the defect is in
