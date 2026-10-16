@@ -128,6 +128,15 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   register allocator** in this port even though `arm64_bin_loadcon` uses it
   transiently, so using IP0 clobbered live values. `enc_ldst` now aborts rather
   than truncating.
+- **REMAINING (Lua), localized to lobject.o: a float constant.** `print(1.0)`
+  segfaults, and so does the bare statement `local x = 1.0`; integers
+  (`print(1)`) and runtime floats (`print(math.pi)`, which is a table field)
+  are fine. The bytecode for `print(1.0)` is GETTABUP/LOADF/CALL, so it is the
+  LOADF of a float constant. Swapping qpcc-compiled objects one at a time into
+  a clang-built Lua shows a single offender: lobject.o. That object was fine
+  before this round's changes, so it is worth checking how the two fixes here
+  (the shadowed-local rename and the large-offset scratch) interact with
+  lobject.c - start by swapping in a lobject.o built with the rename disabled.
 - **REMAINING (Lua):** `for i=1.0,3.0 do print(i) end` segfaults, and a local
   becomes garbage in a `while` whose body calls out:
       local i=1 while i<=3 do print(i) i=i+1 end   -->  i prints as a function
