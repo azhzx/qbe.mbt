@@ -13,3 +13,4 @@ skill/
 
 # Python bytecode
 __pycache__/
+build/
