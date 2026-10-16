@@ -117,6 +117,20 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   the definition simply is not external; a library that relies on one external
   definition from an `extern inline` in a chosen translation unit is not
   modelled.
+- **ROOT CAUSE (Lua's VM): the frame does not cover the local slots.**
+  `forprep`'s IR contains 18 `alloc8` slots (144 bytes), but the emitted
+  prologue is `stp x29, x30, [sp, #-0x50]!` - an 80-byte frame - and the only
+  frame offsets used anywhere in the function are the four callee-saved saves.
+  Not one slot offset appears, so all 18 slots were promoted away, the register
+  allocator had nowhere to spill, and the locals land *outside* the frame, on
+  the caller's stack. That is why the probe saw `init == step == L`: those
+  locals read the caller's parameter-spill area.
+  Evidence: (a) the qabec IR for `forprep` is byte-identical whether `lvm.c` is
+  compiled alone or wrapped in another translation unit; (b) the emitted machine
+  code is identical too (only branch displacements differ); (c) the "harness
+  works" result was a coincidence - the overflow landed on `main`'s `stk[]`,
+  which happened to hold 1. Suspect the promotion in `mem/promote.mbt`
+  (pitfalls 3.4) and the frame-size computation in `mem/`.
 - **Lua's VM is miscompiled; localized to lvm.o only.** Method: build all of
   Lua with clang (correct), then swap in one qpcc-compiled object at a time and
   rerun `for k=1,2 do print(k) end`. Only `lvm.o` breaks it, so the defect is in
