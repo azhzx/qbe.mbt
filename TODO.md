@@ -111,6 +111,20 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   do not lower it into a static pair; the environment would have to become a
   global object of its own, which is a new feature rather than a bug fix.
 
+- **A C99 `inline` definition must not be emitted as a strong global.** Fixed for
+  the linkage (an `inline` without `static`/`extern` is now non-exported, which
+  is what unblocked Lua's link), but qpcc makes the symbol local where C says
+  the definition simply is not external; a library that relies on one external
+  definition from an `extern inline` in a chosen translation unit is not
+  modelled.
+- **Lua builds, links and runs, but some programs are miscompiled.** After the
+  fixes above, all 34 Lua 5.5.1 sources compile, the interpreter links, `lua -v`,
+  `lua -e 'print(1+1)'` and a script printing "hi" all work - but
+  `for i=1,3 do io.write(i, " ") end print()` prints nothing, and a larger
+  script segfaults. So there is at least one arm64 code generation bug left that
+  the 5040-case core differential does not cover. Next step: reduce the empty
+  for-loop to a minimal case.
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under `test/`
