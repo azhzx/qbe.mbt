@@ -727,7 +727,9 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
       _ => {
         let c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c < 0 || c > 17 {
-          raise @util.QbeError::Ice("unhandled jump")
+          raise @util.QbeError::Ice(
+            "unhandled jump kind " + b.jmp.kind.index().to_string(),
+          )
         }
         let mut s1 = b.jmp.s1
         let mut s2 = b.jmp.s2

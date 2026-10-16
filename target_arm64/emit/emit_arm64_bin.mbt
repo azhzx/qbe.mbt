@@ -1104,7 +1104,12 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
       _ => {
         let c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c < 0 || c > 17 {
-          raise @util.QbeError::Ice("arm64 bin: unhandled jump")
+          raise @util.QbeError::Ice(
+            "arm64 bin: unhandled jump kind " +
+            b.jmp.kind.index().to_string() +
+            " in " +
+            fn_.name,
+          )
         }
         let mut s1 = b.jmp.s1
         let mut s2 = b.jmp.s2
