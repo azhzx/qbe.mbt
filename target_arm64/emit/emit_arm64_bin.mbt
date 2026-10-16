@@ -894,7 +894,6 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         ()
       } else if i.to.is_slot() {
         // Spilled value: copy to its stack slot (C emit.c Ocopy to RSlot).
-        let (rn, off) = arm64_bin_mem(st, i.to)
         let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
         let is_fp = i.cls == @types.Ks || i.cls == @types.Kd
         let rt = if i.arg1.is_con() {
@@ -912,6 +911,8 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         } else {
           arm64_bin_r(st, i.arg1)
         }
+        // After the constant is materialised: loadcon uses IP0.
+        let (rn, off) = arm64_bin_mem(st, i.to)
         if is_fp {
           arm64_bin_emit(st, @object.enc_ldst_fp(size, 0, rt, rn, off))
         } else {
@@ -1009,6 +1010,25 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
+// Move the stack pointer by `n` bytes. `add/sub sp, sp, #imm` has a 12-bit
+// immediate, so a frame larger than 4095 bytes needs several instructions.
+// Without this the frame was truncated to its low 12 bits: Lua's luaV_execute
+// asked for 17072 bytes and got 688, so every slot access landed in the
+// caller's frame and the interpreter crashed.
+fn arm64_bin_sp_adjust(st : Arm64BinState, is_sub : Bool, n : Int) -> Unit {
+  let mut left = n
+  while left > 0 {
+    let part = if left > 0xFFF { 0xFFF } else { left }
+    if is_sub {
+      arm64_bin_emit(st, @object.enc_sub_imm(31, 31, part))
+    } else {
+      arm64_bin_emit(st, @object.enc_add_imm(31, 31, part))
+    }
+    left = left - part
+  }
+}
+
+///|
 fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
   let fn_ = st.fn_
   let mut o = st.frame + 16
@@ -1032,7 +1052,7 @@ fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
   }
   if oo > 504 {
     arm64_bin_emit(st, @object.enc_ldp_post(29, 30, 31, 16))
-    arm64_bin_emit(st, @object.enc_add_imm(31, 31, oo - 16))
+    arm64_bin_sp_adjust(st, false, oo - 16)
   } else {
     arm64_bin_emit(st, @object.enc_ldp_post(29, 30, 31, oo))
   }
@@ -1061,7 +1081,7 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
     raise @util.QbeError::Ice("arm64 bin: vararg prologue not supported yet")
   }
   if st.frame + 16 > 512 {
-    arm64_bin_emit(st, @object.enc_sub_imm(31, 31, st.frame))
+    arm64_bin_sp_adjust(st, true, st.frame)
     arm64_bin_emit(st, @object.enc_stp_pre(29, 30, 31, -16))
   } else {
     arm64_bin_emit(st, @object.enc_stp_pre(29, 30, 31, -(st.frame + 16)))
