@@ -123,6 +123,19 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   qpcc's compilation of `src/lvm.c`, not in the backend or the other 33 files.
   Ruled out along the way: the bytecode (qpcc-built `luac -l` matches), pointer
   arithmetic on 16-byte structs and typedef'd pointers, and `io.write` itself.
+  Instrumentation evidence (insert `fprintf` probes into `forprep`, compile that
+  one object with qpcc, keep the other 33 from clang, and run the same probe
+  build with clang):
+      qpcc : init=8462350312 step=4376879632 raw=1 raw1=2 raw2=1
+      clang: init=1          step=1          raw=1 raw1=2 raw2=1
+  So the expressions are right - `pinit->value_.i`, `plimit->value_.i`,
+  `pstep->value_.i` all read 1/2/1 - and the tags are right, but the *locals*
+  `init` and `step` hold garbage; `step` is even exactly the pointer `pinit`
+  (4376879632 == 0x104e1e210). A local declared with an initializer is read back
+  from the wrong slot. Extracting `forprep` + `forlimit` verbatim into a
+  standalone file is *correct* under qpcc, even with a variadic `luaG_runerror`,
+  so the trigger is elsewhere in `lvm.c`; the next step is to binary-search the
+  file by `#if 0`-ing ranges with the swap test as the oracle.
   The symptom - a numeric `for` never entering its body, and a local becoming
   garbage (a function value) in a `while` that calls out - looks like a value
   live across a call being clobbered inside `forprep`, which keeps `pinit`,
