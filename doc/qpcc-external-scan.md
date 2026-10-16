@@ -1,23 +1,32 @@
 # qpcc 外部 C 项目编译扫描报告
 
-> **本报告只诊断，未修复。** 数据采集于 2026-10-11，qpcc v0.37.3。
-> 原始日志在 `/tmp/qpcc-scan/out2/`（未提交），复现命令见文末。
-
+> **本报告只诊断，未修复。** 第一版数据采集于 2026-10-11（qpcc v0.37.3）。
+> 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7；本轮同样没有为这些项目改任何代码。
+> 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**88 个完整通过（44%）**。
-另有 66 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 135 个文件里 88 个通过 —— 65%**。
+17 个真实 C 项目、201 个源文件：**128 个完整通过（64%）**，比第一版的 88 个（44%）多 40 个。
+另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
+扣掉它们，**到达 qpcc 的 157 个文件里 128 个通过 —— 82%**（第一版 65%）。
 
-而失败原因高度集中：**两个原因解释了大半。**
+第一版列出的头号原因基本都已修掉，逐文件对照见 §7：
 
-| # | 阻断源 | 命中文件 | 性质 |
-| --- | --- | ---: | --- |
-| 1 | qpcc 自带头**遮蔽**系统头，缺 9 个标准宏 | 11+ | **qpcc 的锅，最易修** |
-| 2 | 解析失败里 73% 是 macOS 系统头的 **Apple 扩展**（`_Float16`、Blocks `^{}`）| 17 / 23 | 平台相关 |
-| 3 | 后端 ICE（bzip2 ×2、lua ×1）| 3 | **qpcc 真 bug** |
-| 4 | `sizeof("字面量")` 静默给错值 | — | **qpcc 真 bug** |
-| 5 | 诊断输出走 stdout，`2>/dev/null` 会丢掉全部信息 | — | qpcc 的锅 |
+| # | 第一版的阻断源 | 现状 |
+| --- | --- | --- |
+| 1 | 自带头遮蔽系统头、缺标准宏 | **已修**。除宏之外还补了一批**缺失的声明**（`strpbrk`、`freopen`、`tmpfile`、`ferror`、`fseek`…）—— 隐式声明按 C89 返回 `int`，指针会被截断 |
+| 2 | `_Float16` / Apple Blocks 导致解析失败 | **`_Float16` 已修**（PARSE 23 → 12）；Blocks `^{}` 仍未支持，sqlite 仍卡在这里 |
+| 3 | 后端 ICE（bzip2 ×2、lua ×1） | **lua 的已修**（`ldo.c` 通过）；bzip2 的 2 个仍在 |
+| 4 | `sizeof("字面量")` 静默错值 | 未动 |
+| 5 | 诊断走 stdout | 未动 |
+| 6 | 整型提升缺失（修 Lua 时发现，§6.6） | **已修** |
+
+剩下的 qpcc 侧失败集中在三类，都很具体：
+
+1. **声明的名字在自己的初始化式里不可见**（本轮新发现，§6.7）——`int x = sizeof(x);` 就失败，
+   lz4 的 `lz4file.c` 正是这个形状；
+2. **少量缺失的平台宏**：`ENOMEM`、`R_OK`、`EROFS` 之类（errno / unistd），
+   以及 smu 那个已知的 `-DVERSION=` 缺失；
+3. **两个 bzip2 的 arm64 ICE**，与第一版相同。
 
 ## 1. 口径（先看这个）
 
@@ -36,77 +45,78 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 
 | 项目 | 源文件 | 通过 | 前端失败 | 生成失败 | 预处理未到达 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| abduco | 6 | 0 | 4 | 0 | 2 |
-| bzip2 | 13 | 10 | 1 | 2 | 0 |
-| cjson | 2 | 0 | 2 | 0 | 0 |
-| dash | 30 | 5 | 1 | 0 | 24 |
+| abduco | 6 | 0 | 3 | 0 | 3 |
+| bzip2 | 13 | 11 | 0 | 2 | 0 |
+| cjson | 2 | 2 | 0 | 0 | 0 |
+| dash | 30 | 7 | 0 | 0 | 23 |
 | farbfeld | 7 | 2 | 1 | 0 | 4 |
-| hiredis | 9 | 1 | 7 | 0 | 1 |
+| hiredis | 9 | 2 | 6 | 0 | 1 |
 | ii | 2 | 1 | 0 | 0 | 1 |
-| lchat | 6 | 0 | 5 | 0 | 1 |
-| lua | 34 | 22 | 11 | 1 | 0 |
-| lz4 | 25 | 5 | 5 | 0 | 15 |
+| lchat | 6 | 2 | 3 | 0 | 1 |
+| lua | 34 | 34 | 0 | 0 | 0 |
+| lz4 | 25 | 17 | 8 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
-| sic | 3 | 1 | 2 | 0 | 0 |
+| sic | 3 | 1 | 1 | 0 | 1 |
 | slstatus | 24 | 19 | 1 | 0 | 4 |
 | smu | 1 | 0 | 1 | 0 | 0 |
 | sqlite | 1 | 0 | 1 | 0 | 0 |
-| yyjson | 4 | 0 | 2 | 0 | 2 |
-| zlib | 30 | 22 | 0 | 0 | 8 |
+| yyjson | 4 | 4 | 0 | 0 | 0 |
+| zlib | 30 | 26 | 1 | 1 | 2 |
+| **合计** | **201** | **128** | **26** | **3** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 88 | 44% |
-| PREPROCESS | 66 | 33% |
-| PARSE | 23 | 11% |
-| SEMA | 21 | 10% |
+| OK | 128 | 64% |
+| PREPROCESS | 44 | 22% |
+| PARSE | 12 | 6% |
+| SEMA | 14 | 7% |
 | CODEGEN-PANIC | 3 | 1% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
 | 诊断 | 文件数 | 项目数 |
 | --- | ---: | ---: |
-| expected ';' | 15 | 7 |
-| expected ')' | 8 | 6 |
-| use of undeclared identifier: SIZE_MAX | 7 | 2 |
-| use of undeclared identifier: EXIT_FAILURE | 3 | 2 |
-| use of undeclared identifier: EXIT_SUCCESS | 2 | 1 |
-| use of undeclared identifier: BUFSIZ | 2 | 2 |
-| use of undeclared identifier: pattern | 1 | 1 |
-| use of undeclared identifier: USHRT_MAX | 1 | 1 |
-| use of undeclared identifier: STDOUT_FILENO | 1 | 1 |
-| use of undeclared identifier: SEEK_END | 1 | 1 |
-| use of undeclared identifier: L_tmpnam | 1 | 1 |
-| use of undeclared identifier: INTMAX_MIN | 1 | 1 |
-| qpcc: object emission failed: ld.8698 violates ssa invariant | 1 | 1 |
-| qpcc: object emission failed: ICE: arm64 bin: unhandled jump | 1 | 1 |
-| qpcc: object emission failed: ICE: arm64 bin: expected a register operand for mul | 1 | 1 |
-| division by zero in constant expression | 1 | 1 |
+| `expected ')'` | 7 | 3 |
+| `expected ';'` | 5 | 3 |
+| `use of undeclared identifier: R_OK` | 3 | 1 |
+| `qpcc: object emission failed: ICE: arm64 bin: expected a register operand for ` | 2 | 1 |
+| `use of undeclared identifier: ENOMEM` | 2 | 2 |
+| `use of undeclared identifier: ht` | 2 | 1 |
+| `use of undeclared identifier: r` | 1 | 1 |
+| `use of undeclared identifier: EWOULDBLOCK` | 1 | 1 |
+| `use of undeclared identifier: SSIZE_MAX` | 1 | 1 |
+| `division by zero in constant expression` | 1 | 1 |
+| `use of undeclared identifier: newPoints` | 1 | 1 |
+| `use of undeclared identifier: pattern` | 1 | 1 |
+| `use of undeclared identifier: VERSION` | 1 | 1 |
+| `PanicError` | 1 | 1 |
 
-## 5. 未到达 qpcc 的原因（缺依赖）
+## 5. 未到达 qpcc 的原因
 
-| 缺失的头 | 文件数 |
+| 缺失/失败 | 文件数 |
 | --- | ---: |
-| 'xxhash.h' | 13 |
-| 'token.h' | 9 |
-| 'nodes.h' | 9 |
-| 'syntax.h' | 4 |
-| 'miniz_export.h' | 4 |
-| 'yyjson.h' | 2 |
-| 'stropts.h' | 2 |
-| 'png.h' | 2 |
-| 'jpeglib.h' | 2 |
-| 'X11/Xlib.h' | 2 |
-| 'windows.h' | 1 |
-| 'tls.h' | 1 |
-| 'system.h' | 1 |
-| 'sys/soundcard.h' | 1 |
-| 'sys/auxv.h' | 1 |
-| 'parser.h' | 1 |
-| 'openssl/ssl.h' | 1 |
-| 'lz4hc.h' | 1 |
+| token.h file not found | 10 |
+| nodes.h file not found | 9 |
+| syntax.h file not found | 4 |
+| miniz_export.h file not found | 4 |
+| config.h file not found | 2 |
+| stropts.h file not found | 2 |
+| jpeglib.h file not found | 2 |
+| png.h file not found | 2 |
+| X11/Xlib.h file not found | 2 |
+| openssl/ssl.h file not found | 1 |
+| tls.h file not found | 1 |
+| grapheme.h file not found | 1 |
+| X11/XKBlib.h file not found | 1 |
+| sys/soundcard.h file not found | 1 |
+| sys/auxv.h file not found | 1 |
+| windows.h file not found | 1 |
+
+与第一版**同一批**依赖：dash 的 token.h/nodes.h/syntax.h 需要先 make 生成，
+miniz 的 miniz_export.h 由 cmake 生成，abduco 的 stropts.h 是 Sun 专有，farbfeld 要 libpng/libjpeg，
+lchat 要 libtls，slstatus 要 X11，等等。这些都不是 qpcc 的问题。
 
 ## 6. 逐条发现
 
@@ -130,6 +140,11 @@ qpcc 用 `-I qpcc/include/qbe` 提供 20 个头文件。`-I` 是**优先**搜索
 
 **这是最容易修、收益最大的一条**：补齐宏即可，不涉及语言实现。
 dash 的 `arith_yacc.c` 正因 `INTMAX_MIN` 失败。
+
+**现状（2026-10-17）：已修。** 上面这些宏全部补齐，另外还补了一批**缺失的函数声明**
+（`strpbrk`、`strspn`、`freopen`、`tmpfile`、`ferror`、`fseek` 等）——
+缺声明时按 C89 隐式返回 `int`，指针会被截断。受影响的 dash/hiredis/lchat/lz4 文件现已通过。
+少量平台宏仍缺：`ENOMEM`（zlib `zip.c`）、`R_OK`（lchat）、`EWOULDBLOCK`（hiredis）、`SSIZE_MAX`。
 
 ### 6.2 解析失败七成来自 macOS 系统头的 Apple 扩展（17 / 23 文件）
 
@@ -157,6 +172,9 @@ dash 的 `arith_yacc.c` 正因 `INTMAX_MIN` 失败。
 
 三个都在**代码生成阶段**（前端已通过 `--check`），是 arm64 后端的真实缺陷，
 分别指向：乘法的内存操作数、SSA 不变量被破坏、未处理的跳转。
+
+**现状（2026-10-17）：lua 的 `ldo.c` 已修**（标签映射跨函数泄漏导致块无终结符）；
+bzip2 的两个仍在（`compress.c` 的 mul 内存操作数、`decompress.c` 的 SSA 不变量）。
 
 ### 6.4 `sizeof("字面量")` 静默给错值
 
@@ -200,7 +218,77 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 方法的局限（所以数字是下界）
+## 7. 本次重扫：与第一版的逐文件对照
+
+2026-10-17，修完 Lua（含补齐自带头）之后重扫。三层口径不变（clang -E → qpcc --check → qpcc -o），
+但改为在原目录扫描，并把各项目自己的头文件目录加进 -I。第一版把源文件摊平到一个目录，
+既破坏了 `#include "../x.h"`，也让某些文件少了必要的头，所以下面把两类变化分开列。
+
+| 阶段变化 | 文件数 | 说明 |
+| --- | ---: | --- |
+| PREPROCESS → OK | 19 | 口径改善（包含路径修好），不是 qpcc 的功劳 |
+| PARSE → OK | 11 | **真修复** |
+| SEMA → OK | 10 | **真修复** |
+| CODEGEN-PANIC → OK | 1 | **真修复**（lua 的 `ldo.c`）|
+| PREPROCESS → PARSE/SEMA/CODEGEN | 5 | 现在能预处理了，暴露出真实的 qpcc 缺陷 |
+| PARSE → PREPROCESS | 2 | `abduco.c`、`sic.c`：需要 make 生成 config.h |
+| OK → SEMA | 1 | lz4 `lz4file.c`：不是回归，是口径变化后暴露的真实缺陷，见 §6.7 |
+| PARSE → SEMA | 1 | smu：缺 -DVERSION= |
+| 未变 | 151 | |
+
+**22 个文件从 qpcc 侧失败变成通过：**
+
+| 项目 | 文件 | 第一版 | 现在 |
+| --- | --- | --- | --- |
+| bzip2 | `bzip2.c` | PARSE | **OK** |
+| cjson | `cJSON.c` | PARSE | **OK** |
+| cjson | `cJSON_Utils.c` | PARSE | **OK** |
+| dash | `arith_yacc.c` | SEMA | **OK** |
+| hiredis | `alloc.c` | SEMA | **OK** |
+| lchat | `sl_test.c` | SEMA | **OK** |
+| lchat | `slackline_emacs.c` | SEMA | **OK** |
+| lua | `lauxlib.c` | SEMA | **OK** |
+| lua | `lcode.c` | PARSE | **OK** |
+| lua | `ldo.c` | CODEGEN-PANIC | **OK** |
+| lua | `lfunc.c` | SEMA | **OK** |
+| lua | `lmathlib.c` | PARSE | **OK** |
+| lua | `lobject.c` | PARSE | **OK** |
+| lua | `loslib.c` | SEMA | **OK** |
+| lua | `lstrlib.c` | PARSE | **OK** |
+| lua | `ltable.c` | PARSE | **OK** |
+| lua | `lua.c` | SEMA | **OK** |
+| lua | `luac.c` | SEMA | **OK** |
+| lua | `lvm.c` | PARSE | **OK** |
+| lz4 | `standaloneengine.c` | SEMA | **OK** |
+| yyjson | `make_tables.c` | PARSE | **OK** |
+| yyjson | `yyjson.c` | PARSE | **OK** |
+
+最值得说的：
+
+- **lua 34/34 全过**（第一版 22）。
+- cjson 两个、yyjson 两个、bzip2 的 `bzip2.c` 都从解析失败变成通过（_Float16 那批系统头声明）。
+- dash `arith_yacc.c`、hiredis `alloc.c`、lchat 两个、lz4 `standaloneengine.c` 从 use of undeclared identifier 变成通过。
+
+### 6.7 声明的名字在它自己的初始化式里不可见（本轮新发现）
+
+```c
+int f(void) { int x = (int)sizeof(x); return x; }
+/* qpcc: error: use of undeclared identifier: x */
+```
+
+C11 6.2.1p7：标识符的作用域从**声明符结束处**开始，所以初始化式里的 `x` 是可见的，
+`int x = sizeof(x);` 是合法 C。qpcc 把符号登记放在检查初始化式**之后**，于是任何
+自引用初始化式都会失败，而且第一个报错指向声明符本身，看起来像类型错误。
+
+lz4 的 `lib/lz4file.c` 就是这个形状：
+
+```c
+LZ4F_resumePoint* const newPoints =
+    (LZ4F_resumePoint*)realloc(lz4fRead->points, newCapacity * sizeof(*newPoints));
+```
+
+（该文件在第一版里记为 OK：第一版把源文件摊平到一个目录再扫，预处理结果与原地扫描不同。）
+## 8. 方法的局限（所以数字是下界）
 
 1. **`-D` 注入有 bug**：从 `Makefile` 抓到的 `-DVERSION=\"0\"` 反斜杠没消干净，
    `sic.c` 因此报 `expected ")"` —— 那是扫描器的错，不是 qpcc 的。
@@ -208,7 +296,7 @@ static void freereg (FuncState *fs, int reg) {
    yyjson 的 `-I src`、miniz 的 CMake 产物，都没给，导致 66 个文件没走到 qpcc。
 3. 因此**真实通过率只会比 65% 高，不会低**。
 
-## 8. 复现
+## 9. 复现
 
 ```sh
 # 抓源（仓库外，不提交）
@@ -221,7 +309,7 @@ sh /tmp/qpcc-scan/scan3.sh          # 结果写 /tmp/qpcc-scan/out2/summary.tsv
 sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 ```
 
-## 9. 未做的事（按用户要求）
+## 10. 未做的事（按用户要求）
 
 - **没有修复任何一条**；没有改任何第三方源码；没有提交第三方源码。
 - 没有用各项目自带的 Makefile 判定构建（qpcc 没有 `-c`、没有多文件驱动）。
@@ -231,204 +319,204 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 
 | 项目 | 文件 | 阶段 | 结果 | 首个诊断 |
 | --- | --- | --- | --- | --- |
-| abduco | abduco/abduco.c | PARSE | FAIL | expected ')' |
-| abduco | abduco/client.c | PARSE | FAIL | expected ';' |
-| abduco | abduco/debug.c | PARSE | FAIL | expected ')' |
-| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | 'stropts.h' file not found |
-| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | 'stropts.h' file not found |
-| abduco | abduco/server.c | PARSE | FAIL | expected ';' |
+| abduco | abduco/abduco.c | PREPROCESS | FAIL | 'config.h' file not found |
+| abduco | abduco/client.c | PARSE | FAIL | error: expected ';' |
+| abduco | abduco/debug.c | PARSE | FAIL | error: expected ';' |
+| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| abduco | abduco/server.c | PARSE | FAIL | error: expected ';' |
 | bzip2 | bzip2/blocksort.c | OK | OK | - |
-| bzip2 | bzip2/bzip2.c | PARSE | FAIL | expected ';' |
+| bzip2 | bzip2/bzip2.c | OK | OK | - |
 | bzip2 | bzip2/bzip2recover.c | OK | OK | - |
 | bzip2 | bzip2/bzlib.c | OK | OK | - |
-| bzip2 | bzip2/compress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: expected a register operand for mul |
+| bzip2 | bzip2/compress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: expected a register oper |
 | bzip2 | bzip2/crctable.c | OK | OK | - |
-| bzip2 | bzip2/decompress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ld.8698 violates ssa invariant |
+| bzip2 | bzip2/decompress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: expected a register oper |
 | bzip2 | bzip2/dlltest.c | OK | OK | - |
 | bzip2 | bzip2/huffman.c | OK | OK | - |
 | bzip2 | bzip2/mk251.c | OK | OK | - |
 | bzip2 | bzip2/randtable.c | OK | OK | - |
 | bzip2 | bzip2/spewG.c | OK | OK | - |
 | bzip2 | bzip2/unzcrash.c | OK | OK | - |
-| cjson | cjson/cJSON.c | PARSE | FAIL | expected ';' |
-| cjson | cjson/cJSON_Utils.c | PARSE | FAIL | expected ';' |
-| dash | dash/src/alias.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/src/arith_yacc.c | SEMA | FAIL | use of undeclared identifier: INTMAX_MIN |
-| dash | dash/src/arith_yylex.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/src/bltin/printf.c | PREPROCESS | FAIL | 'parser.h' file not found |
-| dash | dash/src/bltin/times.c | PREPROCESS | FAIL | 'system.h' file not found |
-| dash | dash/src/cd.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/error.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/eval.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/exec.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/expand.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/histedit.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/input.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/jobs.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/mail.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/main.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/memalloc.c | OK | OK | - |
-| dash | dash/src/miscbltin.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/mkinit.c | OK | OK | - |
-| dash | dash/src/mknodes.c | OK | OK | - |
-| dash | dash/src/mksignames.c | OK | OK | - |
-| dash | dash/src/mksyntax.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/mystring.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/src/options.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/output.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/src/parser.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/redir.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/show.c | PREPROCESS | FAIL | 'token.h' file not found |
-| dash | dash/src/system.c | OK | OK | - |
-| dash | dash/src/trap.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/src/var.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| cjson | cjson/cJSON.c | OK | OK | - |
+| cjson | cjson/cJSON_Utils.c | OK | OK | - |
+| dash | dash/alias.c | PREPROCESS | FAIL | 'syntax.h' file not found |
+| dash | dash/arith_yacc.c | OK | OK | - |
+| dash | dash/arith_yylex.c | PREPROCESS | FAIL | 'syntax.h' file not found |
+| dash | dash/cd.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/error.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/eval.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/exec.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/expand.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/input.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/jobs.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/mail.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/main.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/memalloc.c | OK | OK | - |
+| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/mkinit.c | OK | OK | - |
+| dash | dash/mknodes.c | OK | OK | - |
+| dash | dash/mksignames.c | OK | OK | - |
+| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/mystring.c | PREPROCESS | FAIL | 'syntax.h' file not found |
+| dash | dash/options.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/output.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/parser.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/printf.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/redir.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/show.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/system.c | OK | OK | - |
+| dash | dash/times.c | OK | OK | - |
+| dash | dash/trap.c | PREPROCESS | FAIL | 'nodes.h' file not found |
+| dash | dash/var.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
 | farbfeld | farbfeld/ff2jpg.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
 | farbfeld | farbfeld/ff2pam.c | OK | OK | - |
 | farbfeld | farbfeld/ff2png.c | PREPROCESS | FAIL | 'png.h' file not found |
 | farbfeld | farbfeld/ff2ppm.c | OK | OK | - |
 | farbfeld | farbfeld/jpg2ff.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
 | farbfeld | farbfeld/png2ff.c | PREPROCESS | FAIL | 'png.h' file not found |
-| farbfeld | farbfeld/util.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/alloc.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/async.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/dict.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/hiredis.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/net.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
-| hiredis | hiredis/read.c | PARSE | FAIL | expected ';' |
-| hiredis | hiredis/sds.c | SEMA | FAIL | use of undeclared identifier: SIZE_MAX |
+| farbfeld | farbfeld/util.c | SEMA | FAIL | error: use of undeclared identifier: ENOMEM |
+| hiredis | hiredis/alloc.c | OK | OK | - |
+| hiredis | hiredis/async.c | SEMA | FAIL | error: use of undeclared identifier: ht |
+| hiredis | hiredis/dict.c | SEMA | FAIL | error: use of undeclared identifier: ht |
+| hiredis | hiredis/hiredis.c | SEMA | FAIL | error: use of undeclared identifier: r |
+| hiredis | hiredis/net.c | SEMA | FAIL | error: use of undeclared identifier: EWOULDBLOCK |
+| hiredis | hiredis/read.c | PARSE | FAIL | error: expected ';' |
+| hiredis | hiredis/sds.c | SEMA | FAIL | error: use of undeclared identifier: SSIZE_MAX |
 | hiredis | hiredis/sockcompat.c | OK | OK | - |
 | hiredis | hiredis/ssl.c | PREPROCESS | FAIL | 'openssl/ssl.h' file not found |
 | ii | ii/ii.c | PREPROCESS | FAIL | 'tls.h' file not found |
 | ii | ii/strlcpy.c | OK | OK | - |
-| lchat | lchat/filter/indent.c | SEMA | FAIL | use of undeclared identifier: BUFSIZ |
-| lchat | lchat/lchat.c | SEMA | FAIL | use of undeclared identifier: STDOUT_FILENO |
-| lchat | lchat/sl_test.c | SEMA | FAIL | use of undeclared identifier: EXIT_SUCCESS |
+| lchat | lchat/indent.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
+| lchat | lchat/lchat.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
+| lchat | lchat/sl_test.c | OK | OK | - |
 | lchat | lchat/slackline.c | PREPROCESS | FAIL | 'grapheme.h' file not found |
-| lchat | lchat/slackline_emacs.c | SEMA | FAIL | use of undeclared identifier: EXIT_SUCCESS |
-| lchat | lchat/util.c | SEMA | FAIL | use of undeclared identifier: EXIT_FAILURE |
-| lua | lua/src/lapi.c | OK | OK | - |
-| lua | lua/src/lauxlib.c | SEMA | FAIL | use of undeclared identifier: BUFSIZ |
-| lua | lua/src/lbaselib.c | OK | OK | - |
-| lua | lua/src/lcode.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/lcorolib.c | OK | OK | - |
-| lua | lua/src/lctype.c | OK | OK | - |
-| lua | lua/src/ldblib.c | OK | OK | - |
-| lua | lua/src/ldebug.c | OK | OK | - |
-| lua | lua/src/ldo.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: unhandled jump |
-| lua | lua/src/ldump.c | OK | OK | - |
-| lua | lua/src/lfunc.c | SEMA | FAIL | use of undeclared identifier: USHRT_MAX |
-| lua | lua/src/lgc.c | OK | OK | - |
-| lua | lua/src/linit.c | OK | OK | - |
-| lua | lua/src/liolib.c | OK | OK | - |
-| lua | lua/src/llex.c | OK | OK | - |
-| lua | lua/src/lmathlib.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/lmem.c | OK | OK | - |
-| lua | lua/src/loadlib.c | OK | OK | - |
-| lua | lua/src/lobject.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/lopcodes.c | OK | OK | - |
-| lua | lua/src/loslib.c | SEMA | FAIL | use of undeclared identifier: L_tmpnam |
-| lua | lua/src/lparser.c | OK | OK | - |
-| lua | lua/src/lstate.c | OK | OK | - |
-| lua | lua/src/lstring.c | OK | OK | - |
-| lua | lua/src/lstrlib.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/ltable.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/ltablib.c | OK | OK | - |
-| lua | lua/src/ltm.c | OK | OK | - |
-| lua | lua/src/lua.c | SEMA | FAIL | use of undeclared identifier: EXIT_FAILURE |
-| lua | lua/src/luac.c | SEMA | FAIL | use of undeclared identifier: EXIT_FAILURE |
-| lua | lua/src/lundump.c | OK | OK | - |
-| lua | lua/src/lutf8lib.c | OK | OK | - |
-| lua | lua/src/lvm.c | PARSE | FAIL | expected ';' |
-| lua | lua/src/lzio.c | OK | OK | - |
-| lz4 | lz4/lib/lz4.c | OK | OK | - |
-| lz4 | lz4/lib/lz4file.c | OK | OK | - |
-| lz4 | lz4/lib/lz4frame.c | OK | OK | - |
-| lz4 | lz4/lib/lz4hc.c | SEMA | FAIL | use of undeclared identifier: pattern |
-| lz4 | lz4/lib/xxhash.c | OK | OK | - |
-| lz4 | lz4/ossfuzz/compress_frame_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/compress_frame_stream_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/compress_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/compress_hc_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/decompress_frame_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/decompress_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/lz4_helpers.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/round_trip_frame_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/round_trip_frame_uncompressed_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/round_trip_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/round_trip_hc_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/round_trip_stream_fuzzer.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/ossfuzz/standaloneengine.c | SEMA | FAIL | use of undeclared identifier: SEEK_END |
-| lz4 | lz4/programs/bench.c | PREPROCESS | FAIL | 'xxhash.h' file not found |
-| lz4 | lz4/programs/lorem.c | SEMA | FAIL | division by zero in constant expression |
-| lz4 | lz4/programs/lz4cli.c | PREPROCESS | FAIL | 'lz4hc.h' file not found |
-| lz4 | lz4/programs/lz4io.c | PREPROCESS | FAIL | 'lz4.h' file not found |
-| lz4 | lz4/programs/threadpool.c | OK | OK | - |
-| lz4 | lz4/programs/timefn.c | PARSE | FAIL | expected ')' |
-| lz4 | lz4/programs/util.c | PARSE | FAIL | expected ')' |
-| miniz | miniz/miniz.c | PREPROCESS | FAIL | 'miniz_export.h' file not found |
-| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | 'miniz_export.h' file not found |
-| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | 'miniz_export.h' file not found |
-| miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | 'miniz_export.h' file not found |
-| sic | sic/sic.c | PARSE | FAIL | expected ')' |
+| lchat | lchat/slackline_emacs.c | OK | OK | - |
+| lchat | lchat/util.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
+| lua | lua/lapi.c | OK | OK | - |
+| lua | lua/lauxlib.c | OK | OK | - |
+| lua | lua/lbaselib.c | OK | OK | - |
+| lua | lua/lcode.c | OK | OK | - |
+| lua | lua/lcorolib.c | OK | OK | - |
+| lua | lua/lctype.c | OK | OK | - |
+| lua | lua/ldblib.c | OK | OK | - |
+| lua | lua/ldebug.c | OK | OK | - |
+| lua | lua/ldo.c | OK | OK | - |
+| lua | lua/ldump.c | OK | OK | - |
+| lua | lua/lfunc.c | OK | OK | - |
+| lua | lua/lgc.c | OK | OK | - |
+| lua | lua/linit.c | OK | OK | - |
+| lua | lua/liolib.c | OK | OK | - |
+| lua | lua/llex.c | OK | OK | - |
+| lua | lua/lmathlib.c | OK | OK | - |
+| lua | lua/lmem.c | OK | OK | - |
+| lua | lua/loadlib.c | OK | OK | - |
+| lua | lua/lobject.c | OK | OK | - |
+| lua | lua/lopcodes.c | OK | OK | - |
+| lua | lua/loslib.c | OK | OK | - |
+| lua | lua/lparser.c | OK | OK | - |
+| lua | lua/lstate.c | OK | OK | - |
+| lua | lua/lstring.c | OK | OK | - |
+| lua | lua/lstrlib.c | OK | OK | - |
+| lua | lua/ltable.c | OK | OK | - |
+| lua | lua/ltablib.c | OK | OK | - |
+| lua | lua/ltm.c | OK | OK | - |
+| lua | lua/lua.c | OK | OK | - |
+| lua | lua/luac.c | OK | OK | - |
+| lua | lua/lundump.c | OK | OK | - |
+| lua | lua/lutf8lib.c | OK | OK | - |
+| lua | lua/lvm.c | OK | OK | - |
+| lua | lua/lzio.c | OK | OK | - |
+| lz4 | lz4/bench.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/compress_frame_fuzzer.c | OK | OK | - |
+| lz4 | lz4/compress_frame_stream_fuzzer.c | OK | OK | - |
+| lz4 | lz4/compress_fuzzer.c | OK | OK | - |
+| lz4 | lz4/compress_hc_fuzzer.c | OK | OK | - |
+| lz4 | lz4/decompress_frame_fuzzer.c | OK | OK | - |
+| lz4 | lz4/decompress_fuzzer.c | OK | OK | - |
+| lz4 | lz4/lorem.c | SEMA | FAIL | error: division by zero in constant expression |
+| lz4 | lz4/lz4.c | OK | OK | - |
+| lz4 | lz4/lz4_helpers.c | OK | OK | - |
+| lz4 | lz4/lz4cli.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/lz4file.c | SEMA | FAIL | error: use of undeclared identifier: newPoints |
+| lz4 | lz4/lz4frame.c | OK | OK | - |
+| lz4 | lz4/lz4hc.c | SEMA | FAIL | error: use of undeclared identifier: pattern |
+| lz4 | lz4/lz4io.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/round_trip_frame_fuzzer.c | OK | OK | - |
+| lz4 | lz4/round_trip_frame_uncompressed_fuzzer.c | OK | OK | - |
+| lz4 | lz4/round_trip_fuzzer.c | OK | OK | - |
+| lz4 | lz4/round_trip_hc_fuzzer.c | OK | OK | - |
+| lz4 | lz4/round_trip_stream_fuzzer.c | OK | OK | - |
+| lz4 | lz4/standaloneengine.c | OK | OK | - |
+| lz4 | lz4/threadpool.c | OK | OK | - |
+| lz4 | lz4/timefn.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/util.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/xxhash.c | OK | OK | - |
+| miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| sic | sic/sic.c | PREPROCESS | FAIL | 'config.h' file not found |
 | sic | sic/strlcpy.c | OK | OK | - |
-| sic | sic/util.c | PARSE | FAIL | expected ';' |
-| slstatus | slstatus/components/battery.c | OK | OK | - |
-| slstatus | slstatus/components/cat.c | OK | OK | - |
-| slstatus | slstatus/components/cpu.c | OK | OK | - |
-| slstatus | slstatus/components/datetime.c | OK | OK | - |
-| slstatus | slstatus/components/disk.c | OK | OK | - |
-| slstatus | slstatus/components/entropy.c | OK | OK | - |
-| slstatus | slstatus/components/hostname.c | OK | OK | - |
-| slstatus | slstatus/components/ip.c | OK | OK | - |
-| slstatus | slstatus/components/kernel_release.c | OK | OK | - |
-| slstatus | slstatus/components/keyboard_indicators.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
-| slstatus | slstatus/components/keymap.c | PREPROCESS | FAIL | 'X11/XKBlib.h' file not found |
-| slstatus | slstatus/components/load_avg.c | OK | OK | - |
-| slstatus | slstatus/components/netspeeds.c | OK | OK | - |
-| slstatus | slstatus/components/num_files.c | PARSE | FAIL | expected ')' |
-| slstatus | slstatus/components/ram.c | OK | OK | - |
-| slstatus | slstatus/components/run_command.c | OK | OK | - |
-| slstatus | slstatus/components/swap.c | OK | OK | - |
-| slstatus | slstatus/components/temperature.c | OK | OK | - |
-| slstatus | slstatus/components/uptime.c | OK | OK | - |
-| slstatus | slstatus/components/user.c | OK | OK | - |
-| slstatus | slstatus/components/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
-| slstatus | slstatus/components/wifi.c | OK | OK | - |
+| sic | sic/util.c | PARSE | FAIL | error: expected ';' |
+| slstatus | slstatus/battery.c | OK | OK | - |
+| slstatus | slstatus/cat.c | OK | OK | - |
+| slstatus | slstatus/cpu.c | OK | OK | - |
+| slstatus | slstatus/datetime.c | OK | OK | - |
+| slstatus | slstatus/disk.c | OK | OK | - |
+| slstatus | slstatus/entropy.c | OK | OK | - |
+| slstatus | slstatus/hostname.c | OK | OK | - |
+| slstatus | slstatus/ip.c | OK | OK | - |
+| slstatus | slstatus/kernel_release.c | OK | OK | - |
+| slstatus | slstatus/keyboard_indicators.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
+| slstatus | slstatus/keymap.c | PREPROCESS | FAIL | 'X11/XKBlib.h' file not found |
+| slstatus | slstatus/load_avg.c | OK | OK | - |
+| slstatus | slstatus/netspeeds.c | OK | OK | - |
+| slstatus | slstatus/num_files.c | PARSE | FAIL | error: expected ')' |
+| slstatus | slstatus/ram.c | OK | OK | - |
+| slstatus | slstatus/run_command.c | OK | OK | - |
 | slstatus | slstatus/slstatus.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
+| slstatus | slstatus/swap.c | OK | OK | - |
+| slstatus | slstatus/temperature.c | OK | OK | - |
+| slstatus | slstatus/uptime.c | OK | OK | - |
+| slstatus | slstatus/user.c | OK | OK | - |
 | slstatus | slstatus/util.c | OK | OK | - |
-| smu | smu/smu.c | PARSE | FAIL | expected ')' |
-| sqlite | sqlite/sqlite3.c | PARSE | FAIL | expected ')' |
-| yyjson | yyjson/misc/experiment_depth_limit.c | PREPROCESS | FAIL | 'yyjson.h' file not found |
-| yyjson | yyjson/misc/jsoninfo.c | PREPROCESS | FAIL | 'yyjson.h' file not found |
-| yyjson | yyjson/misc/make_tables.c | PARSE | FAIL | expected ';' |
-| yyjson | yyjson/src/yyjson.c | PARSE | FAIL | expected ';' |
+| slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
+| slstatus | slstatus/wifi.c | OK | OK | - |
+| smu | smu/smu.c | SEMA | FAIL | error: use of undeclared identifier: VERSION |
+| sqlite | sqlite/sqlite3.c | PARSE | FAIL | error: expected ')' |
+| yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
+| yyjson | yyjson/jsoninfo.c | OK | OK | - |
+| yyjson | yyjson/make_tables.c | OK | OK | - |
+| yyjson | yyjson/yyjson.c | OK | OK | - |
 | zlib | zlib/adler32.c | OK | OK | - |
+| zlib | zlib/bin-writer.c | OK | OK | - |
+| zlib | zlib/blast-test.c | OK | OK | - |
+| zlib | zlib/blast.c | OK | OK | - |
 | zlib | zlib/compress.c | OK | OK | - |
-| zlib | zlib/contrib/blast/blast-test.c | OK | OK | - |
-| zlib | zlib/contrib/blast/blast.c | OK | OK | - |
-| zlib | zlib/contrib/crc32vx/crc32_vx.c | PREPROCESS | FAIL | 'sys/auxv.h' file not found |
-| zlib | zlib/contrib/infback9/infback9.c | OK | OK | - |
-| zlib | zlib/contrib/infback9/inftree9.c | OK | OK | - |
-| zlib | zlib/contrib/minizip/ioapi.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/ioapi.c:29: |
-| zlib | zlib/contrib/minizip/iowin32.c | PREPROCESS | FAIL | 'windows.h' file not found |
-| zlib | zlib/contrib/minizip/miniunz.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/miniunz.c:61: |
-| zlib | zlib/contrib/minizip/minizip.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/minizip.c:63: |
-| zlib | zlib/contrib/minizip/mztools.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/mztools.c:15: |
-| zlib | zlib/contrib/minizip/unzip.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/unzip.c:74: |
-| zlib | zlib/contrib/minizip/zip.c | PREPROCESS | FAIL | In file included from /tmp/qpcc-scan/src/zlib/contrib/minizip/zip.c:35: |
-| zlib | zlib/contrib/puff/bin-writer.c | OK | OK | - |
-| zlib | zlib/contrib/puff/puff.c | OK | OK | - |
-| zlib | zlib/contrib/puff/pufftest.c | OK | OK | - |
 | zlib | zlib/crc32.c | OK | OK | - |
+| zlib | zlib/crc32_vx.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
 | zlib | zlib/deflate.c | OK | OK | - |
 | zlib | zlib/gzclose.c | OK | OK | - |
 | zlib | zlib/gzlib.c | OK | OK | - |
 | zlib | zlib/gzread.c | OK | OK | - |
 | zlib | zlib/gzwrite.c | OK | OK | - |
 | zlib | zlib/infback.c | OK | OK | - |
+| zlib | zlib/infback9.c | OK | OK | - |
 | zlib | zlib/inffast.c | OK | OK | - |
 | zlib | zlib/inflate.c | OK | OK | - |
+| zlib | zlib/inftree9.c | OK | OK | - |
 | zlib | zlib/inftrees.c | OK | OK | - |
+| zlib | zlib/ioapi.c | OK | OK | - |
+| zlib | zlib/iowin32.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| zlib | zlib/miniunz.c | CODEGEN-PANIC | FAIL | PanicError |
+| zlib | zlib/minizip.c | OK | OK | - |
+| zlib | zlib/mztools.c | OK | OK | - |
+| zlib | zlib/puff.c | OK | OK | - |
+| zlib | zlib/pufftest.c | OK | OK | - |
 | zlib | zlib/trees.c | OK | OK | - |
 | zlib | zlib/uncompr.c | OK | OK | - |
+| zlib | zlib/unzip.c | OK | OK | - |
+| zlib | zlib/zip.c | SEMA | FAIL | error: use of undeclared identifier: ENOMEM |
 | zlib | zlib/zutil.c | OK | OK | - |
