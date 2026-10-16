@@ -151,6 +151,28 @@ fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
 }
 
 ///|
+// Base register and offset for a memory operand. The unsigned-offset form
+// scales a 12-bit immediate, so a large frame offset is added into IP0 first
+// (reserved, never allocated). Truncating it instead is what made Lua's
+// interpreter address its caller's frame.
+fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
+  let (rn, off) = arm64_bin_mem(st, r)
+  if off > 0xFFF {
+    let sc = arm64_bin_reg(@types.ARM64_IP1)
+    arm64_bin_emit(st, @object.enc_add_imm(sc, rn, 0))
+    let mut left = off
+    while left > 0 {
+      let part = if left > 0xFFF { 0xFFF } else { left }
+      arm64_bin_emit(st, @object.enc_add_imm(sc, sc, part))
+      left = left - part
+    }
+    (sc, 0)
+  } else {
+    (rn, off)
+  }
+}
+
+///|
 // Materialize a constant into a register with movz/movk. The text emitter can
 // pick a single MOV bitmask-immediate; movz+movk is functionally identical and
 // is byte-identical whenever the constant fits one 16-bit chunk.
@@ -783,7 +805,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         _ => raise @util.QbeError::Ice("arm64 bin: bad cast class")
       }
     @types.Load => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
       if i.cls == @types.Ks || i.cls == @types.Kd {
         arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, rd, rn, off))
@@ -792,36 +814,36 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
     }
     @types.AtomicLoad => {
-      let (rn, _off) = arm64_bin_mem(st, i.arg1)
+      let (rn, _off) = arm64_bin_mem_at(st, i.arg1)
       let sf = i.cls == @types.Kl || i.cls == @types.Kd
       arm64_bin_emit(st, @object.enc_ldar(sf, rd, rn))
     }
     @types.AtomicStore => {
-      let (rn, _off) = arm64_bin_mem(st, i.arg2)
+      let (rn, _off) = arm64_bin_mem_at(st, i.arg2)
       let rt = arm64_bin_reg(i.arg1.tmp_val())
       let sf = i.cls == @types.Kl || i.cls == @types.Kd
       arm64_bin_emit(st, @object.enc_stlr(sf, rt, rn))
     }
     @types.Fence => arm64_bin_emit(st, @object.enc_dmb_ish())
     @types.Loadub => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(0, 1, rd, rn, off))
     }
     @types.Loaduh => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(1, 1, rd, rn, off))
     }
     @types.Loaduw => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(2, 1, rd, rn, off))
     }
     @types.Loadsw => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let opc = if i.cls == @types.Kl { 2 } else { 1 }
       arm64_bin_emit(st, @object.enc_ldst(2, opc, rd, rn, off))
     }
     @types.Loadsb | @types.Loadsh => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let size = if i.op == @types.Loadsb { 0 } else { 1 }
       let opc = if i.cls == @types.Kl { 2 } else { 3 }
       arm64_bin_emit(st, @object.enc_ldst(size, opc, rd, rn, off))
@@ -832,7 +854,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     | @types.Storel
     | @types.Stores
     | @types.Stored => {
-      let (rn, off) = arm64_bin_mem(st, i.arg2)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg2)
       let rt = arm64_bin_reg(i.arg1.tmp_val())
       let (size, opc) = match i.op {
         @types.Storeb => (0, 0)
@@ -911,8 +933,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         } else {
           arm64_bin_r(st, i.arg1)
         }
-        // After the constant is materialised: loadcon uses IP0.
-        let (rn, off) = arm64_bin_mem(st, i.to)
+        let (rn, off) = arm64_bin_mem_at(st, i.to)
         if is_fp {
           arm64_bin_emit(st, @object.enc_ldst_fp(size, 0, rt, rn, off))
         } else {
@@ -920,7 +941,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         }
       } else if i.arg1.is_slot() {
         // Reload a spilled value (C emit.c Ocopy from RSlot).
-        let (rn, off) = arm64_bin_mem(st, i.arg1)
+        let (rn, off) = arm64_bin_mem_at(st, i.arg1)
         let rd = arm64_bin_reg(i.to.tmp_val())
         let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
         if i.cls == @types.Ks || i.cls == @types.Kd {

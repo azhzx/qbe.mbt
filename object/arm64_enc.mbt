@@ -497,11 +497,21 @@ pub fn enc_ldst(size : Int, opc : Int, rt : Int, rn : Int, off : Int) -> Int {
   } else {
     0
   }
+  let scaled = off >> shift
+  if scaled < 0 || scaled > 0xFFF {
+    abort(
+      "arm64 enc: load/store offset " +
+      off.to_string() +
+      " does not fit the 12-bit scaled field (size " +
+      size.to_string() +
+      ")",
+    )
+  }
   (size << 30) |
   (7 << 27) |
   (1 << 24) |
   ((opc & 3) << 22) |
-  (((off >> shift) & 0xFFF) << 10) |
+  ((scaled & 0xFFF) << 10) |
   (r5(rn) << 5) |
   r5(rt)
 }

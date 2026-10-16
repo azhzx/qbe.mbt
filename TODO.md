@@ -117,7 +117,26 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   the definition simply is not external; a library that relies on one external
   definition from an `extern inline` in a chosen translation unit is not
   modelled.
-- **ROOT CAUSE (Lua's VM): the frame does not cover the local slots.**
+- **FIXED: the frame was truncated, and shadowed locals shared a slot.** Two
+  bugs, both fixed (commits bbe4827 and the one adding large-offset handling):
+  the emitter truncated a frame larger than 4095 bytes to its low 12 bits, and
+  the code generator bound locals by name in one flat map so a shadowing
+  declaration shared a slot and was read through the other one's type. All 34
+  Lua files now build, link and run: `lua -v`, `lua -e 'print(1+1, 2*3, "ok")'`
+  and `for k=1,2 do print(k) end` all work.
+  Large frame offsets now go through IP1 (a scratch): **IP0 is allocated by the
+  register allocator** in this port even though `arm64_bin_loadcon` uses it
+  transiently, so using IP0 clobbered live values. `enc_ldst` now aborts rather
+  than truncating.
+- **REMAINING (Lua):** `for i=1.0,3.0 do print(i) end` segfaults, and a local
+  becomes garbage in a `while` whose body calls out:
+      local i=1 while i<=3 do print(i) i=i+1 end   -->  i prints as a function
+  `local n=0 while n<3 do n=n+1 end print(n)` is correct, so the trigger is a
+  call inside the loop body, not the loop. Both are execution-time (the bytecode
+  and the compiler are fine), so look at how `luaV_execute` handles OP_CALL
+  around the loop - likely another instance of a value landing in the wrong
+  slot.
+- **ROOT CAUSE (historical, now fixed): the frame does not cover the local slots.**
   `forprep`'s IR contains 18 `alloc8` slots (144 bytes), but the emitted
   prologue is `stp x29, x30, [sp, #-0x50]!` - an 80-byte frame - and the only
   frame offsets used anywhere in the function are the four callee-saved saves.
