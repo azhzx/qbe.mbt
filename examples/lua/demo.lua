@@ -1,5 +1,5 @@
--- A tour of the qpcc-built Lua.  Run it with
---     build/lua/lua examples/lua/demo.lua
+
+-- A tour of the qpcc-built Lua:  build/lua/lua examples/lua/demo.lua
 local function section(name) print("\n== " .. name .. " ==") end
 
 section("numbers")
