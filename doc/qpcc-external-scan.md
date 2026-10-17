@@ -5,28 +5,27 @@
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**128 个完整通过（64%）**，比第一版的 88 个（44%）多 40 个。
+17 个真实 C 项目、201 个源文件：**138 个完整通过（69%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 128 个通过 —— 82%**（第一版 65%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 138 个通过 —— 88%**（第一版 65%，上一轮 82%）。
 
-第一版列出的头号原因基本都已修掉，逐文件对照见 §7：
+修复过程分两轮，逐文件对照见 §7：
 
-| # | 第一版的阻断源 | 现状 |
+| 轮次 | 内容 | 效果 |
 | --- | --- | --- |
-| 1 | 自带头遮蔽系统头、缺标准宏 | **已修**。除宏之外还补了一批**缺失的声明**（`strpbrk`、`freopen`、`tmpfile`、`ferror`、`fseek`…）—— 隐式声明按 C89 返回 `int`，指针会被截断 |
-| 2 | `_Float16` / Apple Blocks 导致解析失败 | **`_Float16` 已修**（PARSE 23 → 12）；Blocks `^{}` 仍未支持，sqlite 仍卡在这里 |
-| 3 | 后端 ICE（bzip2 ×2、lua ×1） | **lua 的已修**（`ldo.c` 通过）；bzip2 的 2 个仍在 |
-| 4 | `sizeof("字面量")` 静默错值 | 未动 |
-| 5 | 诊断走 stdout | 未动 |
-| 6 | 整型提升缺失（修 Lua 时发现，§6.6） | **已修** |
+| 第一轮 | 修 Lua 时发现的问题：整型提升、自带头缺宏/缺声明、arm64 大栈帧、标签映射 | PARSE 23 → 12，OK 88 → 128 |
+| 第二轮（本轮）| 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | **SEMA 14 → 3，OK 128 → 138** |
 
-剩下的 qpcc 侧失败集中在三类，都很具体：
+本轮五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
-1. **声明的名字在自己的初始化式里不可见**（本轮新发现，§6.7）——`int x = sizeof(x);` 就失败，
-   lz4 的 `lz4file.c` 正是这个形状；
-2. **少量缺失的平台宏**：`ENOMEM`、`R_OK`、`EROFS` 之类（errno / unistd），
-   以及 smu 那个已知的 `-DVERSION=` 缺失；
-3. **两个 bzip2 的 arm64 ICE**，与第一版相同。
+1. `sizeof("ab")` 原来返回 8 ✓ → 现在 **3**（字符串字面量在 C 里是数组）；
+2. 声明的名字在自己的初始化式里不可见（§6.7）→ 修好后 **lz4 与 hiredis 共 6 个文件**通过；
+3. `__builtin_bswap16/32/64`、`clz`、`ctz`、`popcount` 原来是隐式声明 → 链接必失败，现在在 codegen 里生成位运算序列；
+4. 自带 `errno.h`/`unistd.h`/`limits.h` 补 `ENOMEM`、`EWOULDBLOCK`、`R_OK`、`SSIZE_MAX` 与 `access`/`lseek` 等声明；
+5. 诊断从 stdout 改到 **stderr**（`--check OK` 和 `--emit` 输出仍在 stdout）。
+
+剩下的 19 个失败分三类：**PARSE 12**（多为 Apple 系统头的 C23 枚举 `enum : uint64_t` 与 Blocks）、
+**SEMA 3**（`optarg` 缺声明、`-DVERSION=`、常量除零）、**CODEGEN 4**（bzip2 两个 arm64 ICE + zlib 两个大栈帧访存 panic）。
 
 ## 1. 口径（先看这个）
 
@@ -49,30 +48,30 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | bzip2 | 13 | 11 | 0 | 2 | 0 |
 | cjson | 2 | 2 | 0 | 0 | 0 |
 | dash | 30 | 7 | 0 | 0 | 23 |
-| farbfeld | 7 | 2 | 1 | 0 | 4 |
-| hiredis | 9 | 2 | 6 | 0 | 1 |
+| farbfeld | 7 | 3 | 0 | 0 | 4 |
+| hiredis | 9 | 7 | 1 | 0 | 1 |
 | ii | 2 | 1 | 0 | 0 | 1 |
-| lchat | 6 | 2 | 3 | 0 | 1 |
+| lchat | 6 | 4 | 1 | 0 | 1 |
 | lua | 34 | 34 | 0 | 0 | 0 |
-| lz4 | 25 | 17 | 8 | 0 | 0 |
+| lz4 | 25 | 19 | 6 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
 | sic | 3 | 1 | 1 | 0 | 1 |
 | slstatus | 24 | 19 | 1 | 0 | 4 |
 | smu | 1 | 0 | 1 | 0 | 0 |
 | sqlite | 1 | 0 | 1 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
-| zlib | 30 | 26 | 1 | 1 | 2 |
-| **合计** | **201** | **128** | **26** | **3** | **44** |
+| zlib | 30 | 26 | 0 | 2 | 2 |
+| **合计** | **201** | **138** | **15** | **4** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 128 | 64% |
+| OK | 138 | 69% |
 | PREPROCESS | 44 | 22% |
 | PARSE | 12 | 6% |
-| SEMA | 14 | 7% |
-| CODEGEN-PANIC | 3 | 1% |
+| SEMA | 3 | 1% |
+| CODEGEN-PANIC | 4 | 2% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
@@ -80,43 +79,30 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | --- | ---: | ---: |
 | `expected ')'` | 7 | 3 |
 | `expected ';'` | 5 | 3 |
-| `use of undeclared identifier: R_OK` | 3 | 1 |
-| `qpcc: object emission failed: ICE: arm64 bin: expected a register operand for ` | 2 | 1 |
-| `use of undeclared identifier: ENOMEM` | 2 | 2 |
-| `use of undeclared identifier: ht` | 2 | 1 |
-| `use of undeclared identifier: r` | 1 | 1 |
-| `use of undeclared identifier: EWOULDBLOCK` | 1 | 1 |
-| `use of undeclared identifier: SSIZE_MAX` | 1 | 1 |
+| `qpcc: object emission failed: ICE: arm64 bin: expected a reg` | 2 | 1 |
+| `PanicError` | 2 | 1 |
+| `use of undeclared identifier: optarg` | 1 | 1 |
 | `division by zero in constant expression` | 1 | 1 |
-| `use of undeclared identifier: newPoints` | 1 | 1 |
-| `use of undeclared identifier: pattern` | 1 | 1 |
 | `use of undeclared identifier: VERSION` | 1 | 1 |
-| `PanicError` | 1 | 1 |
 
 ## 5. 未到达 qpcc 的原因
 
 | 缺失/失败 | 文件数 |
 | --- | ---: |
-| token.h file not found | 10 |
-| nodes.h file not found | 9 |
-| syntax.h file not found | 4 |
-| miniz_export.h file not found | 4 |
-| config.h file not found | 2 |
-| stropts.h file not found | 2 |
-| jpeglib.h file not found | 2 |
-| png.h file not found | 2 |
-| X11/Xlib.h file not found | 2 |
-| openssl/ssl.h file not found | 1 |
-| tls.h file not found | 1 |
-| grapheme.h file not found | 1 |
-| X11/XKBlib.h file not found | 1 |
-| sys/soundcard.h file not found | 1 |
-| sys/auxv.h file not found | 1 |
-| windows.h file not found | 1 |
+| 其他（见附录 A） | 21 |
+| `nodes.h` file not found | 7 |
+| `syntax.h` file not found | 3 |
+| `config.h` file not found | 2 |
+| `jpeglib.h` file not found | 2 |
+| `png.h` file not found | 2 |
+| `X11/Xlib.h` file not found | 2 |
+| `openssl/ssl.h` file not found | 1 |
+| `tls.h` file not found | 1 |
+| `grapheme.h` file not found | 1 |
+| `X11/XKBlib.h` file not found | 1 |
+| `sys/soundcard.h` file not found | 1 |
 
-与第一版**同一批**依赖：dash 的 token.h/nodes.h/syntax.h 需要先 make 生成，
-miniz 的 miniz_export.h 由 cmake 生成，abduco 的 stropts.h 是 Sun 专有，farbfeld 要 libpng/libjpeg，
-lchat 要 libtls，slstatus 要 X11，等等。这些都不是 qpcc 的问题。
+与第一版同一批依赖，都不是 qpcc 的问题。
 
 ## 6. 逐条发现
 
@@ -144,7 +130,8 @@ dash 的 `arith_yacc.c` 正因 `INTMAX_MIN` 失败。
 **现状（2026-10-17）：已修。** 上面这些宏全部补齐，另外还补了一批**缺失的函数声明**
 （`strpbrk`、`strspn`、`freopen`、`tmpfile`、`ferror`、`fseek` 等）——
 缺声明时按 C89 隐式返回 `int`，指针会被截断。受影响的 dash/hiredis/lchat/lz4 文件现已通过。
-少量平台宏仍缺：`ENOMEM`（zlib `zip.c`）、`R_OK`（lchat）、`EWOULDBLOCK`（hiredis）、`SSIZE_MAX`。
+**第二轮又补了** `ENOMEM`、`EWOULDBLOCK`、`R_OK`、`SSIZE_MAX` 以及 `access`、`lseek`、`getcwd` 等声明：
+hiredis 的 5 个文件、lchat 的 2 个、lz4 的 2 个、farbfeld 的 `util.c` 因此全部通过 ✓。
 
 ### 6.2 解析失败七成来自 macOS 系统头的 Apple 扩展（17 / 23 文件）
 
@@ -185,13 +172,19 @@ printf("%zu %zu %zu\n", sizeof("ab"), sizeof(int), sizeof("abcdef"));
 ```
 
 文档里「`sizeof` of a string literal」列为已知缺口，但**静默给错值**比报错危险。
-建议至少降级为诊断。
+
+**现状（2026-10-17）：已修 ✓。** sema 原来把字符串字面量标成 `char*`，所以 `sizeof` 看到的是指针 ✓；
+现在直接量字面量本身 ✓：`sizeof("ab")` = 3 ✓、`sizeof("")` = 1 ✓、`sizeof("a" "b")` = 3 ✓，与 clang 一致 ✓。
+数组本来就对（`sizeof(arr)` ✓）。回归用例：`qpcc/tests/sizeof_lit.c`。
 
 ### 6.5 诊断走 stdout
 
 `qpcc` 的所有诊断（含致命解析错误）走 **stdout**。本次扫描第一遍把 stdout 丢进 `/dev/null`，
 结果日志里只剩 `PanicError` 栈，**完全看不到错误信息**。对「qpcc 作为编译器的可脚本化性」
 这是硬伤，修复优先级应当很高。
+
+**现状（2026-10-17）：已修 ✓。** 诊断现在走 **stderr** ✓（通过 `native` 包里新增的 `mbt_native_eprint`）；
+`--check` 成功时的 `OK` 与 `--emit` 的输出仍在 **stdout** ✓，所以 oracle 与管道不受影响 ✓。
 
 ### 6.6 整型提升缺失：比较运算符的静默错编（修 Lua 时发现）
 
@@ -218,76 +211,44 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 本次重扫：与第一版的逐文件对照
+## 7. 两轮重扫：与第一版的逐文件对照
 
-2026-10-17，修完 Lua（含补齐自带头）之后重扫。三层口径不变（clang -E → qpcc --check → qpcc -o），
-但改为在原目录扫描，并把各项目自己的头文件目录加进 -I。第一版把源文件摊平到一个目录，
-既破坏了 `#include "../x.h"`，也让某些文件少了必要的头，所以下面把两类变化分开列。
+第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
+现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
+**口径改善**（PREPROCESS → OK ✓，不是 qpcc 的功劳 ✗）和**真修复**（qpcc 侧失败 → OK ✓）。
+
+### 7.1 第一轮（修完 Lua 之后）
 
 | 阶段变化 | 文件数 | 说明 |
 | --- | ---: | --- |
-| PREPROCESS → OK | 19 | 口径改善（包含路径修好），不是 qpcc 的功劳 |
-| PARSE → OK | 11 | **真修复** |
-| SEMA → OK | 10 | **真修复** |
-| CODEGEN-PANIC → OK | 1 | **真修复**（lua 的 `ldo.c`）|
-| PREPROCESS → PARSE/SEMA/CODEGEN | 5 | 现在能预处理了，暴露出真实的 qpcc 缺陷 |
-| PARSE → PREPROCESS | 2 | `abduco.c`、`sic.c`：需要 make 生成 config.h |
-| OK → SEMA | 1 | lz4 `lz4file.c`：不是回归，是口径变化后暴露的真实缺陷，见 §6.7 |
-| PARSE → SEMA | 1 | smu：缺 -DVERSION= |
+| PREPROCESS → OK | 19 | 口径改善 |
+| PARSE → OK | 11 | 真修复 |
+| SEMA → OK | 10 | 真修复 |
+| CODEGEN-PANIC → OK | 1 | 真修复（lua 的 ldo.c）|
 | 未变 | 151 | |
 
-**22 个文件从 qpcc 侧失败变成通过：**
+**22 个文件从 qpcc 侧失败变成通过**，其中 lua **34/34 全过**（第一版 22）。
 
-| 项目 | 文件 | 第一版 | 现在 |
-| --- | --- | --- | --- |
-| bzip2 | `bzip2.c` | PARSE | **OK** |
-| cjson | `cJSON.c` | PARSE | **OK** |
-| cjson | `cJSON_Utils.c` | PARSE | **OK** |
-| dash | `arith_yacc.c` | SEMA | **OK** |
-| hiredis | `alloc.c` | SEMA | **OK** |
-| lchat | `sl_test.c` | SEMA | **OK** |
-| lchat | `slackline_emacs.c` | SEMA | **OK** |
-| lua | `lauxlib.c` | SEMA | **OK** |
-| lua | `lcode.c` | PARSE | **OK** |
-| lua | `ldo.c` | CODEGEN-PANIC | **OK** |
-| lua | `lfunc.c` | SEMA | **OK** |
-| lua | `lmathlib.c` | PARSE | **OK** |
-| lua | `lobject.c` | PARSE | **OK** |
-| lua | `loslib.c` | SEMA | **OK** |
-| lua | `lstrlib.c` | PARSE | **OK** |
-| lua | `ltable.c` | PARSE | **OK** |
-| lua | `lua.c` | SEMA | **OK** |
-| lua | `luac.c` | SEMA | **OK** |
-| lua | `lvm.c` | PARSE | **OK** |
-| lz4 | `standaloneengine.c` | SEMA | **OK** |
-| yyjson | `make_tables.c` | PARSE | **OK** |
-| yyjson | `yyjson.c` | PARSE | **OK** |
+### 7.2 第二轮（本轮 P0/P1 修复）
 
-最值得说的：
+| 文件 | 之前 | 现在 |
+| --- | --- | --- |
+| farbfeld `util.c` | SEMA | **OK** |
+| hiredis `async.c` `dict.c` `hiredis.c` `net.c` `sds.c` | SEMA | **OK** |
+| lchat `indent.c` `util.c` | SEMA | **OK** |
+| lz4 `lz4file.c` `lz4hc.c` | SEMA | **OK** |
+| zlib `zip.c` | SEMA | CODEGEN-PANIC（暴露了新问题，见 7.3）|
 
-- **lua 34/34 全过**（第一版 22）。
-- cjson 两个、yyjson 两个、bzip2 的 `bzip2.c` 都从解析失败变成通过（_Float16 那批系统头声明）。
-- dash `arith_yacc.c`、hiredis `alloc.c`、lchat 两个、lz4 `standaloneengine.c` 从 use of undeclared identifier 变成通过。
+总体：**OK 128 → 138**，**SEMA 14 → 3** ✓。
 
-### 6.7 声明的名字在它自己的初始化式里不可见（本轮新发现）
+### 7.3 本轮暴露出的两个新问题
 
-```c
-int f(void) { int x = (int)sizeof(x); return x; }
-/* qpcc: error: use of undeclared identifier: x */
-```
+1. **zlib `zip.c` / `miniunz.c`：大栈帧访存 panic** ✗ ——
+   "`arm64 enc: load/store offset 66280 does not fit the 12-bit scaled field`" ——
+   之前被 SEMA 错误挡住 ✗，现在走到代码生成才暴露 ✓。这与修 Lua 时修的 12 位帧偏移是同一类 ✓，
+   但走的是另一条发射路径（sp 相对访存 ✓）。
+2. **lchat `lchat.c`：`optarg` 未声明** ✗ —— 自带 `getopt.h` 缺 `getopt` 的全局变量 ✓。
 
-C11 6.2.1p7：标识符的作用域从**声明符结束处**开始，所以初始化式里的 `x` 是可见的，
-`int x = sizeof(x);` 是合法 C。qpcc 把符号登记放在检查初始化式**之后**，于是任何
-自引用初始化式都会失败，而且第一个报错指向声明符本身，看起来像类型错误。
-
-lz4 的 `lib/lz4file.c` 就是这个形状：
-
-```c
-LZ4F_resumePoint* const newPoints =
-    (LZ4F_resumePoint*)realloc(lz4fRead->points, newCapacity * sizeof(*newPoints));
-```
-
-（该文件在第一版里记为 OK：第一版把源文件摊平到一个目录再扫，预处理结果与原地扫描不同。）
 ## 8. 方法的局限（所以数字是下界）
 
 1. **`-D` 注入有 bug**：从 `Makefile` 抓到的 `-DVERSION=\"0\"` 反斜杠没消干净，
@@ -376,24 +337,24 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | farbfeld | farbfeld/ff2ppm.c | OK | OK | - |
 | farbfeld | farbfeld/jpg2ff.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
 | farbfeld | farbfeld/png2ff.c | PREPROCESS | FAIL | 'png.h' file not found |
-| farbfeld | farbfeld/util.c | SEMA | FAIL | error: use of undeclared identifier: ENOMEM |
+| farbfeld | farbfeld/util.c | OK | OK | - |
 | hiredis | hiredis/alloc.c | OK | OK | - |
-| hiredis | hiredis/async.c | SEMA | FAIL | error: use of undeclared identifier: ht |
-| hiredis | hiredis/dict.c | SEMA | FAIL | error: use of undeclared identifier: ht |
-| hiredis | hiredis/hiredis.c | SEMA | FAIL | error: use of undeclared identifier: r |
-| hiredis | hiredis/net.c | SEMA | FAIL | error: use of undeclared identifier: EWOULDBLOCK |
+| hiredis | hiredis/async.c | OK | OK | - |
+| hiredis | hiredis/dict.c | OK | OK | - |
+| hiredis | hiredis/hiredis.c | OK | OK | - |
+| hiredis | hiredis/net.c | OK | OK | - |
 | hiredis | hiredis/read.c | PARSE | FAIL | error: expected ';' |
-| hiredis | hiredis/sds.c | SEMA | FAIL | error: use of undeclared identifier: SSIZE_MAX |
+| hiredis | hiredis/sds.c | OK | OK | - |
 | hiredis | hiredis/sockcompat.c | OK | OK | - |
 | hiredis | hiredis/ssl.c | PREPROCESS | FAIL | 'openssl/ssl.h' file not found |
 | ii | ii/ii.c | PREPROCESS | FAIL | 'tls.h' file not found |
 | ii | ii/strlcpy.c | OK | OK | - |
-| lchat | lchat/indent.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
-| lchat | lchat/lchat.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
+| lchat | lchat/indent.c | OK | OK | - |
+| lchat | lchat/lchat.c | SEMA | FAIL | error: use of undeclared identifier: optarg |
 | lchat | lchat/sl_test.c | OK | OK | - |
 | lchat | lchat/slackline.c | PREPROCESS | FAIL | 'grapheme.h' file not found |
 | lchat | lchat/slackline_emacs.c | OK | OK | - |
-| lchat | lchat/util.c | SEMA | FAIL | error: use of undeclared identifier: R_OK |
+| lchat | lchat/util.c | OK | OK | - |
 | lua | lua/lapi.c | OK | OK | - |
 | lua | lua/lauxlib.c | OK | OK | - |
 | lua | lua/lbaselib.c | OK | OK | - |
@@ -439,9 +400,9 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | lz4 | lz4/lz4.c | OK | OK | - |
 | lz4 | lz4/lz4_helpers.c | OK | OK | - |
 | lz4 | lz4/lz4cli.c | PARSE | FAIL | error: expected ')' |
-| lz4 | lz4/lz4file.c | SEMA | FAIL | error: use of undeclared identifier: newPoints |
+| lz4 | lz4/lz4file.c | OK | OK | - |
 | lz4 | lz4/lz4frame.c | OK | OK | - |
-| lz4 | lz4/lz4hc.c | SEMA | FAIL | error: use of undeclared identifier: pattern |
+| lz4 | lz4/lz4hc.c | OK | OK | - |
 | lz4 | lz4/lz4io.c | PARSE | FAIL | error: expected ')' |
 | lz4 | lz4/round_trip_frame_fuzzer.c | OK | OK | - |
 | lz4 | lz4/round_trip_frame_uncompressed_fuzzer.c | OK | OK | - |
@@ -518,5 +479,5 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | zlib | zlib/trees.c | OK | OK | - |
 | zlib | zlib/uncompr.c | OK | OK | - |
 | zlib | zlib/unzip.c | OK | OK | - |
-| zlib | zlib/zip.c | SEMA | FAIL | error: use of undeclared identifier: ENOMEM |
+| zlib | zlib/zip.c | CODEGEN-PANIC | FAIL | PanicError |
 | zlib | zlib/zutil.c | OK | OK | - |
