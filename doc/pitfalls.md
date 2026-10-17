@@ -383,7 +383,7 @@ generic table) and the emitter-side materialization remains as a fallback.
 With the fix `--emit asm` compiles `decompress.c` (12597 lines) and all gates
 stay green.
 
-### 4.10 bzip2 decompression produces wrong data (open)
+### 4.10 bzip2 decompression produces wrong data (fixed in 4.12)
 
 `compress.c` and `decompress.c` both compile and compression is byte-exact (the
 output decompresses with the system `bunzip2`), but decompressing produces wrong
@@ -517,6 +517,56 @@ Everything else that was checked is correct:
 - the `origPtr` bound check (`origPtr > 10 + 100000*blockSize100k`) is emitted
   correctly;
 - the mapping loop's condition, step and back edge are exactly as in the C.
+### 4.12 The nested case label, not the backend (fixed)
+
+§4.10 and §4.11 chased the extra `M1 i=16` iteration through the IR, both
+backends and a freshly built vendor QBE. The IR was right and both backends
+were right; the bug was in the **frontend's switch lowering**.
+
+`BZ2_decompress` has case labels *inside* loops:
+
+    switch (s->state) {
+    case BZ_X_MAPPING_1:              /* == 28 */
+      for (i = 0; i < 16; i++) {
+        ...
+      }
+
+`gen_switch` used to emit every case body as a **separate copy** of the
+statements that follow the label. With a label nested inside a loop that copy
+has no enclosing loop around it, and the fall-through of the enclosing case was
+emitted as `jmp <next case in the flat case array>` — for a nested label that
+is the label's own copy, so control re-entered the loop body after the loop had
+finished. That is the extra iteration (`i == 16`) that corrupts `DState` and
+desynchronizes the bit stream.
+
+The fix keeps one copy of the code: the switch body is generated **once, in
+source order**; each case label opens a block *at its own position* (inside
+whatever loop or condition encloses it) and registers that block in a per-switch
+frame; the compare chain is emitted **after** the body and jumps at the blocks
+the labels actually registered.
+
+Trigger shape: a case label inside a loop, with statements after the loop and
+another case label after them. 20-line reproducer, now
+`qpcc/tests/switch_nested_case.c`:
+
+    switch (n) {
+    case 0:
+      for (i = 0; i < 4; i++) {
+    case 1:
+        g = g + 1;
+      }
+      g = g + 10;      /* falls through to case 2, not back into case 1 */
+    case 2:
+      r = g;
+    }
+
+clang: `f(0) == 14`. Pre-fix qpcc: `15`.
+
+Verification of the bzip2 fix: `decompress.c` compiled by qpcc and linked
+against clang-built neighbours decompresses 200 KB of random data to a
+byte-identical file; oracle 170/170, arm64 and amd64 differential 6720/6720
+each, `--asm` 420/420, stress 688/688, `moon test` 375/375.
+
 ---
 
 ## 5. qbe.mbt: other backends
