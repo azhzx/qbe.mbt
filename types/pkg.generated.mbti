@@ -1133,6 +1133,7 @@ pub struct TargetCfg {
   mut post_call_fpr : Int
   mut rglob_mask : UInt64
   mut rsave : Array[Int]
+  mut memargs : (Op) -> Int
   mut retregs : (Ref) -> (UInt64, Int, Int)
   mut argregs : (Ref) -> (UInt64, Int, Int)
 }

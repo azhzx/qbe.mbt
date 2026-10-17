@@ -236,6 +236,10 @@ pub struct TargetCfg {
   mut rglob_mask : UInt64
   // Caller-save registers (C T.rsave).
   mut rsave : Array[Int]
+  // How many operands of an op may stay in memory (C T.memargs).
+  // This is target-specific: arm64 has no memory operands at all,
+  // amd64 and the load/store backends accept one.
+  mut memargs : (Op) -> Int
   // Call return/argument register mapping (C T.retregs / T.argregs).
   mut retregs : (Ref) -> (UInt64, Int, Int)
   mut argregs : (Ref) -> (UInt64, Int, Int)
@@ -296,6 +300,7 @@ fn amd64_target_cfg() -> TargetCfg {
     post_call_fpr: NFPS,
     rglob_mask: rglob_mask(),
     rsave,
+    memargs: fn(op) { op_info(op).nmem },
     retregs: amd64_target_retregs,
     argregs: amd64_target_argregs,
   }
@@ -318,6 +323,7 @@ pub fn init_amd64_target() -> Unit {
   target_cfg.post_call_fpr = amd.post_call_fpr
   target_cfg.rglob_mask = amd.rglob_mask
   target_cfg.rsave = amd.rsave
+  target_cfg.memargs = amd.memargs
   target_cfg.retregs = amd.retregs
   target_cfg.argregs = amd.argregs
 }

@@ -374,8 +374,44 @@ fn arm64_emitf(st : Arm64EmitState, fmt : String, i : @types.Ins) -> Unit raise 
           } else {
             sb.write_string("d31")
           }
-        '=' => sb.write_string(arm64_rname(i.to.tmp_val(), k))
-        '0' => sb.write_string(arm64_rname(i.arg1.tmp_val(), k))
+        '=' => {
+          if !i.to.is_tmp() {
+            if i.to.is_slot() {
+              raise @util.QbeError::Ice(
+                "arm64: destination is a slot, not a register, in " +
+                i.op.name(),
+              )
+            } else if i.to.is_none() {
+              raise @util.QbeError::Ice(
+                "arm64: missing destination in " + i.op.name(),
+              )
+            } else {
+              raise @util.QbeError::Ice(
+                "arm64: destination is not an operand in " + i.op.name(),
+              )
+            }
+          }
+          sb.write_string(arm64_rname(i.to.tmp_val(), k))
+        }
+        '0' => {
+          if !i.arg1.is_tmp() {
+            if i.arg1.is_slot() {
+              raise @util.QbeError::Ice(
+                "arm64: first operand is a slot, not a register, in " +
+                i.op.name(),
+              )
+            } else if i.arg1.is_none() {
+              raise @util.QbeError::Ice(
+                "arm64: missing first operand in " + i.op.name(),
+              )
+            } else {
+              raise @util.QbeError::Ice(
+                "arm64: first operand is not an operand in " + i.op.name(),
+              )
+            }
+          }
+          sb.write_string(arm64_rname(i.arg1.tmp_val(), k))
+        }
         '1' => {
           let r = i.arg2
           if r.is_tmp() {
