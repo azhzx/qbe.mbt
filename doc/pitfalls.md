@@ -308,6 +308,56 @@ Found by differential testing (`tools/check_route_b.py` compares route B's `__te
 
 **Lesson**: **differential testing is more effective than unit testing**. Comparing a hand-written encoder byte-for-byte against a "reference implementation" catches bugs that are semantically correct but encode incorrectly.
 
+### 4.7 Scratch registers and the allocatable set are inconsistent (`b66848e`, `b870b47`, wip)
+
+Three findings, all in the arm64 object emitter. The first two are fixed, the
+third needs a maintainer decision.
+
+**a. Big-frame addresses were encoded as raw 12-bit offsets** (`b66848e`).
+The prologue and epilogue save and restore callee-saved registers with a raw
+offset from the frame pointer; past 32 KB the offset does not fit and the
+encoder aborts. `arm64_bin_addr` now folds the excess into a scratch, for both
+signs. `@types.Addr` had the same bug and is fixed in `b870b47`.
+
+**b. Binary operands may be constants or spilled slots** (`b66848e`).
+QBE allows a `Con` or a slot as the second operand of a binop; `arm64_bin_r`
+only accepted a temporary, so bzip2's `compress.c` (mul) and `decompress.c`
+(shr) hit "expected a register operand". Constants are materialized and slots
+loaded into IP1/IP0, with a loud ICE when a third scratch would be needed.
+
+**c. `arm64_rsave` hands the allocator registers the emitter uses as scratch.**
+This one is a genuine QBE bug that the port inherited: `vendor/qbe/arm64
+/targ.c` lists IP0, IP1 and LR in `rsave`, so the register allocator gives them
+to IR values - yet the emitter materializes rotated constants through IP0,
+slot addressing goes through IP1, and every `bl` overwrites LR. In bzip2's
+`BZ2_decompress` a live pointer sat in x30 across an `fprintf` and the following
+`strb w16, [x30]` wrote to address 0xff.
+
+Evidence: `otool -tvV` counted **232** uses of x30 as a general register in that
+one function, which also contains **8 `bl`s**.
+
+The arithmetic root is visible in the spill budget: `limit2` keeps at most
+`ngpr - post_call_gpr` = 32 - 20 = 12 values in GPRs across a call, but only
+R19-R28 (10) actually survive one - the two extra are FP and LR.
+
+A complete fix is on branch `wip/arm64-scratch-regs`: `rsave` drops IP0/IP1/LR,
+a new `noalloc` mask keeps rega away from IP0/IP1/FP/LR/SP, `alloc_gpr` (27) is
+what spill budgets against, and `post_call_gpr` becomes 17 so the budget stays
+the callee-save count (10). Semantically verified: oracle 169/169, unit tests
+374/374, `--asm` 420/420, examples, Lua, and x30 usage in `BZ2_decompress`
+falls from 232 to 0.
+
+**Why it is not merged**: `compare.py` diffs the debug IL dumps against
+`vendor/qbe`, which is a git submodule and allocates these registers too, so 80
+of 5040 cases diverge by design. Landing it needs that submodule patched the
+same way, or a decision to loosen the debug differential.
+
+### 4.8 `--emit asm` panics on some inputs (open)
+
+`qpcc decompress.i --emit asm` aborts in the text emitter (`cmd/main.mbt:380`)
+for the IR of bzip2's `decompress.c`, while `--emit obj` on the same IR works.
+The text emitter presumably has a gap the binary emitter does not. Found while
+trying to swap backends; not yet localized.
 ---
 
 ## 5. qbe.mbt: other backends
