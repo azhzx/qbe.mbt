@@ -458,6 +458,37 @@ the bug. Any future bisection must use call-free instrumentation.
 Related: a printf(...) placed inside those loops makes the reduced program
 produce no output at all under qpcc while clang is fine, which is a separate
 code-generation bug worth its own fixture.
+#### Update: vendor QBE is wrong too, with call-free counters
+
+Instrumenting only with global counters (state entries, RETURN count, mapping
+iterations, and the maximum i/j seen), and dumping them from atexit, gives:
+
+    clang  : c28=16 c29=256 rt=42 m1=16 m2=256 imax=15 jmax=15
+    qpcc   : c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
+    QBE ref: c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
+
+where c28/c29 are entries of BZ_X_MAPPING_1/MAPPING_2, rt counts RETURN
+executions, imax/jmax are the largest i/j ever seen inside the mapping loops.
+
+Two things follow:
+
+1. vendor QBE, compiled from qpcc's IR, produces exactly the same wrong
+   numbers as the port, so the error is already in the IL;
+2. inside a single call the loop really does reach i == 16 and still executes
+   the body (imax == 16, m1 == 17), although the IL condition is
+   '%t =w csltw <i>, 16'. qpcc also reports rt == 1, i.e. it never returns for
+   input exhaustion - it processes everything in one call and then reports
+   BZ_DATA_ERROR.
+
+The IL for those loops reads correctly (storew 0 before the loop, csltw 16 for
+the condition, jmp to the step block, step does loadsw/add/storew), and %t.54
+(the C local i) has 125 references spread over the whole function as expected.
+So the IL must carry a subtler error that inspection has not yet found.
+
+A diagnosis tool that needs no toolchain: the port has an SSA interpreter
+(qbe --run FUNC). Feeding it the failing IL function with synthetic arguments
+and comparing the state sequence against the C build would separate an IL
+semantics error from a codegen error once and for all.
 ---
 
 ## 5. qbe.mbt: other backends
