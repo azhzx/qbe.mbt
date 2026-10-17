@@ -106,6 +106,15 @@ moonbit_bytes_t mbt_native_temp(moonbit_bytes_t suffix) {
   return b;
 }
 
+/* Diagnostics go to stderr so that stdout stays clean for the compiler's real
+ * output (--emit qbe, object bytes) and `2>/dev/null` cannot swallow errors. */
+MOONBIT_FFI_EXPORT
+void mbt_native_eprint(moonbit_bytes_t s) {
+  int32_t n = Moonbit_array_length(s);
+  if (n > 0) fwrite(s, 1, (size_t)n, stderr);
+  fflush(stderr);
+}
+
 MOONBIT_FFI_EXPORT
 int32_t mbt_native_write_file(moonbit_bytes_t path, moonbit_bytes_t data) {
   FILE *f = fopen((const char *)path, "wb");

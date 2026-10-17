@@ -50,6 +50,7 @@ local t = { 5, 3, 1, 4, 2 } table.sort(t)
 print(table.concat(t, " "), ("hello"):upper(), #"abc", string.gsub("a-b-c", "-", "+"))
 
 section("file io")
-local fn = os.tmpname()
+-- A relative name, not os.tmpname(): the sandbox may deny /var/tmp.
+local fn = "qpcc_demo_tmp.txt"
 local h = assert(io.open(fn, "w")) h:write("written by the qpcc-built Lua\n") h:close()
 local r = assert(io.open(fn, "r")) print(r:read("l")) r:close() os.remove(fn)
