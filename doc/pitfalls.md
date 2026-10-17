@@ -411,6 +411,53 @@ wrong, or a frontend/IR-builder issue that inspection has not caught.
 Reproductions attempted so far (a plain nested loop, and the Duff-device shape
 of `switch` cases inside nested `for` loops) both behave correctly under qpcc,
 so the trigger needs more of the surrounding function.
+### 4.11 bzip2 decompress: reduction and the instrumentation trap
+
+The decompression bug was driven down to a one-line difference. With an
+instrumented copy of decompress.c that counts state entries in globals (no
+calls at all in the loops) and dumps them from atexit in a patched bzip2.c:
+
+    clang : ... 28:16, 29:256, 30:1, ...   (walks both blocks)
+    qpcc  : ... 28:17, 29:257, 30:1       (already wrong in the first block)
+
+Cutting the tail of BZ2_decompress makes the counts agree, and adding back a
+single statement after the mapping loops
+
+    GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
+
+makes them disagree again. That statement runs after the mapping loops, so it
+cannot affect them at the source level: the trigger is a code-generation /
+register-allocation boundary, not a source construct.
+
+What is ruled out so far:
+
+- the IR of the mapping loops is identical in the failing and passing builds
+  (after normalising temp and label numbers), so the frontend does not emit
+  different loop code;
+- the loop bodies in the generated assembly are identical (same cmp #16 / bge,
+  same i++ , no calls inside);
+- vendor QBE, freshly built, compiled from the same IR, gives the same wrong
+  counts, so this is not a port-specific divergence;
+- stack frames are 240-256 bytes in both builds, so it is not the 12-bit or
+  512-byte frame thresholds of 4.7.
+
+The remaining difference is how often the resumable state machine re-enters
+BZ_X_MAPPING_1 (an extra RETURN(BZ_OK)), which in turn changes the bit-stream
+position. That matches the observable failure: BZ_X_SELECTOR_1 reads a
+nonsensical nGroups and the CRC check then fails.
+
+#### The instrumentation trap (important)
+
+The first localisation used fprintf(stderr, ...) inside the mapping loops and
+reported M1 i=16, i.e. an extra loop iteration. That was an artifact of the
+instrumentation: replacing the same prints with plain global increments makes
+all three compilers (clang, qpcc, vendor QBE) agree again. A call - especially
+a variadic one - inside those loops changes the generated code enough to move
+the bug. Any future bisection must use call-free instrumentation.
+
+Related: a printf(...) placed inside those loops makes the reduced program
+produce no output at all under qpcc while clang is fine, which is a separate
+code-generation bug worth its own fixture.
 ---
 
 ## 5. qbe.mbt: other backends
