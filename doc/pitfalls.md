@@ -358,6 +358,59 @@ same way, or a decision to loosen the debug differential.
 for the IR of bzip2's `decompress.c`, while `--emit obj` on the same IR works.
 The text emitter presumably has a gap the binary emitter does not. Found while
 trying to swap backends; not yet localized.
+### 4.9 `--emit asm` ICE on slot operands: the generic `nmem` table (`f1fc34f`)
+
+`qpcc decompress.i --emit asm` failed with
+
+    qpcc: asm emission ICE: invalid register r=-1 k=0
+
+while `--emit obj` on the same IR worked. The text emitter formats generic
+instructions with `arm64_rname(i.to.tmp_val(), k)` / `i.arg1.tmp_val()`, and
+`tmp_val()` of -1 means the operand is a slot: the spill pass had left it in
+memory.
+
+**Root cause**: `spill/spill.mbt` decided how many operands may stay in memory
+with `op_info(op).nmem`, the generic (amd64-shaped) table. It says mul, shr and
+div take one memory operand. arm64 has **no** memory operands - QBE's
+`arm64_memargs` returns 0 - so on arm64 the first operand of those ops was never
+marked "must be in a register" and could be spilled.
+
+That is also why `b66848e` had to teach the binary emitter to materialize slot
+operands: it was a workaround for this. `TargetCfg` now carries a
+`memargs : (Op) -> Int` hook (arm64 returns 0, the other targets keep the
+generic table) and the emitter-side materialization remains as a fallback.
+
+With the fix `--emit asm` compiles `decompress.c` (12597 lines) and all gates
+stay green.
+
+### 4.10 bzip2 decompression produces wrong data (open)
+
+`compress.c` and `decompress.c` both compile and compression is byte-exact (the
+output decompresses with the system `bunzip2`), but decompressing produces wrong
+data: `data integrity (CRC) error`.
+
+Localized by instrumenting `BZ2_decompress` with state and bit-buffer prints and
+compiling it with clang and with qpcc:
+
+- clang walks 42 state transitions and 256 `BZ_X_MAPPING_2` iterations;
+- qpcc reserves one iteration too many: `M1 i=16` and `M2 i=16 j=16` where the
+  loop bounds are `i < 16` and `j < 16`. The extra iteration writes
+  `s->inUse[i*16+j]` out of bounds, corrupting `DState`, and the first state
+  that fails is `BZ_X_SELECTOR_1` with a desynchronized bit stream.
+
+What is ruled out:
+
+- the IR for those loops is correct by inspection (`storew 0, %t.40` for
+  `i = 0`, `csltw ...,16` for the condition, `storew 0, %t.41` for `j = 0`,
+  `jmp @for.step.396`), and no other code writes those slots;
+- feeding the same qpcc IR to a freshly built `vendor/qbe` also produces wrong
+  data, so the two independent backends agree.
+
+So the remaining bug is either a subtlety of this IR that both backends get
+wrong, or a frontend/IR-builder issue that inspection has not caught.
+Reproductions attempted so far (a plain nested loop, and the Duff-device shape
+of `switch` cases inside nested `for` loops) both behave correctly under qpcc,
+so the trigger needs more of the surrounding function.
 ---
 
 ## 5. qbe.mbt: other backends
