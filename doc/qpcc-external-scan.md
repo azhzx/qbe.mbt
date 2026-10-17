@@ -2,7 +2,8 @@
 
 > **本报告只诊断，未修复。** 第一版数据采集于 2026-10-11（qpcc v0.37.3）。
 > 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7。
-> 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后又扫了第三次，见 §7.4。
+> 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后扫了第三次，见 §7.4；
+> 同日修完 `__inline__` 外部链接语义后又扫了第四次，见 §7.5。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
@@ -10,13 +11,14 @@
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
 扣掉它们，**到达 qpcc 的 157 个文件里 142 个通过 —— 90%**（第一版 65%，上一轮 88%）。
 
-修复过程分三轮，逐文件对照见 §7：
+修复过程分四轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
 | 第一轮 | 修 Lua 时发现的问题：整型提升、自带头缺宏/缺声明、arm64 大栈帧、标签映射 | PARSE 23 → 12，OK 88 → 128 |
 | 第二轮 | 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | SEMA 14 → 3，OK 128 → 138 |
 | 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
+| 第四轮（最新）| `__inline__` 的 C99 6.7.4p6 外部链接语义 | **整项目能跑 2 → 5**（bzip2 首次通过）|
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -214,7 +216,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 三轮重扫：与第一版的逐文件对照
+## 7. 四轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -291,6 +293,53 @@ static void freereg (FuncState *fs, int reg) {
 - **SEMA 3**：`optarg` 缺声明、`-DVERSION=`（扫描器的 `-D` 注入 bug，不是 qpcc）、常量除零。
 
 下一步优先级：`__inline__` 外部链接语义（修完 bzip2 即可整项目构建+运行）→ 3 个 SEMA → 12 个 PARSE。
+
+### 7.5 第四轮（2026-10-18，`__inline__` 外部链接语义）
+
+§7.4.2 列出的第一优先级已经修掉：**C99 6.7.4p6–7 的 inline 定义规则**。
+
+原实现只要看见 `inline`/`__inline__` 就当作"内联定义、不发射外部定义"。
+但标准规定：**只有当翻译单元里该函数的每一个声明都带 `inline` 时**，定义才是内联定义；
+出现一个不带 inline 的普通原型（例如 bzip2 的 `bzlib_private.h` 里的
+`BZ2_indexIntoF ( Int32, Int32* );`）时，定义就是**外部定义**，必须发射。
+
+修复：`check()` 先扫一遍顶层声明，把"不带 inline、不带 static"的名字收进
+`noninline_funcs`，定义处再据此决定 `is_export`。单测
+`sema: inline linkage follows C99 6.7.4p6` 覆盖三种情况（普通原型 → 发射；全部 inline →
+不发射；`static inline` → 不发射）。
+
+**bzip2 现在整项目由 qpcc 构建、链接、运行成功：**
+
+| 项目 | 之前 | 现在 |
+| --- | --- | --- |
+| bzip2 | LINK-FAIL（`_BZ2_indexIntoF` 未定义）| **RUNS rc=0** |
+| cjson | LIB-LINK-FAIL（扫描器驱动写错）| **RUNS-DRIVER rc=0** |
+| yyjson | LIB-LINK-FAIL（扫描器驱动写错）| **RUNS-DRIVER rc=0** |
+| lua | RUNS | RUNS |
+| farbfeld | RUNS rc=1 | RUNS rc=1 |
+| zlib | LIB-LINK-FAIL | 库本身可编译且往返正确；整库链接失败是测试工具 `blast.c` 被算进库里 |
+
+**能跑起来的项目：2 → 5。**
+
+同时修了扫描器自己的三个 bug（否则上表不可信）：
+
+1. `has_main` 只认行首 `int main`，漏掉 bzip2recover.c 的 `Int32 main (` 和
+   farbfeld 的 `int` 换行 `main(...)`；而放宽成"全文搜 `main(`"又会把 zlib
+   `crc32.c`（注释里提到 main）误判成程序。现在只认"行首 main(" 或"行首 类型 main("。
+2. `path_of` 取 `os.walk` 的第一个命中，zlib 的 `contrib/` 副本会盖住真正的
+   `crc32.c`；改为取最浅路径。
+3. 跑程序时 `text=True` 遇二进制输出直接抛 `UnicodeDecodeError`（bzip2 无参数时会输出
+   压缩流），加 `errors="replace"`。cJSON/yyjson 探针 C 代码里引号没转义，改成解析 `"42"`。
+
+### 7.6 现在还剩什么
+
+| 结果 | 项目数 | 说明 |
+| --- | ---: | --- |
+| RUNS | 3 | lua、bzip2、farbfeld（farbfeld 无 stdin 输入时 rc=1）|
+| RUNS-DRIVER | 2 | cjson、yyjson |
+| LIB-LINK-FAIL | 1 | zlib（测试工具混入，库本身正确）|
+| NO-COMPILE | 8 | 对应文件是 PARSE/SEMA/PREPROCESS 失败（§7.4.2）|
+| NO-MAIN | 3 | hiredis、miniz、sqlite 是库，没有 main |
 
 ## 8. 方法的局限（所以数字是下界）
 
