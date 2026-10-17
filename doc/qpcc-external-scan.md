@@ -1,22 +1,24 @@
 # qpcc 外部 C 项目编译扫描报告
 
 > **本报告只诊断，未修复。** 第一版数据采集于 2026-10-11（qpcc v0.37.3）。
-> 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7；本轮同样没有为这些项目改任何代码。
+> 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7。
+> 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后又扫了第三次，见 §7.4。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**138 个完整通过（69%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**142 个完整通过（71%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 138 个通过 —— 88%**（第一版 65%，上一轮 82%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 142 个通过 —— 90%**（第一版 65%，上一轮 88%）。
 
-修复过程分两轮，逐文件对照见 §7：
+修复过程分三轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
 | 第一轮 | 修 Lua 时发现的问题：整型提升、自带头缺宏/缺声明、arm64 大栈帧、标签映射 | PARSE 23 → 12，OK 88 → 128 |
-| 第二轮（本轮）| 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | **SEMA 14 → 3，OK 128 → 138** |
+| 第二轮 | 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | SEMA 14 → 3，OK 128 → 138 |
+| 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
 
-本轮五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
+第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
 1. `sizeof("ab")` 原来返回 8 ✓ → 现在 **3**（字符串字面量在 C 里是数组）；
 2. 声明的名字在自己的初始化式里不可见（§6.7）→ 修好后 **lz4 与 hiredis 共 6 个文件**通过；
@@ -24,8 +26,8 @@
 4. 自带 `errno.h`/`unistd.h`/`limits.h` 补 `ENOMEM`、`EWOULDBLOCK`、`R_OK`、`SSIZE_MAX` 与 `access`/`lseek` 等声明；
 5. 诊断从 stdout 改到 **stderr**（`--check OK` 和 `--emit` 输出仍在 stdout）。
 
-剩下的 19 个失败分三类：**PARSE 12**（多为 Apple 系统头的 C23 枚举 `enum : uint64_t` 与 Blocks）、
-**SEMA 3**（`optarg` 缺声明、`-DVERSION=`、常量除零）、**CODEGEN 4**（bzip2 两个 arm64 ICE + zlib 两个大栈帧访存 panic）。
+剩下的 15 个失败分两类：**PARSE 12**（多为 Apple 系统头的 `_Float16` 与 Blocks 扩展）、
+**SEMA 3**（`optarg` 缺声明、`-DVERSION=`、常量除零）。**CODEGEN 已经清零**。
 
 ## 1. 口径（先看这个）
 
@@ -45,7 +47,7 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | 项目 | 源文件 | 通过 | 前端失败 | 生成失败 | 预处理未到达 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | abduco | 6 | 0 | 3 | 0 | 3 |
-| bzip2 | 13 | 11 | 0 | 2 | 0 |
+| bzip2 | 13 | 13 | 0 | 0 | 0 |
 | cjson | 2 | 2 | 0 | 0 | 0 |
 | dash | 30 | 7 | 0 | 0 | 23 |
 | farbfeld | 7 | 3 | 0 | 0 | 4 |
@@ -60,18 +62,18 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | smu | 1 | 0 | 1 | 0 | 0 |
 | sqlite | 1 | 0 | 1 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
-| zlib | 30 | 26 | 0 | 2 | 2 |
-| **合计** | **201** | **138** | **15** | **4** | **44** |
+| zlib | 30 | 28 | 0 | 0 | 2 |
+| **合计** | **201** | **142** | **15** | **0** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 138 | 69% |
+| OK | 142 | 71% |
 | PREPROCESS | 44 | 22% |
 | PARSE | 12 | 6% |
 | SEMA | 3 | 1% |
-| CODEGEN-PANIC | 4 | 2% |
+| CODEGEN-PANIC | 0 | 0% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
@@ -79,11 +81,12 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | --- | ---: | ---: |
 | `expected ')'` | 7 | 3 |
 | `expected ';'` | 5 | 3 |
-| `qpcc: object emission failed: ICE: arm64 bin: expected a reg` | 2 | 1 |
-| `PanicError` | 2 | 1 |
 | `use of undeclared identifier: optarg` | 1 | 1 |
 | `division by zero in constant expression` | 1 | 1 |
 | `use of undeclared identifier: VERSION` | 1 | 1 |
+
+第三轮之前这里还有 `ICE: arm64 bin: expected a reg`（2 个文件）和 `PanicError`（2 个文件），
+现在都已修复，所以不再出现。
 
 ## 5. 未到达 qpcc 的原因
 
@@ -149,7 +152,7 @@ hiredis 的 5 个文件、lchat 的 2 个、lz4 的 2 个、farbfeld 的 `util.c
 剩下的 6 个是项目自身代码（`va_list ap;`、`static bool client_send_packet(...)`、
 `static Client *client_malloc(...)`、`else if(!strcmp("-n", argv[i]))` 等），才是真正的前端缺口。
 
-### 6.3 后端 ICE（3 个文件，真 bug）
+### 6.3 后端 ICE（3 个文件，真 bug）（第三轮已修，见 §7.4）
 
 | 项目 | 文件 | 消息 |
 | --- | --- | --- |
@@ -211,7 +214,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 两轮重扫：与第一版的逐文件对照
+## 7. 三轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -229,7 +232,7 @@ static void freereg (FuncState *fs, int reg) {
 
 **22 个文件从 qpcc 侧失败变成通过**，其中 lua **34/34 全过**（第一版 22）。
 
-### 7.2 第二轮（本轮 P0/P1 修复）
+### 7.2 第二轮（P0/P1 修复）
 
 | 文件 | 之前 | 现在 |
 | --- | --- | --- |
@@ -241,13 +244,53 @@ static void freereg (FuncState *fs, int reg) {
 
 总体：**OK 128 → 138**，**SEMA 14 → 3** ✓。
 
-### 7.3 本轮暴露出的两个新问题
+### 7.3 第二轮暴露出的两个新问题
 
 1. **zlib `zip.c` / `miniunz.c`：大栈帧访存 panic** ✗ ——
    "`arm64 enc: load/store offset 66280 does not fit the 12-bit scaled field`" ——
    之前被 SEMA 错误挡住 ✗，现在走到代码生成才暴露 ✓。这与修 Lua 时修的 12 位帧偏移是同一类 ✓，
-   但走的是另一条发射路径（sp 相对访存 ✓）。
+   但走的是另一条发射路径（sp 相对访存 ✓）。**第三轮已修，见 §7.4。**
 2. **lchat `lchat.c`：`optarg` 未声明** ✗ —— 自带 `getopt.h` 缺 `getopt` 的全局变量 ✓。
+
+### 7.4 第三轮（2026-10-18，HEAD 50c2454）
+
+这一轮改的是 qpcc 自己，不动任何第三方源码。四个修复对应的扫描变化：
+
+| 修复 | 提交 | 扫描影响 |
+| --- | --- | --- |
+| arm64 二进制发射器 `expected a reg` ICE | `f1fc34f` | bzip2 `compress.c`、`decompress.c` |
+| 大栈帧 sp 相对访存超过 12 位 | `b66848e` | zlib `zip.c`、`miniunz.c` |
+| `Addr` 截断 | `b870b47` | 扫描外（Lua 相关）|
+| 嵌套 case 标签的 switch 下降 | `50c2454` | bzip2 `decompress.c` 的**行为**：能编译但解压 CRC 错 |
+
+| 阶段变化 | 文件数 |
+| --- | ---: |
+| CODEGEN-PANIC → OK | **4** |
+| 未变 | 197 |
+
+**OK 138 → 142，CODEGEN-PANIC 4 → 0。** bzip2 **13/13 全过**，zlib **28/30**
+（剩 2 个是预处理缺依赖），**全部文件都通过的项目 3 → 4**（新增 bzip2）。
+
+> 其中 `decompress.c` 的 CRC 错误是**行为 bug**，三层扫描看不出来：它能编译、能链接，
+> 只是解压出错。定位与修复见 `doc/pitfalls.md` §4.10–§4.12：`switch` 的 case 标签
+> 嵌在循环里时，前端把它当成了循环之外的一段独立代码复制，于是循环多跑一轮。
+> 回归用例 `qpcc/tests/switch_nested_case.c`。
+
+#### 7.4.1 整项目「能跑」的重跑（`tools/scan_run.py`）
+
+| 项目 | 结果 | 说明 |
+| --- | --- | --- |
+| lua | **RUNS rc=0** | 与上一轮相同 |
+| farbfeld | RUNS rc=1 | 与上一轮相同（等 stdin 输入）|
+| **zlib** | 库可用 | 16 个 `.o` 全部由 qpcc 编译并链接成功；`compress2` → `uncompress` 往返**完全正确**；`run.tsv` 里的 LIB-LINK-FAIL 出在它自己的构建/测试程序 |
+| **bzip2** | 只剩 1 个符号 | 全 qpcc 构建只差 `_BZ2_indexIntoF`：`bzlib.c` 里 `__inline__` 是 **GNU 外部链接语义**，qpcc 按 `static` 处理，不发射实体。压缩/解压逻辑本身已经正确（clang 压缩 → qpcc 解压 300 KB 随机数据字节一致）|
+
+#### 7.4.2 剩下 15 个失败（都已到达 qpcc）
+
+- **PARSE 12**：macOS 系统头的 Apple 扩展（`_Float16 __fabsf16`、Blocks 的块指针），见 §6.2；
+- **SEMA 3**：`optarg` 缺声明、`-DVERSION=`（扫描器的 `-D` 注入 bug，不是 qpcc）、常量除零。
+
+下一步优先级：`__inline__` 外部链接语义（修完 bzip2 即可整项目构建+运行）→ 3 个 SEMA → 12 个 PARSE。
 
 ## 8. 方法的局限（所以数字是下界）
 
@@ -260,19 +303,20 @@ static void freereg (FuncState *fs, int reg) {
 ## 9. 复现
 
 ```sh
-# 抓源（仓库外，不提交）
-SRC=/tmp/qpcc-scan/src
-git clone --depth 1 https://git.suckless.org/sic $SRC/sic
-# … 其余见 /tmp/qpcc-scan/fetch.sh
+# 抓源：解包/克隆到 build/scan/raw/（未提交）
+python3 tools/scan_external_fetch.py
 
-# 扫描：clang 预处理 → qpcc --check → qpcc -o
-sh /tmp/qpcc-scan/scan3.sh          # 结果写 /tmp/qpcc-scan/out2/summary.tsv
-sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
+# 逐文件三层扫描：clang -E → qpcc --check → qpcc -o
+python3 tools/scan_external.py      # 写 build/scan/detail_new.tsv、summary_new.tsv，
+                                    # 并与本报告的旧阶段逐文件对照
+# 整项目构建/运行：按各项目自己的 main 编译 + 链接 + 跑
+python3 tools/scan_run.py           # 写 build/scan/run.tsv
 ```
 
 ## 10. 未做的事（按用户要求）
 
-- **没有修复任何一条**；没有改任何第三方源码；没有提交第三方源码。
+- 第一、二轮**没有修复任何一条**；第三轮修的是 qpcc 自己的四个后端/前端 bug（§7.4），
+  不是这些项目的代码。没有改、也没有提交任何第三方源码。
 - 没有用各项目自带的 Makefile 判定构建（qpcc 没有 `-c`、没有多文件驱动）。
 - SQLite 只用默认 amalgamation 配置，未加 `SQLITE_ENABLE_*`。
 
@@ -283,16 +327,16 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | abduco | abduco/abduco.c | PREPROCESS | FAIL | 'config.h' file not found |
 | abduco | abduco/client.c | PARSE | FAIL | error: expected ';' |
 | abduco | abduco/debug.c | PARSE | FAIL | error: expected ';' |
-| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-aix.c:… |
+| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-sunos.… |
 | abduco | abduco/server.c | PARSE | FAIL | error: expected ';' |
 | bzip2 | bzip2/blocksort.c | OK | OK | - |
 | bzip2 | bzip2/bzip2.c | OK | OK | - |
 | bzip2 | bzip2/bzip2recover.c | OK | OK | - |
 | bzip2 | bzip2/bzlib.c | OK | OK | - |
-| bzip2 | bzip2/compress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: expected a register oper |
+| bzip2 | bzip2/compress.c | OK | OK | - |
 | bzip2 | bzip2/crctable.c | OK | OK | - |
-| bzip2 | bzip2/decompress.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ICE: arm64 bin: expected a register oper |
+| bzip2 | bzip2/decompress.c | OK | OK | - |
 | bzip2 | bzip2/dlltest.c | OK | OK | - |
 | bzip2 | bzip2/huffman.c | OK | OK | - |
 | bzip2 | bzip2/mk251.c | OK | OK | - |
@@ -305,32 +349,32 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | dash | dash/arith_yacc.c | OK | OK | - |
 | dash | dash/arith_yylex.c | PREPROCESS | FAIL | 'syntax.h' file not found |
 | dash | dash/cd.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/error.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/error.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/error.c:54: |
 | dash | dash/eval.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/exec.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/expand.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/input.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/jobs.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/histedit.c:3… |
+| dash | dash/input.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/input.c:56: |
+| dash | dash/jobs.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/jobs.c:63: |
 | dash | dash/mail.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/main.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/main.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/main.c:47: |
 | dash | dash/memalloc.c | OK | OK | - |
-| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/miscbltin.c:… |
 | dash | dash/mkinit.c | OK | OK | - |
 | dash | dash/mknodes.c | OK | OK | - |
 | dash | dash/mksignames.c | OK | OK | - |
-| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/mksyntax.c:4… |
 | dash | dash/mystring.c | PREPROCESS | FAIL | 'syntax.h' file not found |
 | dash | dash/options.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/output.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/parser.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/printf.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/redir.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| dash | dash/show.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/output.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/output.c:50: |
+| dash | dash/parser.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/parser.c:46: |
+| dash | dash/printf.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/bltin/printf… |
+| dash | dash/redir.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/redir.c:40: |
+| dash | dash/show.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/show.c:39: |
 | dash | dash/system.c | OK | OK | - |
 | dash | dash/times.c | OK | OK | - |
 | dash | dash/trap.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/var.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| dash | dash/var.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/var.c:36: |
 | farbfeld | farbfeld/ff2jpg.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
 | farbfeld | farbfeld/ff2pam.c | OK | OK | - |
 | farbfeld | farbfeld/ff2png.c | PREPROCESS | FAIL | 'png.h' file not found |
@@ -414,10 +458,10 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | lz4 | lz4/timefn.c | PARSE | FAIL | error: expected ')' |
 | lz4 | lz4/util.c | PARSE | FAIL | error: expected ')' |
 | lz4 | lz4/xxhash.c | OK | OK | - |
-| miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz.c:27: |
+| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27… |
+| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tinfl.c:2… |
+| miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_zip.c:27: |
 | sic | sic/sic.c | PREPROCESS | FAIL | 'config.h' file not found |
 | sic | sic/strlcpy.c | OK | OK | - |
 | sic | sic/util.c | PARSE | FAIL | error: expected ';' |
@@ -457,7 +501,7 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | zlib | zlib/blast.c | OK | OK | - |
 | zlib | zlib/compress.c | OK | OK | - |
 | zlib | zlib/crc32.c | OK | OK | - |
-| zlib | zlib/crc32_vx.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
+| zlib | zlib/crc32_vx.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/crc32vx/… |
 | zlib | zlib/deflate.c | OK | OK | - |
 | zlib | zlib/gzclose.c | OK | OK | - |
 | zlib | zlib/gzlib.c | OK | OK | - |
@@ -470,8 +514,8 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | zlib | zlib/inftree9.c | OK | OK | - |
 | zlib | zlib/inftrees.c | OK | OK | - |
 | zlib | zlib/ioapi.c | OK | OK | - |
-| zlib | zlib/iowin32.c | PREPROCESS | FAIL | In file included from /Users/Admin/Desktop/qbe.mbt |
-| zlib | zlib/miniunz.c | CODEGEN-PANIC | FAIL | PanicError |
+| zlib | zlib/iowin32.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/minizip/… |
+| zlib | zlib/miniunz.c | OK | OK | - |
 | zlib | zlib/minizip.c | OK | OK | - |
 | zlib | zlib/mztools.c | OK | OK | - |
 | zlib | zlib/puff.c | OK | OK | - |
@@ -479,5 +523,5 @@ sh /tmp/qpcc-scan/report2.sh        # 由 summary.tsv 生成 §1–§4 的表格
 | zlib | zlib/trees.c | OK | OK | - |
 | zlib | zlib/uncompr.c | OK | OK | - |
 | zlib | zlib/unzip.c | OK | OK | - |
-| zlib | zlib/zip.c | CODEGEN-PANIC | FAIL | PanicError |
+| zlib | zlib/zip.c | OK | OK | - |
 | zlib | zlib/zutil.c | OK | OK | - |
