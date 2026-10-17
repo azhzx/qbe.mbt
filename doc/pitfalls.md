@@ -489,6 +489,34 @@ A diagnosis tool that needs no toolchain: the port has an SSA interpreter
 (qbe --run FUNC). Feeding it the failing IL function with synthetic arguments
 and comparing the state sequence against the C build would separate an IL
 semantics error from a codegen error once and for all.
+#### Update: the frontend duplicates the GET_BITS while at each case label
+
+Instrumenting the *IL* (not the C) and reading it back through the interpreter
+showed that every `GET_BITS` expansion appears **twice** in the emitted IL:
+
+- an inline copy used by the normal fall-through, e.g.
+  `@while.cond.346 ... @while.end.370 (g_m1++ ...)`;
+- a second copy owned by the `@switch.case` block, e.g.
+  `@switch.case.30: storew 28, ...; jmp @while.cond.422` whose
+  `@while.end.424` repeats the whole body tail (`g_m1++`, `i > g_imax`, ...).
+
+That duplication is what a resumable state machine needs (the case label is an
+entry point), and both copies are individually correct, so it is not the bug by
+itself. But it does invalidate the earlier counter readings: a counter placed at
+the `case` label counts both the loop body and the resume entry, which is why
+`c28`/`m1` read 17 where the C shows 16. **All counter-based localisation that
+placed its probe at or after a `case` label must be re-done with the probe inside
+the loop body only.**
+
+Everything else that was checked is correct:
+
+- `DState`/`EState` layouts agree between clang and qpcc
+  (`DState: bsBuff=32 bsLive=36 blockSize100k=40 origPtr=56`);
+- `s+56` in the `@while.end.348` block is `origPtr`, matching
+  `s->origPtr = (s->origPtr << 8) | uc`;
+- the `origPtr` bound check (`origPtr > 10 + 100000*blockSize100k`) is emitted
+  correctly;
+- the mapping loop's condition, step and back edge are exactly as in the C.
 ---
 
 ## 5. qbe.mbt: other backends
