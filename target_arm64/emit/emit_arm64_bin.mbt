@@ -1055,20 +1055,28 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
     @types.Addr =>
       if i.arg1.is_slot() {
-        arm64_bin_emit(
+        // The offset can exceed the 12-bit field on a large frame, and
+        // enc_add_imm would silently truncate it: the address would point into
+        // the middle of the frame. Fold it into a scratch like the other slot
+        // accesses do.
+        let rd = arm64_bin_reg(i.to.tmp_val())
+        let (arn, aoff) = arm64_bin_addr(
           st,
-          @object.enc_add_imm(
-            arm64_bin_reg(i.to.tmp_val()),
-            29,
-            arm64_slot_off(
-              st.frame,
-              st.padding,
-              st.fn_.is_vararg,
-              st.apple,
-              i.arg1.slot_val(),
-            ),
+          29,
+          arm64_slot_off(
+            st.frame,
+            st.padding,
+            st.fn_.is_vararg,
+            st.apple,
+            i.arg1.slot_val(),
           ),
         )
+        st.tmp_used = 0
+        if aoff >= 0 {
+          arm64_bin_emit(st, @object.enc_add_imm(rd, arn, aoff))
+        } else {
+          arm64_bin_emit(st, @object.enc_sub_imm(rd, arn, -aoff))
+        }
       } else {
         raise @util.QbeError::Ice("arm64 bin: invalid address")
       }
