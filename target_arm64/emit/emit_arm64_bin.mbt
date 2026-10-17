@@ -32,6 +32,13 @@ priv struct Arm64BinState {
   // Names defined in this object; anything else needs a GOT load.
   defined : Array[String]
   mut cur_op : String
+  // Class of the instruction being emitted: a constant operand has to be
+  // materialized at the right width.
+  mut cur_cls : @types.Class
+  // How many scratch registers this instruction has already materialized. The
+  // first uses IP1, the second IP0; a third would clobber one of them, so it is
+  // an error rather than silent wrong code.
+  mut tmp_used : Int
   mut frame : Int
   mut padding : Int
 }
@@ -54,6 +61,8 @@ fn arm64_bin_new(
     addrs: [],
     defined,
     cur_op: "",
+    cur_cls: @types.Kw,
+    tmp_used: 0,
     frame: 0,
     padding: 0,
   }
@@ -155,10 +164,33 @@ fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
 // scales a 12-bit immediate, so a large frame offset is added into IP0 first
 // (reserved, never allocated). Truncating it instead is what made Lua's
 // interpreter address its caller's frame.
-fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
-  let (rn, off) = arm64_bin_mem(st, r)
-  if off > 0xFFF {
-    let sc = arm64_bin_reg(@types.ARM64_IP1)
+// Fold a frame offset into IP1 when it does not fit the 12-bit scaled field.
+// IP1 is never handed out by the register allocator, so it is safe as a
+// scratch. Both signs matter: a large frame puts some slots beyond +0xFFF and
+// others beyond -0xFFF.
+fn arm64_bin_tmp_id(st : Arm64BinState) -> Int raise {
+  let id = if st.tmp_used == 0 {
+    @types.ARM64_IP1
+  } else if st.tmp_used == 1 {
+    @types.ARM64_IP0
+  } else {
+    raise @util.QbeError::Ice(
+      "arm64 bin: more than two temporaries needed for " + st.cur_op,
+    )
+  }
+  st.tmp_used = st.tmp_used + 1
+  id
+}
+
+///|
+fn arm64_bin_tmp(st : Arm64BinState) -> Int raise {
+  arm64_bin_reg(arm64_bin_tmp_id(st))
+}
+
+///|
+fn arm64_bin_addr(st : Arm64BinState, rn : Int, off : Int) -> (Int, Int) raise {
+  if off > 0xFFF || off < -0xFFF {
+    let sc = arm64_bin_tmp(st)
     arm64_bin_emit(st, @object.enc_add_imm(sc, rn, 0))
     let mut left = off
     while left > 0 {
@@ -166,10 +198,23 @@ fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
       arm64_bin_emit(st, @object.enc_add_imm(sc, sc, part))
       left = left - part
     }
+    while left < -0xFFF {
+      arm64_bin_emit(st, @object.enc_sub_imm(sc, sc, 0xFFF))
+      left = left + 0xFFF
+    }
+    if left < 0 {
+      arm64_bin_emit(st, @object.enc_sub_imm(sc, sc, -left))
+    }
     (sc, 0)
   } else {
     (rn, off)
   }
+}
+
+///|
+fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
+  let (rn, off) = arm64_bin_mem(st, r)
+  arm64_bin_addr(st, rn, off)
 }
 
 ///|
@@ -441,6 +486,30 @@ fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
 fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int raise {
   if r.is_tmp() {
     arm64_bin_reg(r.tmp_val())
+  } else if r.is_con() {
+    // QBE allows a constant as the second operand of a binary operation
+    // (bzip2's compress.c has "mul %x, <const>"). Materialize it into IP1,
+    // which the register allocator never hands out.
+    let id = arm64_bin_tmp_id(st)
+    arm64_bin_loadcon(st, st.fn_.cons[r.con_val()], id, st.cur_cls)
+    arm64_bin_reg(id)
+  } else if r.is_slot() {
+    // An operand the allocator left in its slot (it spilled). Load it into IP1
+    // so the instruction sees a register: bzip2's compress.c lowers into a
+    // "mul" and decompress.c into a "shr" with a slot operand.
+    let (rn, off) = arm64_bin_mem(st, r)
+    let (bac, boff) = arm64_bin_addr(st, rn, off)
+    // If the address had to be materialized it already lives in a scratch, so
+    // load through it (ldr xN, [xN]) instead of burning a second one.
+    let sc = if bac != rn { bac } else { arm64_bin_tmp(st) }
+    if st.cur_cls == @types.Ks || st.cur_cls == @types.Kd {
+      let size = if st.cur_cls == @types.Ks { 2 } else { 3 }
+      arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, sc, bac, boff))
+    } else {
+      let size = if st.cur_cls == @types.Kl { 3 } else { 2 }
+      arm64_bin_emit(st, @object.enc_ldst(size, 1, sc, bac, boff))
+    }
+    sc
   } else {
     raise @util.QbeError::Ice(
       "arm64 bin: expected a register operand for " + st.cur_op,
@@ -896,6 +965,8 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 ///|
 fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
   st.cur_op = i.op.name()
+  st.cur_cls = i.cls
+  st.tmp_used = 0
   let oi = i.op.index()
   let fi = @types.Flagieq.index()
   if oi >= fi && oi <= @types.Flagfuo.index() {
@@ -1057,10 +1128,16 @@ fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       let rr = arm64_bin_reg(r)
+      // Each save/restore is an independent access.
+      st.tmp_used = 0
+      // Each save is an independent access.
+      st.tmp_used = 0
       if r >= @types.ARM64_V0 {
-        arm64_bin_emit(st, @object.enc_ldst_fp(3, 1, rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 1, rr, bac, boff))
       } else {
-        arm64_bin_emit(st, @object.enc_ldr_x(rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldr_x(rr, bac, boff))
       }
     }
   }
@@ -1113,10 +1190,14 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       let rr = arm64_bin_reg(r)
+      // Each save/restore is an independent access.
+      st.tmp_used = 0
       if r >= @types.ARM64_V0 {
-        arm64_bin_emit(st, @object.enc_ldst_fp(3, 0, rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 0, rr, bac, boff))
       } else {
-        arm64_bin_emit(st, @object.enc_str_x(rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_str_x(rr, bac, boff))
       }
     }
   }
