@@ -308,6 +308,265 @@ Found by differential testing (`tools/check_route_b.py` compares route B's `__te
 
 **Lesson**: **differential testing is more effective than unit testing**. Comparing a hand-written encoder byte-for-byte against a "reference implementation" catches bugs that are semantically correct but encode incorrectly.
 
+### 4.7 Scratch registers and the allocatable set are inconsistent (`b66848e`, `b870b47`, wip)
+
+Three findings, all in the arm64 object emitter. The first two are fixed, the
+third needs a maintainer decision.
+
+**a. Big-frame addresses were encoded as raw 12-bit offsets** (`b66848e`).
+The prologue and epilogue save and restore callee-saved registers with a raw
+offset from the frame pointer; past 32 KB the offset does not fit and the
+encoder aborts. `arm64_bin_addr` now folds the excess into a scratch, for both
+signs. `@types.Addr` had the same bug and is fixed in `b870b47`.
+
+**b. Binary operands may be constants or spilled slots** (`b66848e`).
+QBE allows a `Con` or a slot as the second operand of a binop; `arm64_bin_r`
+only accepted a temporary, so bzip2's `compress.c` (mul) and `decompress.c`
+(shr) hit "expected a register operand". Constants are materialized and slots
+loaded into IP1/IP0, with a loud ICE when a third scratch would be needed.
+
+**c. `arm64_rsave` hands the allocator registers the emitter uses as scratch.**
+This one is a genuine QBE bug that the port inherited: `vendor/qbe/arm64
+/targ.c` lists IP0, IP1 and LR in `rsave`, so the register allocator gives them
+to IR values - yet the emitter materializes rotated constants through IP0,
+slot addressing goes through IP1, and every `bl` overwrites LR. In bzip2's
+`BZ2_decompress` a live pointer sat in x30 across an `fprintf` and the following
+`strb w16, [x30]` wrote to address 0xff.
+
+Evidence: `otool -tvV` counted **232** uses of x30 as a general register in that
+one function, which also contains **8 `bl`s**.
+
+The arithmetic root is visible in the spill budget: `limit2` keeps at most
+`ngpr - post_call_gpr` = 32 - 20 = 12 values in GPRs across a call, but only
+R19-R28 (10) actually survive one - the two extra are FP and LR.
+
+A complete fix is on branch `wip/arm64-scratch-regs`: `rsave` drops IP0/IP1/LR,
+a new `noalloc` mask keeps rega away from IP0/IP1/FP/LR/SP, `alloc_gpr` (27) is
+what spill budgets against, and `post_call_gpr` becomes 17 so the budget stays
+the callee-save count (10). Semantically verified: oracle 169/169, unit tests
+374/374, `--asm` 420/420, examples, Lua, and x30 usage in `BZ2_decompress`
+falls from 232 to 0.
+
+**Why it is not merged**: `compare.py` diffs the debug IL dumps against
+`vendor/qbe`, which is a git submodule and allocates these registers too, so 80
+of 5040 cases diverge by design. Landing it needs that submodule patched the
+same way, or a decision to loosen the debug differential.
+
+### 4.8 `--emit asm` panics on some inputs (open)
+
+`qpcc decompress.i --emit asm` aborts in the text emitter (`cmd/main.mbt:380`)
+for the IR of bzip2's `decompress.c`, while `--emit obj` on the same IR works.
+The text emitter presumably has a gap the binary emitter does not. Found while
+trying to swap backends; not yet localized.
+### 4.9 `--emit asm` ICE on slot operands: the generic `nmem` table (`f1fc34f`)
+
+`qpcc decompress.i --emit asm` failed with
+
+    qpcc: asm emission ICE: invalid register r=-1 k=0
+
+while `--emit obj` on the same IR worked. The text emitter formats generic
+instructions with `arm64_rname(i.to.tmp_val(), k)` / `i.arg1.tmp_val()`, and
+`tmp_val()` of -1 means the operand is a slot: the spill pass had left it in
+memory.
+
+**Root cause**: `spill/spill.mbt` decided how many operands may stay in memory
+with `op_info(op).nmem`, the generic (amd64-shaped) table. It says mul, shr and
+div take one memory operand. arm64 has **no** memory operands - QBE's
+`arm64_memargs` returns 0 - so on arm64 the first operand of those ops was never
+marked "must be in a register" and could be spilled.
+
+That is also why `b66848e` had to teach the binary emitter to materialize slot
+operands: it was a workaround for this. `TargetCfg` now carries a
+`memargs : (Op) -> Int` hook (arm64 returns 0, the other targets keep the
+generic table) and the emitter-side materialization remains as a fallback.
+
+With the fix `--emit asm` compiles `decompress.c` (12597 lines) and all gates
+stay green.
+
+### 4.10 bzip2 decompression produces wrong data (fixed in 4.12)
+
+`compress.c` and `decompress.c` both compile and compression is byte-exact (the
+output decompresses with the system `bunzip2`), but decompressing produces wrong
+data: `data integrity (CRC) error`.
+
+Localized by instrumenting `BZ2_decompress` with state and bit-buffer prints and
+compiling it with clang and with qpcc:
+
+- clang walks 42 state transitions and 256 `BZ_X_MAPPING_2` iterations;
+- qpcc reserves one iteration too many: `M1 i=16` and `M2 i=16 j=16` where the
+  loop bounds are `i < 16` and `j < 16`. The extra iteration writes
+  `s->inUse[i*16+j]` out of bounds, corrupting `DState`, and the first state
+  that fails is `BZ_X_SELECTOR_1` with a desynchronized bit stream.
+
+What is ruled out:
+
+- the IR for those loops is correct by inspection (`storew 0, %t.40` for
+  `i = 0`, `csltw ...,16` for the condition, `storew 0, %t.41` for `j = 0`,
+  `jmp @for.step.396`), and no other code writes those slots;
+- feeding the same qpcc IR to a freshly built `vendor/qbe` also produces wrong
+  data, so the two independent backends agree.
+
+So the remaining bug is either a subtlety of this IR that both backends get
+wrong, or a frontend/IR-builder issue that inspection has not caught.
+Reproductions attempted so far (a plain nested loop, and the Duff-device shape
+of `switch` cases inside nested `for` loops) both behave correctly under qpcc,
+so the trigger needs more of the surrounding function.
+### 4.11 bzip2 decompress: reduction and the instrumentation trap
+
+The decompression bug was driven down to a one-line difference. With an
+instrumented copy of decompress.c that counts state entries in globals (no
+calls at all in the loops) and dumps them from atexit in a patched bzip2.c:
+
+    clang : ... 28:16, 29:256, 30:1, ...   (walks both blocks)
+    qpcc  : ... 28:17, 29:257, 30:1       (already wrong in the first block)
+
+Cutting the tail of BZ2_decompress makes the counts agree, and adding back a
+single statement after the mapping loops
+
+    GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
+
+makes them disagree again. That statement runs after the mapping loops, so it
+cannot affect them at the source level: the trigger is a code-generation /
+register-allocation boundary, not a source construct.
+
+What is ruled out so far:
+
+- the IR of the mapping loops is identical in the failing and passing builds
+  (after normalising temp and label numbers), so the frontend does not emit
+  different loop code;
+- the loop bodies in the generated assembly are identical (same cmp #16 / bge,
+  same i++ , no calls inside);
+- vendor QBE, freshly built, compiled from the same IR, gives the same wrong
+  counts, so this is not a port-specific divergence;
+- stack frames are 240-256 bytes in both builds, so it is not the 12-bit or
+  512-byte frame thresholds of 4.7.
+
+The remaining difference is how often the resumable state machine re-enters
+BZ_X_MAPPING_1 (an extra RETURN(BZ_OK)), which in turn changes the bit-stream
+position. That matches the observable failure: BZ_X_SELECTOR_1 reads a
+nonsensical nGroups and the CRC check then fails.
+
+#### The instrumentation trap (important)
+
+The first localisation used fprintf(stderr, ...) inside the mapping loops and
+reported M1 i=16, i.e. an extra loop iteration. That was an artifact of the
+instrumentation: replacing the same prints with plain global increments makes
+all three compilers (clang, qpcc, vendor QBE) agree again. A call - especially
+a variadic one - inside those loops changes the generated code enough to move
+the bug. Any future bisection must use call-free instrumentation.
+
+Related: a printf(...) placed inside those loops makes the reduced program
+produce no output at all under qpcc while clang is fine, which is a separate
+code-generation bug worth its own fixture.
+#### Update: vendor QBE is wrong too, with call-free counters
+
+Instrumenting only with global counters (state entries, RETURN count, mapping
+iterations, and the maximum i/j seen), and dumping them from atexit, gives:
+
+    clang  : c28=16 c29=256 rt=42 m1=16 m2=256 imax=15 jmax=15
+    qpcc   : c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
+    QBE ref: c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
+
+where c28/c29 are entries of BZ_X_MAPPING_1/MAPPING_2, rt counts RETURN
+executions, imax/jmax are the largest i/j ever seen inside the mapping loops.
+
+Two things follow:
+
+1. vendor QBE, compiled from qpcc's IR, produces exactly the same wrong
+   numbers as the port, so the error is already in the IL;
+2. inside a single call the loop really does reach i == 16 and still executes
+   the body (imax == 16, m1 == 17), although the IL condition is
+   '%t =w csltw <i>, 16'. qpcc also reports rt == 1, i.e. it never returns for
+   input exhaustion - it processes everything in one call and then reports
+   BZ_DATA_ERROR.
+
+The IL for those loops reads correctly (storew 0 before the loop, csltw 16 for
+the condition, jmp to the step block, step does loadsw/add/storew), and %t.54
+(the C local i) has 125 references spread over the whole function as expected.
+So the IL must carry a subtler error that inspection has not yet found.
+
+A diagnosis tool that needs no toolchain: the port has an SSA interpreter
+(qbe --run FUNC). Feeding it the failing IL function with synthetic arguments
+and comparing the state sequence against the C build would separate an IL
+semantics error from a codegen error once and for all.
+#### Update: the frontend duplicates the GET_BITS while at each case label
+
+Instrumenting the *IL* (not the C) and reading it back through the interpreter
+showed that every `GET_BITS` expansion appears **twice** in the emitted IL:
+
+- an inline copy used by the normal fall-through, e.g.
+  `@while.cond.346 ... @while.end.370 (g_m1++ ...)`;
+- a second copy owned by the `@switch.case` block, e.g.
+  `@switch.case.30: storew 28, ...; jmp @while.cond.422` whose
+  `@while.end.424` repeats the whole body tail (`g_m1++`, `i > g_imax`, ...).
+
+That duplication is what a resumable state machine needs (the case label is an
+entry point), and both copies are individually correct, so it is not the bug by
+itself. But it does invalidate the earlier counter readings: a counter placed at
+the `case` label counts both the loop body and the resume entry, which is why
+`c28`/`m1` read 17 where the C shows 16. **All counter-based localisation that
+placed its probe at or after a `case` label must be re-done with the probe inside
+the loop body only.**
+
+Everything else that was checked is correct:
+
+- `DState`/`EState` layouts agree between clang and qpcc
+  (`DState: bsBuff=32 bsLive=36 blockSize100k=40 origPtr=56`);
+- `s+56` in the `@while.end.348` block is `origPtr`, matching
+  `s->origPtr = (s->origPtr << 8) | uc`;
+- the `origPtr` bound check (`origPtr > 10 + 100000*blockSize100k`) is emitted
+  correctly;
+- the mapping loop's condition, step and back edge are exactly as in the C.
+### 4.12 The nested case label, not the backend (fixed)
+
+§4.10 and §4.11 chased the extra `M1 i=16` iteration through the IR, both
+backends and a freshly built vendor QBE. The IR was right and both backends
+were right; the bug was in the **frontend's switch lowering**.
+
+`BZ2_decompress` has case labels *inside* loops:
+
+    switch (s->state) {
+    case BZ_X_MAPPING_1:              /* == 28 */
+      for (i = 0; i < 16; i++) {
+        ...
+      }
+
+`gen_switch` used to emit every case body as a **separate copy** of the
+statements that follow the label. With a label nested inside a loop that copy
+has no enclosing loop around it, and the fall-through of the enclosing case was
+emitted as `jmp <next case in the flat case array>` — for a nested label that
+is the label's own copy, so control re-entered the loop body after the loop had
+finished. That is the extra iteration (`i == 16`) that corrupts `DState` and
+desynchronizes the bit stream.
+
+The fix keeps one copy of the code: the switch body is generated **once, in
+source order**; each case label opens a block *at its own position* (inside
+whatever loop or condition encloses it) and registers that block in a per-switch
+frame; the compare chain is emitted **after** the body and jumps at the blocks
+the labels actually registered.
+
+Trigger shape: a case label inside a loop, with statements after the loop and
+another case label after them. 20-line reproducer, now
+`qpcc/tests/switch_nested_case.c`:
+
+    switch (n) {
+    case 0:
+      for (i = 0; i < 4; i++) {
+    case 1:
+        g = g + 1;
+      }
+      g = g + 10;      /* falls through to case 2, not back into case 1 */
+    case 2:
+      r = g;
+    }
+
+clang: `f(0) == 14`. Pre-fix qpcc: `15`.
+
+Verification of the bzip2 fix: `decompress.c` compiled by qpcc and linked
+against clang-built neighbours decompresses 200 KB of random data to a
+byte-identical file; oracle 170/170, arm64 and amd64 differential 6720/6720
+each, `--asm` 420/420, stress 688/688, `moon test` 375/375.
+
 ---
 
 ## 5. qbe.mbt: other backends

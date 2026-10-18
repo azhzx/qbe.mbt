@@ -150,6 +150,8 @@ pub struct Ctx {
   globals : Array[CheckedGlobal]
   mut cur_params : Array[(String, CType)]
   mut cur_locals : Array[(String, CType, Int)]
+  mut local_seq : Int
+  local_names : Map[String, Bool]
   mut loop_depth : Int
   mut switch_depth : Int
   label_pending : Array[String]
@@ -159,6 +161,7 @@ pub struct Ctx {
   mut labels : Map[String, Bool]
   mut gotos : Array[String]
   mut static_counter : Int
+  noninline_funcs : Map[String, Bool]
 }
 
 pub struct Diag {
@@ -305,7 +308,7 @@ pub(all) enum TStmtKind {
   KSLabel(String, TStmt)
   KSGoto(String)
   KSGotoPtr(TExpr)
-  KSSwitch(TExpr, Array[(Int64, TStmt)], TStmt?, Int)
+  KSSwitch(TExpr, Array[(Int64, TStmt)], TStmt?, Int, TStmt)
   KSCaseMark(Array[Int64], Bool, TStmt)
   KSDecl(String, CType, TExpr?, Int)
   KSAggInit(String, CType, Array[(Int, TExpr, Int, Int)], Int)

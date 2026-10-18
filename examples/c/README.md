@@ -35,6 +35,8 @@ what the "run everything" pass uses.
 | `taggedunion.c` | `-std=cqe`: a tagged union through the `<taggedunion.h>` aliases, with `_Dynamic_tag` / `_Static_tag` |
 | `onestop.c` | `-std=cqe`: the same, plus a closure through `<lambda.h>` |
 | `lambda.c` | `-std=cqe`: a closure with `_Lambda` / `lambda`, and `_Closure_environment` reaching the captured environment |
+| `function_pointer.c` | `-std=cqe`: `_Function_pointer`, both the bare storage type and the prefix spelling with a signature |
+| `template.c` | `-std=cqe`: pseudo-templates - one `MakeResult(T, E)` macro producing `Result_([T, E])` plus a derived `Result_([T, E])_is_ok` |
 | `rec_lambda.c` | `-std=cqe`: recursion with the knot tied by hand, a closure capturing a pointer to itself |
 | `z.c` | `-std=cqe`: the Z combinator - self-application `x x` with the self type-erased, and a capture-less core so no environment dangles. One core drives both `fact` and `fib`, and neither step mentions recursion |
 | `c2y.c` | `-std=c2y`: `_Countof` / `countof`, `_Maxof` / `maxof`, `_Minof` / `minof`, a named loop and `_Defer` / `defer` |

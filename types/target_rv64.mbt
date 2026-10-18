@@ -474,6 +474,7 @@ pub fn init_rv64_target() -> Unit {
   target_cfg.post_call_gpr = Rv64NGPS
   target_cfg.post_call_fpr = Rv64NFPS
   target_cfg.rglob_mask = rv64_rglob_mask()
+  target_cfg.memargs = fn(op) { op_info(op).nmem }
   target_cfg.rsave = rv64_rsave
   target_cfg.retregs = rv64_target_retregs
   target_cfg.argregs = rv64_target_argregs

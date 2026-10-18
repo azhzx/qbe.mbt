@@ -32,6 +32,13 @@ priv struct Arm64BinState {
   // Names defined in this object; anything else needs a GOT load.
   defined : Array[String]
   mut cur_op : String
+  // Class of the instruction being emitted: a constant operand has to be
+  // materialized at the right width.
+  mut cur_cls : @types.Class
+  // How many scratch registers this instruction has already materialized. The
+  // first uses IP1, the second IP0; a third would clobber one of them, so it is
+  // an error rather than silent wrong code.
+  mut tmp_used : Int
   mut frame : Int
   mut padding : Int
 }
@@ -54,6 +61,8 @@ fn arm64_bin_new(
     addrs: [],
     defined,
     cur_op: "",
+    cur_cls: @types.Kw,
+    tmp_used: 0,
     frame: 0,
     padding: 0,
   }
@@ -148,6 +157,64 @@ fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
   } else {
     raise @util.QbeError::Ice("arm64 bin: unhandled memory operand")
   }
+}
+
+///|
+// Base register and offset for a memory operand. The unsigned-offset form
+// scales a 12-bit immediate, so a large frame offset is added into IP0 first
+// (reserved, never allocated). Truncating it instead is what made Lua's
+// interpreter address its caller's frame.
+// Fold a frame offset into IP1 when it does not fit the 12-bit scaled field.
+// IP1 is never handed out by the register allocator, so it is safe as a
+// scratch. Both signs matter: a large frame puts some slots beyond +0xFFF and
+// others beyond -0xFFF.
+fn arm64_bin_tmp_id(st : Arm64BinState) -> Int raise {
+  let id = if st.tmp_used == 0 {
+    @types.ARM64_IP1
+  } else if st.tmp_used == 1 {
+    @types.ARM64_IP0
+  } else {
+    raise @util.QbeError::Ice(
+      "arm64 bin: more than two temporaries needed for " + st.cur_op,
+    )
+  }
+  st.tmp_used = st.tmp_used + 1
+  id
+}
+
+///|
+fn arm64_bin_tmp(st : Arm64BinState) -> Int raise {
+  arm64_bin_reg(arm64_bin_tmp_id(st))
+}
+
+///|
+fn arm64_bin_addr(st : Arm64BinState, rn : Int, off : Int) -> (Int, Int) raise {
+  if off > 0xFFF || off < -0xFFF {
+    let sc = arm64_bin_tmp(st)
+    arm64_bin_emit(st, @object.enc_add_imm(sc, rn, 0))
+    let mut left = off
+    while left > 0 {
+      let part = if left > 0xFFF { 0xFFF } else { left }
+      arm64_bin_emit(st, @object.enc_add_imm(sc, sc, part))
+      left = left - part
+    }
+    while left < -0xFFF {
+      arm64_bin_emit(st, @object.enc_sub_imm(sc, sc, 0xFFF))
+      left = left + 0xFFF
+    }
+    if left < 0 {
+      arm64_bin_emit(st, @object.enc_sub_imm(sc, sc, -left))
+    }
+    (sc, 0)
+  } else {
+    (rn, off)
+  }
+}
+
+///|
+fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
+  let (rn, off) = arm64_bin_mem(st, r)
+  arm64_bin_addr(st, rn, off)
 }
 
 ///|
@@ -419,6 +486,30 @@ fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
 fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int raise {
   if r.is_tmp() {
     arm64_bin_reg(r.tmp_val())
+  } else if r.is_con() {
+    // QBE allows a constant as the second operand of a binary operation
+    // (bzip2's compress.c has "mul %x, <const>"). Materialize it into IP1,
+    // which the register allocator never hands out.
+    let id = arm64_bin_tmp_id(st)
+    arm64_bin_loadcon(st, st.fn_.cons[r.con_val()], id, st.cur_cls)
+    arm64_bin_reg(id)
+  } else if r.is_slot() {
+    // An operand the allocator left in its slot (it spilled). Load it into IP1
+    // so the instruction sees a register: bzip2's compress.c lowers into a
+    // "mul" and decompress.c into a "shr" with a slot operand.
+    let (rn, off) = arm64_bin_mem(st, r)
+    let (bac, boff) = arm64_bin_addr(st, rn, off)
+    // If the address had to be materialized it already lives in a scratch, so
+    // load through it (ldr xN, [xN]) instead of burning a second one.
+    let sc = if bac != rn { bac } else { arm64_bin_tmp(st) }
+    if st.cur_cls == @types.Ks || st.cur_cls == @types.Kd {
+      let size = if st.cur_cls == @types.Ks { 2 } else { 3 }
+      arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, sc, bac, boff))
+    } else {
+      let size = if st.cur_cls == @types.Kl { 3 } else { 2 }
+      arm64_bin_emit(st, @object.enc_ldst(size, 1, sc, bac, boff))
+    }
+    sc
   } else {
     raise @util.QbeError::Ice(
       "arm64 bin: expected a register operand for " + st.cur_op,
@@ -783,7 +874,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         _ => raise @util.QbeError::Ice("arm64 bin: bad cast class")
       }
     @types.Load => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
       if i.cls == @types.Ks || i.cls == @types.Kd {
         arm64_bin_emit(st, @object.enc_ldst_fp(size, 1, rd, rn, off))
@@ -792,36 +883,36 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
     }
     @types.AtomicLoad => {
-      let (rn, _off) = arm64_bin_mem(st, i.arg1)
+      let (rn, _off) = arm64_bin_mem_at(st, i.arg1)
       let sf = i.cls == @types.Kl || i.cls == @types.Kd
       arm64_bin_emit(st, @object.enc_ldar(sf, rd, rn))
     }
     @types.AtomicStore => {
-      let (rn, _off) = arm64_bin_mem(st, i.arg2)
+      let (rn, _off) = arm64_bin_mem_at(st, i.arg2)
       let rt = arm64_bin_reg(i.arg1.tmp_val())
       let sf = i.cls == @types.Kl || i.cls == @types.Kd
       arm64_bin_emit(st, @object.enc_stlr(sf, rt, rn))
     }
     @types.Fence => arm64_bin_emit(st, @object.enc_dmb_ish())
     @types.Loadub => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(0, 1, rd, rn, off))
     }
     @types.Loaduh => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(1, 1, rd, rn, off))
     }
     @types.Loaduw => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       arm64_bin_emit(st, @object.enc_ldst(2, 1, rd, rn, off))
     }
     @types.Loadsw => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let opc = if i.cls == @types.Kl { 2 } else { 1 }
       arm64_bin_emit(st, @object.enc_ldst(2, opc, rd, rn, off))
     }
     @types.Loadsb | @types.Loadsh => {
-      let (rn, off) = arm64_bin_mem(st, i.arg1)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg1)
       let size = if i.op == @types.Loadsb { 0 } else { 1 }
       let opc = if i.cls == @types.Kl { 2 } else { 3 }
       arm64_bin_emit(st, @object.enc_ldst(size, opc, rd, rn, off))
@@ -832,7 +923,7 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     | @types.Storel
     | @types.Stores
     | @types.Stored => {
-      let (rn, off) = arm64_bin_mem(st, i.arg2)
+      let (rn, off) = arm64_bin_mem_at(st, i.arg2)
       let rt = arm64_bin_reg(i.arg1.tmp_val())
       let (size, opc) = match i.op {
         @types.Storeb => (0, 0)
@@ -874,6 +965,8 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 ///|
 fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
   st.cur_op = i.op.name()
+  st.cur_cls = i.cls
+  st.tmp_used = 0
   let oi = i.op.index()
   let fi = @types.Flagieq.index()
   if oi >= fi && oi <= @types.Flagfuo.index() {
@@ -894,7 +987,6 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         ()
       } else if i.to.is_slot() {
         // Spilled value: copy to its stack slot (C emit.c Ocopy to RSlot).
-        let (rn, off) = arm64_bin_mem(st, i.to)
         let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
         let is_fp = i.cls == @types.Ks || i.cls == @types.Kd
         let rt = if i.arg1.is_con() {
@@ -912,6 +1004,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         } else {
           arm64_bin_r(st, i.arg1)
         }
+        let (rn, off) = arm64_bin_mem_at(st, i.to)
         if is_fp {
           arm64_bin_emit(st, @object.enc_ldst_fp(size, 0, rt, rn, off))
         } else {
@@ -919,7 +1012,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         }
       } else if i.arg1.is_slot() {
         // Reload a spilled value (C emit.c Ocopy from RSlot).
-        let (rn, off) = arm64_bin_mem(st, i.arg1)
+        let (rn, off) = arm64_bin_mem_at(st, i.arg1)
         let rd = arm64_bin_reg(i.to.tmp_val())
         let size = if i.cls == @types.Kl || i.cls == @types.Kd { 3 } else { 2 }
         if i.cls == @types.Ks || i.cls == @types.Kd {
@@ -962,20 +1055,28 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
       }
     @types.Addr =>
       if i.arg1.is_slot() {
-        arm64_bin_emit(
+        // The offset can exceed the 12-bit field on a large frame, and
+        // enc_add_imm would silently truncate it: the address would point into
+        // the middle of the frame. Fold it into a scratch like the other slot
+        // accesses do.
+        let rd = arm64_bin_reg(i.to.tmp_val())
+        let (arn, aoff) = arm64_bin_addr(
           st,
-          @object.enc_add_imm(
-            arm64_bin_reg(i.to.tmp_val()),
-            29,
-            arm64_slot_off(
-              st.frame,
-              st.padding,
-              st.fn_.is_vararg,
-              st.apple,
-              i.arg1.slot_val(),
-            ),
+          29,
+          arm64_slot_off(
+            st.frame,
+            st.padding,
+            st.fn_.is_vararg,
+            st.apple,
+            i.arg1.slot_val(),
           ),
         )
+        st.tmp_used = 0
+        if aoff >= 0 {
+          arm64_bin_emit(st, @object.enc_add_imm(rd, arn, aoff))
+        } else {
+          arm64_bin_emit(st, @object.enc_sub_imm(rd, arn, -aoff))
+        }
       } else {
         raise @util.QbeError::Ice("arm64 bin: invalid address")
       }
@@ -1009,6 +1110,25 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
+// Move the stack pointer by `n` bytes. `add/sub sp, sp, #imm` has a 12-bit
+// immediate, so a frame larger than 4095 bytes needs several instructions.
+// Without this the frame was truncated to its low 12 bits: Lua's luaV_execute
+// asked for 17072 bytes and got 688, so every slot access landed in the
+// caller's frame and the interpreter crashed.
+fn arm64_bin_sp_adjust(st : Arm64BinState, is_sub : Bool, n : Int) -> Unit {
+  let mut left = n
+  while left > 0 {
+    let part = if left > 0xFFF { 0xFFF } else { left }
+    if is_sub {
+      arm64_bin_emit(st, @object.enc_sub_imm(31, 31, part))
+    } else {
+      arm64_bin_emit(st, @object.enc_add_imm(31, 31, part))
+    }
+    left = left - part
+  }
+}
+
+///|
 fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
   let fn_ = st.fn_
   let mut o = st.frame + 16
@@ -1016,10 +1136,16 @@ fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       let rr = arm64_bin_reg(r)
+      // Each save/restore is an independent access.
+      st.tmp_used = 0
+      // Each save is an independent access.
+      st.tmp_used = 0
       if r >= @types.ARM64_V0 {
-        arm64_bin_emit(st, @object.enc_ldst_fp(3, 1, rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 1, rr, bac, boff))
       } else {
-        arm64_bin_emit(st, @object.enc_ldr_x(rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldr_x(rr, bac, boff))
       }
     }
   }
@@ -1032,7 +1158,7 @@ fn arm64_bin_epilogue(st : Arm64BinState) -> Unit raise {
   }
   if oo > 504 {
     arm64_bin_emit(st, @object.enc_ldp_post(29, 30, 31, 16))
-    arm64_bin_emit(st, @object.enc_add_imm(31, 31, oo - 16))
+    arm64_bin_sp_adjust(st, false, oo - 16)
   } else {
     arm64_bin_emit(st, @object.enc_ldp_post(29, 30, 31, oo))
   }
@@ -1061,7 +1187,7 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
     raise @util.QbeError::Ice("arm64 bin: vararg prologue not supported yet")
   }
   if st.frame + 16 > 512 {
-    arm64_bin_emit(st, @object.enc_sub_imm(31, 31, st.frame))
+    arm64_bin_sp_adjust(st, true, st.frame)
     arm64_bin_emit(st, @object.enc_stp_pre(29, 30, 31, -16))
   } else {
     arm64_bin_emit(st, @object.enc_stp_pre(29, 30, 31, -(st.frame + 16)))
@@ -1072,10 +1198,14 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
     if (fn_.reg & (1UL << r)) != 0UL {
       o = o - 8
       let rr = arm64_bin_reg(r)
+      // Each save/restore is an independent access.
+      st.tmp_used = 0
       if r >= @types.ARM64_V0 {
-        arm64_bin_emit(st, @object.enc_ldst_fp(3, 0, rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_ldst_fp(3, 0, rr, bac, boff))
       } else {
-        arm64_bin_emit(st, @object.enc_str_x(rr, 29, o))
+        let (bac, boff) = arm64_bin_addr(st, 29, o)
+        arm64_bin_emit(st, @object.enc_str_x(rr, bac, boff))
       }
     }
   }
@@ -1104,7 +1234,12 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
       _ => {
         let c = b.jmp.kind.index() - @types.Jjfieq.index()
         if c < 0 || c > 17 {
-          raise @util.QbeError::Ice("arm64 bin: unhandled jump")
+          raise @util.QbeError::Ice(
+            "arm64 bin: unhandled jump kind " +
+            b.jmp.kind.index().to_string() +
+            " in " +
+            fn_.name,
+          )
         }
         let mut s1 = b.jmp.s1
         let mut s2 = b.jmp.s2

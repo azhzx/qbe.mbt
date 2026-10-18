@@ -29,6 +29,12 @@ priv struct Cg {
   break_depths : Array[Int]
   cont_depths : Array[Int]
   label_depths : Map[String, Int]
+  // One frame per `switch` while its body is generated: the block each case
+  // label landed in, and the block the default label landed in (the switch end
+  // when there is none). The tests are emitted after the body, so they can
+  // point at the blocks the labels actually chose.
+  switch_cases : Array[Array[(Int64, Int)]]
+  switch_dflt : Array[Int]
 }
 
 ///|
@@ -99,6 +105,212 @@ fn is_flt(ty : @sema.CType) -> Bool {
 ///|
 fn is_uns(ty : @sema.CType) -> Bool {
   @sema.is_integer(ty) && !@sema.is_signed(ty)
+}
+
+///|
+// C integer promotion: char and short, signed or not, become int.
+fn promote_small(ty : @sema.CType) -> @sema.CType {
+  match ty {
+    @sema.CChar(_) | @sema.CShort(_) => @sema.CInt(true)
+    _ => ty
+  }
+}
+
+///|
+// Which integer bit intrinsic is this? 0 = none, otherwise kind * 100 + bits,
+// with kind 1 bswap, 2 clz, 3 ctz, 4 popcount.
+fn bit_intrin(name : String) -> Int {
+  match name {
+    "__builtin_bswap16" => 116
+    "__builtin_bswap32" => 132
+    "__builtin_bswap64" => 164
+    "__builtin_clz" => 232
+    "__builtin_clzl" => 264
+    "__builtin_clzll" => 264
+    "__builtin_ctz" => 332
+    "__builtin_ctzl" => 364
+    "__builtin_ctzll" => 364
+    "__builtin_popcount" => 432
+    "__builtin_popcountl" => 464
+    "__builtin_popcountll" => 464
+    _ => 0
+  }
+}
+
+///|
+fn Cg::k64(c : Cg, v : Int64) -> Int {
+  c.b.iconst(c.fid, v)
+}
+
+///|
+fn Cg::bit2(
+  c : Cg,
+  op : @types.Op,
+  cls : @types.Class,
+  a : Int,
+  b : Int,
+) -> Int {
+  c.b.arith(c.fid, op, cls, a, b)
+}
+
+///|
+// SWAR population count, no branches.
+fn Cg::gen_popcount(c : Cg, cls : @types.Class, bits : Int, x : Int) -> Int {
+  let mut v = x
+  if bits == 64 {
+    v = c.bit2(
+      @types.Sub,
+      cls,
+      v,
+      c.bit2(
+        @types.And,
+        cls,
+        c.bit2(@types.Shr, cls, v, c.k64(1L)),
+        c.k64(0x5555555555555555L),
+      ),
+    )
+    v = c.bit2(
+      @types.Add,
+      cls,
+      c.bit2(@types.And, cls, v, c.k64(0x3333333333333333L)),
+      c.bit2(
+        @types.And,
+        cls,
+        c.bit2(@types.Shr, cls, v, c.k64(2L)),
+        c.k64(0x3333333333333333L),
+      ),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(4L))),
+      c.k64(0x0F0F0F0F0F0F0F0FL),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(8L))),
+      c.k64(0x00FF00FF00FF00FFL),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(16L))),
+      c.k64(0x0000FFFF0000FFFFL),
+    )
+    v = c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(32L)))
+  } else {
+    v = c.bit2(
+      @types.Sub,
+      cls,
+      v,
+      c.bit2(
+        @types.And,
+        cls,
+        c.bit2(@types.Shr, cls, v, c.k64(1L)),
+        c.k64(0x55555555L),
+      ),
+    )
+    v = c.bit2(
+      @types.Add,
+      cls,
+      c.bit2(@types.And, cls, v, c.k64(0x33333333L)),
+      c.bit2(
+        @types.And,
+        cls,
+        c.bit2(@types.Shr, cls, v, c.k64(2L)),
+        c.k64(0x33333333L),
+      ),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(4L))),
+      c.k64(0x0F0F0F0FL),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(8L))),
+      c.k64(0x00FF00FFL),
+    )
+    v = c.bit2(
+      @types.And,
+      cls,
+      c.bit2(@types.Add, cls, v, c.bit2(@types.Shr, cls, v, c.k64(16L))),
+      c.k64(0x0000FFFFL),
+    )
+  }
+  v
+}
+
+///|
+// Integer bit intrinsics. QBE has no op for them, so emit the sequence: bswap
+// reverses the bytes, clz smears the bits down and subtracts its population
+// from the width, ctz counts the bits below the lowest set one.
+fn Cg::gen_bit_intrin(c : Cg, kind : Int, bits : Int, x : Int) -> Int {
+  let cls = if bits == 64 { @types.Kl } else { @types.Kw }
+  if kind == 1 {
+    let nb = bits / 8
+    let mut acc = c.k64(0L)
+    let mut i = 0
+    while i < nb {
+      let byte = c.bit2(
+        @types.And,
+        cls,
+        c.bit2(@types.Shr, cls, x, c.k64((8 * i).to_int64())),
+        c.k64(0xFFL),
+      )
+      let placed = c.bit2(
+        @types.Shl,
+        cls,
+        byte,
+        c.k64((8 * (nb - 1 - i)).to_int64()),
+      )
+      acc = c.bit2(@types.Or, cls, acc, placed)
+      i = i + 1
+    }
+    return acc
+  }
+  if kind == 4 {
+    return c.gen_popcount(cls, bits, x)
+  }
+  if kind == 2 {
+    let mut v = x
+    let mut s = 1
+    while s < bits {
+      v = c.bit2(
+        @types.Or,
+        cls,
+        v,
+        c.bit2(@types.Shr, cls, v, c.k64(s.to_int64())),
+      )
+      s = s * 2
+    }
+    let pc = c.gen_popcount(cls, bits, v)
+    return c.bit2(@types.Sub, cls, c.k64(bits.to_int64()), pc)
+  }
+  let low = c.bit2(@types.And, cls, x, c.bit2(@types.Sub, cls, c.k64(0L), x))
+  c.gen_popcount(cls, bits, c.bit2(@types.Sub, cls, low, c.k64(1L)))
+}
+
+///|
+// Is the result of an integer binary operation unsigned? C promotes each
+// operand first, so unsigned char becomes int and (int >= unsigned char) is a
+// SIGNED comparison. Asking whether either operand is unsigned made it
+// unsigned: Lua's freereg tests (reg >= luaY_nvarstack(fs)), int against
+// lu_byte, where a -1 register compared as 0xFFFFFFFF and spuriously
+// decremented freereg, shifting every later register in the bytecode.
+fn usual_uns(c : Cg, l : @sema.CType, r : @sema.CType) -> Bool {
+  let a = promote_small(l)
+  let b = promote_small(r)
+  if is_uns(a) == is_uns(b) {
+    is_uns(a)
+  } else {
+    let u = if is_uns(a) { a } else { b }
+    let s = if is_uns(a) { b } else { a }
+    size_of(u, c.layouts) >= size_of(s, c.layouts)
+  }
 }
 
 ///|
@@ -763,6 +975,17 @@ fn Cg::gen_expr(c : Cg, e : @sema.TExpr) -> Int {
     @sema.TBin(op, l, r) => c.gen_bin(op, l, r, e.ty)
     @sema.TUn(op, x) => c.gen_un(op, x)
     @sema.TCall(name, callee, args) => {
+      // Integer bit intrinsics: no QBE op exists, so emit the sequence.
+      let bi = bit_intrin(name)
+      if bi != 0 && args.length() >= 1 {
+        return c.gen_bit_intrin(bi / 100, bi % 100, c.gen_expr(args[0]))
+      }
+      if name == "__builtin_expect" && args.length() >= 1 {
+        return c.gen_expr(args[0])
+      }
+      if name == "__builtin_constant_p" {
+        return c.b.iconst(c.fid, 0L)
+      }
       if name == "__c11_atomic_load" ||
         name == "atomic_load" ||
         name == "__atomic_load_n" ||
@@ -923,21 +1146,44 @@ fn Cg::gen_expr(c : Cg, e : @sema.TExpr) -> Int {
       let then_b = c.new_block("cond.then")
       let else_b = c.new_block("cond.else")
       let join = c.new_block("cond.join")
-      let p = c.b.block_param(c.fid, join, cls_of(e.ty))
+      // A conditional of type void has no value to merge. Lua's luaC_barrier
+      // expands to `cond ? luaC_barrier_(...) : cast_void(0)`, so both arms are
+      // void and neither produces a value. Creating a phi anyway left the join
+      // with a parameter no arm could supply; the IR was invalid and the arm64
+      // backend compiled it into silently wrong code - which is what made Lua
+      // loops look like they never ran.
+      let has_val = !(e.ty is CVoid)
+      let p = if has_val {
+        c.b.block_param(c.fid, join, cls_of(e.ty))
+      } else {
+        0
+      }
       let cv = c.gen_expr(cond)
       let truth = c.truthy(cond.ty, cv)
       c.b.jnz(c.fid, truth, then_b, [], else_b, [])
       c.open = false
       c.switch(then_b)
       let tv = c.gen_expr(t)
-      c.b.jmp(c.fid, join, [c.convert(tv, t.ty, e.ty)])
+      if has_val {
+        c.b.jmp(c.fid, join, [c.convert(tv, t.ty, e.ty)])
+      } else {
+        c.b.jmp(c.fid, join, [])
+      }
       c.open = false
       c.switch(else_b)
       let fv = c.gen_expr(f)
-      c.b.jmp(c.fid, join, [c.convert(fv, f.ty, e.ty)])
+      if has_val {
+        c.b.jmp(c.fid, join, [c.convert(fv, f.ty, e.ty)])
+      } else {
+        c.b.jmp(c.fid, join, [])
+      }
       c.open = false
       c.switch(join)
-      p
+      if has_val {
+        p
+      } else {
+        c.b.iconst(c.fid, 0L)
+      }
     }
     @sema.TSizeof(n) => c.b.iconst(c.fid, n.to_int64())
     @sema.TAlignof(n) => c.b.iconst(c.fid, n.to_int64())
@@ -1185,7 +1431,7 @@ fn Cg::gen_bin(
   let rt = @sema.decay(r.ty)
   let cls = wider(lt, rt)
   let fl = is_flt(lt) || is_flt(rt)
-  let uns = is_uns(lt) || is_uns(rt) || is_ptr_ty(lt) || is_ptr_ty(rt)
+  let uns = usual_uns(c, lt, rt) || is_ptr_ty(lt) || is_ptr_ty(rt)
   if is_cmp(op) {
     let a = c.gen_expr(l)
     let av = c.coerce(a, cls_of(lt), cls)
@@ -1561,15 +1807,7 @@ fn collect_labels(s : @sema.TStmt, out : Array[String]) -> Unit {
       }
       collect_labels(b, out)
     }
-    @sema.KSSwitch(_, cases, d, _) => {
-      for c in cases {
-        collect_labels(c.1, out)
-      }
-      match d {
-        Some(x) => collect_labels(x, out)
-        None => ()
-      }
-    }
+    @sema.KSSwitch(_, _, _, _, body) => collect_labels(body, out)
     @sema.KSDefer(b) => collect_labels(b, out)
     _ => ()
   }
@@ -1582,29 +1820,43 @@ fn Cg::gen_switch(
   cases : Array[(Int64, @sema.TStmt)],
   dflt : @sema.TStmt?,
   dfpos : Int,
+  body : @sema.TStmt,
 ) -> Unit {
+  let _ = dfpos
+  let _ = dflt
   let end = c.new_block("switch.end")
   let v = c.gen_expr(e)
   let cls = cls_of(e.ty)
   let n = cases.length()
-  let blocks : Array[Int] = []
-  for _i in 0..<n {
-    blocks.push(c.new_block("switch.case"))
-  }
-  let dblk = match dflt {
-    Some(_) => c.new_block("switch.default")
-    None => end
-  }
   let tests : Array[Int] = []
   for _i in 0..<n {
     tests.push(c.new_block("switch.test"))
   }
-  if n == 0 {
-    c.b.jmp(c.fid, dblk, [])
-  } else {
+  c.break_depths.push(c.defer_frames.length())
+  c.break_blks.push(end)
+  c.switch_cases.push([])
+  c.switch_dflt.push(end)
+  if n > 0 {
     c.b.jmp(c.fid, tests[0], [])
+    c.open = false
+  }
+  // Emit the body exactly once, in source order. Every case label registers
+  // the block it lands in, so a label nested inside a loop keeps the enclosing
+  // loop after the body instead of jumping into a detached copy of itself.
+  c.gen_stmt(body)
+  // Falling out of the body (the last case has no break) leaves the switch.
+  if c.open {
+    c.b.jmp(c.fid, end, [])
   }
   c.open = false
+  let reg : Array[(Int64, Int)] = match c.switch_cases.pop() {
+    Some(x) => x
+    None => []
+  }
+  let dblk : Int = match c.switch_dflt.pop() {
+    Some(x) => x
+    None => end
+  }
   for i in 0..<n {
     c.switch(tests[i])
     let cv = c.b.iconst(c.fid, cases[i].0)
@@ -1619,41 +1871,15 @@ fn Cg::gen_switch(
       v,
       cv,
     )
+    let mut target = dblk
+    for pair in reg {
+      if pair.0 == cases[i].0 {
+        target = pair.1
+      }
+    }
     let next = if i + 1 < n { tests[i + 1] } else { dblk }
-    c.b.jnz(c.fid, cc, blocks[i], [], next, [])
+    c.b.jnz(c.fid, cc, target, [], next, [])
     c.open = false
-  }
-  c.break_depths.push(c.defer_frames.length())
-  c.break_blks.push(end)
-  for i in 0..<n {
-    c.switch(blocks[i])
-    c.gen_stmt(cases[i].1)
-    if c.open {
-      // A case falls into the next label in source order, and the default
-      // is one of those labels: `case 'h': default: ...` shares one body,
-      // so the fall-through has to be able to reach it.
-      let next = if dfpos == i + 1 {
-        dblk
-      } else if i + 1 < n {
-        blocks[i + 1]
-      } else {
-        end
-      }
-      c.b.jmp(c.fid, next, [])
-      c.open = false
-    }
-  }
-  match dflt {
-    Some(b) => {
-      c.switch(dblk)
-      c.gen_stmt(b)
-      if c.open {
-        let next = if dfpos < n { blocks[dfpos] } else { end }
-        c.b.jmp(c.fid, next, [])
-        c.open = false
-      }
-    }
-    None => ()
   }
   let _ = c.break_depths.pop()
   let _ = c.break_blks.pop()
@@ -1741,15 +1967,7 @@ fn collect_label_depths(
       }
       collect_label_depths(b, depth, out)
     }
-    @sema.KSSwitch(_, cases, d, _) => {
-      for c in cases {
-        collect_label_depths(c.1, depth, out)
-      }
-      match d {
-        Some(x) => collect_label_depths(x, depth, out)
-        None => ()
-      }
-    }
+    @sema.KSSwitch(_, _, _, _, body) => collect_label_depths(body, depth, out)
     @sema.KSDefer(b) => collect_label_depths(b, depth, out)
     _ => ()
   }
@@ -2031,13 +2249,42 @@ fn Cg::gen_stmt(c : Cg, s : @sema.TStmt) -> Unit {
       }
       c.switch(end)
     }
-    @sema.KSCaseMark(_, _, b) => c.gen_stmt(b)
+    @sema.KSCaseMark(vals, is_def, b) => {
+      // A label is a jump target, so it always starts a block; control that
+      // reaches it from the preceding statement falls through with a jump. The
+      // block is created right here, inside whatever loop or condition encloses
+      // the label, so the code after it keeps that enclosing structure instead
+      // of ending up as a detached copy.
+      let nb = c.new_block(
+        if is_def {
+          "switch.default"
+        } else {
+          "switch.case"
+        },
+      )
+      if c.open {
+        c.b.jmp(c.fid, nb, [])
+        c.open = false
+      }
+      c.switch(nb)
+      if is_def {
+        if c.switch_dflt.length() > 0 {
+          c.switch_dflt[c.switch_dflt.length() - 1] = nb
+        }
+      } else if c.switch_cases.length() > 0 {
+        let reg = c.switch_cases[c.switch_cases.length() - 1]
+        for v in vals {
+          reg.push((v, nb))
+        }
+      }
+      c.gen_stmt(b)
+    }
     @sema.KSLabel(n, b) => {
       let loopish = match b.kind {
         @sema.KSFor(_, _, _, _)
         | @sema.KSWhile(_, _)
         | @sema.KSDoWhile(_, _)
-        | @sema.KSSwitch(_, _, _, _) => true
+        | @sema.KSSwitch(_, _, _, _, _) => true
         _ => false
       }
       // A label that names a loop or switch (C2y N3355) needs its jump target
@@ -2063,7 +2310,8 @@ fn Cg::gen_stmt(c : Cg, s : @sema.TStmt) -> Unit {
         c.gen_stmt(b)
       }
     }
-    @sema.KSSwitch(e, cases, dflt, dfpos) => c.gen_switch(e, cases, dflt, dfpos)
+    @sema.KSSwitch(e, cases, dflt, dfpos, body) =>
+      c.gen_switch(e, cases, dflt, dfpos, body)
     @sema.KSEmpty => ()
   }
 }
@@ -2212,6 +2460,13 @@ fn Cg::gen_func(c : Cg, f : @sema.CheckedFunc) -> Unit {
   let label_names : Array[String] = []
   collect_labels(f.body, label_names)
   c.label_depths.clear()
+  // These are per function too. Lua has a `retry:` label in both luaD_precall
+  // and luaD_pretailcall; a leftover entry made the second one take the
+  // "already emitted" path, so its block was never switched to and stayed
+  // unterminated (Jxxx), which the arm64 emitters reject.
+  c.labels.clear()
+  c.label_ids.clear()
+  c.emitted_labels.clear()
   collect_label_depths(f.body, 0, c.label_depths)
   c.cur_labels = []
   for n in label_names {
@@ -2225,6 +2480,11 @@ fn Cg::gen_func(c : Cg, f : @sema.CheckedFunc) -> Unit {
     }
     c.cur_labels.push(n)
   }
+  // The entry block is open until something terminates it. Without this a
+  // function whose first statement is a label - Lua's
+  // `retry: switch (...)` - never jumps into the label's block, so that block
+  // stays unterminated (Jxxx) and the arm64 emitters reject the function.
+  c.open = true
   c.gen_stmt(f.body)
   if c.open {
     if c.ret_sret {
@@ -2370,6 +2630,8 @@ pub fn compile_program(p : @sema.CheckedProgram) -> @ir_builder.Builder raise {
     break_depths: [],
     cont_depths: [],
     label_depths: Map::new(),
+    switch_cases: [],
+    switch_dflt: [],
   }
   for f in p.funcs {
     c.gen_func(f)

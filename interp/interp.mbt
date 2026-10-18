@@ -144,8 +144,10 @@ fn Interp::setup(
           let _ = self.mem.zero(cur_addr, d.num)
           cur_addr = cur_addr + d.num.reinterpret_as_uint64()
         } else if d.is_str {
-          for c in d.str {
-            let _ = self.mem.store8(cur_addr, c.to_int())
+          // The lexer keeps escapes raw; decode them into the real bytes.
+          let bytes = decode_data_string(d.str)
+          for b in bytes {
+            let _ = self.mem.store8(cur_addr, b)
             cur_addr = cur_addr + 1UL
           }
           // NUL terminator (already present in the IL string? the IL keeps

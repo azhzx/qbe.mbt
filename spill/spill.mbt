@@ -389,7 +389,7 @@ pub fn spill(
           w.set(tt)
         }
       }
-      let mut j = @types.op_info(ins.op).nmem
+      let mut j = (@types.target_cfg.memargs)(ins.op)
       for n2 in 0..<2 {
         let arg = if n2 == 0 { ins.arg1 } else { ins.arg2 }
         if arg.is_mem() {

@@ -462,6 +462,12 @@ pub fn init_arm64_target() -> Unit {
   target_cfg.post_call_fpr = Arm64NFPS
   target_cfg.rglob_mask = arm64_rglob_mask()
   target_cfg.rsave = arm64_rsave
+  // arm64 has no memory operands: every operand of every op must be
+  // in a register, so spill has to reload it. The generic table says
+  // mul/shr/div take one memory operand, which left spilled values in
+  // slots that the emitters could not handle (bzip2 crashed and then
+  // produced wrong data).
+  target_cfg.memargs = fn(_op) { 0 }
   target_cfg.retregs = arm64_target_retregs
   target_cfg.argregs = arm64_target_argregs
 }

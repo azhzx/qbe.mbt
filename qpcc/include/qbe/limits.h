@@ -18,5 +18,10 @@
 #define ULLONG_MAX 18446744073709551615ULL
 #define CHAR_MIN (-128)
 #define CHAR_MAX 127
+#define USHRT_MAX 65535
+#define MB_LEN_MAX 6
+#define SSIZE_MAX LONG_MAX
+#define SSIZE_MIN (-LONG_MAX-1)
+#define WORD_BIT 64
 
 #endif /* __QPCC_QBE_LIMITS_H */

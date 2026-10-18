@@ -154,6 +154,8 @@ fn is_basic_type_kw(k : String) -> Bool {
     | "_Bool"
     | "_Complex"
     | "_Imaginary"
+    | "_Float16"
+    | "__fp16"
     | "__int128"
     | "__signed"
     | "__signed__"
@@ -1540,7 +1542,12 @@ fn Parser::parse_unary_expr(self : Parser) -> Expr {
       self.expect_punct(")")
       ETypesCompatible(s1, d1, s2, d2)
     }
-    Keyword("__builtin_constant_p") | Keyword("__builtin_expect") => {
+    // __builtin_expect(e, hint) is an identity on its first argument. Do NOT
+    // do the same for __builtin_constant_p: that one is a predicate, and
+    // answering with the argument made `if (__builtin_constant_p(x))` take the
+    // specialised path for any non-zero x. It stays an ordinary call so the
+    // sema can fold it to 0.
+    Keyword("__builtin_expect") => {
       self.pos = self.pos + 1
       self.expect_punct("(")
       let e = self.parse_assign_expr()

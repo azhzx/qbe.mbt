@@ -111,6 +111,134 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   do not lower it into a static pair; the environment would have to become a
   global object of its own, which is a new feature rather than a bug fix.
 
+- **A C99 `inline` definition must not be emitted as a strong global.** Fixed for
+  the linkage (an `inline` without `static`/`extern` is now non-exported, which
+  is what unblocked Lua's link), but qpcc makes the symbol local where C says
+  the definition simply is not external; a library that relies on one external
+  definition from an `extern inline` in a chosen translation unit is not
+  modelled.
+- **FIXED: the frame was truncated, and shadowed locals shared a slot.** Two
+  bugs, both fixed (commits bbe4827 and the one adding large-offset handling):
+  the emitter truncated a frame larger than 4095 bytes to its low 12 bits, and
+  the code generator bound locals by name in one flat map so a shadowing
+  declaration shared a slot and was read through the other one's type. All 34
+  Lua files now build, link and run: `lua -v`, `lua -e 'print(1+1, 2*3, "ok")'`
+  and `for k=1,2 do print(k) end` all work.
+  Large frame offsets now go through IP1 (a scratch): **IP0 is allocated by the
+  register allocator** in this port even though `arm64_bin_loadcon` uses it
+  transiently, so using IP0 clobbered live values. `enc_ldst` now aborts rather
+  than truncating.
+- **FIXED: integer promotion.** C promotes char and short to int before the
+  usual arithmetic conversions, so `int >= unsigned char` is a SIGNED
+  comparison; qpcc asked only whether either operand was unsigned. Lua's
+  freereg does `if (reg >= luaY_nvarstack(fs))` with reg an int and
+  luaY_nvarstack returning lu_byte, so a -1 register was compared as
+  0xFFFFFFFF, freereg was decremented when it should not have been, and every
+  later register in the emitted bytecode shifted by one. That is why
+  `local i=1 while i<=3 do print(i) i=i+1 end` overwrote i with print's value.
+  The differential never caught it because it feeds IR, not C, so qpcc's C to
+  IR conversion for comparison operators was untested there. Fixture:
+  qpcc/tests/promote_cmp.c; oracle 167/167.
+- **RESOLVED (Lua): it builds, links and runs correctly.** All 34 sources
+  compile, and lua -v, arithmetic, strings, tables, closures, metatables,
+  coroutines, pcall, numeric and float for loops, while loops and recursion
+  (fib(20) = 6765, fact(20) = 2432902008176640000) all produce the right answers.
+  The historical notes below record how it was found.
+- **REMAINING (Lua), localized to lcode.o: the emitted bytecode has the wrong
+  register.** \`local i=1 while i<=3 do print(i) i=i+1 end\` prints a function
+  instead of 1, 2, 3, and swapping qpcc-compiled objects into a clang-built Lua
+  gives a single offender: lcode.o. The bytecode itself is the oracle - the
+  clang-built luac says
+      GETTABUP 1 0 0 / MOVE 2 0 / CALL 1 2 1   and 3 slots
+  while luac with qpcc's lcode.o says
+      GETTABUP 0 0 0 / MOVE 1 0 / CALL 0 2 1   and 2 slots
+  so the call's base register is one too low and maxstacksize is one too small -
+  the register-reservation path in lcode.c assigns R0, which holds the local.
+  Probes in luaK_reserveregs/freereg/luaK_checkstack show qpcc calling
+  luaK_reserveregs before the freereg of freeexp, i.e. the calls are ordered
+  differently; FuncState's layout and its lu_byte arithmetic match clang
+  exactly, so the fault is in how qpcc compiles that ordering. Next: reduce
+  \`luaK_exp2nextreg\` (dischargevars/freeexp/reserveregs) to a standalone case.
+- **FIXED (Lua): missing declarations in the bundled headers.** An implicitly
+  declared function returns int, so pointer results were truncated: string.h had
+  no strpbrk, and Lua's l_str2d opens with \`const char *pmode = strpbrk(s,
+  ".xXnN")\`, so any literal containing a '.' crashed. stdio.h lacked
+  freopen/tmpfile (FILE* truncated) and fseek/ftell/feof/ferror/clearerr/
+  setvbuf/tmpnam; ctype.h lacked iscntrl/isgraph; stdlib.h lacked system.
+  __builtin_fabs*/sqrt* rewrites now supply the libm prototype. A scan of all 34
+  Lua sources for "implicit declaration" now prints nothing.
+- **REMAINING (Lua), localized to lobject.o: a float constant.** `print(1.0)`
+  segfaults, and so does the bare statement `local x = 1.0`; integers
+  (`print(1)`) and runtime floats (`print(math.pi)`, which is a table field)
+  are fine. The bytecode for `print(1.0)` is GETTABUP/LOADF/CALL, so it is the
+  LOADF of a float constant. Swapping qpcc-compiled objects one at a time into
+  a clang-built Lua shows a single offender: lobject.o. That object was fine
+  before this round's changes, so it is worth checking how the two fixes here
+  (the shadowed-local rename and the large-offset scratch) interact with
+  lobject.c - start by swapping in a lobject.o built with the rename disabled.
+- **REMAINING (Lua):** `for i=1.0,3.0 do print(i) end` segfaults, and a local
+  becomes garbage in a `while` whose body calls out:
+      local i=1 while i<=3 do print(i) i=i+1 end   -->  i prints as a function
+  `local n=0 while n<3 do n=n+1 end print(n)` is correct, so the trigger is a
+  call inside the loop body, not the loop. Both are execution-time (the bytecode
+  and the compiler are fine), so look at how `luaV_execute` handles OP_CALL
+  around the loop - likely another instance of a value landing in the wrong
+  slot.
+- **ROOT CAUSE (historical, now fixed): the frame does not cover the local slots.**
+  `forprep`'s IR contains 18 `alloc8` slots (144 bytes), but the emitted
+  prologue is `stp x29, x30, [sp, #-0x50]!` - an 80-byte frame - and the only
+  frame offsets used anywhere in the function are the four callee-saved saves.
+  Not one slot offset appears, so all 18 slots were promoted away, the register
+  allocator had nowhere to spill, and the locals land *outside* the frame, on
+  the caller's stack. That is why the probe saw `init == step == L`: those
+  locals read the caller's parameter-spill area.
+  Evidence: (a) the qabec IR for `forprep` is byte-identical whether `lvm.c` is
+  compiled alone or wrapped in another translation unit; (b) the emitted machine
+  code is identical too (only branch displacements differ); (c) the "harness
+  works" result was a coincidence - the overflow landed on `main`'s `stk[]`,
+  which happened to hold 1. Suspect the promotion in `mem/promote.mbt`
+  (pitfalls 3.4) and the frame-size computation in `mem/`.
+  Refinement: the frame is not too small, the slots are *aliased*. The machine
+  code addresses exactly two slots, `add x1, x29, #0x20` and `add x1, x29,
+  #0x28`, for 18 allocations, so the lifetime analysis merged slots that are
+  live at the same time. The one unusual construct in `forprep` is the
+  variadic `luaG_runerror` call; replacing the six `luaG_*` calls in
+  `forprep`/`forlimit` with `abort()` makes the loop *run* (two iterations)
+  though the control variable is still garbage - so varargs feed into the
+  liveness used for coalescing. Next: `mem/coalesce.mbt`'s liveness around
+  variadic calls (`call ... ...`), with `doc/live.md` as the reference.
+- **Lua's VM is miscompiled; localized to lvm.o only.** Method: build all of
+  Lua with clang (correct), then swap in one qpcc-compiled object at a time and
+  rerun `for k=1,2 do print(k) end`. Only `lvm.o` breaks it, so the defect is in
+  qpcc's compilation of `src/lvm.c`, not in the backend or the other 33 files.
+  Ruled out along the way: the bytecode (qpcc-built `luac -l` matches), pointer
+  arithmetic on 16-byte structs and typedef'd pointers, and `io.write` itself.
+  Instrumentation evidence (insert `fprintf` probes into `forprep`, compile that
+  one object with qpcc, keep the other 33 from clang, and run the same probe
+  build with clang):
+      qpcc : init=8462350312 step=4376879632 raw=1 raw1=2 raw2=1
+      clang: init=1          step=1          raw=1 raw1=2 raw2=1
+  So the expressions are right - `pinit->value_.i`, `plimit->value_.i`,
+  `pstep->value_.i` all read 1/2/1 - and the tags are right, but the *locals*
+  `init` and `step` hold garbage; `step` is even exactly the pointer `pinit`
+  (4376879632 == 0x104e1e210). A local declared with an initializer is read back
+  from the wrong slot. Extracting `forprep` + `forlimit` verbatim into a
+  standalone file is *correct* under qpcc, even with a variadic `luaG_runerror`,
+  so the trigger is elsewhere in `lvm.c`; the next step is to binary-search the
+  file by `#if 0`-ing ranges with the swap test as the oracle.
+  The symptom - a numeric `for` never entering its body, and a local becoming
+  garbage (a function value) in a `while` that calls out - looks like a value
+  live across a call being clobbered inside `forprep`, which keeps `pinit`,
+  `plimit` and `pstep` live across `forlimit`. Next: shrink `lvm.c` (or split
+  `forprep`/`forloop` out with stubs) until the swap test stops breaking.
+- **Lua builds, links and runs, but some programs are miscompiled.** After the
+  fixes above, all 34 Lua 5.5.1 sources compile, the interpreter links, `lua -v`,
+  `lua -e 'print(1+1)'` and a script printing "hi" all work - but
+  `for i=1,3 do io.write(i, " ") end print()` prints nothing, and a larger
+  script segfaults. So there is at least one arm64 code generation bug left that
+  the 5040-case core differential does not cover. Next step: reduce the empty
+  for-loop to a minimal case.
+
 ## Latent risk
 
 - The byte-identical differentials only cover the corpus under `test/`

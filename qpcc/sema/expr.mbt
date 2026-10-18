@@ -226,7 +226,11 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
       let tf = check_expr(f, ctx)
       mk_expr(TCond(tc, tt, tf), common_type(tt.ty, tf.ty), false)
     }
-    @front.ECall(callee, args) => check_call(callee, args, ctx)
+    @front.ECall(callee, args) =>
+      match builtin_inf_call(callee, args, ctx) {
+        Some(t) => t
+        None => check_call(callee, args, ctx)
+      }
     @front.ELambda(caps, ret, params, va, body) =>
       check_lambda(caps, ret, params, va, body, ctx)
     @front.EClosureEnv(e) => check_closure_env(e, ctx)
@@ -304,8 +308,20 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
       )
     }
     @front.ESizeofExpr(x) => {
-      let tx = check_expr(x, ctx)
-      mk_expr(TSizeof(size_of_ty(tx.ty, ctx.layouts)), CLong(false), false)
+      // A string literal has array type in C, so sizeof("ab") is 3, not the
+      // pointer size. This sema types the literal as char*, so measure it from
+      // the literal itself.
+      let sz = match x {
+        @front.EString(parts) => {
+          let mut n = 1
+          for p in parts {
+            n = n + p.length()
+          }
+          n
+        }
+        _ => size_of_ty(check_expr(x, ctx).ty, ctx.layouts)
+      }
+      mk_expr(TSizeof(sz), CLong(false), false)
     }
     @front.ESizeofType(spec, d) => {
       let base = declspec_to_type(spec, ctx)
@@ -805,6 +821,172 @@ fn check_call(
     ctx.diags.error("too many arguments to function: " + name)
   }
   mk_expr(TCall(name, tc, targs), ret, false)
+}
+
+///|
+
+///|
+/// The C `__builtin_inf` family: an infinity constant of the named type.
+fn builtin_inf_ty(n : String) -> CType? {
+  match n {
+    "__builtin_inf" | "__builtin_huge_val" => Some(CDouble)
+    "__builtin_inff" | "__builtin_huge_valf" => Some(CFloat)
+    "__builtin_infl" | "__builtin_huge_vall" => Some(CLongDouble)
+    _ => None
+  }
+}
+
+///|
+/// Darwin's <math.h> builds isfinite/isinf out of __builtin_infl() and friends.
+/// They are constants, not calls: leaving them as calls emitted a reference to
+/// a symbol that does not exist, which broke the link.
+fn builtin_inf_call(
+  callee : @front.Expr,
+  args : Array[@front.Expr],
+  ctx : Ctx,
+) -> TExpr? {
+  match callee {
+    @front.EIdent(n) => {
+      // __builtin_constant_p is a constant-fold hint. Answering 0 is always
+      // correct: it means "not known to be a constant", so callers take the
+      // general path instead of the specialised one.
+      if n == "__builtin_constant_p" {
+        return Some(mk_expr(TInt(0L), CInt(true), false))
+      }
+      match builtin_inf_ty(n) {
+        Some(ty) =>
+          if args.length() == 0 {
+            Some(mk_expr(TFlt(1.0 / 0.0, ty is CFloat), ty, false))
+          } else {
+            None
+          }
+        // Other Darwin <math.h> inlines name the libm function of the same
+        // meaning; check the call as that function instead.
+        None => {
+          // Integer bit intrinsics: give them their real prototype; the code
+          // generator emits the sequence.
+          define_builtin(ctx, n)
+          match builtin_rewrite(n) {
+            Some(to) => {
+              // <math.h> uses __builtin_fabs* before it declares fabs*, so the
+              // rewrite has to supply the prototype: an implicitly declared
+              // function returns int and the double would be truncated.
+              define_libm(ctx, to)
+              define_nan(ctx, to)
+              Some(check_call(@front.EIdent(to), args, ctx))
+            }
+            None => None
+          }
+        }
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+/// Declare a libm function with its real prototype unless something already
+/// declared it.
+fn define_libm(ctx : Ctx, to : String) -> Unit {
+  if ctx.scopes.lookup(to) is None {
+    let (ret, param) = match to {
+      "fabsf" | "sqrtf" => (CFloat, CFloat)
+      "fabsl" => (CLongDouble, CLongDouble)
+      _ => (CDouble, CDouble)
+    }
+    ctx.scopes.define({
+      name: to,
+      gname: to,
+      kind: SymFunc,
+      ty: CFunc(ret, [param], false),
+      storage: StNone,
+      value: 0L,
+    })
+  }
+}
+
+///|
+/// Prototype for an integer bit intrinsic. The code generator emits the
+/// sequence; the prototype matters because an implicit declaration is int,
+/// which would truncate __builtin_bswap64 and __builtin_expect.
+fn bit_intrin_ty(n : String) -> CType? {
+  match n {
+    "__builtin_bswap16" => Some(CFunc(CShort(false), [CShort(false)], false))
+    "__builtin_bswap32" => Some(CFunc(CInt(false), [CInt(false)], false))
+    "__builtin_bswap64" =>
+      Some(CFunc(CLongLong(false), [CLongLong(false)], false))
+    "__builtin_clz" | "__builtin_ctz" | "__builtin_popcount" =>
+      Some(CFunc(CInt(true), [CInt(false)], false))
+    "__builtin_clzl" | "__builtin_ctzl" | "__builtin_popcountl" =>
+      Some(CFunc(CInt(true), [CLong(false)], false))
+    "__builtin_clzll" | "__builtin_ctzll" | "__builtin_popcountll" =>
+      Some(CFunc(CInt(true), [CLongLong(false)], false))
+    "__builtin_expect" =>
+      Some(CFunc(CLong(false), [CLong(false), CLong(false)], false))
+    _ => None
+  }
+}
+
+///|
+fn define_builtin(ctx : Ctx, n : String) -> Unit {
+  match bit_intrin_ty(n) {
+    Some(ty) =>
+      if ctx.scopes.lookup(n) is None {
+        ctx.scopes.define({
+          name: n,
+          gname: n,
+          kind: SymFunc,
+          ty,
+          storage: StNone,
+          value: 0L,
+        })
+      }
+    None => ()
+  }
+}
+
+///|
+/// `__builtin_x` that <math.h> uses as an inline for the libm `x`.
+fn builtin_rewrite(n : String) -> String? {
+  match n {
+    "__builtin_fabs" => Some("fabs")
+    "__builtin_fabsf" => Some("fabsf")
+    "__builtin_fabsl" => Some("fabsl")
+    "__builtin_sqrt" => Some("sqrt")
+    "__builtin_sqrtf" => Some("sqrtf")
+    "__builtin_memcpy" => Some("memcpy")
+    "__builtin_memmove" => Some("memmove")
+    "__builtin_memset" => Some("memset")
+    "__builtin_unreachable" => Some("abort")
+    // Darwin's <math.h> builds isfinite/isnan out of __builtin_nanf(""), which
+    // would otherwise stay a call to a symbol that does not exist and break
+    // the link (cJSON hit this).
+    "__builtin_nan" => Some("nan")
+    "__builtin_nanf" => Some("nanf")
+    "__builtin_nanl" => Some("nanl")
+    _ => None
+  }
+}
+
+///|
+// nan/nanf/nanl take the NaN payload as a string, so they need their own
+// prototypes rather than define_libm's double-argument shape.
+fn define_nan(ctx : Ctx, to : String) -> Unit {
+  if ctx.scopes.lookup(to) is None {
+    let (ret, param) = match to {
+      "nanf" => (CFloat, CPtr(CChar(true)))
+      "nanl" => (CLongDouble, CPtr(CChar(true)))
+      _ => (CDouble, CPtr(CChar(true)))
+    }
+    ctx.scopes.define({
+      name: to,
+      gname: to,
+      kind: SymFunc,
+      ty: CFunc(ret, [param], false),
+      storage: StNone,
+      value: 0L,
+    })
+  }
 }
 
 ///|

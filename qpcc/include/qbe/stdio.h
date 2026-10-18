@@ -37,8 +37,30 @@ size_t fread(void *, size_t, size_t, FILE *);
 size_t fwrite(void *, size_t, size_t, FILE *);
 int remove(char *);
 int rename(char *, char *);
+/* Missing declarations are not harmless: an implicitly declared function
+   returns int, so freopen/tmpfile had their FILE* truncated to 32 bits. */
+int fseek(FILE *, long, int);
+long ftell(FILE *);
+int feof(FILE *);
+int ferror(FILE *);
+void clearerr(FILE *);
+int setvbuf(FILE *, char *, int, size_t);
+FILE *freopen(char *, char *, FILE *);
+FILE *tmpfile(void);
+char *tmpnam(char *);
 #ifndef EOF
 #define EOF (-1)
+#define BUFSIZ 1024
+#define FOPEN_MAX 20
+#define FILENAME_MAX 1024
+#define L_tmpnam 1024
+#define TMP_MAX 308915776
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#define _IOFBF 0
+#define _IOLBF 1
+#define _IONBF 2
 #endif
 
 #endif /* __QPCC_QBE_STDIO_H */

@@ -82,7 +82,7 @@ pub fn collect_locals(s : TStmt, out : Array[(String, CType, Int)]) -> Unit {
       }
       collect_locals(b, out)
     }
-    KSSwitch(e, cases, d, _) => {
+    KSSwitch(e, cases, d, _, _) => {
       collect_expr_locals(e, out)
       for c in cases {
         collect_locals(c.1, out)
@@ -337,6 +337,44 @@ fn check_local_decl(
               },
             })
           } else {
+            // Two declarations of one name in sibling scopes denote different
+            // objects. The code generator binds locals by name in a single
+            // flat map, so a shadowing declaration needs a name of its own;
+            // otherwise both share one slot and each is read through the
+            // other's type. Lua's forprep has an integer and a floating-point
+            // `step` in the two arms of one `if`, which came out as `ceql` on
+            // a double.
+            // A name that is already bound, or that was declared earlier in
+            // this function, needs a name of its own: the generator's binding
+            // map is flat and lives for the whole function.
+            let shadowed = ctx.scopes.lookup(n) is Some(_) ||
+              ctx.local_names.contains(n)
+            let lname = if shadowed {
+              let u = n + "#" + ctx.local_seq.to_string()
+              ctx.local_seq = ctx.local_seq + 1
+              u
+            } else {
+              n
+            }
+            ctx.local_names.set(lname, true)
+            // C11 6.2.1p7: the name's scope starts at the end of its
+            // declarator, so it is visible inside its own initializer:
+            // `int x = sizeof(x);` and hiredis's
+            // `dict *ht = hi_malloc(sizeof(*ht));` are valid C. Register the
+            // symbol before checking the initializer; the real value for a
+            // constexpr is filled in below.
+            ctx.scopes.define({
+              name: n,
+              gname: if lname == n {
+                ""
+              } else {
+                lname
+              },
+              kind: SymVar,
+              ty,
+              storage,
+              value: 0L,
+            })
             match idecl.init {
               Some(@front.IExpr(e)) => {
                 let te = check_expr(e, ctx)
@@ -351,7 +389,7 @@ fn check_local_decl(
                     }
                   _ => ()
                 }
-                out.push({ kind: KSDecl(n, ty, Some(te), al), })
+                out.push({ kind: KSDecl(lname, ty, Some(te), al), })
               }
               Some(@front.IList(_)) => {
                 let stores : Array[(Int, TExpr, Int, Int)] = []
@@ -359,9 +397,9 @@ fn check_local_decl(
                   Some(init) => check_init_into(init, ty, 0, stores, ctx)
                   None => ()
                 }
-                out.push({ kind: KSAggInit(n, ty, stores, al), })
+                out.push({ kind: KSAggInit(lname, ty, stores, al), })
               }
-              None => out.push({ kind: KSDecl(n, ty, None, al), })
+              None => out.push({ kind: KSDecl(lname, ty, None, al), })
             }
             let is_cexpr = has_qualifier(spec, "constexpr")
             let cval : Int64 = if is_cexpr {
@@ -385,7 +423,13 @@ fn check_local_decl(
             }
             ctx.scopes.define({
               name: n,
-              gname: "",
+              // A renamed local resolves to its own name too, so the
+              // generator's flat binding map finds its own slot.
+              gname: if lname == n {
+                ""
+              } else {
+                lname
+              },
               kind: if is_cexpr {
                 SymConstVar
               } else {
@@ -631,7 +675,7 @@ fn sw_collect_one(
     KSDoWhile(b, _) => sw_collect_one(b, cases, dflt, dfpos)
     KSFor(_, _, _, b) => sw_collect_one(b, cases, dflt, dfpos)
     KSLabel(_, b) => sw_collect_one(b, cases, dflt, dfpos)
-    KSSwitch(_, _, _, _) => ()
+    KSSwitch(_, _, _, _, _) => ()
     _ => ()
   }
 }
@@ -736,7 +780,7 @@ fn check_switch(ctrl : @front.Expr, body : @front.Stmt, ctx : Ctx) -> TStmt {
   sw_collect(stmts, cases, dflt, dfpos)
   let _ = ctx.break_labels.pop()
   ctx.switch_depth = ctx.switch_depth - 1
-  { kind: KSSwitch(tc, cases, dflt[0], dfpos[0]), }
+  { kind: KSSwitch(tc, cases, dflt[0], dfpos[0], { kind: KSBlock(stmts), }), }
 }
 
 ///|

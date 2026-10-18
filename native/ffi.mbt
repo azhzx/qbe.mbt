@@ -29,6 +29,11 @@ pub extern "c" fn mbt_native_write_u32(addr : Int64, off : Int, word : UInt) = "
 pub extern "c" fn mbt_native_temp(suffix : Bytes) -> Bytes = "mbt_native_temp"
 
 ///|
+// Write a diagnostic to stderr (stdout stays reserved for compiler output).
+#borrow(s)
+pub extern "c" fn mbt_native_eprint(s : Bytes) = "mbt_native_eprint"
+
+///|
 #borrow(path, data)
 pub extern "c" fn mbt_native_write_file(path : Bytes, data : Bytes) -> Int = "mbt_native_write_file"
 
