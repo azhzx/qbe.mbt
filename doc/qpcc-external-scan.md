@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | 第一轮 | 修 Lua 时发现的问题：整型提升、自带头缺宏/缺声明、arm64 大栈帧、标签映射 | PARSE 23 → 12，OK 88 → 128 |
 | 第二轮 | 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | SEMA 14 → 3，OK 128 → 138 |
-| 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
+| 第三轮 | 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
 | 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
 | 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
 | 第六轮 | 预处理 `-U__BLOCKS__`、C23 enum 属性 | PARSE 12 → 5，OK → 150 |
@@ -34,7 +34,7 @@
 4. 自带 `errno.h`/`unistd.h`/`limits.h` 补 `ENOMEM`、`EWOULDBLOCK`、`R_OK`、`SSIZE_MAX` 与 `access`/`lseek` 等声明；
 5. 诊断从 stdout 改到 **stderr**（`--check OK` 和 `--emit` 输出仍在 stdout）。
 
-剩下的 56 个失败全是前端解析/预处理问题，SEMA 已清零：**PARSE 12**（多为 Apple 系统头的 `_Float16` 与 Blocks 扩展）、
+剩下的 **50** 个失败里：44 个没走到 qpcc（缺依赖）、5 个前端解析失败、1 个代码生成失败、0 个 SEMA（已清零）。
 **SEMA 3**（`optarg` 缺声明、`-DVERSION=`、常量除零）。**CODEGEN 已经清零**。
 
 ## 1. 口径（先看这个）
@@ -87,31 +87,32 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 
 | 诊断 | 文件数 | 项目数 |
 | --- | ---: | ---: |
-| `expected ')'` | 7 | 3 |
 | `expected ';'` | 5 | 3 |
 
-第七轮之后 SEMA 类诊断已经清零（`optarg`、`VERSION`、常量除零）。
-第三轮之前这里还有 `ICE: arm64 bin: expected a reg`（2 个文件）和 `PanicError`（2 个文件），
-现在都已修复，所以不再出现。
+生成失败（CODEGEN-PANIC）现在只有 1 个文件：
+
+- sqlite/sqlite3.c - `qpcc: object emission failed: b.5205 is used undefined in @logic.join.970`
+
+第二至第七轮修掉的诊断不再出现：ICE（arm64 二进制发射器）、PanicError、optarg、VERSION、常量除零。
 
 ## 5. 未到达 qpcc 的原因
 
 | 缺失/失败 | 文件数 |
 | --- | ---: |
-| 其他（见附录 A） | 21 |
-| `nodes.h` file not found | 7 |
-| `syntax.h` file not found | 3 |
-| `config.h` file not found | 2 |
-| `jpeglib.h` file not found | 2 |
-| `png.h` file not found | 2 |
-| `X11/Xlib.h` file not found | 2 |
-| `openssl/ssl.h` file not found | 1 |
-| `tls.h` file not found | 1 |
-| `grapheme.h` file not found | 1 |
-| `X11/XKBlib.h` file not found | 1 |
-| `sys/soundcard.h` file not found | 1 |
+| `其它（见附录 A）` | 21 |
+| `'nodes.h' file not found` | 7 |
+| `'syntax.h' file not found` | 3 |
+| `'config.h' file not found` | 2 |
+| `'jpeglib.h' file not found` | 2 |
+| `'png.h' file not found` | 2 |
+| `'X11/Xlib.h' file not found` | 2 |
+| `'openssl/ssl.h' file not found` | 1 |
+| `'tls.h' file not found` | 1 |
+| `'grapheme.h' file not found` | 1 |
+| `'X11/XKBlib.h' file not found` | 1 |
+| `'sys/soundcard.h' file not found` | 1 |
 
-与第一版同一批依赖，都不是 qpcc 的问题。
+都不是 qpcc 的问题：这些文件需要第三方库头、各项目自己的构建产物或平台头。
 
 ## 6. 逐条发现
 
@@ -495,11 +496,11 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | 项目 | 文件 | 阶段 | 结果 | 首个诊断 |
 | --- | --- | --- | --- | --- |
 | abduco | abduco/abduco.c | PREPROCESS | FAIL | 'config.h' file not found |
-| abduco | abduco/client.c | PARSE | FAIL | error: expected ';' |
-| abduco | abduco/debug.c | PARSE | FAIL | error: expected ';' |
-| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-aix.c:… |
-| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-sunos.… |
-| abduco | abduco/server.c | PARSE | FAIL | error: expected ';' |
+| abduco | abduco/client.c | PARSE | FAIL | expected ';' |
+| abduco | abduco/debug.c | PARSE | FAIL | expected ';' |
+| abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-aix.c:21 |
+| abduco | abduco/forkpty-sunos.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-sunos.c: |
+| abduco | abduco/server.c | PARSE | FAIL | expected ';' |
 | bzip2 | bzip2/blocksort.c | OK | OK | - |
 | bzip2 | bzip2/bzip2.c | OK | OK | - |
 | bzip2 | bzip2/bzip2recover.c | OK | OK | - |
@@ -523,22 +524,22 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | dash | dash/eval.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/exec.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/expand.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/histedit.c:3… |
+| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/histedit.c:39: |
 | dash | dash/input.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/input.c:56: |
 | dash | dash/jobs.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/jobs.c:63: |
 | dash | dash/mail.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/main.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/main.c:47: |
 | dash | dash/memalloc.c | OK | OK | - |
-| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/miscbltin.c:… |
+| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/miscbltin.c:59 |
 | dash | dash/mkinit.c | OK | OK | - |
 | dash | dash/mknodes.c | OK | OK | - |
 | dash | dash/mksignames.c | OK | OK | - |
-| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/mksyntax.c:4… |
+| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/mksyntax.c:43: |
 | dash | dash/mystring.c | PREPROCESS | FAIL | 'syntax.h' file not found |
 | dash | dash/options.c | PREPROCESS | FAIL | 'nodes.h' file not found |
 | dash | dash/output.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/output.c:50: |
 | dash | dash/parser.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/parser.c:46: |
-| dash | dash/printf.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/bltin/printf… |
+| dash | dash/printf.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/bltin/printf.c |
 | dash | dash/redir.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/redir.c:40: |
 | dash | dash/show.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/show.c:39: |
 | dash | dash/system.c | OK | OK | - |
@@ -557,7 +558,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | hiredis | hiredis/dict.c | OK | OK | - |
 | hiredis | hiredis/hiredis.c | OK | OK | - |
 | hiredis | hiredis/net.c | OK | OK | - |
-| hiredis | hiredis/read.c | PARSE | FAIL | error: expected ';' |
+| hiredis | hiredis/read.c | PARSE | FAIL | expected ';' |
 | hiredis | hiredis/sds.c | OK | OK | - |
 | hiredis | hiredis/sockcompat.c | OK | OK | - |
 | hiredis | hiredis/ssl.c | PREPROCESS | FAIL | 'openssl/ssl.h' file not found |
@@ -629,12 +630,12 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/util.c | OK | OK | - |
 | lz4 | lz4/xxhash.c | OK | OK | - |
 | miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz.c:27: |
-| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27… |
-| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tinfl.c:2… |
+| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27: |
+| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tinfl.c:27: |
 | miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_zip.c:27: |
 | sic | sic/sic.c | PREPROCESS | FAIL | 'config.h' file not found |
 | sic | sic/strlcpy.c | OK | OK | - |
-| sic | sic/util.c | PARSE | FAIL | error: expected ';' |
+| sic | sic/util.c | PARSE | FAIL | expected ';' |
 | slstatus | slstatus/battery.c | OK | OK | - |
 | slstatus | slstatus/cat.c | OK | OK | - |
 | slstatus | slstatus/cpu.c | OK | OK | - |
@@ -660,7 +661,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
 | slstatus | slstatus/wifi.c | OK | OK | - |
 | smu | smu/smu.c | OK | OK | - |
-| sqlite | sqlite/sqlite3.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: b.5205 is used undefined in … |
+| sqlite | sqlite/sqlite3.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: b.5205 is used undefined in @l |
 | yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
 | yyjson | yyjson/jsoninfo.c | OK | OK | - |
 | yyjson | yyjson/make_tables.c | OK | OK | - |
@@ -671,7 +672,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | zlib | zlib/blast.c | OK | OK | - |
 | zlib | zlib/compress.c | OK | OK | - |
 | zlib | zlib/crc32.c | OK | OK | - |
-| zlib | zlib/crc32_vx.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/crc32vx/… |
+| zlib | zlib/crc32_vx.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/crc32vx/cr |
 | zlib | zlib/deflate.c | OK | OK | - |
 | zlib | zlib/gzclose.c | OK | OK | - |
 | zlib | zlib/gzlib.c | OK | OK | - |
@@ -684,7 +685,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | zlib | zlib/inftree9.c | OK | OK | - |
 | zlib | zlib/inftrees.c | OK | OK | - |
 | zlib | zlib/ioapi.c | OK | OK | - |
-| zlib | zlib/iowin32.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/minizip/… |
+| zlib | zlib/iowin32.c | PREPROCESS | FAIL | In file included from build/scan/raw/zlib/contrib/minizip/io |
 | zlib | zlib/miniunz.c | OK | OK | - |
 | zlib | zlib/minizip.c | OK | OK | - |
 | zlib | zlib/mztools.c | OK | OK | - |
