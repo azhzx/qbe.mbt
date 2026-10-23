@@ -5,15 +5,16 @@
 > 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后扫了第三次，见 §7.4；
 > 同日修完 `__inline__` 外部链接语义后扫了第四次（§7.5），
 > 又修完三个 SEMA 失败后扫了第五次（§7.6）；
-> 最后弄清 Apple 扩展与 GCC 的立场、改用 `-U__BLOCKS__` 预处理后扫了第六次（§7.7）。
+> 最后弄清 Apple 扩展与 GCC 的立场、改用 `-U__BLOCKS__` 预处理后扫了第六次（§7.7）；
+> 再补上结构体打包后又扫了第七次（§7.8）。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**150 个完整通过（75%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**151 个完整通过（75%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 150 个通过 —— 96%**（第一版 65%，上一轮 92%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 151 个通过 —— 96%**（第一版 65%，上一轮 92%）。
 
-修复过程分六轮，逐文件对照见 §7：
+修复过程分七轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -22,7 +23,8 @@
 | 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
 | 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
 | 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
-| 第六轮（最新）| 预处理 `-U__BLOCKS__`、C23 enum 属性 | **PARSE 12 → 5，OK → 150** |
+| 第六轮 | 预处理 `-U__BLOCKS__`、C23 enum 属性 | PARSE 12 → 5，OK → 150 |
+| 第七轮（最新）| `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -61,25 +63,25 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | ii | 2 | 1 | 0 | 0 | 1 |
 | lchat | 6 | 5 | 0 | 0 | 1 |
 | lua | 34 | 34 | 0 | 0 | 0 |
-| lz4 | 25 | 24 | 1 | 0 | 0 |
+| lz4 | 25 | 25 | 0 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
 | sic | 3 | 1 | 1 | 0 | 1 |
 | slstatus | 24 | 20 | 0 | 0 | 4 |
 | smu | 1 | 1 | 0 | 0 | 0 |
-| sqlite | 1 | 0 | 1 | 0 | 0 |
+| sqlite | 1 | 0 | 0 | 1 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **150** | **7** | **0** | **44** |
+| **合计** | **201** | **151** | **5** | **1** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 150 | 75% |
+| OK | 151 | 75% |
 | PREPROCESS | 44 | 22% |
 | PARSE | 5 | 2% |
-| SEMA | 2 | 1% |
-| CODEGEN-PANIC | 0 | 0% |
+| SEMA | 0 | 0% |
+| CODEGEN-PANIC | 1 | 0% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
@@ -218,7 +220,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 六轮重扫：与第一版的逐文件对照
+## 7. 七轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -279,6 +281,15 @@ static void freereg (FuncState *fs, int reg) {
 > 只是解压出错。定位与修复见 `doc/pitfalls.md` §4.10–§4.12：`switch` 的 case 标签
 > 嵌在循环里时，前端把它当成了循环之外的一段独立代码复制，于是循环多跑一轮。
 > 回归用例 `qpcc/tests/switch_nested_case.c`。
+
+#### 7.8.1 sqlite3.c 走到了代码生成，撞上新问题
+
+打包修好之后 sqlite3.c 的前端全过，但代码生成报：
+
+    qpcc: object emission failed: b.5205 is used undefined in @logic.join.970
+
+即某个 && / ?: 的 join 块引用了未定义的值 - 这是 IR builder 的 bug，
+与打包无关，留作下一轮。
 
 #### 7.4.1 整项目「能跑」的重跑（`tools/scan_run.py`）
 
@@ -402,7 +413,45 @@ clang -E -P -U__BLOCKS__ ...
 后者是个**真问题** ✗：Mach 头里的结构体用 **4 字节打包** ✓（`#pragma pack(4)` / packed 属性 ✗），
 qpcc 按自然对齐算成 64 ✗，断言就失败 ✓。这属于布局问题 ✓，需要单独一轮 ✗。
 
-### 7.8 现在还剩什么
+### 7.8 第七轮（`#pragma pack` 结构体打包）
+
+第六轮末尾留的「真 bug」就是它 ✗：macOS Mach 头用 **4 字节打包** ✗，qpcc 按自然对齐算 ✗：
+
+```c
+_Static_assert(sizeof(mach_msg_context_trailer_t) == 60, "struct changed size unexpectedly");
+```
+
+实测：clang 给 **60** ✓，qpcc 给 **64** ✗（3 个 uint32 + 2 个 uint32 + 8 个 uint32 = 52 ✓，
+但 `unsigned long long` 要求 8 字节对齐 ✗ → 补到 56 ✗ → 64 ✗）。
+
+根因有两层 ✗：
+
+1. 驱动里的 `strip_directives` 把**所有** `#` 行删掉 ✗ —— `#pragma pack` 根本没到前端 ✗；
+2. 即使到了 ✓，前端也只是**跳过**它 ✗（`SPragma` 被忽略 ✗），布局仍按自然对齐算 ✗。
+
+修复 ✓：
+
+| 层 | 改动 |
+| --- | --- |
+| 驱动 | `#pragma` 行**保留**（其余 `#` 行仍然清空 ✓，行号不变 ✓）|
+| 前端 | `Parser::try_pragma` 解析 `#pragma pack(...)` ✓，支持 `(N)` / `()` / `(push[,N])` / `(pop[,N])` ✓，状态随 `struct`/`union` 一起记到 AST ✓（`TStruct`/`TUnion` 多一个 pack 字段 ✓）|
+| 语义 | `define_aggregate` 用 `pack_align` 把每个成员的对齐**封顶到 N** ✓，聚合体的对齐随之封顶 ✓ |
+
+现在：
+
+```
+sizeof(struct { char c; int i; })  #pack(1)            → 5  ✓（clang 5 ✓）
+sizeof(struct { char c; int i; })  #pack(push,2)       → 6  ✓
+sizeof(struct { char c; int i; })  自然对齐             → 8  ✓
+sizeof(mach_msg_context_trailer_t)                     → 60 ✓（原来 64 ✗）
+```
+
+**连带结果** ✓：lz4 `timefn.c` 从 SEMA 失败变成通过 ✓；**sqlite3.c 也通过了** ✓
+（只剩 `__sync_synchronize`/`__atomic_store_n` 等 GCC 内建函数的**警告** ✓）。
+
+回归用例 `qpcc/tests/pragma_pack.c` ✓（`pack(1)`/push/pop、成员 `offsetof`、以及仿 Mach 的 60 字节结构 ✓）。
+
+### 7.9 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
@@ -576,7 +625,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/round_trip_stream_fuzzer.c | OK | OK | - |
 | lz4 | lz4/standaloneengine.c | OK | OK | - |
 | lz4 | lz4/threadpool.c | OK | OK | - |
-| lz4 | lz4/timefn.c | SEMA | FAIL | error: static assertion failed |
+| lz4 | lz4/timefn.c | OK | OK | - |
 | lz4 | lz4/util.c | OK | OK | - |
 | lz4 | lz4/xxhash.c | OK | OK | - |
 | miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz.c:27: |
@@ -611,7 +660,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
 | slstatus | slstatus/wifi.c | OK | OK | - |
 | smu | smu/smu.c | OK | OK | - |
-| sqlite | sqlite/sqlite3.c | SEMA | FAIL | error: static assertion failed |
+| sqlite | sqlite/sqlite3.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: b.5205 is used undefined in … |
 | yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
 | yyjson | yyjson/jsoninfo.c | OK | OK | - |
 | yyjson | yyjson/make_tables.c | OK | OK | - |
