@@ -4,15 +4,16 @@
 > 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7。
 > 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后扫了第三次，见 §7.4；
 > 同日修完 `__inline__` 外部链接语义后扫了第四次（§7.5），
-> 又修完三个 SEMA 失败后扫了第五次（§7.7）。
+> 又修完三个 SEMA 失败后扫了第五次（§7.6）；
+> 最后弄清 Apple 扩展与 GCC 的立场、改用 `-U__BLOCKS__` 预处理后扫了第六次（§7.7）。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**145 个完整通过（72%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**150 个完整通过（75%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 145 个通过 —— 92%**（第一版 65%，上一轮 90%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 150 个通过 —— 96%**（第一版 65%，上一轮 92%）。
 
-修复过程分五轮，逐文件对照见 §7：
+修复过程分六轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -20,7 +21,8 @@
 | 第二轮 | 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | SEMA 14 → 3，OK 128 → 138 |
 | 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
 | 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
-| 第五轮（最新）| 文件作用域 `sizeof`、自带头补 getopt 全局与 `PATH_MAX`、扫描器 `-D` 表 | **SEMA 3 → 0，OK → 145** |
+| 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
+| 第六轮（最新）| 预处理 `-U__BLOCKS__`、C23 enum 属性 | **PARSE 12 → 5，OK → 150** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -59,24 +61,24 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | ii | 2 | 1 | 0 | 0 | 1 |
 | lchat | 6 | 5 | 0 | 0 | 1 |
 | lua | 34 | 34 | 0 | 0 | 0 |
-| lz4 | 25 | 20 | 5 | 0 | 0 |
+| lz4 | 25 | 24 | 1 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
 | sic | 3 | 1 | 1 | 0 | 1 |
-| slstatus | 24 | 19 | 1 | 0 | 4 |
+| slstatus | 24 | 20 | 0 | 0 | 4 |
 | smu | 1 | 1 | 0 | 0 | 0 |
 | sqlite | 1 | 0 | 1 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **145** | **12** | **0** | **44** |
+| **合计** | **201** | **150** | **7** | **0** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 145 | 72% |
+| OK | 150 | 75% |
 | PREPROCESS | 44 | 22% |
-| PARSE | 12 | 6% |
-| SEMA | 0 | 0% |
+| PARSE | 5 | 2% |
+| SEMA | 2 | 1% |
 | CODEGEN-PANIC | 0 | 0% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
@@ -216,7 +218,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 五轮重扫：与第一版的逐文件对照
+## 7. 六轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -355,15 +357,60 @@ static void freereg (FuncState *fs, int reg) {
 
 剩下 12 个 PARSE 与 44 个 PREPROCESS 未动（§7.4.2 的第三优先级）。
 
-### 7.7 现在还剩什么
+### 7.7 第六轮（Apple 扩展、GCC 的立场）
+
+**先测清楚「这些扩展要不要支持」**：
+
+| 语法 | FSF GCC 16.2（conda）✗ | Apple clang 21 ✓ |
+| --- | --- | --- |
+| Blocks：`typedef void (^blk_t)(void);` | **error: expected identifier or '(' before '^'** ✗ | OK ✓ |
+| `__attribute__((__noescape__))` | **error** ✗ | OK ✓ |
+| `_Float16` | OK ✓ | OK ✓ |
+| `__bf16` | OK ✓ | OK ✓ |
+| `__attribute__((availability(...)))` | OK ✓ | OK ✓ |
+| C23 `typedef enum attr : uint64_t {}` | OK ✓ | OK ✓ |
+
+**平台上能不能编过** ✓：能 ✓ —— 两个层面：
+
+1. macOS 的 `/usr/bin/gcc` **本身就是 Apple clang 21** ✓，这些项目官方就用它构建 ✓；
+2. 就算换真正的 FSF GCC ✓，**Apple 头把 Blocks 声明都包在 `__BLOCKS__` 里** ✓
+   （实测 `clang -c lz4/programs/bench.c` 与 `gcc -c` **都成功** ✓）。
+
+**结论：qpcc 不需要实现 Blocks** ✓。它只是**预处理时用了 clang** ✗（clang 定义 `__BLOCKS__` ✗），
+把 Apple 头里的块声明带进了 `.i` ✗。改成按「没有 Blocks 的编译器」预处理即可：
+
+```
+clang -E -P -U__BLOCKS__ ...
+```
+
+这一条同时写进 `qpcc run` 的驱动和 `tools/scan_external.py` ✓。
+**lz4 的 5 个文件 + slstatus 的 1 个文件因此从 PARSE 失败变成通过** ✓：PARSE 12 → 6，OK 145 → 150 ✓。
+
+顺带修了 **C23 固定底层类型 + clang 属性** 的语法 ✓
+（macOS `<mach/mach_types.h>` 的 `typedef enum __attribute__((__flag_enum__)) : uint64_t { ... }` ✗）：
+解析器现在允许属性出现在 `enum`、tag、`:` 与 `{` 之间 ✓。GCC 与 clang 都接受这种写法 ✓，
+所以这是**标准层面的缺口** ✗，值得补 ✓。回归用例 `qpcc/tests/enum_flag_attr.c` ✓。
+
+#### 7.7.1 剩下的 6 个 PARSE
+
+| 文件 | 情况 |
+| --- | --- |
+| abduco `client.c` `debug.c` `server.c`、sic `util.c` | **不是独立翻译单元** ✗：这些文件本身没有 `#include`，是被 `abduco.c`/`sic.c` 用 `#include "client.c"` 吃进去的 ✓（suckless 风格 ✓）→ 扫描器单独编它们是**口径问题** ✗ |
+| hiredis `read.c` | `typedef __bf16 bfloat16_t;` ✗ —— 来自 clang 的 `<arm_neon.h>` ✓。FSF GCC 支持 `__bf16` ✓，qpcc 还不认识 ✗ |
+| sqlite `sqlite3.c` | 已经越过 Apple 语法 ✓，现在卡在 **`_Static_assert(sizeof(mach_msg_context_trailer_t) == 60)`** ✗ |
+
+后者是个**真问题** ✗：Mach 头里的结构体用 **4 字节打包** ✓（`#pragma pack(4)` / packed 属性 ✗），
+qpcc 按自然对齐算成 64 ✗，断言就失败 ✓。这属于布局问题 ✓，需要单独一轮 ✗。
+
+### 7.8 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
 | RUNS | 4 | lua、bzip2、smu、farbfeld（farbfeld 无 stdin 输入时 rc=1） |
-| RUNS-DRIVER | 2 | cjson、yyjson（用扫描器写的小驱动调库） |
-| LINK-FAIL | 1 | lchat（缺 slackline.c，它预处理失败；不是 qpcc） |
+| RUNS-DRIVER | 2 | cjson、yyjson（扫描器的小驱动调库） |
+| LINK-FAIL | 2 | lchat（缺 slackline.c，它预处理失败；不是 qpcc） |
 | LIB-LINK-FAIL | 1 | zlib（测试工具 blast.c 混进库里；库本身正确） |
-| NO-COMPILE | 6 | abduco、dash、ii、lz4、sic、slstatus 的入口文件 PARSE/PREPROCESS 失败 |
+| NO-COMPILE | 5 | abduco、dash、ii、lz4、sic、slstatus 的入口文件仍 PARSE/PREPROCESS 失败 |
 | NO-MAIN | 3 | hiredis、miniz、sqlite 是库，没有 main |
 
 ## 8. 方法的局限（所以数字是下界）
@@ -507,7 +554,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lua | lua/lutf8lib.c | OK | OK | - |
 | lua | lua/lvm.c | OK | OK | - |
 | lua | lua/lzio.c | OK | OK | - |
-| lz4 | lz4/bench.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/bench.c | OK | OK | - |
 | lz4 | lz4/compress_frame_fuzzer.c | OK | OK | - |
 | lz4 | lz4/compress_frame_stream_fuzzer.c | OK | OK | - |
 | lz4 | lz4/compress_fuzzer.c | OK | OK | - |
@@ -517,11 +564,11 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/lorem.c | OK | OK | - |
 | lz4 | lz4/lz4.c | OK | OK | - |
 | lz4 | lz4/lz4_helpers.c | OK | OK | - |
-| lz4 | lz4/lz4cli.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/lz4cli.c | OK | OK | - |
 | lz4 | lz4/lz4file.c | OK | OK | - |
 | lz4 | lz4/lz4frame.c | OK | OK | - |
 | lz4 | lz4/lz4hc.c | OK | OK | - |
-| lz4 | lz4/lz4io.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/lz4io.c | OK | OK | - |
 | lz4 | lz4/round_trip_frame_fuzzer.c | OK | OK | - |
 | lz4 | lz4/round_trip_frame_uncompressed_fuzzer.c | OK | OK | - |
 | lz4 | lz4/round_trip_fuzzer.c | OK | OK | - |
@@ -529,8 +576,8 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/round_trip_stream_fuzzer.c | OK | OK | - |
 | lz4 | lz4/standaloneengine.c | OK | OK | - |
 | lz4 | lz4/threadpool.c | OK | OK | - |
-| lz4 | lz4/timefn.c | PARSE | FAIL | error: expected ')' |
-| lz4 | lz4/util.c | PARSE | FAIL | error: expected ')' |
+| lz4 | lz4/timefn.c | SEMA | FAIL | error: static assertion failed |
+| lz4 | lz4/util.c | OK | OK | - |
 | lz4 | lz4/xxhash.c | OK | OK | - |
 | miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz.c:27: |
 | miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27… |
@@ -552,7 +599,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/keymap.c | PREPROCESS | FAIL | 'X11/XKBlib.h' file not found |
 | slstatus | slstatus/load_avg.c | OK | OK | - |
 | slstatus | slstatus/netspeeds.c | OK | OK | - |
-| slstatus | slstatus/num_files.c | PARSE | FAIL | error: expected ')' |
+| slstatus | slstatus/num_files.c | OK | OK | - |
 | slstatus | slstatus/ram.c | OK | OK | - |
 | slstatus | slstatus/run_command.c | OK | OK | - |
 | slstatus | slstatus/slstatus.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
@@ -564,7 +611,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
 | slstatus | slstatus/wifi.c | OK | OK | - |
 | smu | smu/smu.c | OK | OK | - |
-| sqlite | sqlite/sqlite3.c | PARSE | FAIL | error: expected ')' |
+| sqlite | sqlite/sqlite3.c | SEMA | FAIL | error: static assertion failed |
 | yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
 | yyjson | yyjson/jsoninfo.c | OK | OK | - |
 | yyjson | yyjson/make_tables.c | OK | OK | - |

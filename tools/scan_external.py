@@ -85,7 +85,7 @@ def scan(proj, fname, path):
         p = os.path.join(root, sub) if sub else root
         if os.path.isdir(p) and p != d:
             inc += ["-I", p]
-    rc, out, err = run([CC, "-E", "-P"] + inc + DEFS.get(proj, []) + [path])
+    rc, out, err = run([CC, "-E", "-P", "-U__BLOCKS__"] + inc + DEFS.get(proj, []) + [path])
     if rc != 0:
         return (proj, fname, "PREPROCESS", "FAIL", first_error(err))
     open(i, "w").write(out)
