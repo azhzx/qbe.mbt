@@ -65,6 +65,14 @@ def index_project(proj):
     return out
 
 
+# Some projects get their version from the Makefile, which this scan does not
+# run (smu.c prints VERSION). Define the few that are needed here, quoted the
+# way the Makefile quotes them.
+DEFS = {
+    "smu": ['-DVERSION="0"'],
+    "sic": ['-DVERSION="0"'],
+}
+
 def scan(proj, fname, path):
     if path is None:
         return (proj, fname, "NO-SOURCE", "FAIL", "not found in the project tree")
@@ -77,7 +85,7 @@ def scan(proj, fname, path):
         p = os.path.join(root, sub) if sub else root
         if os.path.isdir(p) and p != d:
             inc += ["-I", p]
-    rc, out, err = run([CC, "-E", "-P"] + inc + [path])
+    rc, out, err = run([CC, "-E", "-P"] + inc + DEFS.get(proj, []) + [path])
     if rc != 0:
         return (proj, fname, "PREPROCESS", "FAIL", first_error(err))
     open(i, "w").write(out)

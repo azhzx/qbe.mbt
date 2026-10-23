@@ -3,22 +3,24 @@
 > **本报告只诊断，未修复。** 第一版数据采集于 2026-10-11（qpcc v0.37.3）。
 > 2026-10-17 在修完 Lua 之后重扫了一遍，见 §7。
 > 2026-10-18 修完后端 ICE、大栈帧访存和嵌套 case 标签的 switch 下降之后扫了第三次，见 §7.4；
-> 同日修完 `__inline__` 外部链接语义后又扫了第四次，见 §7.5。
+> 同日修完 `__inline__` 外部链接语义后扫了第四次（§7.5），
+> 又修完三个 SEMA 失败后扫了第五次（§7.7）。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**142 个完整通过（71%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**145 个完整通过（72%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 142 个通过 —— 90%**（第一版 65%，上一轮 88%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 145 个通过 —— 92%**（第一版 65%，上一轮 90%）。
 
-修复过程分四轮，逐文件对照见 §7：
+修复过程分五轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
 | 第一轮 | 修 Lua 时发现的问题：整型提升、自带头缺宏/缺声明、arm64 大栈帧、标签映射 | PARSE 23 → 12，OK 88 → 128 |
 | 第二轮 | 按扫描报告修 P0/P1：`sizeof("字面量")`、自引用初始化式、整数位内置函数、平台宏、诊断改 stderr | SEMA 14 → 3，OK 128 → 138 |
 | 第三轮（最新）| 后端 ICE（arm64 二进制发射器）、大栈帧 sp 相对访存、`Addr` 截断、**嵌套 case 标签的 switch 下降** | **CODEGEN-PANIC 4 → 0，OK 138 → 142** |
-| 第四轮（最新）| `__inline__` 的 C99 6.7.4p6 外部链接语义 | **整项目能跑 2 → 5**（bzip2 首次通过）|
+| 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
+| 第五轮（最新）| 文件作用域 `sizeof`、自带头补 getopt 全局与 `PATH_MAX`、扫描器 `-D` 表 | **SEMA 3 → 0，OK → 145** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -28,7 +30,7 @@
 4. 自带 `errno.h`/`unistd.h`/`limits.h` 补 `ENOMEM`、`EWOULDBLOCK`、`R_OK`、`SSIZE_MAX` 与 `access`/`lseek` 等声明；
 5. 诊断从 stdout 改到 **stderr**（`--check OK` 和 `--emit` 输出仍在 stdout）。
 
-剩下的 15 个失败分两类：**PARSE 12**（多为 Apple 系统头的 `_Float16` 与 Blocks 扩展）、
+剩下的 56 个失败全是前端解析/预处理问题，SEMA 已清零：**PARSE 12**（多为 Apple 系统头的 `_Float16` 与 Blocks 扩展）、
 **SEMA 3**（`optarg` 缺声明、`-DVERSION=`、常量除零）。**CODEGEN 已经清零**。
 
 ## 1. 口径（先看这个）
@@ -55,26 +57,26 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | farbfeld | 7 | 3 | 0 | 0 | 4 |
 | hiredis | 9 | 7 | 1 | 0 | 1 |
 | ii | 2 | 1 | 0 | 0 | 1 |
-| lchat | 6 | 4 | 1 | 0 | 1 |
+| lchat | 6 | 5 | 0 | 0 | 1 |
 | lua | 34 | 34 | 0 | 0 | 0 |
-| lz4 | 25 | 19 | 6 | 0 | 0 |
+| lz4 | 25 | 20 | 5 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
 | sic | 3 | 1 | 1 | 0 | 1 |
 | slstatus | 24 | 19 | 1 | 0 | 4 |
-| smu | 1 | 0 | 1 | 0 | 0 |
+| smu | 1 | 1 | 0 | 0 | 0 |
 | sqlite | 1 | 0 | 1 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **142** | **15** | **0** | **44** |
+| **合计** | **201** | **145** | **12** | **0** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 142 | 71% |
+| OK | 145 | 72% |
 | PREPROCESS | 44 | 22% |
 | PARSE | 12 | 6% |
-| SEMA | 3 | 1% |
+| SEMA | 0 | 0% |
 | CODEGEN-PANIC | 0 | 0% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
@@ -83,10 +85,8 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | --- | ---: | ---: |
 | `expected ')'` | 7 | 3 |
 | `expected ';'` | 5 | 3 |
-| `use of undeclared identifier: optarg` | 1 | 1 |
-| `division by zero in constant expression` | 1 | 1 |
-| `use of undeclared identifier: VERSION` | 1 | 1 |
 
+第七轮之后 SEMA 类诊断已经清零（`optarg`、`VERSION`、常量除零）。
 第三轮之前这里还有 `ICE: arm64 bin: expected a reg`（2 个文件）和 `PanicError`（2 个文件），
 现在都已修复，所以不再出现。
 
@@ -216,7 +216,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 四轮重扫：与第一版的逐文件对照
+## 7. 五轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -331,14 +331,39 @@ static void freereg (FuncState *fs, int reg) {
 3. 跑程序时 `text=True` 遇二进制输出直接抛 `UnicodeDecodeError`（bzip2 无参数时会输出
    压缩流），加 `errors="replace"`。cJSON/yyjson 探针 C 代码里引号没转义，改成解析 `"42"`。
 
-### 7.6 现在还剩什么
+### 7.6 第五轮（三个 SEMA 失败全部修完）
 
-| 结果 | 项目数 | 说明 |
+§7.4.2 剩下的三个 SEMA 都处理掉了：
+
+| 文件 | 诊断 | 真正原因 | 修法 |
+| --- | --- | --- | --- |
+| lz4 `lorem.c` | `division by zero in constant expression` | 文件作用域初始化走的常量求值器 `const_eval_int` **没有 `sizeof(expr)` 分支**，返回 0：`sizeof(kWords)` 与 `sizeof(kWords[0])` 都是 0，于是相除报除零 | 补上分支（字符串字面量按字面量长度算）；数组长度也从初始化式补全（原来只在块作用域做）|
+| smu `smu.c` | `use of undeclared identifier: VERSION` | 扫描器不跑各项目的 Makefile，没给 `-DVERSION` | 扫描器加一张最小的 `-D` 表（smu、sic 用 `-DVERSION="0"`）|
+| lchat `lchat.c` | `use of undeclared identifier: optarg` | 自带 `unistd.h` 缺 getopt 全局变量；BSD/macOS 把它们声明在 `<unistd.h>` 里，而 lchat.c 只 include 了 `<unistd.h>` | 补 `optarg`/`optind`/`opterr`/`optopt`/`getopt` |
+
+修完 `optarg` 后 lchat 又暴露下一个缺失宏：**`PATH_MAX`**（BSD 从 `<sys/syslimits.h>` 经 `<limits.h>` 提供），一并补进自带 `limits.h`（含 `NAME_MAX`）。
+
+| 指标 | 第四轮 | 第五轮 |
+| --- | ---: | ---: |
+| OK | 142 | **145** |
+| SEMA | 3 | **0** |
+| CODEGEN-PANIC | 0 | 0 |
+| 能跑（RUNS + RUNS-DRIVER）| 5 | **6**（新增 smu）|
+
+新增回归用例：`qpcc/tests/sizeof_static_array.c`（文件作用域 `sizeof`）、
+`qpcc/tests/unistd_getopt_globals.c`、`qpcc/tests/limits_path_max.c`。
+
+剩下 12 个 PARSE 与 44 个 PREPROCESS 未动（§7.4.2 的第三优先级）。
+
+### 7.7 现在还剩什么
+
+| 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
-| RUNS | 3 | lua、bzip2、farbfeld（farbfeld 无 stdin 输入时 rc=1）|
-| RUNS-DRIVER | 2 | cjson、yyjson |
-| LIB-LINK-FAIL | 1 | zlib（测试工具混入，库本身正确）|
-| NO-COMPILE | 8 | 对应文件是 PARSE/SEMA/PREPROCESS 失败（§7.4.2）|
+| RUNS | 4 | lua、bzip2、smu、farbfeld（farbfeld 无 stdin 输入时 rc=1） |
+| RUNS-DRIVER | 2 | cjson、yyjson（用扫描器写的小驱动调库） |
+| LINK-FAIL | 1 | lchat（缺 slackline.c，它预处理失败；不是 qpcc） |
+| LIB-LINK-FAIL | 1 | zlib（测试工具 blast.c 混进库里；库本身正确） |
+| NO-COMPILE | 6 | abduco、dash、ii、lz4、sic、slstatus 的入口文件 PARSE/PREPROCESS 失败 |
 | NO-MAIN | 3 | hiredis、miniz、sqlite 是库，没有 main |
 
 ## 8. 方法的局限（所以数字是下界）
@@ -443,7 +468,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | ii | ii/ii.c | PREPROCESS | FAIL | 'tls.h' file not found |
 | ii | ii/strlcpy.c | OK | OK | - |
 | lchat | lchat/indent.c | OK | OK | - |
-| lchat | lchat/lchat.c | SEMA | FAIL | error: use of undeclared identifier: optarg |
+| lchat | lchat/lchat.c | OK | OK | - |
 | lchat | lchat/sl_test.c | OK | OK | - |
 | lchat | lchat/slackline.c | PREPROCESS | FAIL | 'grapheme.h' file not found |
 | lchat | lchat/slackline_emacs.c | OK | OK | - |
@@ -489,7 +514,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/compress_hc_fuzzer.c | OK | OK | - |
 | lz4 | lz4/decompress_frame_fuzzer.c | OK | OK | - |
 | lz4 | lz4/decompress_fuzzer.c | OK | OK | - |
-| lz4 | lz4/lorem.c | SEMA | FAIL | error: division by zero in constant expression |
+| lz4 | lz4/lorem.c | OK | OK | - |
 | lz4 | lz4/lz4.c | OK | OK | - |
 | lz4 | lz4/lz4_helpers.c | OK | OK | - |
 | lz4 | lz4/lz4cli.c | PARSE | FAIL | error: expected ')' |
@@ -538,7 +563,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/util.c | OK | OK | - |
 | slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
 | slstatus | slstatus/wifi.c | OK | OK | - |
-| smu | smu/smu.c | SEMA | FAIL | error: use of undeclared identifier: VERSION |
+| smu | smu/smu.c | OK | OK | - |
 | sqlite | sqlite/sqlite3.c | PARSE | FAIL | error: expected ')' |
 | yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
 | yyjson | yyjson/jsoninfo.c | OK | OK | - |
