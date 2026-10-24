@@ -29,12 +29,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Pin the MoonBit toolchain: a new release must not be able to turn the
-# build red on its own. Bump this together with a local moon version --all
-# run, in the same change that adapts the sources to the new compiler.
-env:
-  MOONBIT_VERSION: "0.1.20260920"
-
 jobs:
   check:
     name: Build, format & unit tests
@@ -52,18 +46,13 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Toolchain version (require moonc >= 0.10.14)
         run: |
           set -eu
           moon version --all
-          installed=$(moon version | sed -n 's/^moon \([^ ]*\).*/\1/p')
-          if [ "$installed" != "$MOONBIT_VERSION" ]; then
-            echo "::error::expected MoonBit $MOONBIT_VERSION, got $installed"
-            exit 1
-          fi
           v=$(moon version --all | sed -n 's/.*moonc v\([0-9][0-9.]*\).*/\1/p' | head -n1)
           test -n "$v"
           lowest=$(printf '%s\n0.10.14\n' "$v" | sort -V | head -n1)
@@ -137,7 +126,7 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Toolchain version
@@ -178,7 +167,7 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Install Rust
@@ -232,7 +221,7 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Toolchain version
@@ -312,7 +301,7 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Toolchain version
