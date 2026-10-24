@@ -31,7 +31,16 @@ def _env_json():
 
 ENV = _env_json()
 # Third-party library headers (libpng, jpeg, openssl, X11) live outside the SDK.
-EXTRA_INC = ENV.get("include_dirs", [])
+EXTRA_INC = ENV.get("include_dirs") or [
+    d
+    for d in (
+        "/Users/Admin/.homebrew/include",
+        "/opt/homebrew/include",
+        "/usr/local/include",
+        "/opt/X11/include",
+    )
+    if os.path.isdir(d)
+]
 CC = "/usr/bin/clang" if os.path.exists("/usr/bin/clang") else "cc"
 TIMEOUT = 240
 
@@ -84,6 +93,9 @@ def index_project(proj):
 DEFS = {
     "smu": ['-DVERSION="0"'],
     "sic": ['-DVERSION="0"'],
+    # dash gets its config.h from the build system rather than from the
+    # sources, so force it in: stat64 -> stat and USE_TEE live there.
+    "dash": ["-include", os.path.join(RAW, "dash", "config.h")],
 }
 
 # Suckless-style projects take config.h from config.def.h and get VERSION from

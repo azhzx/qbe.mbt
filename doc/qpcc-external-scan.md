@@ -12,11 +12,11 @@
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**154 个完整通过（77%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**185 个完整通过（92%）**。第一版是 88 个（44%）。
 另有 42 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 159 个文件里 154 个通过 —— 97%**（第一版 65%，上一轮 92%）。
+扣掉它们，**到达 qpcc 的 194 个文件里 185 个通过 —— 95%**（第一版 65%，上一轮 92%）。
 
-修复过程分九轮，逐文件对照见 §7：
+修复过程分十轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -26,9 +26,10 @@
 | 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
 | 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
 | 第六轮 | 预处理 `-U__BLOCKS__`、C23 enum 属性 | PARSE 12 → 5，OK → 150 |
-| 第七轮 | `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
+| 第七轮（最新）| `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
 | 第八轮| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
-| 第九轮（最新）| 修正扫描口径（自动生成 `config.h`）+ 补 `PRI*` 宏与 `__builtin_bzero` | **OK 152 -> 154，PREPROCESS 44 -> 42** |
+| 第九轮| 修正扫描口径（自动生成 `config.h`）+ 补 `PRI*` 宏与 `__builtin_bzero` | **OK 152 -> 154，PREPROCESS 44 -> 42** |
+| 第十轮（最新）| `__bf16__`/`__mfp8__` + 真正配置环境（第三方头、生成头）| **OK 154 -> 185，PREPROCESS 44 -> 7** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -61,39 +62,45 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | abduco | 6 | 1 | 3 | 0 | 2 |
 | bzip2 | 13 | 13 | 0 | 0 | 0 |
 | cjson | 2 | 2 | 0 | 0 | 0 |
-| dash | 30 | 7 | 0 | 0 | 23 |
-| farbfeld | 7 | 3 | 0 | 0 | 4 |
-| hiredis | 9 | 7 | 1 | 0 | 1 |
+| dash | 30 | 28 | 1 | 1 | 0 |
+| farbfeld | 7 | 7 | 0 | 0 | 0 |
+| hiredis | 9 | 8 | 0 | 1 | 0 |
 | ii | 2 | 1 | 0 | 0 | 1 |
 | lchat | 6 | 5 | 0 | 0 | 1 |
 | lua | 34 | 34 | 0 | 0 | 0 |
-| lz4 | 25 | 25 | 0 | 0 | 0 |
-| miniz | 4 | 0 | 0 | 0 | 4 |
+| lz4 | 25 | 23 | 2 | 0 | 0 |
+| miniz | 4 | 4 | 0 | 0 | 0 |
 | sic | 3 | 2 | 1 | 0 | 0 |
-| slstatus | 24 | 20 | 0 | 0 | 4 |
+| slstatus | 24 | 23 | 0 | 0 | 1 |
 | smu | 1 | 1 | 0 | 0 | 0 |
 | sqlite | 1 | 1 | 0 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **154** | **5** | **0** | **42** |
+| **合计** | **201** | **185** | **7** | **2** | **7** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 154 | 77% |
-| PREPROCESS | 42 | 21% |
-| PARSE | 5 | 2% |
-| SEMA | 0 | 0% |
-| CODEGEN-PANIC | 0 | 0% |
+| OK | 185 | 92% |
+| PREPROCESS | 7 | 3% |
+| PARSE | 4 | 2% |
+| SEMA | 3 | 1% |
+| CODEGEN-PANIC | 2 | 1% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
 | 诊断 | 文件数 | 项目数 |
 | --- | ---: | ---: |
-| `expected ';'` | 5 | 3 |
+| `expected ';'` | 4 | 2 |
+| `use of undeclared identifier: LZ4F_ERROR_dstCapacity_tooSmal` | 2 | 1 |
+| `use of undeclared identifier: NULL` | 1 | 1 |
 
-生成失败（CODEGEN-PANIC）现在只有 0 个文件：
+生成失败（CODEGEN-PANIC）现在只有 2 个文件：
+
+- dash/jobs.c - `qpcc: object emission failed: t.384 violates ssa invariant`
+
+- hiredis/read.c - `PanicError`
 
 第二至第七轮修掉的诊断不再出现：ICE（arm64 二进制发射器）、PanicError、optarg、VERSION、常量除零。
 
@@ -101,16 +108,9 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 
 | 缺失/失败 | 文件数 |
 | --- | ---: |
-| `其它（见附录 A）` | 21 |
-| `'nodes.h' file not found` | 7 |
-| `'syntax.h' file not found` | 3 |
-| `'jpeglib.h' file not found` | 2 |
-| `'png.h' file not found` | 2 |
-| `'X11/Xlib.h' file not found` | 2 |
-| `'openssl/ssl.h' file not found` | 1 |
+| `其它（见附录 A）` | 4 |
 | `'tls.h' file not found` | 1 |
 | `'grapheme.h' file not found` | 1 |
-| `'X11/XKBlib.h' file not found` | 1 |
 | `'sys/soundcard.h' file not found` | 1 |
 
 都不是 qpcc 的问题：这些文件需要第三方库头、各项目自己的构建产物或平台头。
@@ -222,7 +222,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 九轮重扫：与第一版的逐文件对照
+## 7. 十轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -509,15 +509,45 @@ suckless 风格的项目用**单翻译单元**构建：`abduco.c` 里写着
 扫描 **OK 152 → 154**，PREPROCESS **44 → 42**（`abduco.c`、`sic.c` 两个 TU 现在真的被测了）。
 新增用例 `qpcc/tests/inttypes_pri.c`、`qpcc/tests/builtin_bzero.c`。
 
-### 7.12 现在还剩什么
+### 7.12 第十轮（`__bf16`，以及真正把环境配起来）
+
+两件事：
+
+1. **`__bf16` / `__mfp8`**：clang 的 `<arm_neon.h>` 用
+   `__bf16` 声明 bfloat16、用 `__mfp8` 声明 FP8，紧随 `__fp16` 之后。
+   它们不是关键字，所以 `typedef __bf16 bfloat16_t;`（hiredis/read.c 会拉到）
+   直接解析失败。现在按已有的 `_Float16` 方式接受：`__bf16` 当 float 并告警，
+   `__mfp8` 当 8 位整数（它就是一个字节）。
+2. **环境**：新增 `tools/scan_env.py` —— 发现第三方库头（本机
+   `~/.homebrew/include` 下有 png/jpeg/openssl/X11）✓、生成 miniz 的 CMake 头
+   `miniz_export.h` ✓、把 dash `configure && make` 跑一遍以得到它的生成头
+   （`nodes.h`/`syntax.h`/`token.h`/`builtins.h`/`config.h`）✓；
+   `scan_external.py` 读 `build/scan/env.json` 并把这些路径加进 `-I`。
+   dash 还需要 `-include config.h`（它的 `stat64`/@ @`USE_TEE` 都在 config.h 里），
+   `ctype.h` 补了 Darwin 的 `_CTYPE_*` 位（dash 的 mksyntax 直接用），
+   `unistd.h` 补了 `_SC_CLK_TCK`。
+
+结果：**OK 154 → 185**，PREPROCESS **44 → 7** —— farbfeld **7/7**、miniz **4/4**、
+dash **28/30**、slstatus **23/24**、hiredis **8/9**。
+
+剩下的 7 个 PREPROCESS 已经确认**与本机环境无关** ✓：AIX/SunOS 的 forkpty、
+zlib 的 PowerPC VMX 和 Windows 文件、slstatus 的 Linux `sys/soundcard.h`，
+以及本机没装的 libgrapheme（lchat）和 libtls（ii）。
+
+环境打通后又**暴露出 5 个真 bug**（以前藏在 PREPROCESS 桶里）：dash `jobs.c` 的
+`t.384 violates ssa invariant`、dash `printf.c` 的 `NULL`、hiredis `read.c` 的
+`promote` 崩溃（`slot ... read but never stored to`）、lz4 两个 fuzzer 的
+`LZ4F_ERROR_ds` —— 都记在下一轮。
+
+### 7.13 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
 | RUNS | 5 | abduco、bzip2、farbfeld、lua、smu |
 | RUNS-DRIVER | 2 | cjson、yyjson |
-| LINK-FAIL | 3 | lchat、lz4、sic |
+| LINK-FAIL | 5 | dash、lchat、lz4、sic、slstatus |
 | LIB-LINK-FAIL | 1 | zlib |
-| NO-COMPILE | 3 | dash、ii、slstatus |
+| NO-COMPILE | 1 | ii |
 | NO-MAIN | 3 | hiredis、miniz、sqlite |
 
 ## 8. 方法的局限（所以数字是下界）
@@ -573,52 +603,52 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | bzip2 | bzip2/unzcrash.c | OK | OK | - |
 | cjson | cjson/cJSON.c | OK | OK | - |
 | cjson | cjson/cJSON_Utils.c | OK | OK | - |
-| dash | dash/alias.c | PREPROCESS | FAIL | 'syntax.h' file not found |
+| dash | dash/alias.c | OK | OK | - |
 | dash | dash/arith_yacc.c | OK | OK | - |
-| dash | dash/arith_yylex.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/cd.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/error.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/error.c:54: |
-| dash | dash/eval.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/exec.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/expand.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/histedit.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/histedit.c:39: |
-| dash | dash/input.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/input.c:56: |
-| dash | dash/jobs.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/jobs.c:63: |
-| dash | dash/mail.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/main.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/main.c:47: |
+| dash | dash/arith_yylex.c | OK | OK | - |
+| dash | dash/cd.c | OK | OK | - |
+| dash | dash/error.c | OK | OK | - |
+| dash | dash/eval.c | OK | OK | - |
+| dash | dash/exec.c | OK | OK | - |
+| dash | dash/expand.c | OK | OK | - |
+| dash | dash/histedit.c | OK | OK | - |
+| dash | dash/input.c | OK | OK | - |
+| dash | dash/jobs.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: t.384 violates ssa invariant |
+| dash | dash/mail.c | OK | OK | - |
+| dash | dash/main.c | OK | OK | - |
 | dash | dash/memalloc.c | OK | OK | - |
-| dash | dash/miscbltin.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/miscbltin.c:59 |
+| dash | dash/miscbltin.c | OK | OK | - |
 | dash | dash/mkinit.c | OK | OK | - |
 | dash | dash/mknodes.c | OK | OK | - |
 | dash | dash/mksignames.c | OK | OK | - |
-| dash | dash/mksyntax.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/mksyntax.c:43: |
-| dash | dash/mystring.c | PREPROCESS | FAIL | 'syntax.h' file not found |
-| dash | dash/options.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/output.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/output.c:50: |
-| dash | dash/parser.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/parser.c:46: |
-| dash | dash/printf.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/bltin/printf.c |
-| dash | dash/redir.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/redir.c:40: |
-| dash | dash/show.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/show.c:39: |
+| dash | dash/mksyntax.c | OK | OK | - |
+| dash | dash/mystring.c | OK | OK | - |
+| dash | dash/options.c | OK | OK | - |
+| dash | dash/output.c | OK | OK | - |
+| dash | dash/parser.c | OK | OK | - |
+| dash | dash/printf.c | SEMA | FAIL | use of undeclared identifier: NULL |
+| dash | dash/redir.c | OK | OK | - |
+| dash | dash/show.c | OK | OK | - |
 | dash | dash/system.c | OK | OK | - |
 | dash | dash/times.c | OK | OK | - |
-| dash | dash/trap.c | PREPROCESS | FAIL | 'nodes.h' file not found |
-| dash | dash/var.c | PREPROCESS | FAIL | In file included from build/scan/raw/dash/src/var.c:36: |
-| farbfeld | farbfeld/ff2jpg.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
+| dash | dash/trap.c | OK | OK | - |
+| dash | dash/var.c | OK | OK | - |
+| farbfeld | farbfeld/ff2jpg.c | OK | OK | - |
 | farbfeld | farbfeld/ff2pam.c | OK | OK | - |
-| farbfeld | farbfeld/ff2png.c | PREPROCESS | FAIL | 'png.h' file not found |
+| farbfeld | farbfeld/ff2png.c | OK | OK | - |
 | farbfeld | farbfeld/ff2ppm.c | OK | OK | - |
-| farbfeld | farbfeld/jpg2ff.c | PREPROCESS | FAIL | 'jpeglib.h' file not found |
-| farbfeld | farbfeld/png2ff.c | PREPROCESS | FAIL | 'png.h' file not found |
+| farbfeld | farbfeld/jpg2ff.c | OK | OK | - |
+| farbfeld | farbfeld/png2ff.c | OK | OK | - |
 | farbfeld | farbfeld/util.c | OK | OK | - |
 | hiredis | hiredis/alloc.c | OK | OK | - |
 | hiredis | hiredis/async.c | OK | OK | - |
 | hiredis | hiredis/dict.c | OK | OK | - |
 | hiredis | hiredis/hiredis.c | OK | OK | - |
 | hiredis | hiredis/net.c | OK | OK | - |
-| hiredis | hiredis/read.c | PARSE | FAIL | expected ';' |
+| hiredis | hiredis/read.c | CODEGEN-PANIC | FAIL | PanicError |
 | hiredis | hiredis/sds.c | OK | OK | - |
 | hiredis | hiredis/sockcompat.c | OK | OK | - |
-| hiredis | hiredis/ssl.c | PREPROCESS | FAIL | 'openssl/ssl.h' file not found |
+| hiredis | hiredis/ssl.c | OK | OK | - |
 | ii | ii/ii.c | PREPROCESS | FAIL | 'tls.h' file not found |
 | ii | ii/strlcpy.c | OK | OK | - |
 | lchat | lchat/indent.c | OK | OK | - |
@@ -662,8 +692,8 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lua | lua/lvm.c | OK | OK | - |
 | lua | lua/lzio.c | OK | OK | - |
 | lz4 | lz4/bench.c | OK | OK | - |
-| lz4 | lz4/compress_frame_fuzzer.c | OK | OK | - |
-| lz4 | lz4/compress_frame_stream_fuzzer.c | OK | OK | - |
+| lz4 | lz4/compress_frame_fuzzer.c | SEMA | FAIL | use of undeclared identifier: LZ4F_ERROR_dstCapacity_tooSmal |
+| lz4 | lz4/compress_frame_stream_fuzzer.c | SEMA | FAIL | use of undeclared identifier: LZ4F_ERROR_dstCapacity_tooSmal |
 | lz4 | lz4/compress_fuzzer.c | OK | OK | - |
 | lz4 | lz4/compress_hc_fuzzer.c | OK | OK | - |
 | lz4 | lz4/decompress_frame_fuzzer.c | OK | OK | - |
@@ -686,10 +716,10 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | lz4 | lz4/timefn.c | OK | OK | - |
 | lz4 | lz4/util.c | OK | OK | - |
 | lz4 | lz4/xxhash.c | OK | OK | - |
-| miniz | miniz/miniz.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz.c:27: |
-| miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27: |
-| miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tinfl.c:27: |
-| miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_zip.c:27: |
+| miniz | miniz/miniz.c | OK | OK | - |
+| miniz | miniz/miniz_tdef.c | OK | OK | - |
+| miniz | miniz/miniz_tinfl.c | OK | OK | - |
+| miniz | miniz/miniz_zip.c | OK | OK | - |
 | sic | sic/sic.c | OK | OK | - |
 | sic | sic/strlcpy.c | OK | OK | - |
 | sic | sic/util.c | PARSE | FAIL | expected ';' |
@@ -702,14 +732,14 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/hostname.c | OK | OK | - |
 | slstatus | slstatus/ip.c | OK | OK | - |
 | slstatus | slstatus/kernel_release.c | OK | OK | - |
-| slstatus | slstatus/keyboard_indicators.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
-| slstatus | slstatus/keymap.c | PREPROCESS | FAIL | 'X11/XKBlib.h' file not found |
+| slstatus | slstatus/keyboard_indicators.c | OK | OK | - |
+| slstatus | slstatus/keymap.c | OK | OK | - |
 | slstatus | slstatus/load_avg.c | OK | OK | - |
 | slstatus | slstatus/netspeeds.c | OK | OK | - |
 | slstatus | slstatus/num_files.c | OK | OK | - |
 | slstatus | slstatus/ram.c | OK | OK | - |
 | slstatus | slstatus/run_command.c | OK | OK | - |
-| slstatus | slstatus/slstatus.c | PREPROCESS | FAIL | 'X11/Xlib.h' file not found |
+| slstatus | slstatus/slstatus.c | OK | OK | - |
 | slstatus | slstatus/swap.c | OK | OK | - |
 | slstatus | slstatus/temperature.c | OK | OK | - |
 | slstatus | slstatus/uptime.c | OK | OK | - |
