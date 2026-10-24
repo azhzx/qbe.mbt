@@ -36,13 +36,13 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
     let tmp = fn_.tmps[t]
     if tmp.ndef > 1 {
       raise @util.QbeError::CompileError(
-        "\{tmp.name} violates ssa invariant (defined more than once)",
+        "function $\{fn_.name}: \{tmp.name} is defined more than once (SSA)",
       )
     }
     if tmp.nuse > 0 && tmp.ndef == 0 {
       let bu = fn_.blks[tmp.uses[0].blk_id]
       raise @util.QbeError::CompileError(
-        "\{tmp.name} is used undefined in @\{bu.name}",
+        "function $\{fn_.name}: \{tmp.name} is used in @\{bu.name} but never defined there (SSA)",
       )
     }
   }
@@ -58,12 +58,12 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
           let phi = fn_.blks[u.blk_id].phi[u.ins_idx]
           if phicheck(fn_, phi, id, r) {
             raise @util.QbeError::CompileError(
-              "\{tmp.name} violates ssa invariant",
+              "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
             )
           }
         } else if bu.id != id && !sdom(fn_, id, bu.id) {
           raise @util.QbeError::CompileError(
-            "\{tmp.name} violates ssa invariant",
+            "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
           )
         }
       }
@@ -82,18 +82,18 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
           let phi = fn_.blks[u.blk_id].phi[u.ins_idx]
           if phicheck(fn_, phi, id, r) {
             raise @util.QbeError::CompileError(
-              "\{tmp.name} violates ssa invariant",
+              "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
             )
           }
         } else if bu.id == id {
           if u.kind == @types.UIns && u.ins_idx <= ii {
             raise @util.QbeError::CompileError(
-              "\{tmp.name} violates ssa invariant",
+              "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
             )
           }
         } else if !sdom(fn_, id, bu.id) {
           raise @util.QbeError::CompileError(
-            "\{tmp.name} violates ssa invariant",
+            "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
           )
         }
       }

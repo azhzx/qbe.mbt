@@ -102,8 +102,11 @@ fn format_qbe_error(e : @util.QbeError, src_file~ : String = "") -> String {
       let src = if src_file == "" { f } else { src_file }
       "qbe:\{src}:\{line}: \{msg}"
     }
-    @util.QbeError::CompileError(msg) => "error: \{msg}"
-    @util.QbeError::Ice(msg) => "ICE: \{msg}"
+    @util.QbeError::CompileError(msg) => "qbe: error: \{msg}"
+    @util.QbeError::Ice(msg) =>
+      "qbe: internal error: \{msg}\n" +
+      "  hint: this is a bug in qbe.mbt, not in your input. Please report " +
+      "the .ssa file (or the C file, for qpcc) that triggered it."
   }
 }
 

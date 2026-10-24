@@ -15,13 +15,14 @@ test "format_qbe_error: compile errors are bare messages" {
   let msg = format_qbe_error(
     @util.QbeError::CompileError("unknown gas flavor 'x'"),
   )
-  assert_eq(msg, "error: unknown gas flavor 'x'")
+  assert_eq(msg, "qbe: error: unknown gas flavor 'x'")
 }
 
 ///|
 test "format_qbe_error: internal errors are marked as ICE" {
   let msg = format_qbe_error(@util.QbeError::Ice("phi to not a tmp"))
-  assert_eq(msg, "ICE: phi to not a tmp")
+  assert_true(msg.contains("qbe: internal error: phi to not a tmp"))
+  assert_true(msg.contains("bug in qbe.mbt"))
 }
 
 ///|
