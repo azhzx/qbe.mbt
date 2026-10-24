@@ -286,6 +286,9 @@ pub fn coalesce(
     br_b.push(0)
   }
   let mut ip = 2147483646
+  // C mem.c keeps the blit instructions it walks over, to fix up the ones
+  // whose two addresses end up in the same slot after coalescing.
+  let bl : Array[(Int32, Int32)] = []
   let mut n = nblk
   while n > 0 {
     n = n - 1
@@ -333,6 +336,18 @@ pub fn coalesce(
         let x = (1UL << storesz(i)) - 1UL
         slot_store(fn_, al, sl, i.arg2, x, ip, b.id, ii)
         ip = ip - 1
+      }
+      if i.op == @types.Blit0 {
+        // C mem.c: a blit pair is a store into arg[1] and a load from arg[0]
+        // of the same size, which lives in the following blit1.
+        let b1 = b.ins[ii + 1]
+        let raw = b1.arg1.rint_val()
+        let z = if raw < 0 { -raw } else { raw }
+        let x = if z >= 64 { 0xFFFFFFFFFFFFFFFFUL } else { (1UL << z) - 1UL }
+        slot_store(fn_, al, sl, i.arg2, x, ip, b.id, ii)
+        ip = ip - 1
+        slot_load(fn_, al, sl, i.arg1, x, ip)
+        bl.push((b.id, ii))
       }
     }
     for si in 0..<nsl {
@@ -500,6 +515,46 @@ pub fn coalesce(
       if ui.arg2.eq(@types.Ref::tmp(s.t)) {
         ui.arg2 = @types.Ref::tmp(ts_t)
       }
+    }
+  }
+  // C mem.c: fix newly overlapping blits. When both addresses land in the
+  // same slot, either the copy direction flips (source after destination) or
+  // the blit is a no-op and both halves become nops.
+  for k in 0..<bl.length() {
+    let (bid, ii) = bl[k]
+    let ins0 = fn_.blks[bid].ins[ii]
+    if ins0.op != @types.Blit0 {
+      continue
+    }
+    match slot_of(ins0.arg1, fn_, al) {
+      Some((s_a, off0)) =>
+        match slot_of(ins0.arg2, fn_, al) {
+          Some((s_b, off1)) =>
+            if s_a == s_b {
+              if off0 < off1 {
+                let raw = fn_.blks[bid].ins[ii + 1].arg1.rint_val()
+                if raw >= 0 {
+                  fn_.blks[bid].ins[ii + 1].arg1 = @types.Ref::rint(-raw)
+                }
+              } else if off0 == off1 {
+                let nop = @types.Ins::new_void(
+                  @types.Nop,
+                  @types.Kw,
+                  @types.Ref::none(),
+                  @types.Ref::none(),
+                )
+                fn_.blks[bid].ins[ii] = nop
+                fn_.blks[bid].ins[ii + 1] = @types.Ins::new_void(
+                  @types.Nop,
+                  @types.Kw,
+                  @types.Ref::none(),
+                  @types.Ref::none(),
+                )
+              }
+            }
+          None => ()
+        }
+      None => ()
     }
   }
   if print_dbg {
