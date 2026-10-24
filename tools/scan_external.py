@@ -73,6 +73,33 @@ DEFS = {
     "sic": ['-DVERSION="0"'],
 }
 
+# Suckless-style projects take config.h from config.def.h and get VERSION from
+# the Makefile. Without a config.h the file cannot be preprocessed at all, which
+# used to hide the real qpcc result behind the PREPROCESS bucket (abduco's whole
+# translation unit lives behind #include "config.h").
+CFG = os.path.join(BASE, "cfg")
+
+
+def config_dir(proj, root):
+    d = os.path.join(CFG, proj)
+    if os.path.isdir(d):
+        return d
+    src = None
+    for cand in ("config.def.h", "config.h.in"):
+        q = os.path.join(root, cand)
+        if os.path.isfile(q):
+            src = q
+            break
+    if src is None:
+        return None
+    os.makedirs(d, exist_ok=True)
+    txt = open(src, encoding="utf-8", errors="replace").read()
+    if "VERSION" not in txt:
+        txt += '\n#ifndef VERSION\n#define VERSION "0"\n#endif\n'
+    open(os.path.join(d, "config.h"), "w", encoding="utf-8").write(txt)
+    return d
+
+
 def scan(proj, fname, path):
     if path is None:
         return (proj, fname, "NO-SOURCE", "FAIL", "not found in the project tree")
@@ -81,6 +108,9 @@ def scan(proj, fname, path):
     i = os.path.join(BASE, "i", proj + "__" + fname[:-2] + ".i")
     o = os.path.join(BASE, "o", proj + "__" + fname[:-2] + ".o")
     inc = ["-I", INC, "-I", d]
+    cfg = config_dir(proj, root)
+    if cfg:
+        inc = ["-I", cfg] + inc
     for sub in ("", "src", "lib", "include", "src/lua"):
         p = os.path.join(root, sub) if sub else root
         if os.path.isdir(p) and p != d:

@@ -7,15 +7,16 @@
 > 又修完三个 SEMA 失败后扫了第五次（§7.6）；
 > 最后弄清 Apple 扩展与 GCC 的立场、改用 `-U__BLOCKS__` 预处理后扫了第六次（§7.7）；
 > 再补上结构体打包后扫了第七次（§7.8）；
-> 最后修掉 `gcm` 删 phi 的问题后扫了第八次（§7.10）。
+> 修掉 `gcm` 删 phi 的问题后扫了第八次（§7.10）；
+> 再修正扫描口径、补 `PRI*` 和 `__builtin_bzero` 后扫了第九次（§7.11）。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**152 个完整通过（76%）**。第一版是 88 个（44%）。
-另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 152 个通过 —— 97%**（第一版 65%，上一轮 92%）。
+17 个真实 C 项目、201 个源文件：**154 个完整通过（77%）**。第一版是 88 个（44%）。
+另有 42 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
+扣掉它们，**到达 qpcc 的 159 个文件里 154 个通过 —— 97%**（第一版 65%，上一轮 92%）。
 
-修复过程分八轮，逐文件对照见 §7：
+修复过程分九轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -25,8 +26,9 @@
 | 第四轮 | `__inline__` 的 C99 6.7.4p6 外部链接语义 | 整项目能跑 2 → 5 |
 | 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
 | 第六轮 | 预处理 `-U__BLOCKS__`、C23 enum 属性 | PARSE 12 → 5，OK → 150 |
-| 第七轮（最新）| `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
-| 第八轮（最新）| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
+| 第七轮 | `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
+| 第八轮| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
+| 第九轮（最新）| 修正扫描口径（自动生成 `config.h`）+ 补 `PRI*` 宏与 `__builtin_bzero` | **OK 152 -> 154，PREPROCESS 44 -> 42** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -56,7 +58,7 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 
 | 项目 | 源文件 | 通过 | 前端失败 | 生成失败 | 预处理未到达 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| abduco | 6 | 0 | 3 | 0 | 3 |
+| abduco | 6 | 1 | 3 | 0 | 2 |
 | bzip2 | 13 | 13 | 0 | 0 | 0 |
 | cjson | 2 | 2 | 0 | 0 | 0 |
 | dash | 30 | 7 | 0 | 0 | 23 |
@@ -67,20 +69,20 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | lua | 34 | 34 | 0 | 0 | 0 |
 | lz4 | 25 | 25 | 0 | 0 | 0 |
 | miniz | 4 | 0 | 0 | 0 | 4 |
-| sic | 3 | 1 | 1 | 0 | 1 |
+| sic | 3 | 2 | 1 | 0 | 0 |
 | slstatus | 24 | 20 | 0 | 0 | 4 |
 | smu | 1 | 1 | 0 | 0 | 0 |
 | sqlite | 1 | 1 | 0 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **152** | **5** | **0** | **44** |
+| **合计** | **201** | **154** | **5** | **0** | **42** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 152 | 76% |
-| PREPROCESS | 44 | 22% |
+| OK | 154 | 77% |
+| PREPROCESS | 42 | 21% |
 | PARSE | 5 | 2% |
 | SEMA | 0 | 0% |
 | CODEGEN-PANIC | 0 | 0% |
@@ -102,7 +104,6 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | `其它（见附录 A）` | 21 |
 | `'nodes.h' file not found` | 7 |
 | `'syntax.h' file not found` | 3 |
-| `'config.h' file not found` | 2 |
 | `'jpeglib.h' file not found` | 2 |
 | `'png.h' file not found` | 2 |
 | `'X11/Xlib.h' file not found` | 2 |
@@ -221,7 +222,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 八轮重扫：与第一版的逐文件对照
+## 7. 九轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -482,15 +483,41 @@ sizeof(mach_msg_context_trailer_t)                     → 60 ✓（原来 64 �
 
 结果：**sqlite3.c 通过**，扫描里最后一处 CODEGEN 失败消失。
 
-### 7.11 现在还剩什么
+### 7.11 第九轮（修正扫描口径，补 PRI* 宏与 __builtin_bzero）
+
+这一轮不是「再扫一遍」，而是**把测量方式改对** —— 起因是回答「什么叫扫描口径问题」。
+
+suckless 风格的项目用**单翻译单元**构建：`abduco.c` 里写着
+`#include "client.c"` / `#include "server.c"` / `#include "debug.c"`，
+这几个文件**单独编译必然失败**（`clang -c client.c` 同样报
+`use of undeclared identifier 'client'`，与 qpcc 无关），所以它们是**口径误判**。
+
+但同一口径还会**掩盖真问题**：`abduco.c` 需要 Makefile 生成的 `config.h`，
+缺了就被归进 PREPROCESS 桶，于是**真正该测的那个 TU 从来没被测过**。
+
+改了两处：
+
+1. `tools/scan_external.py` 给带 `config.def.h` 的项目自动生成
+   `build/scan/cfg/<proj>/config.h`（补 `#define VERSION "0"`）并加进 `-I`；
+2. 补上因此暴露出来的两个**真缺口**：
+   - `inttypes.h` 只有 32/64 位 PRI 宏，缺 `PRIu16` 等 —— 补全
+     `8/16/32/64/PTR/MAX` 全套；
+   - `__builtin_bzero` 没有映射，链接时变成未定义符号 —— 补
+     `bzero`，并在 `string.h` 补 `void bzero(void *, size_t);`。
+
+结果：**abduco 整个项目通过**（编译、链接、运行，`abduco -v` 输出正常）；
+扫描 **OK 152 → 154**，PREPROCESS **44 → 42**（`abduco.c`、`sic.c` 两个 TU 现在真的被测了）。
+新增用例 `qpcc/tests/inttypes_pri.c`、`qpcc/tests/builtin_bzero.c`。
+
+### 7.12 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
-| RUNS | 4 | bzip2、farbfeld、lua、smu |
+| RUNS | 5 | abduco、bzip2、farbfeld、lua、smu |
 | RUNS-DRIVER | 2 | cjson、yyjson |
-| LINK-FAIL | 2 | lchat、lz4 |
+| LINK-FAIL | 3 | lchat、lz4、sic |
 | LIB-LINK-FAIL | 1 | zlib |
-| NO-COMPILE | 5 | abduco、dash、ii、sic、slstatus |
+| NO-COMPILE | 3 | dash、ii、slstatus |
 | NO-MAIN | 3 | hiredis、miniz、sqlite |
 
 ## 8. 方法的局限（所以数字是下界）
@@ -525,7 +552,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 
 | 项目 | 文件 | 阶段 | 结果 | 首个诊断 |
 | --- | --- | --- | --- | --- |
-| abduco | abduco/abduco.c | PREPROCESS | FAIL | 'config.h' file not found |
+| abduco | abduco/abduco.c | OK | OK | - |
 | abduco | abduco/client.c | PARSE | FAIL | expected ';' |
 | abduco | abduco/debug.c | PARSE | FAIL | expected ';' |
 | abduco | abduco/forkpty-aix.c | PREPROCESS | FAIL | In file included from build/scan/raw/abduco/forkpty-aix.c:21 |
@@ -663,7 +690,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | miniz | miniz/miniz_tdef.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tdef.c:27: |
 | miniz | miniz/miniz_tinfl.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_tinfl.c:27: |
 | miniz | miniz/miniz_zip.c | PREPROCESS | FAIL | In file included from build/scan/raw/miniz/miniz_zip.c:27: |
-| sic | sic/sic.c | PREPROCESS | FAIL | 'config.h' file not found |
+| sic | sic/sic.c | OK | OK | - |
 | sic | sic/strlcpy.c | OK | OK | - |
 | sic | sic/util.c | PARSE | FAIL | expected ';' |
 | slstatus | slstatus/battery.c | OK | OK | - |
