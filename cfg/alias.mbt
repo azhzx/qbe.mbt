@@ -66,6 +66,7 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
 // Returns the result and the offset delta (p.offset - q.offset).
 pub fn check_alias(
   p : @types.Ref,
+  poff : Int32,
   sp : Int32,
   q : @types.Ref,
   sq : Int32,
@@ -73,6 +74,7 @@ pub fn check_alias(
 ) -> (AliasResult, Int64) {
   let ap = getalias(p, fn_)
   let aq = getalias(q, fn_)
+  ap.offset = ap.offset + poff.to_int64()
   let delta = ap.offset - aq.offset
   let ovlap = ap.offset < aq.offset + sq.to_int64() &&
     aq.offset < ap.offset + sp.to_int64()

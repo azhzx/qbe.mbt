@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn check_alias(@types.Ref, Int32, @types.Ref, Int32, @types.Fn) -> (AliasResult, Int64)
+pub fn check_alias(@types.Ref, Int32, Int32, @types.Ref, Int32, @types.Fn) -> (AliasResult, Int64)
 
 pub fn edgedel(@types.Fn, Int32, Int32) -> Unit
 

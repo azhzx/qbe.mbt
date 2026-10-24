@@ -23,7 +23,8 @@ priv struct Loc {
 ///|
 priv struct Slice {
   r : @types.Ref
-  sz : Int32
+  mut off : Int32 // C SlotL.off: byte offset into the slice's base
+  mut sz : Int32
   cls : @types.Class
 }
 
@@ -73,7 +74,7 @@ fn iins(
     rpo_id: st.fn_.blks[l.blk].rpo_id,
     off: l.off,
     ins,
-    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw, },
+    phi_m: Slice::{ r: @types.Ref::none(), off: 0, sz: 0, cls: @types.Kw, },
     phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   st.inum = st.inum + 1
@@ -260,6 +261,8 @@ fn def(
     let mut sz = 0
     let mut r1 = @types.Ref::none()
     let mut r = @types.Ref::none()
+    let mut is_blit = false
+    let mut blit_src = @types.Ref::none()
     if ins.op.is_load() {
       ld = true
       sz = loadsz(ins)
@@ -269,10 +272,24 @@ fn def(
       sz = storesz(ins)
       r1 = ins.arg2
       r = ins.arg1
+    } else if ins.op == @types.Blit1 {
+      // A blit is a pair: blit0 holds the two addresses, blit1 the size
+      // (C load.c def's Oblit1 case). It stores into the second operand the
+      // bytes found at the first one, so it is scanned as a store there.
+      is_blit = true
+      let s = ins.arg1.rint_val()
+      sz = if s < 0 { -s } else { s }
+      if ii == 0 {
+        continue
+      }
+      let b0 = b_ins[ii - 1]
+      blit_src = b0.arg1
+      r1 = b0.arg2
+      ii = ii - 1
     } else {
       continue
     }
-    let (res, off64) = @cfg.check_alias(sl.r, sl.sz, r1, sz, st.fn_)
+    let (res, off64) = @cfg.check_alias(sl.r, sl.off, sl.sz, r1, sz, st.fn_)
     match res {
       @cfg.MayAlias =>
         if ld {
@@ -285,6 +302,24 @@ fn def(
         let mut off = off64.to_int()
         let mut msk1 : UInt64 = 0
         let mut op : @types.Op = @types.Oxxx
+        // For a blit the aliasing range is the source slice: narrow it to the
+        // part that reaches the address we are looking for.
+        let mut sl1 = sl
+        if is_blit {
+          sl1 = Slice::{ r: blit_src, off: 0, sz: sl.sz, cls: sl.cls, }
+          if off >= 0 {
+            sl1.off = off
+            sz = sz - off
+            off = 0
+          } else {
+            sl1.off = 0
+            sl1.sz = sl1.sz + off
+          }
+          if sz > sl1.sz {
+            sz = sl1.sz
+          }
+          sl1.sz = sz
+        }
         if off < 0 {
           off = -off
           msk1 = (mask_of(sz) << (8 * off)) & msks
@@ -295,6 +330,13 @@ fn def(
         }
         if (msk1 & msk) == 0 {
           continue
+        }
+        if is_blit {
+          // Fetch what the blit wrote: read the source bytes.
+          r = def(st, sl1, mask_of(sz), b, ii, il)
+          if r.is_none() {
+            return load_abort(st, sl, msk, il, oldl, oldt)
+          }
         }
         let mut r = r
         if off != 0 {
@@ -506,7 +548,7 @@ pub fn loadopt(
         continue
       }
       let sz = loadsz(ins)
-      let sl = Slice::{ r: ins.arg1, sz, cls: ins.cls, }
+      let sl = Slice::{ r: ins.arg1, off: 0, sz, cls: ins.cls, }
       let l = Loc::{ kind: LocType::LRoot, off: ii, blk: b_id, }
       fn_.blks[b_id].ins[ii].arg2 = def(st, sl, mask_of(sz), b_id, ii, l)
     }
@@ -525,7 +567,7 @@ pub fn loadopt(
       @types.Ref::none(),
       @types.Ref::none(),
     ),
-    phi_m: Slice::{ r: @types.Ref::none(), sz: 0, cls: @types.Kw, },
+    phi_m: Slice::{ r: @types.Ref::none(), off: 0, sz: 0, cls: @types.Kw, },
     phi_p: @types.Phi::new(@types.Ref::none(), @types.Kw),
   })
   let mut ist = 0
