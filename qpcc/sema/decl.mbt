@@ -141,16 +141,25 @@ pub fn declspec_to_type(spec : @front.DeclSpec, ctx : Ctx) -> CType {
           "int" => if base is None { base = Some(CInt(false)) }
           "char" => base = Some(CChar(true))
           "void" => base = Some(CVoid)
-          "_Float16" | "__fp16" => {
-            // C23 half precision. This port has no half type of its own, so it
-            // is accepted and treated as float. That is invisible for the
-            // common case - a prototype pulled in from a system header - but a
-            // real half-precision object would be the wrong size, hence the
-            // warning.
+          "_Float16" | "__fp16" | "__bf16" => {
+            // C23 half precision (__bf16 is the bfloat16 spelling clang uses in
+            // <arm_neon.h>). This port has no 16-bit float type, so it is
+            // accepted and treated as float. That is invisible for the common
+            // case - a typedef or a prototype pulled in from a system header -
+            // but a real half-precision object would be the wrong size, hence
+            // the warning.
             ctx.diags.warning(
-              "_Float16 is treated as float: this port has no half-precision type",
+              "half-precision type is treated as float: this port has no half type",
             )
             base = Some(CFloat)
+          }
+          // __mfp8 (ARM FP8) is one byte; map it to an 8-bit integer so a
+          // typedef of it keeps the right size.
+          "__mfp8" => {
+            ctx.diags.warning(
+              "__mfp8 is treated as char: this port has no FP8 type",
+            )
+            base = Some(CChar(false))
           }
           "float" => base = Some(CFloat)
           "double" => base = Some(CDouble)
@@ -164,10 +173,10 @@ pub fn declspec_to_type(spec : @front.DeclSpec, ctx : Ctx) -> CType {
           "__auto_type" => ()
           _ => ()
         }
-      @front.TStruct(tag, body) =>
-        base = Some(CStruct(resolve_aggregate(ctx, tag, body, false)))
-      @front.TUnion(tag, body) =>
-        base = Some(CUnion(resolve_aggregate(ctx, tag, body, true)))
+      @front.TStruct(tag, body, pack) =>
+        base = Some(CStruct(resolve_aggregate(ctx, tag, body, false, pack)))
+      @front.TUnion(tag, body, pack) =>
+        base = Some(CUnion(resolve_aggregate(ctx, tag, body, true, pack)))
       @front.TTaggedUnion(tag, body) =>
         base = Some(resolve_tagged_union(ctx, tag, body))
       @front.TEnum(tag, items, underlying) => {
@@ -252,11 +261,24 @@ pub fn declspec_to_type(spec : @front.DeclSpec, ctx : Ctx) -> CType {
 ///|
 /// Resolve a struct/union type: reuse an existing tag when there is no body,
 /// otherwise define a new layout.
+
+///|
+/// The alignment a member may actually use under `#pragma pack(N)` (0 = natural).
+fn pack_align(a : Int, pack : Int) -> Int {
+  if pack > 0 && a > pack {
+    pack
+  } else {
+    a
+  }
+}
+
+///|
 fn resolve_aggregate(
   ctx : Ctx,
   tag : String?,
   body : Array[@front.StructDecl],
   is_union : Bool,
+  pack : Int,
 ) -> Int {
   if body.length() == 0 {
     match tag {
@@ -268,7 +290,7 @@ fn resolve_aggregate(
       None => ()
     }
   }
-  define_aggregate(ctx, tag, body, is_union)
+  define_aggregate(ctx, tag, body, is_union, pack)
 }
 
 ///|
@@ -387,6 +409,7 @@ fn define_aggregate(
   tag : String?,
   body : Array[@front.StructDecl],
   is_union : Bool,
+  pack : Int,
 ) -> Int {
   let fields : Array[Field] = []
   let mut off = 0
@@ -404,7 +427,9 @@ fn define_aggregate(
             Some(n) => n
             None => ""
           }
-          let a = align_of_ty(ty, ctx.layouts)
+          // `#pragma pack(N)` lowers every member alignment to at most N, and
+          // with it the alignment of the whole aggregate.
+          let a = pack_align(align_of_ty(ty, ctx.layouts), pack)
           let sz = size_of_ty(ty, ctx.layouts)
           if a > maxa {
             maxa = a
@@ -451,13 +476,14 @@ fn define_aggregate(
         match ty {
           CStruct(i) | CUnion(i) => {
             let lay = ctx.layouts[i]
-            if lay.align > maxa {
-              maxa = lay.align
+            let la = pack_align(lay.align, pack)
+            if la > maxa {
+              maxa = la
             }
             if lay.size > maxsz {
               maxsz = lay.size
             }
-            let base_off = if is_union { 0 } else { align_up(off, lay.align) }
+            let base_off = if is_union { 0 } else { align_up(off, la) }
             for f in lay.fields {
               fields.push({
                 name: f.name,
@@ -472,7 +498,7 @@ fn define_aggregate(
             }
           }
           _ => {
-            let a = align_of_ty(ty, ctx.layouts)
+            let a = pack_align(align_of_ty(ty, ctx.layouts), pack)
             let sz = size_of_ty(ty, ctx.layouts)
             if a > maxa {
               maxa = a

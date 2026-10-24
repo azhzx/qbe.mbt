@@ -121,6 +121,7 @@ fn run_frontend_passes(
   typs : Array[@types.Typ],
   dbg : DbFlags,
   cansel : Bool,
+  from_c : Bool,
   out : StringBuilder,
 ) -> Unit raise {
   if dbg.p {
@@ -131,7 +132,9 @@ fn run_frontend_passes(
   @cfg.fillpreds(fn_)
   @ssa.filluse(fn_)
   // promote (mem.c): -dM "After slot promotion".
-  out.write_string(@mem.promote(fn_, dbg.m, interner, typs))
+  out.write_string(
+    @mem.promote(fn_, dbg.m, interner, typs, skip_read_before_write=from_c),
+  )
   @ssa.filluse(fn_)
   // ssa construction (ssa.c): filldom/fillfron/filllive/phiins/renblk.
   @cfg.filldom(fn_)
@@ -193,7 +196,7 @@ fn run_passes(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_amd64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, true, out)
+  run_frontend_passes(fn_, interner, typs, dbg, true, false, out)
   // T.abi (sysv.c): -dA.
   out.write_string(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
   // simpl (simpl.c), then refill cfg/use.
@@ -353,7 +356,7 @@ fn run_passes_wasm(
   dbg : DbFlags,
   out : StringBuilder,
 ) -> Unit raise {
-  run_frontend_passes(fn_, interner, typs, dbg, false, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, false, out)
   // Wasm ABI lowering
   out.write_string(@abi_wasm.abi_wasm(fn_, typs, dbg.a, interner, typs))
   @cfg.fillpreds(fn_)
@@ -393,7 +396,7 @@ fn run_passes_rv64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_rv64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, false, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, false, out)
   // RISC-V ABI lowering
   out.write_string(@abi_rv64.abi_rv64(fn_, typs, dbg.a, interner, typs))
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
@@ -497,7 +500,7 @@ fn run_passes_la64(
   out : StringBuilder,
 ) -> Unit raise {
   @types.init_la64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, false, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, false, out)
   // LoongArch ABI lowering
   out.write_string(@abi_la64.abi_la64(fn_, typs, dbg.a, interner, typs))
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
@@ -599,9 +602,10 @@ fn run_passes_arm64(
   dbg : DbFlags,
   apple : Bool,
   out : StringBuilder,
+  from_c? : Bool = false,
 ) -> Unit raise {
   @types.init_arm64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, false, out)
+  run_frontend_passes(fn_, interner, typs, dbg, false, from_c, out)
   // ARM64 ABI lowering
   out.write_string(
     @abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, apple, typs),

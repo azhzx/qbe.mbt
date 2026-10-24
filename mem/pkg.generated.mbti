@@ -9,7 +9,7 @@ import {
 // Values
 pub fn coalesce(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 
-pub fn promote(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+pub fn promote(@types.Fn, Bool, @util.Interner, Array[@types.Typ], skip_read_before_write? : Bool) -> String
 
 // Errors
 

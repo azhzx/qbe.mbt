@@ -31,7 +31,13 @@ fn usage() -> Unit {
 fn strip_directives(src : String) -> String {
   let sb = StringBuilder::new()
   for line in src.split("\n") {
-    if line.has_prefix("#") {
+    // QPCC has no preprocessor: #pragma pack changes the layout of the
+    // structs after it, so the line is kept for the parser. Every other
+    // directive is still blanked, which keeps diagnostic line numbers.
+    if line.has_prefix("#pragma") {
+      sb.write_string(line.to_string())
+      sb.write_string("\n")
+    } else if line.has_prefix("#") {
       sb.write_string("\n")
     } else {
       sb.write_string(line.to_string())
@@ -64,6 +70,7 @@ fn front_end(
   display : String,
   mode : @front.StdMode,
   tagged_union : Bool,
+  strict? : Bool = false,
 ) -> @sema.CheckedProgram? {
   let src = @fs.read_file_to_string(input) catch {
     _ => {
@@ -75,7 +82,7 @@ fn front_end(
   // the same text.
   let shown = strip_directives(src)
   let tu = @front.parse(shown, mode~, tagged_union~, display~)
-  let prog = @sema.check(tu, mode~)
+  let prog = @sema.check(tu, mode~, strict~)
   let mut errs = 0
   for d in prog.diags {
     match d.sev {
@@ -179,6 +186,7 @@ fn run_subcommand(args : Array[String]) -> Unit {
   let mut tagged_union = false
   let clang_flags : Array[String] = []
   let prog_args : Array[String] = []
+  let mut strict = false
   let mut i = 0
   while i < args.length() {
     let a = args[i]
@@ -191,7 +199,9 @@ fn run_subcommand(args : Array[String]) -> Unit {
       break
     }
     if input == "" {
-      if a == "-std=c2y" {
+      if a == "--strict" {
+        strict = true
+      } else if a == "-std=c2y" {
         mode = @front.C2y
         std_flag = a
       } else if a == "-std=c23" {
@@ -231,13 +241,23 @@ fn run_subcommand(args : Array[String]) -> Unit {
     eprint("qpcc run: no input file")
     @native.mbt_native_exit(1)
   }
+  // A .cqe file is C with the QPCC extensions on, so the suffix picks the mode
+  // when no -std was given.
+  if std_flag == "" && input.has_suffix(".cqe") {
+    mode = @front.Cqe
+    std_flag = "-std=cqe"
+  }
   let i_path = @native.tmp_path(".i")
   let o_path = @native.tmp_path(".o")
   let exe_path = @native.tmp_path("")
   // clang has no -std=cqe, so the preprocessing step uses the C2y spelling;
   // only QPCC needs to know that the QPCC extensions are on.
   let clang_std = if std_flag == "-std=cqe" { "-std=c2y" } else { std_flag }
-  let mut pp = "clang -E -P "
+  // QPCC does not implement Blocks, so preprocess the way a compiler without
+  // them would: Apple's headers guard every block declaration with
+  // `__BLOCKS__`, and clang defines it. Leaving it defined made the front end
+  // parse `(^)(...)` declarations from <sys/dirent.h> and fail.
+  let mut pp = "clang -E -P -U__BLOCKS__ "
   if clang_std != "" {
     pp = pp + clang_std + " "
   }
@@ -253,12 +273,16 @@ fn run_subcommand(args : Array[String]) -> Unit {
     Some(d) => pp = pp + "-I " + shell_quote(d) + " "
     None => ()
   }
+  // clang does not know the .cqe suffix either, so name the language.
+  if input.has_suffix(".cqe") {
+    pp = pp + "-x c "
+  }
   pp = pp + shell_quote(input) + " -o " + shell_quote(i_path)
   if @native.mbt_native_run(@native.cstr(pp)) != 0 {
     eprint("qpcc run: preprocessing failed")
     @native.mbt_native_exit(1)
   }
-  let prog = match front_end(i_path, input, mode, tagged_union) {
+  let prog = match front_end(i_path, input, mode, tagged_union, strict~) {
     Some(p) => p
     None => {
       @native.mbt_native_exit(1)
@@ -318,6 +342,7 @@ fn main {
     return
   }
   let mut input = ""
+  let mut strict = false
   let mut output = ""
   let mut emit = "obj"
   let mut mode = @front.C11
@@ -353,6 +378,8 @@ fn main {
       mode = @front.Cqe
     } else if a.has_prefix("-std=") {
 
+    } else if a == "--strict" {
+      strict = true
     } else if input == "" {
       input = a
     }
@@ -362,7 +389,9 @@ fn main {
     usage()
     return
   }
-  let prog = match front_end(input, input, mode, tagged_union) {
+  // A .cqe file is C with the QPCC extensions on (see the run path).
+  let mode = if input.has_suffix(".cqe") { @front.Cqe } else { mode }
+  let prog = match front_end(input, input, mode, tagged_union, strict~) {
     Some(p) => p
     None => {
       @native.mbt_native_exit(1)

@@ -106,6 +106,8 @@ pub fn simplcfg(
   let js2 : Array[Int] = Array::make(n, -1)
   let empty : Array[Bool] = Array::make(n, true)
   let dead : Array[Bool] = Array::make(n, false)
+  // merge target of a block that got folded away by rule 1 below.
+  let alias : Array[Int] = Array::make(n, -1)
   for id in fn_.def_order {
     let b = fn_.blks[id]
     jtype[id] = b.jmp.kind
@@ -148,6 +150,7 @@ pub fn simplcfg(
             }
           }
         }
+        alias[s1] = id
         dead[s1] = true
         jtype[id] = jtype[s1]
         jarg[id] = jarg[s1]
@@ -171,6 +174,25 @@ pub fn simplcfg(
         js1[id] = js1[t1]
         js2[id] = js2[t1]
         done = false
+      }
+    }
+  }
+  // 3b. Merges can chain (s1 folded into id, id folded into another block
+  // later), and rule 1 rewrites phi arguments using the snapshot ids, so an
+  // argument may still name a block that no longer exists. Resolve every
+  // phi argument through the alias table now.
+  for id in fn_.def_order {
+    if dead[id] {
+      continue
+    }
+    for pi in 0..<fn_.blks[id].phi.length() {
+      let p = fn_.blks[id].phi[pi]
+      for ai in 0..<p.args.length() {
+        let mut bb = p.args[ai].blk_id
+        while bb >= 0 && bb < n && alias[bb] >= 0 {
+          bb = alias[bb]
+        }
+        p.args[ai].blk_id = bb
       }
     }
   }

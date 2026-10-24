@@ -209,6 +209,15 @@ pub fn check_expr(e : @front.Expr, ctx : Ctx) -> TExpr {
           "cannot assign to a _Tagged_union member; assign a whole value",
         )
       }
+      if op == "=" && ctx.strict {
+        match weak_conv(tr.ty, tl.ty) {
+          Some(why) =>
+            ctx.diags.error(
+              "implicit conversion in assignment (" + why + "); add a cast",
+            )
+          None => ()
+        }
+      }
       let combined = if op == "=" {
         tr
       } else {
@@ -957,6 +966,18 @@ fn builtin_rewrite(n : String) -> String? {
     "__builtin_memcpy" => Some("memcpy")
     "__builtin_memmove" => Some("memmove")
     "__builtin_memset" => Some("memset")
+    "__builtin_bzero" => Some("bzero")
+    "__builtin_memcmp" => Some("memcmp")
+    "__builtin_memchr" => Some("memchr")
+    "__builtin_strlen" => Some("strlen")
+    "__builtin_strcmp" => Some("strcmp")
+    "__builtin_strncmp" => Some("strncmp")
+    "__builtin_strcpy" => Some("strcpy")
+    "__builtin_strncpy" => Some("strncpy")
+    "__builtin_strcat" => Some("strcat")
+    "__builtin_strchr" => Some("strchr")
+    "__builtin_strrchr" => Some("strrchr")
+    "__builtin_strstr" => Some("strstr")
     "__builtin_unreachable" => Some("abort")
     // Darwin's <math.h> builds isfinite/isnan out of __builtin_nanf(""), which
     // would otherwise stay a call to a symbol that does not exist and break

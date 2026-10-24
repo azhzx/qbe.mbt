@@ -175,6 +175,14 @@ fn complete_array(ty : CType, init : @front.Initializer, ctx : Ctx) -> CType {
       }
       CArray(elem, n)
     }
+    // char s[] = "abc"; the bound is the literal length including the NUL.
+    (CArray(elem, 0), @front.IExpr(@front.EString(parts))) => {
+      let mut n = 1
+      for p in parts {
+        n = n + p.length()
+      }
+      CArray(elem, n)
+    }
     _ => ty
   }
 }
@@ -389,6 +397,17 @@ fn check_local_decl(
                     }
                   _ => ()
                 }
+                if ctx.strict {
+                  match weak_conv(te.ty, ty) {
+                    Some(why) =>
+                      ctx.diags.error(
+                        "implicit conversion in initialisation (" +
+                        why +
+                        "); add a cast",
+                      )
+                    None => ()
+                  }
+                }
                 out.push({ kind: KSDecl(lname, ty, Some(te), al), })
               }
               Some(@front.IList(_)) => {
@@ -457,6 +476,15 @@ fn check_init_into(
   match init {
     @front.IExpr(e) => {
       let te = check_expr(e, ctx)
+      if ctx.strict {
+        match weak_conv(te.ty, ty) {
+          Some(why) =>
+            ctx.diags.error(
+              "implicit conversion in initialisation (" + why + "); add a cast",
+            )
+          None => ()
+        }
+      }
       // The element may need narrowing (e.g. the bytes of a char array
       // compound literal); store it already converted so the element size is
       // used when writing.
@@ -795,8 +823,23 @@ fn check_return(e : @front.Expr?, ctx : Ctx) -> TStmt {
     _ => false
   }
   match (ctx.ret_ty, te) {
+    (Some(rt), Some(e)) =>
+      if ctx.strict {
+        match weak_conv(e.ty, rt) {
+          Some(why) =>
+            ctx.diags.error(
+              "implicit conversion in return (" + why + "); add a cast",
+            )
+          None => ()
+        }
+      }
+    _ => ()
+  }
+  match (ctx.ret_ty, te) {
     (Some(CVoid), Some(_)) =>
-      ctx.diags.error("return with a value in a void function")
+      // GCC and clang accept this as an extension (dash relies on it), so a
+      // warning rather than an error.
+      ctx.diags.warning("return with a value in a void function")
     _ => ()
   }
   { kind: KSReturn(te), }
