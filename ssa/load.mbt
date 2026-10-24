@@ -372,6 +372,7 @@ fn def(
     if ist.isphi &&
       ist.bid == b &&
       ist.phi_m.r.eq(sl.r) &&
+      ist.phi_m.off == sl.off &&
       ist.phi_m.sz == sl.sz {
       let mut r = ist.phi_p.to
       if msk != msks {

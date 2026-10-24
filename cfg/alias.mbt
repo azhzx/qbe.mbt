@@ -184,11 +184,15 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
         @types.AUnk
       }
       if !has_to || cur == @types.AUnk {
-        if !ins.op.is_load() {
-          esc(ins.arg1, fn_)
-        }
-        if !ins.op.is_store() {
-          esc(ins.arg2, fn_)
+        // C alias.c skips a blit here: it writes through arg2 and reads arg1,
+        // so neither address escapes.
+        if ins.op != @types.Blit0 {
+          if !ins.op.is_load() {
+            esc(ins.arg1, fn_)
+          }
+          if !ins.op.is_store() {
+            esc(ins.arg2, fn_)
+          }
         }
       }
     }
