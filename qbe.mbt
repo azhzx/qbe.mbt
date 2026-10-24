@@ -535,7 +535,15 @@ pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
   @emit_arm64.arm64_emit_reset()
   let res : Array[Array[Int]] = []
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
     res.push(@emit_arm64.emit_arm64_bin_fn(fn_, interner, true))
   }
   res
@@ -553,7 +561,15 @@ pub fn compile_arm64_bin_module(
   let out = StringBuilder::StringBuilder()
   @types.fp_stash_reset()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, true)
 }
@@ -622,7 +638,15 @@ pub fn compile_arm64_bin_module_ex(
   let out = StringBuilder::StringBuilder()
   @types.fp_stash_reset()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_bin_module_ex(funcs, datas, interner, true)
 }
@@ -636,7 +660,15 @@ pub fn compile_arm64_object(text : String) -> Bytes raise {
   let out = StringBuilder::StringBuilder()
   @types.fp_stash_reset()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_object(funcs, datas, interner, true)
 }
@@ -655,7 +687,15 @@ pub fn compile_ir_object(
   @types.fp_stash_reset()
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_object(funcs, datas, interner, true)
 }
@@ -673,7 +713,15 @@ pub fn compile_ir_bin_module(
   @types.fp_stash_reset()
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_bin_module(funcs, datas, interner, true)
 }
@@ -691,7 +739,15 @@ pub fn compile_ir_bin_module_ex(
   @types.fp_stash_reset()
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
-    run_passes_arm64(fn_, interner, typs, DbFlags::new(), true, out)
+    run_passes_arm64(
+      fn_,
+      interner,
+      typs,
+      DbFlags::new(),
+      true,
+      out,
+      from_c=true,
+    )
   }
   @emit_arm64.emit_arm64_bin_module_ex(funcs, datas, interner, true)
 }

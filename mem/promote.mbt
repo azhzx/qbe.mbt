@@ -7,6 +7,7 @@ pub fn promote(
   print_dbg : Bool,
   interner : @util.Interner,
   typs : Array[@types.Typ],
+  skip_read_before_write? : Bool = false,
 ) -> String {
   let b = fn_.blks[fn_.start_id]
   for ii in 0..<b.ins.length() {
@@ -26,6 +27,7 @@ pub fn promote(
     let mut k = -1
     let mut s = -1
     let mut skip = false
+    let mut stored_first = false
     for u in fn_.tmps[alloc_t].uses {
       if u.kind != @types.UIns {
         skip = true
@@ -33,6 +35,15 @@ pub fn promote(
       }
       let l = fn_.blks[u.blk_id].ins[u.ins_idx]
       if l.op.is_load() {
+        // With skip_read_before_write the slot is left in memory when it is
+        // read before any store: promoting it would give a load no reaching
+        // definition, which breaks SSA. The C front end asks for this (dash's
+        // mklong reads an uninitialised local); the QBE-compatible path keeps
+        // QBE's own behaviour so that the diffs stay identical.
+        if skip_read_before_write && !stored_first {
+          skip = true
+          break
+        }
         if s == -1 || s == loadsz(l) {
           s = loadsz(l)
           continue
@@ -41,6 +52,7 @@ pub fn promote(
         break
       }
       if l.op.is_store() {
+        stored_first = true
         if i.to.eq(l.arg2) &&
           !i.to.eq(l.arg1) &&
           (s == -1 || s == storesz(l)) &&
