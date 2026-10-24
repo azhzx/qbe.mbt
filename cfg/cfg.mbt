@@ -273,9 +273,20 @@ pub fn fillfron(f : @types.Fn) -> Unit {
   for i in 0..<f.blks.length() {
     f.blks[i].fron.clear()
   }
+  // C fillfron walks the link chain (live blocks only); def_order is the
+  // port's chain. Unreachable blocks keep rpo_id == -1 and must not take part.
+  let chain : Array[Int32] = if f.def_order.length() == 0 {
+    let a : Array[Int32] = []
+    for i in 0..<f.blks.length() {
+      a.push(i)
+    }
+    a
+  } else {
+    f.def_order
+  }
   // For each block, walk up the dom tree from block to its idom,
   // adding the successor to the frontier of each block that doesn't dominate it
-  for i in 0..<f.blks.length() {
+  for i in chain {
     let b = f.blks[i]
     let s1 = b.jmp.s1
     let s2 = b.jmp.s2
@@ -351,6 +362,9 @@ pub fn fillloop(f : @types.Fn) -> Unit {
 ///|
 // Union-find find with path compression (C uffind in cfg.c).
 fn uf_find(f : @types.Fn, pb : Int32, uf : Array[Int32]) -> Int32 {
+  if pb < 0 {
+    return pb
+  }
   let pb1 = uf[f.blks[pb].rpo_id]
   if pb1 >= 0 {
     let root = uf_find(f, pb1, uf)
@@ -397,7 +411,7 @@ pub fn simpljmp(f : @types.Fn) -> Unit {
       b.jmp.s2 = uf_find(f, b.jmp.s2, uf)
     }
     let c = b.jmp.kind.index() - @types.Jjfieq.index()
-    if c >= 0 && c <= 18 {
+    if b.jmp.s1 >= 0 && c >= 0 && c <= 18 {
       if b.jmp.s1 == b.jmp.s2 {
         b.jmp.kind = @types.Jjmp
         b.jmp.s2 = -1

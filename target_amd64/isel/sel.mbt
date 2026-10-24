@@ -374,7 +374,13 @@ fn flagi(ins : Array[@types.Ins], nins : Int32) -> Int32 {
 ///|
 // Select a jump (C seljmp).
 fn seljmp(st : IselState, b : @types.Blk) -> Unit {
-  if b.jmp.kind == @types.Jret0 || b.jmp.kind == @types.Jjmp {
+  // C isel.c: Jret0, Jjmp and Jhlt all leave seljmp alone. Without the Jhlt
+  // case a hlt terminator (no successors, so s1 == s2 == -1) fell through to
+  // the "both targets equal" rewrite and became jmp -1, which then emitted
+  // nothing instead of ud2.
+  if b.jmp.kind == @types.Jret0 ||
+    b.jmp.kind == @types.Jjmp ||
+    b.jmp.kind == @types.Jhlt {
     return
   }
   let r = b.jmp.arg

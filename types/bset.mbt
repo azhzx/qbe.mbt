@@ -29,6 +29,9 @@ pub fn BSet::zero(self : Self) -> Unit {
 ///|
 // Set a bit
 pub fn BSet::set(self : Self, elt : Int32) -> Unit {
+  if elt < 0 || elt >= self.nt {
+    abort("bset: element index out of range")
+  }
   let word = elt / nbit
   let bit = elt % nbit
   let one : UInt64 = 1
@@ -38,6 +41,9 @@ pub fn BSet::set(self : Self, elt : Int32) -> Unit {
 ///|
 // Clear a bit
 pub fn BSet::clr(self : Self, elt : Int32) -> Unit {
+  if elt < 0 || elt >= self.nt {
+    abort("bset: element index out of range")
+  }
   let word = elt / nbit
   let bit = elt % nbit
   let one : UInt64 = 1

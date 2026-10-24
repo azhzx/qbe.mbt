@@ -38,6 +38,9 @@ pub(all) enum JumpKind {
   Jjffne
   Jjffo
   Jjffuo
+
+  // Halt (C Jhlt): the block ends in a trap, it has no successors
+  Jhlt
 } derive(Eq, Debug)
 
 ///|
@@ -80,6 +83,7 @@ pub fn JumpKind::index(self : JumpKind) -> Int32 {
     Jjffne => 24
     Jjffo => 25
     Jjffuo => 26
+    Jhlt => 27
   }
 }
 
@@ -114,6 +118,7 @@ pub fn JumpKind::from_index(i : Int32) -> JumpKind {
     24 => Jjffne
     25 => Jjffo
     26 => Jjffuo
+    27 => Jhlt
     _ => abort("invalid jump index")
   }
 }

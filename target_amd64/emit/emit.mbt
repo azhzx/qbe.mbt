@@ -687,6 +687,7 @@ pub fn emitfn(
     }
     lbl = true
     match b.jmp.kind {
+      @types.Jhlt => st.sb.write_string("\tud2\n")
       @types.Jret0 => {
         if fn_.has_dynalloc {
           st.sb.write_string("\tmovq %rbp, %rsp\n\tsubq $\{fs}, %rsp\n")

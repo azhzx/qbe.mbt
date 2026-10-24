@@ -44,6 +44,7 @@ fn jtoa(j : @types.JumpKind) -> String {
     @types.Jjffne => "jffne"
     @types.Jjffo => "jffo"
     @types.Jjffuo => "jffuo"
+    @types.Jhlt => "hlt"
     @types.Jxxx => "???"
   }
 }
@@ -288,6 +289,7 @@ pub fn printfn(
         }
         sb.write_string("\n")
       }
+      @types.Jhlt => sb.write_string("\thlt\n")
       _ => {
         sb.write_string("\t\{jtoa(b.jmp.kind)} ")
         if b.jmp.kind == @types.Jjnz {

@@ -277,6 +277,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       curb.jmp.kind = @types.Jjmp
       self.expect(TLoc)
       curb.jmp.s1 = self.findblk(self.tokens[self.pos - 1].raw)
+      self.check_not_start(curb.jmp.s1)
       self.expect(TNl)
       return PLbl
     }
@@ -292,16 +293,18 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       self.expect(TCom) // ,
       self.expect(TLoc)
       curb.jmp.s1 = self.findblk(self.tokens[self.pos - 1].raw)
+      self.check_not_start(curb.jmp.s1)
       self.expect(TCom) // ,
       self.expect(TLoc)
       curb.jmp.s2 = self.findblk(self.tokens[self.pos - 1].raw)
+      self.check_not_start(curb.jmp.s2)
       self.expect(TNl)
       return PLbl
     }
     THlt => {
       // Halt instruction (treated as a jump)
       let curb = fn_.blks[self.curblk]
-      curb.jmp.kind = @types.Jxxx // TODO: handle hlt properly
+      curb.jmp.kind = @types.Jhlt
       self.expect(TNl)
       return PLbl
     }
@@ -348,11 +351,17 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
         // Debug location: dbgloc LINE[, COL] (C parse.c case Odbgloc).
         self.expect(TInt)
         let line = parse_int64(self.tokens[self.pos - 1].raw)
+        if line < -2147483648L || line > 2147483647L {
+          raise self.error("line number too big")
+        }
         let mut col : Int64 = 0L
         if self.peek_kind() == TCom {
           let _ = self.next()
           self.expect(TInt)
           col = parse_int64(self.tokens[self.pos - 1].raw)
+          if col < -2147483648L || col > 2147483647L {
+            raise self.error("column number too big")
+          }
         }
         let ins = @types.Ins::new_void(
           @types.Dbgloc,
@@ -378,6 +387,9 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
         if r.is_none() {
           raise self.error("invalid argument for vastart")
         }
+        if !fn_.is_vararg {
+          raise self.error("cannot use vastart in non-variadic function")
+        }
         let ins = @types.Ins::new_void(
           @types.Vastart,
           @types.Kw,
@@ -397,6 +409,17 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       raise self.error("label, instruction or jump expected")
     }
     _ => raise self.error("label, instruction or jump expected")
+  }
+}
+
+///|
+// A jump may not target the entry block (C parse.c: "invalid jump to the
+// start block"); dominator and phi construction assume the entry has no
+// predecessors.
+fn Parser::check_not_start(self : Self, b : Int32) -> Unit raise {
+  let d = self.curfn().def_order
+  if d.length() > 0 && b == d[0] {
+    raise self.error("invalid jump to the start block")
   }
 }
 

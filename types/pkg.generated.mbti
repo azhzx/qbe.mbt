@@ -884,6 +884,7 @@ pub(all) enum JumpKind {
   Jjffne
   Jjffo
   Jjffuo
+  Jhlt
 } derive(Eq, @debug.Debug)
 pub fn JumpKind::from_index(Int32) -> Self
 pub fn JumpKind::index(Self) -> Int32

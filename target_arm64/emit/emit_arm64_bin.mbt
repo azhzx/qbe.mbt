@@ -1231,6 +1231,7 @@ fn arm64_binfn(st : Arm64BinState) -> Unit raise {
     }
     lbl = true
     match b.jmp.kind {
+      @types.Jhlt => arm64_bin_emit(st, 0xD4207D00U.reinterpret_as_int()) // brk #1000
       @types.Jret0 => arm64_bin_epilogue(st)
       @types.Jjmp =>
         if b.jmp.s1 >= 0 && b.jmp.s1 != next {

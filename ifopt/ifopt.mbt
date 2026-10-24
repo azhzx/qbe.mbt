@@ -324,6 +324,7 @@ fn jump_name(j : @types.JumpKind) -> String {
     @types.Jjffne => "jffne"
     @types.Jjffo => "jffo"
     @types.Jjffuo => "jffuo"
+    @types.Jhlt => "hlt"
     @types.Jxxx => "???"
   }
 }
@@ -432,6 +433,7 @@ fn dump_fn(
         }
         sb.write_string("\n")
       }
+      @types.Jhlt => sb.write_string("\thlt\n")
       _ => {
         sb.write_string("\t\{jump_name(b.jmp.kind)} ")
         if b.jmp.kind == @types.Jjnz {

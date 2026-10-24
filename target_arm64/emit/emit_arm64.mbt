@@ -709,6 +709,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
     lbl = true
     match b.jmp.kind {
+      @types.Jhlt => sb.write_string("\tbrk\t#1000\n")
       @types.Jret0 => {
         o = st.frame + 16
         for r in @types.arm64_rclob {
