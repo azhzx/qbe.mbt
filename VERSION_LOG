@@ -402,3 +402,47 @@
     frame that has returned. One core drives both fact and fib, and neither step
     mentions recursion, which is the point. C cannot return the materialised
     fixpoint closure, so the caller builds it in its own frame; the file says so.
+
+2026.10.16: v0.38.0
+    Lua 5.5.1 runs through qpcc. A label-map leak, a frame larger than 4095
+    bytes, a void conditional that built an invalid phi, a C99 inline
+    definition emitted as a strong global, and two missing builtins all had to
+    go first; lua.c then executes its own test suite. The external-project scan
+    starts in this release: 17 projects, 201 files, and the first round already
+    records 128 files passing.
+
+2026.10.18: v0.39.0
+    The scan drives the work. CODEgen ice in the arm64 binary emitter, large
+    stack frames, an Addr truncation and the switch lowering for case labels
+    nested inside loops are fixed (CODEGEN 4 -> 0, 138 -> 142); __inline__
+    gets its C99 6.7.4p6 external-linkage semantics, three SEMA failures go
+    away, and #pragma pack(N) is applied to struct layout, which clears the
+    last two (a Mach struct that has to be 60 bytes and sqlite's _Static_assert
+    agree with clang now). gcm learns that atomic load/store/fence are pinned;
+    without that it deleted a phi whose value an atomicstore still used.
+
+2026.10.23: v0.40.0
+    Six more scan rounds, each one closing the previous finding: -U__BLOCKS__
+    preprocessing (clang defines __BLOCKS__ and Apple's headers then declare
+    block types), attributes inside an enum specifier, __bf16 and __mfp8, and
+    the bundled headers (NULL is defined by stdio/stdlib/string/unistd itself
+    now, so bltin.h's #undef NULL cannot lose it; inttypes.h has the whole PRI*
+    family; __builtin_bzero lowers to bzero). tools/scan_env.py provisions what
+    the projects expect from their build systems - library headers from
+    Homebrew, miniz's CMake export header, dash's generated nodes.h/syntax.h -
+    which takes PREPROCESS from 44 to 7 and the pass count from 154 to 185.
+
+2026.10.24: v0.41.0
+    simplcfg resolves chained merges in phi arguments (a goto into the body of
+    a do-while loop used to leave a phi argument pointing at a deleted block);
+    promote leaves read-only slots in memory, and the C front end asks for one
+    more change - a slot that is read before it is written is never promoted -
+    which is gated so that the QBE-compatible path keeps its byte-identical
+    IR. dash compiles completely (30/30) and the scan reaches 187 of 201.
+    Four extension features land too: .cqe files select -std=cqe and preprocess
+    with -x c; trailing commas are accepted in parameter lists and call
+    arguments; extern "C" / extern {} blocks (N3458, "Clearer C/C++ Headers
+    Boilerplate with extern Blocks") are parsed and flattened; and --strict
+    rejects the conversions C otherwise performs silently (pointer to a
+    different object type, pointer to integer, floating point to integer,
+    narrowing, signedness changes) in initialisers, assignments and returns.
