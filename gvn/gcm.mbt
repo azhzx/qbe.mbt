@@ -40,6 +40,8 @@ fn op_pinned(i : @types.Ins) -> Bool {
     | @types.Vacall
     | @types.AtomicLoad
     | @types.AtomicStore
+    | @types.Blit0
+    | @types.Blit1
     // QPCC extensions with memory side effects: QBE has no atomics, so the
     // optab pinned column has to name them here. Without AtomicStore in this
     // list gcm treats the store as movable, never schedules the value it uses,

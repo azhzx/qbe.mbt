@@ -382,6 +382,39 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
         self.expect(TNl)
         return PIns
       }
+      if name == "blit" {
+        // blit %dst, %src, size (C parse.c Tblit). The parser splits it into
+        // two pseudo instructions: blit0 with the two addresses and blit1 with
+        // the constant size, which ifopt.simpl later expands into load/store
+        // chunks. The class letter is not part of the syntax.
+        let dst = self.parseref()
+        self.expect(TCom) // ,
+        let src = self.parseref()
+        self.expect(TCom) // ,
+        let sz = self.parseref()
+        if dst.is_none() || src.is_none() || sz.is_none() {
+          raise self.error("invalid instruction argument")
+        }
+        if !sz.is_con() {
+          raise self.error("blit size must be constant")
+        }
+        let c = fn_.cons[sz.con_val()]
+        if c.kind != @types.CBits || c.bits.i < 0L || c.bits.i > 2147483647L {
+          raise self.error("invalid blit size")
+        }
+        let b = fn_.blks[self.curblk]
+        b.ins.push(@types.Ins::new_void(@types.Blit0, @types.Kw, dst, src))
+        b.ins.push(
+          @types.Ins::new_void(
+            @types.Blit1,
+            @types.Kw,
+            @types.Ref::rint(c.bits.i.to_int()),
+            @types.Ref::none(),
+          ),
+        )
+        self.expect(TNl)
+        return PIns
+      }
       if name == "vastart" {
         let r = self.parseref()
         if r.is_none() {
