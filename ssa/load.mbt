@@ -354,7 +354,9 @@ fn def(
   }
   if npred == 1 {
     let bp = st.fn_.blks[b].pred[0]
-    let l = il
+    // C load.c: "l = *il" is a value copy. Loc is a struct here, so a plain
+    // alias would let the l.kind write below clobber the caller's loc.
+    let l = Loc::{ kind: il.kind, off: il.off, blk: il.blk, }
     if st.fn_.blks[bp].jmp.s2 >= 0 {
       l.kind = LocType::LNoLoad
     }
@@ -387,7 +389,7 @@ fn def(
   st.nlog = st.nlog + 1
   for np in 0..<npred {
     let bp = st.fn_.blks[b].pred[np]
-    let l = il
+    let l = Loc::{ kind: il.kind, off: il.off, blk: il.blk, }
     if st.fn_.blks[bp].jmp.s2 < 0 &&
       il.kind != LocType::LNoLoad &&
       st.fn_.blks[bp].loop_depth < st.fn_.blks[il.blk].loop_depth {
