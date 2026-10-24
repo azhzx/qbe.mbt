@@ -12,11 +12,11 @@
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**185 个完整通过（92%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**186 个完整通过（93%）**。第一版是 88 个（44%）。
 另有 42 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 194 个文件里 185 个通过 —— 95%**（第一版 65%，上一轮 92%）。
+扣掉它们，**到达 qpcc 的 194 个文件里 186 个通过 —— 96%**（第一版 65%，上一轮 92%）。
 
-修复过程分十轮，逐文件对照见 §7：
+修复过程分十一轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -29,7 +29,8 @@
 | 第七轮（最新）| `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
 | 第八轮| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
 | 第九轮| 修正扫描口径（自动生成 `config.h`）+ 补 `PRI*` 宏与 `__builtin_bzero` | **OK 152 -> 154，PREPROCESS 44 -> 42** |
-| 第十轮（最新）| `__bf16__`/`__mfp8__` + 真正配置环境（第三方头、生成头）| **OK 154 -> 185，PREPROCESS 44 -> 7** |
+| 第十轮| `__bf16__`/`__mfp8__` + 真正配置环境（第三方头、生成头）| **OK 154 -> 185，PREPROCESS 44 -> 7** |
+| 第十一轮（最新）| `simplcfg` 链式合并后 phi 参数悬空 | **OK 185 -> 186，dash/jobs.c 通过** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -62,7 +63,7 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | abduco | 6 | 1 | 3 | 0 | 2 |
 | bzip2 | 13 | 13 | 0 | 0 | 0 |
 | cjson | 2 | 2 | 0 | 0 | 0 |
-| dash | 30 | 28 | 1 | 1 | 0 |
+| dash | 30 | 29 | 0 | 1 | 0 |
 | farbfeld | 7 | 7 | 0 | 0 | 0 |
 | hiredis | 9 | 8 | 0 | 1 | 0 |
 | ii | 2 | 1 | 0 | 0 | 1 |
@@ -76,16 +77,16 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | sqlite | 1 | 1 | 0 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **185** | **7** | **2** | **7** |
+| **合计** | **201** | **186** | **6** | **2** | **7** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 185 | 92% |
+| OK | 186 | 93% |
 | PREPROCESS | 7 | 3% |
 | PARSE | 4 | 2% |
-| SEMA | 3 | 1% |
+| SEMA | 2 | 1% |
 | CODEGEN-PANIC | 2 | 1% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
@@ -94,11 +95,10 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | --- | ---: | ---: |
 | `expected ';'` | 4 | 2 |
 | `use of undeclared identifier: LZ4F_ERROR_dstCapacity_tooSmal` | 2 | 1 |
-| `use of undeclared identifier: NULL` | 1 | 1 |
 
 生成失败（CODEGEN-PANIC）现在只有 2 个文件：
 
-- dash/jobs.c - `qpcc: object emission failed: t.384 violates ssa invariant`
+- dash/printf.c - `PanicError`
 
 - hiredis/read.c - `PanicError`
 
@@ -222,7 +222,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 十轮重扫：与第一版的逐文件对照
+## 7. 十一轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -539,7 +539,55 @@ zlib 的 PowerPC VMX 和 Windows 文件、slstatus 的 Linux `sys/soundcard.h`�
 `promote` 崩溃（`slot ... read but never stored to`）、lz4 两个 fuzzer 的
 `LZ4F_ERROR_ds` —— 都记在下一轮。
 
-### 7.13 现在还剩什么
+### 7.13 第十一轮（`goto` 跳进循环：simplcfg 链式合并后 phi 参数悬空）
+
+起因是 dash/jobs.c 的 `setjobctl`：`goto out;` **从循环外面跳进
+`do` 循环体内部**（合法 C），qpcc 报 `t.384 violates ssa invariant`。
+
+压成 18 行复现后（`qpcc/tests/goto_into_loop.c`）定位过程：
+
+1. 用 `--emit qbe` 取出 **pre-SSA 的 IL**，喂给**原版 QBE**：它**通过** ✓
+   并正常生成汇编 —— 说明 IL 本身是对的，是 qpcc 自己的问题。
+2. 把「SSA 之后」的 IR 打出来和原版 QBE 的 `-dN` 输出对比：**逐块、逐 phi、
+   逐参数完全一致** ✓ —— 进一步证明 **SSA 构造没问题**，是**检查/后续 pass** 的问题。
+3. 在四个 `ssacheck` 调用点加阶段标记：`after-ssa` ✓ → `after-loadopt-coalesce` ✓
+   → `after-gvn` ✓ → `after-simplcfg`（补一次 `fillrpo`/`filldom` 再查）✓
+   → **`after-gvn-gcm` 挂** ✗。
+4. 打印违规 phi 的入边块：`@do.cond.8` 的 **`rpo_id == -1`（不可达）** ✗ ——
+   说明有 pass **删了块却没更新 phi 参数** ✗。
+
+根因在 `cfg/simplcfg.mbt` 的第 1 条规则（把单前驱后继折进前驱）✓：
+它用**合并开始时拍的快照 id**（`js1`/`js2`）去改写后继的 phi 参数 ✓，但反复迭代里
+合并会**链式**发生 ✗ —— 一个参数可能**前一轮**已经被改成中间块 ✓，**后一轮**再用快照 id 找
+就找不到了（`phiargn` 返回 -1 ✗）→ 参数停在**已经不存在的块**上 ✗。
+
+修复：合并时记录 `alias[s1] = id` ✓，在写回跳转前**统一把所有 phi 参数沿 alias 链解析** ✓。
+
+结果：`dash/jobs.c` 通过 ✓，**dash 35/36** ✓（只剩 `printf.c`，见下），
+扫描 **OK 185 → 186** ✓。回归用例 `qpcc/tests/goto_into_loop.c` ✓。
+
+#### 7.13.1 顺带确认：lz4 的两个 fuzzer **不是 qpcc 的问题**
+
+`LZ4F_ERROR_dstCapacity_tooSmall` 未定义 ✗ —— 同一份 `.i` 用 **clang** 编译，
+报的是**一模一样**的错：
+
+    error: use of undeclared identifier 'LZ4F_ERROR_dstCapacity_tooSmall';
+           did you mean 'LZ4F_ERROR_dstMaxSize_tooSmall'?
+
+即 `ossfuzz` 的 harness 比扫描抓到的 lib 版本**新** ✗ 属于工程不匹配 ✓，
+和 qpcc 无关 ✓。
+
+#### 7.13.2 剩下的两处是同一类问题
+
+`dash/bltin/printf.c` 和 `hiredis/read.c` 都停在 `promote` 的
+
+    slot ... is read but never stored to
+
+✗ —— 前者是 `struct stackmark smark; setstackmark(&smark);`（**地址逃逸**给被调函数写 ✗），
+后者是**内联汇编的输出操作数** ✗（`__asm__("..." : "=&r"(result))`）。
+两者都是「槽的写入不在 qpcc 能看到的 IR 里」✓，需要让 `promote` 正确识别**逃逸** ✓。
+
+### 7.14 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
@@ -613,7 +661,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | dash | dash/expand.c | OK | OK | - |
 | dash | dash/histedit.c | OK | OK | - |
 | dash | dash/input.c | OK | OK | - |
-| dash | dash/jobs.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: t.384 violates ssa invariant |
+| dash | dash/jobs.c | OK | OK | - |
 | dash | dash/mail.c | OK | OK | - |
 | dash | dash/main.c | OK | OK | - |
 | dash | dash/memalloc.c | OK | OK | - |
@@ -626,7 +674,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | dash | dash/options.c | OK | OK | - |
 | dash | dash/output.c | OK | OK | - |
 | dash | dash/parser.c | OK | OK | - |
-| dash | dash/printf.c | SEMA | FAIL | use of undeclared identifier: NULL |
+| dash | dash/printf.c | CODEGEN-PANIC | FAIL | PanicError |
 | dash | dash/redir.c | OK | OK | - |
 | dash | dash/show.c | OK | OK | - |
 | dash | dash/system.c | OK | OK | - |
