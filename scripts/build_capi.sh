@@ -10,6 +10,18 @@ cd "$ROOT"
 OUT="${1:-$(mktemp -d /tmp/qbe_capi.XXXXXX)}"
 mkdir -p "$OUT"
 
+# The native runtime archive and the generated stub are emitted by a full
+# native build; building only the foreign-library target does not produce them,
+# and CI runs this script on a clean tree. Build them if they are missing.
+if [ ! -f "_build/native/debug/build/libruntime.a" ] ||
+   [ ! -f "_build/native/debug/build/native/native_stub.o" ]; then
+  if ! moon build --target native >"$OUT/build-runtime.log" 2>&1; then
+    echo "error: the native build the C ABI needs failed" >&2
+    tail -40 "$OUT/build-runtime.log" >&2
+    exit 1
+  fi
+fi
+
 OBJ="_build/native/debug/build/ir_builder_capi/__moonbit_link_core__/ir_builder_capi.o"
 
 # Locate the foreign-library object. A `foreign_library` package also links an
@@ -37,7 +49,15 @@ MOON_LIB="${MOON_HOME:-$HOME/.moon}/lib"
 
 cc -I"$ROOT/include" -I"$MOON_INC" -Wall -Wextra \
   -c examples/capi/capi_smoke.c -o "$OUT/capi_smoke.o"
-cc -o "$OUT/capi_smoke" "$OUT/capi_smoke.o" "$OBJ" \
+# The foreign-library archive carries helpers (moonbit_is_unique_ptr and
+# friends) that the linker only pulls in when the archive is on the command
+# line; the single object leaves them undefined with newer toolchains.
+CAPI_LIB="_build/native/debug/build/ir_builder_capi/ir_builder_capi.a"
+EXTRA_LIB=""
+if [ -f "$CAPI_LIB" ]; then
+  EXTRA_LIB="$CAPI_LIB"
+fi
+cc -o "$OUT/capi_smoke" "$OUT/capi_smoke.o" "$OBJ" $EXTRA_LIB \
   _build/native/debug/build/native/native_stub.o \
   "$MOON_LIB/libmoonbitrun.o" _build/native/debug/build/libruntime.a \
   -lm "$MOON_LIB/libbacktrace.a"
