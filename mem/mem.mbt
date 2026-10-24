@@ -13,7 +13,7 @@
 
 ///|
 // Load size in bytes (C load.c loadsz; mirrors ssa/use.mbt).
-fn loadsz(i : @types.Ins) -> Int {
+fn loadsz(i : @types.Ins) -> Int32 {
   match i.op {
     @types.Loadsb | @types.Loadub => 1
     @types.Loadsh | @types.Loaduh => 2
@@ -25,7 +25,7 @@ fn loadsz(i : @types.Ins) -> Int {
 
 ///|
 // Store size in bytes (C load.c storesz; mirrors ssa/use.mbt).
-fn storesz(i : @types.Ins) -> Int {
+fn storesz(i : @types.Ins) -> Int32 {
   match i.op {
     @types.Storeb => 1
     @types.Storeh => 2
@@ -46,10 +46,10 @@ fn load_to_ext(op : @types.Op) -> @types.Op {
 // Local alias record mirroring the parts of C's Alias used by mem.c.
 priv struct AliasL {
   mut kind : @types.AliasType
-  mut base : Int
+  mut base : Int32
   mut offset : Int64
-  mut slot : Int
-  mut sz : Int
+  mut slot : Int32
+  mut sz : Int32
   mut m : UInt64
 }
 
@@ -122,7 +122,7 @@ fn local_esc(r : @types.Ref, al : Array[AliasL]) -> Unit {
 
 ///|
 // C fillalias's store mask accumulation.
-fn local_store(r : @types.Ref, sz : Int, al : Array[AliasL]) -> Unit {
+fn local_store(r : @types.Ref, sz : Int32, al : Array[AliasL]) -> Unit {
   match r {
     @types.RTmp(v) => {
       let a = al[v]

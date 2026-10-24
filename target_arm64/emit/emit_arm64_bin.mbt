@@ -10,10 +10,10 @@
 
 ///|
 priv struct BinFix {
-  word : Int
-  kind : Int // 0 = b, 1 = bcond
-  cond : Int
-  label : Int
+  word : Int32
+  kind : Int32 // 0 = b, 1 = bcond
+  cond : Int32
+  label : Int32
 }
 
 ///|
@@ -21,14 +21,14 @@ priv struct Arm64BinState {
   fn_ : @types.Fn
   interner : @util.Interner
   apple : Bool
-  words : Array[Int]
-  labels : Map[Int, Int]
+  words : Array[Int32]
+  labels : Map[Int32, Int32]
   fixups : Array[BinFix]
   // Direct calls: (word index of the bl, callee symbol name). Resolved either
   // by the module emitter (intra-module) or turned into relocations later.
-  calls : Array[(Int, String)]
+  calls : Array[(Int32, String)]
   // Global-address fixups: (adrp word, add word, dest reg, symbol, byte offset).
-  addrs : Array[(Int, Int, Int, String, Int)]
+  addrs : Array[(Int32, Int32, Int32, String, Int32)]
   // Names defined in this object; anything else needs a GOT load.
   defined : Array[String]
   mut cur_op : String
@@ -38,9 +38,9 @@ priv struct Arm64BinState {
   // How many scratch registers this instruction has already materialized. The
   // first uses IP1, the second IP0; a third would clobber one of them, so it is
   // an error rather than silent wrong code.
-  mut tmp_used : Int
-  mut frame : Int
-  mut padding : Int
+  mut tmp_used : Int32
+  mut frame : Int32
+  mut padding : Int32
 }
 
 ///|
@@ -71,7 +71,7 @@ fn arm64_bin_new(
 ///|
 // Map a QBE register id (ARM64_R0.., ARM64_V0.., ARM64_SP) to an AArch64
 // register number.
-fn arm64_bin_reg(r : Int) -> Int raise {
+fn arm64_bin_reg(r : Int32) -> Int32 raise {
   if r == @types.ARM64_SP {
     31
   } else if r >= @types.ARM64_R0 && r <= @types.ARM64_LR {
@@ -85,27 +85,27 @@ fn arm64_bin_reg(r : Int) -> Int raise {
 
 ///|
 // ARM condition codes for the QBE comparison codes (arm64_cond order).
-let arm64_bin_cond : Array[Int] = [
+let arm64_bin_cond : Array[Int32] = [
   0, 1, 10, 12, 13, 11, 2, 8, 9, 3, 0, 10, 12, 9, 4, 1, 7, 6,
 ]
 
 ///|
-let arm64_bin_cond_neg : Array[Int] = [
+let arm64_bin_cond_neg : Array[Int32] = [
   1, 0, 11, 13, 12, 10, 3, 9, 8, 2, 1, 11, 13, 8, 5, 0, 6, 7,
 ]
 
 ///|
-fn arm64_bin_emit(st : Arm64BinState, w : Int) -> Unit {
+fn arm64_bin_emit(st : Arm64BinState, w : Int32) -> Unit {
   st.words.push(w)
 }
 
 ///|
-fn arm64_bin_label(st : Arm64BinState, lid : Int) -> Unit {
+fn arm64_bin_label(st : Arm64BinState, lid : Int32) -> Unit {
   st.labels[lid] = st.words.length()
 }
 
 ///|
-fn arm64_bin_b(st : Arm64BinState, lid : Int) -> Unit {
+fn arm64_bin_b(st : Arm64BinState, lid : Int32) -> Unit {
   st.fixups.push(BinFix::{
     word: st.words.length(),
     kind: 0,
@@ -116,7 +116,7 @@ fn arm64_bin_b(st : Arm64BinState, lid : Int) -> Unit {
 }
 
 ///|
-fn arm64_bin_bcond(st : Arm64BinState, cond : Int, lid : Int) -> Unit {
+fn arm64_bin_bcond(st : Arm64BinState, cond : Int32, lid : Int32) -> Unit {
   st.fixups.push(BinFix::{ word: st.words.length(), kind: 1, cond, label: lid, })
   st.words.push(0)
 }
@@ -140,7 +140,7 @@ fn arm64_bin_resolve(st : Arm64BinState) -> Unit raise {
 
 ///|
 // Resolve a %M memory operand to (base register, byte offset).
-fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
+fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int32, Int32) raise {
   if r.is_tmp() {
     (arm64_bin_reg(r.tmp_val()), 0)
   } else if r.is_slot() {
@@ -168,7 +168,7 @@ fn arm64_bin_mem(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
 // IP1 is never handed out by the register allocator, so it is safe as a
 // scratch. Both signs matter: a large frame puts some slots beyond +0xFFF and
 // others beyond -0xFFF.
-fn arm64_bin_tmp_id(st : Arm64BinState) -> Int raise {
+fn arm64_bin_tmp_id(st : Arm64BinState) -> Int32 raise {
   let id = if st.tmp_used == 0 {
     @types.ARM64_IP1
   } else if st.tmp_used == 1 {
@@ -183,12 +183,16 @@ fn arm64_bin_tmp_id(st : Arm64BinState) -> Int raise {
 }
 
 ///|
-fn arm64_bin_tmp(st : Arm64BinState) -> Int raise {
+fn arm64_bin_tmp(st : Arm64BinState) -> Int32 raise {
   arm64_bin_reg(arm64_bin_tmp_id(st))
 }
 
 ///|
-fn arm64_bin_addr(st : Arm64BinState, rn : Int, off : Int) -> (Int, Int) raise {
+fn arm64_bin_addr(
+  st : Arm64BinState,
+  rn : Int32,
+  off : Int32,
+) -> (Int32, Int32) raise {
   if off > 0xFFF || off < -0xFFF {
     let sc = arm64_bin_tmp(st)
     arm64_bin_emit(st, @object.enc_add_imm(sc, rn, 0))
@@ -212,7 +216,7 @@ fn arm64_bin_addr(st : Arm64BinState, rn : Int, off : Int) -> (Int, Int) raise {
 }
 
 ///|
-fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
+fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int32, Int32) raise {
   let (rn, off) = arm64_bin_mem(st, r)
   arm64_bin_addr(st, rn, off)
 }
@@ -221,7 +225,7 @@ fn arm64_bin_mem_at(st : Arm64BinState, r : @types.Ref) -> (Int, Int) raise {
 // Materialize a constant into a register with movz/movk. The text emitter can
 // pick a single MOV bitmask-immediate; movz+movk is functionally identical and
 // is byte-identical whenever the constant fits one 16-bit chunk.
-fn arm64_bin_popcount(x : Int64) -> Int {
+fn arm64_bin_popcount(x : Int64) -> Int32 {
   let mut v = x
   let mut c = 0
   while v != 0L {
@@ -232,7 +236,7 @@ fn arm64_bin_popcount(x : Int64) -> Int {
 }
 
 ///|
-fn arm64_bin_ror(x : Int64, r : Int, esize : Int) -> Int64 {
+fn arm64_bin_ror(x : Int64, r : Int32, esize : Int32) -> Int64 {
   // 1L << 64 wraps in MoonBit, so the full-width mask is explicit.
   let mask = if esize == 64 { -1L } else { (1L << esize) - 1L }
   if r == 0 {
@@ -243,7 +247,7 @@ fn arm64_bin_ror(x : Int64, r : Int, esize : Int) -> Int64 {
 }
 
 ///|
-fn arm64_bin_log2(e : Int) -> Int {
+fn arm64_bin_log2(e : Int32) -> Int32 {
   match e {
     2 => 1
     4 => 2
@@ -257,7 +261,10 @@ fn arm64_bin_log2(e : Int) -> Int {
 
 ///|
 // Encode a 32/64-bit value as an AArch64 bitmask immediate (N, immr, imms).
-fn arm64_bin_encode_logimm(value : Int64, wide : Bool) -> (Int, Int, Int)? {
+fn arm64_bin_encode_logimm(
+  value : Int64,
+  wide : Bool,
+) -> (Int32, Int32, Int32)? {
   let bits = if wide { 64 } else { 32 }
   let mask = if wide { -1L } else { 0xFFFFFFFFL }
   let v = value & mask
@@ -298,7 +305,7 @@ fn arm64_bin_encode_logimm(value : Int64, wide : Bool) -> (Int, Int, Int)? {
 
 ///|
 // A value encodable as a single MOVZ/MOVN: (imm16, hw), or None.
-fn arm64_bin_movz_single(value : Int64, bits : Int) -> (Int, Int)? {
+fn arm64_bin_movz_single(value : Int64, bits : Int32) -> (Int32, Int32)? {
   if value == 0L {
     return Some((0, 0))
   }
@@ -321,7 +328,7 @@ fn arm64_bin_movz_single(value : Int64, bits : Int) -> (Int, Int)? {
 fn arm64_bin_loadcon(
   st : Arm64BinState,
   con : @types.Con,
-  r : Int,
+  r : Int32,
   k : @types.Class,
 ) -> Unit raise {
   if con.kind == @types.CAddr {
@@ -466,7 +473,7 @@ fn arm64_bin_loadcon(
 
 ///|
 // Decode an immediate operand that must fit one 12-bit ADD/SUB immediate.
-fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
+fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int32 raise {
   if r.is_con() {
     let n = st.fn_.cons[r.con_val()].bits.i.reinterpret_as_uint64()
     if n >> 12 == 0UL {
@@ -483,7 +490,7 @@ fn arm64_bin_imm12(st : Arm64BinState, r : @types.Ref) -> Int raise {
 }
 
 ///|
-fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int raise {
+fn arm64_bin_r(st : Arm64BinState, r : @types.Ref) -> Int32 raise {
   if r.is_tmp() {
     arm64_bin_reg(r.tmp_val())
   } else if r.is_con() {
@@ -1115,7 +1122,7 @@ fn arm64_bin_ins(st : Arm64BinState, i : @types.Ins) -> Unit raise {
 // Without this the frame was truncated to its low 12 bits: Lua's luaV_execute
 // asked for 17072 bytes and got 688, so every slot access landed in the
 // caller's frame and the interpreter crashed.
-fn arm64_bin_sp_adjust(st : Arm64BinState, is_sub : Bool, n : Int) -> Unit {
+fn arm64_bin_sp_adjust(st : Arm64BinState, is_sub : Bool, n : Int32) -> Unit {
   let mut left = n
   while left > 0 {
     let part = if left > 0xFFF { 0xFFF } else { left }
@@ -1279,7 +1286,11 @@ pub fn emit_arm64_bin_fn_ex(
   interner : @util.Interner,
   apple : Bool,
   defined : Array[String],
-) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise {
+) -> (
+  Array[Int32],
+  Array[(Int32, String)],
+  Array[(Int32, Int32, Int32, String, Int32)],
+) raise {
   let st = arm64_bin_new(fn_, interner, apple, defined)
   arm64_binfn(st)
   (st.words, st.calls, st.addrs)
@@ -1292,7 +1303,7 @@ pub fn emit_arm64_bin_fn(
   fn_ : @types.Fn,
   interner : @util.Interner,
   apple : Bool,
-) -> Array[Int] raise {
+) -> Array[Int32] raise {
   let (words, calls, addrs) = emit_arm64_bin_fn_ex(fn_, interner, apple, [])
   if calls.length() > 0 || addrs.length() > 0 {
     raise @util.QbeError::Ice(
@@ -1304,7 +1315,12 @@ pub fn emit_arm64_bin_fn(
 
 ///|
 // Little-endian write of the low n bytes of v.
-fn arm64_bin_put_le(buf : Array[Int], off : Int, v : Int64, n : Int) -> Unit {
+fn arm64_bin_put_le(
+  buf : Array[Int32],
+  off : Int32,
+  v : Int64,
+  n : Int32,
+) -> Unit {
   let mut x = v
   for i in 0..<n {
     buf[off + i] = (x & 0xFFL).to_int()
@@ -1313,7 +1329,7 @@ fn arm64_bin_put_le(buf : Array[Int], off : Int, v : Int64, n : Int) -> Unit {
 }
 
 ///|
-fn arm64_bin_align_up(v : Int, a : Int) -> Int {
+fn arm64_bin_align_up(v : Int32, a : Int32) -> Int32 {
   if a <= 1 {
     v
   } else {
@@ -1322,7 +1338,7 @@ fn arm64_bin_align_up(v : Int, a : Int) -> Int {
 }
 
 ///|
-fn arm64_bin_dat_width(kind : @types.DatKind) -> Int {
+fn arm64_bin_dat_width(kind : @types.DatKind) -> Int32 {
   match kind {
     @types.DB => 1
     @types.DH => 2
@@ -1337,15 +1353,15 @@ fn arm64_bin_dat_width(kind : @types.DatKind) -> Int {
 // (\n, \t, \r, \0, \\, \"), so the self-contained data image (object and JIT)
 // matches the route A text that goes through clang. Multi-byte UTF-8 never
 // contains 0x5C, so byte-level scanning is safe.
-fn arm64_bin_str_bytes(s : String) -> Array[Int] {
+fn arm64_bin_str_bytes(s : String) -> Array[Int32] {
   let b = @utf8.encode(s)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut i = 0
   while i < b.length() {
     let c = b[i].to_int()
     if c == 92 && i + 1 < b.length() {
       let e = b[i + 1].to_int()
-      let decoded : Int = match e {
+      let decoded : Int32 = match e {
         110 => 10 // n
         116 => 9 // t
         114 => 13 // r
@@ -1371,7 +1387,7 @@ fn arm64_bin_str_bytes(s : String) -> Array[Int] {
 }
 
 ///|
-fn arm64_bin_dat_size(d : @types.Dat) -> Int {
+fn arm64_bin_dat_size(d : @types.Dat) -> Int32 {
   if d.is_str {
     arm64_bin_str_bytes(d.str).length()
   } else {
@@ -1384,12 +1400,16 @@ fn arm64_bin_dat_size(d : @types.Dat) -> Int {
 // of every named global (byte offset within the image).
 fn arm64_bin_layout_data(
   datas : Array[@types.Dat],
-) -> (Array[(String, Int)], Array[Int], Array[(Int, String, Int, Int)]) {
-  let addr_of : Array[(String, Int)] = []
+) -> (
+  Array[(String, Int32)],
+  Array[Int32],
+  Array[(Int32, String, Int32, Int32)],
+) {
+  let addr_of : Array[(String, Int32)] = []
   // Relocatable pointer entries: (byte offset, target symbol, byte width,
   // addend). The addend is what the object's relocation resolves against; the
   // in-memory image instead stores the fully resolved section address.
-  let refs : Array[(Int, String, Int, Int)] = []
+  let refs : Array[(Int32, String, Int32, Int32)] = []
   let mut off = 0
   let mut align = 8
   for d in datas {
@@ -1405,7 +1425,7 @@ fn arm64_bin_layout_data(
       _ => off = off + arm64_bin_dat_size(d)
     }
   }
-  let buf : Array[Int] = Array::make(off, 0)
+  let buf : Array[Int32] = Array::make(off, 0)
   let mut cur = 0
   let mut align = 8
   for d in datas {
@@ -1455,9 +1475,9 @@ fn arm64_bin_layout_data(
 ///|
 // Lay out the floating-point constant stash (fp0, fp1, ...) that the arm64 isel
 // references as local rodata symbols. Returns (name -> byte offset, bytes).
-fn arm64_fp_layout() -> (Array[(String, Int)], Array[Int]) {
-  let syms : Array[(String, Int)] = []
-  let buf : Array[Int] = []
+fn arm64_fp_layout() -> (Array[(String, Int32)], Array[Int32]) {
+  let syms : Array[(String, Int32)] = []
+  let buf : Array[Int32] = []
   for i in 0..<@types.fp_stash_len() {
     let e = @types.fp_stash_at(i)
     let n = if e.size == 16 { 16 } else if e.size == 8 { 8 } else { 4 }
@@ -1479,16 +1499,16 @@ fn arm64_fp_layout() -> (Array[(String, Int)], Array[Int]) {
 // A linked module image: text words plus a data byte image with every
 // intra-module direct call and global address already patched.
 pub(all) struct Arm64BinModule {
-  words : Array[Int]
-  data : Array[Int] // data bytes
+  words : Array[Int32]
+  data : Array[Int32] // data bytes
   // function name -> word offset within the text
-  fns : Array[(String, Int)]
+  fns : Array[(String, Int32)]
   // global name -> byte offset within the data image
-  datas : Array[(String, Int)]
+  datas : Array[(String, Int32)]
   exports : Array[String]
   // Byte length of the executable code region. When the module has data this is
   // page-aligned so the data can stay writable while the code is mprotected RX.
-  code_bytes : Int
+  code_bytes : Int32
 }
 
 ///|
@@ -1518,9 +1538,9 @@ pub fn Arm64BinModule::image(self : Arm64BinModule) -> Bytes {
 pub(all) struct Arm64BinFixups {
   // (veneer word index, symbol): the call site branches to a 12-byte veneer
   // whose adrp/add/br must be filled in with the resolved address.
-  ext_calls : Array[(Int, String)]
+  ext_calls : Array[(Int32, String)]
   // (adrp word, add word, rd, symbol, addend): patch adrp/add with the address.
-  ext_addrs : Array[(Int, Int, Int, String, Int)]
+  ext_addrs : Array[(Int32, Int32, Int32, String, Int32)]
 }
 
 ///|
@@ -1537,10 +1557,10 @@ fn emit_arm64_bin_module_build(
   allow_external : Bool,
 ) -> (Arm64BinModule, Arm64BinFixups) raise {
   arm64_emit_reset()
-  let words : Array[Int] = []
-  let fns : Array[(String, Int)] = []
-  let pending : Array[(Int, String)] = []
-  let pending_addrs : Array[(Int, Int, Int, String, Int)] = []
+  let words : Array[Int32] = []
+  let fns : Array[(String, Int32)] = []
+  let pending : Array[(Int32, String)] = []
+  let pending_addrs : Array[(Int32, Int32, Int32, String, Int32)] = []
   let defined : Array[String] = []
   for fn_ in funcs {
     defined.push(fn_.name)
@@ -1560,7 +1580,7 @@ fn emit_arm64_bin_module_build(
     }
   }
   // Resolve intra-module calls; collect the rest as externals.
-  let ext_pending : Array[(Int, String)] = []
+  let ext_pending : Array[(Int32, String)] = []
   for c in pending {
     let mut target = -1
     for f in fns {
@@ -1583,7 +1603,7 @@ fn emit_arm64_bin_module_build(
   //   movk x16,#a3,lsl 48; br x16.
   // (x16 is IP0, a caller-saved scratch register; lr already holds the return
   // address and br keeps it.)
-  let ext_calls : Array[(Int, String)] = []
+  let ext_calls : Array[(Int32, String)] = []
   for c in ext_pending {
     let vw = words.length()
     for _ in 0..<5 {
@@ -1617,7 +1637,7 @@ fn emit_arm64_bin_module_build(
     text_bytes
   }
   let data_start = code_bytes
-  let ext_addrs : Array[(Int, Int, Int, String, Int)] = []
+  let ext_addrs : Array[(Int32, Int32, Int32, String, Int32)] = []
   for a in pending_addrs {
     let mut base = -1
     for p in datas_map {

@@ -58,7 +58,7 @@ fn Interp::call_builtin(
 
 ///|
 // The raw word of argument `i`, or 0 when absent.
-fn Interp::arg_of(self : Interp, args : Array[InterpValue], i : Int) -> Int64 {
+fn Interp::arg_of(self : Interp, args : Array[InterpValue], i : Int32) -> Int64 {
   ignore(self)
   if i < args.length() {
     args[i].bits()
@@ -178,6 +178,6 @@ fn hex_string(v : UInt64) -> String {
 }
 
 ///|
-fn char_code_at(s : String, i : Int) -> Int {
+fn char_code_at(s : String, i : Int32) -> Int32 {
   s[i].to_int()
 }

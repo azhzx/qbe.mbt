@@ -125,7 +125,7 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
     }
     // Parse environment or class
     let env = pk == TId && self.peek().raw == "env"
-    let (k, ty) : (@types.Class, Int) = if env {
+    let (k, ty) : (@types.Class, Int32) = if env {
       let _ = self.next() // consume 'env'
       (@types.Kl, -1)
     } else {
@@ -203,7 +203,7 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
 
 ///|
 // Find or create a block by name
-fn Parser::findblk(self : Self, name : String) -> Int raise {
+fn Parser::findblk(self : Self, name : String) -> Int32 raise {
   let fn_ = self.curfn()
   let existing = fn_.find_blk(name)
   if existing >= 0 {
@@ -436,7 +436,7 @@ fn Parser::parse_call(
   self : Self,
   to : @types.Ref,
   cls : @types.Class,
-  ty : Int,
+  ty : Int32,
 ) -> Unit raise {
   // Any call makes the function non-leaf (C parse.c: curf->leaf = 0).
   self.curfn().leaf = false

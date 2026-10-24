@@ -7,8 +7,8 @@
 pub struct Parser {
   tokens : Array[@lexer.Token]
   source_file : String
-  mut pos : Int
-  mut line : Int
+  mut pos : Int32
+  mut line : Int32
   // Collected output
   funcs : Array[@types.Fn]
   datas : Array[@types.Dat]
@@ -21,9 +21,9 @@ pub struct Parser {
   // Current function being parsed (None outside function)
   mut curfn : @types.Fn?
   // Current block id being parsed (-1 if none)
-  mut curblk : Int
+  mut curblk : Int32
   // Return class index (0=Jretw, 1=Jretl, 2=Jrets, 3=Jretd, 4=Jretc, 5=Jret0)
-  mut rcls : Int
+  mut rcls : Int32
   // Parameter instructions (Par/Parc/Pare), to be prepended to start block
   par_ins : Array[@types.Ins]
 }

@@ -21,12 +21,12 @@ pub fn Lexer::tokenize(Self) -> Array[Token]
 
 pub(all) struct Token {
   kind : TokenKind
-  line : Int
-  col : Int
+  line : Int32
+  col : Int32
   raw : String
 } derive(@debug.Debug)
 pub fn Token::kind_str(Self) -> String
-pub fn Token::new(TokenKind, Int, Int, String) -> Self
+pub fn Token::new(TokenKind, Int32, Int32, String) -> Self
 
 pub(all) enum TokenKind {
   TEof

@@ -6,22 +6,22 @@
 
 ///|
 // Class match codes (C Ki/Ka).
-const KI : Int = -1
+const KI : Int32 = -1
 
 ///|
-const KA : Int = -2
+const KA : Int32 = -2
 
 ///|
-const KW : Int = 0
+const KW : Int32 = 0
 
 ///|
-const KL : Int = 1
+const KL : Int32 = 1
 
 ///|
-const KS : Int = 2
+const KS : Int32 = 2
 
 ///|
-const KD : Int = 3
+const KD : Int32 = 3
 
 ///|
 // Map a class code to the LoongArch "w/d/s/d" suffix. LoongArch spells
@@ -32,7 +32,7 @@ let clschr : Array[String] = ["w", "d", "s", "d"]
 
 ///|
 // Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int) -> Int {
+fn sign_ext29(s : Int32) -> Int32 {
   if (s & (1 << 28)) != 0 {
     s - (1 << 29)
   } else {
@@ -43,7 +43,7 @@ fn sign_ext29(s : Int) -> Int {
 ///|
 // Module-global base for block labels (C la64/emit.c static id0); advances by
 // fn->nblk after each function so labels stay unique across the module.
-let la64_id0 : Array[Int] = [0]
+let la64_id0 : Array[Int32] = [0]
 
 ///|
 // Reset the block-label base (called once per module).
@@ -77,7 +77,7 @@ fn la64_emit_new(
 // (`%=`, `%0`, `%1`, `%?`) print `$`-prefixed register names; literal `$`
 // appears only for `$zero`/`$fcc0` scratch registers. All ALU operands are
 // registers (isel materializes constants).
-let la64_omap : Array[(Int, Int, String)] = [
+let la64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), KI, "add.%k %=, %0, %1"),
   (@types.Add.index(), KA, "fadd.%k %=, %0, %1"),
   (@types.Sub.index(), KI, "sub.%k %=, %0, %1"),
@@ -192,7 +192,7 @@ fn la64_store_name(op : @types.Op, k : @types.Class) -> String {
 
 ///|
 // Slot offset calculation (C slot in emit.c).
-fn la64_slot(st : La64EmitState, s : Int) -> Int {
+fn la64_slot(st : La64EmitState, s : Int32) -> Int32 {
   let x = sign_ext29(s)
   if x < 0 {
     8 * -x
@@ -228,7 +228,7 @@ fn la64_far_slot(
   st : La64EmitState,
   ldname : String,
   dst : String,
-  off : Int,
+  off : Int32,
 ) -> Unit {
   st.sb.write_string("\tli.d $t8, ")
   st.sb.write_string(off.to_string())

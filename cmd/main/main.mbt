@@ -95,7 +95,7 @@ fn parse_run_spec(
 
 ///|
 // Format a compile error the way the reference CLI does.
-fn format_qbe_error(e : @util.QbeError, src_file? : String = "") -> String {
+fn format_qbe_error(e : @util.QbeError, src_file~ : String = "") -> String {
   match e {
     @util.QbeError::ParseError(f, line, msg) => {
       // vendor/qbe parse.c: fprintf(stderr, "qbe:%s:%d: ", inpath, lnum)

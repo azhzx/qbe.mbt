@@ -6,7 +6,7 @@
 // Live-in contribution of a successor to a predecessor block (C liveon).
 pub fn liveon(
   v : @types.BSet,
-  b : Int,
+  b : Int32,
   s : @types.Blk,
   fn_ : @types.Fn,
 ) -> Unit {
@@ -30,7 +30,7 @@ pub fn liveon(
 fn bset(
   r : @types.Ref,
   b : @types.Blk,
-  nlv : Array[Int],
+  nlv : Array[Int32],
   tmp : Array[@types.Tmp],
 ) -> Unit {
   if !r.is_tmp() {
@@ -82,7 +82,7 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       out.bits[0] = out.bits[0] | @types.target_cfg.rglob_mask
       let in_ = b.in_set.unwrap()
       in_.copy_from(out)
-      let nlv : Array[Int] = Array::make(2, 0)
+      let nlv : Array[Int32] = Array::make(2, 0)
       in_.each(t => {
         nlv[fn_.tmps[t].cls.base()] = nlv[fn_.tmps[t].cls.base()] + 1
       })

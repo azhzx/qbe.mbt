@@ -16,9 +16,9 @@ fn interp_parse(
 // Run a module, mapping errors to their message for assertions.
 fn interp_run(
   src : String,
-  entry? : String = "main",
-  args? : Array[InterpValue] = [],
-  max_steps? : Int = 10000000,
+  entry~ : String = "main",
+  args~ : Array[InterpValue] = [],
+  max_steps~ : Int32 = 10000000,
 ) -> Result[InterpValue, String] raise {
   let r = interp_parse(src)
   match run_module(r.0, r.1, r.2, entry, args, max_steps~) {

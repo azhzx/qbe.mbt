@@ -2,7 +2,7 @@
 // Parse a class specifier: w, l, s, d, or :type
 // Returns (Class, type_index) where type_index is -1 if not a type class
 // and Class::Kx with type_index set if it's a :type reference
-fn Parser::parsecls(self : Self) -> (@types.Class, Int) raise {
+fn Parser::parsecls(self : Self) -> (@types.Class, Int32) raise {
   let t = self.next()
   match t.kind {
     TTyp => {
@@ -24,7 +24,7 @@ fn Parser::parsecls(self : Self) -> (@types.Class, Int) raise {
 
 ///|
 // Find a type by name, returns its index or raises error
-fn Parser::findtyp(self : Self, name : String) -> Int raise {
+fn Parser::findtyp(self : Self, name : String) -> Int32 raise {
   let mut i = self.typs.length() - 1
   while i >= 0 {
     if self.typs[i].name == name {

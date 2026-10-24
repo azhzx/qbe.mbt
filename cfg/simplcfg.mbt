@@ -17,7 +17,7 @@ fn addbins(vins : Array[@types.Ins], b : @types.Blk) -> Unit {
 }
 
 ///|
-fn phiargn(p : @types.Phi, b_id : Int) -> Int {
+fn phiargn(p : @types.Phi, b_id : Int32) -> Int32 {
   for i in 0..<p.args.length() {
     if p.args[i].blk_id == b_id {
       return i
@@ -27,7 +27,7 @@ fn phiargn(p : @types.Phi, b_id : Int) -> Int {
 }
 
 ///|
-fn phiarg(fn_ : @types.Fn, p : @types.Phi, b_id : Int) -> @types.Ref {
+fn phiarg(fn_ : @types.Fn, p : @types.Phi, b_id : Int32) -> @types.Ref {
   let n = phiargn(p, b_id)
   if n < 0 {
     abort("block not found in phi")
@@ -39,10 +39,10 @@ fn phiarg(fn_ : @types.Fn, p : @types.Phi, b_id : Int) -> @types.Ref {
 fn jmpeq(
   jtype : Array[@types.JumpKind],
   jarg : Array[@types.Ref],
-  js1 : Array[Int],
-  js2 : Array[Int],
-  a : Int,
-  b : Int,
+  js1 : Array[Int32],
+  js2 : Array[Int32],
+  a : Int32,
+  b : Int32,
 ) -> Bool {
   jtype[a] == jtype[b] &&
   jarg[a].eq(jarg[b]) &&
@@ -51,7 +51,7 @@ fn jmpeq(
 }
 
 ///|
-fn jmpnophi(fn_ : @types.Fn, s1 : Int, s2 : Int) -> Bool {
+fn jmpnophi(fn_ : @types.Fn, s1 : Int32, s2 : Int32) -> Bool {
   if s1 >= 0 && fn_.blks[s1].phi.length() > 0 {
     return false
   }
@@ -102,12 +102,12 @@ pub fn simplcfg(
   for _ in 0..<n {
     jarg.push(@types.Ref::none())
   }
-  let js1 : Array[Int] = Array::make(n, -1)
-  let js2 : Array[Int] = Array::make(n, -1)
+  let js1 : Array[Int32] = Array::make(n, -1)
+  let js2 : Array[Int32] = Array::make(n, -1)
   let empty : Array[Bool] = Array::make(n, true)
   let dead : Array[Bool] = Array::make(n, false)
   // merge target of a block that got folded away by rule 1 below.
-  let alias : Array[Int] = Array::make(n, -1)
+  let alias : Array[Int32] = Array::make(n, -1)
   for id in fn_.def_order {
     let b = fn_.blks[id]
     jtype[id] = b.jmp.kind
@@ -138,7 +138,7 @@ pub fn simplcfg(
         addbins(fn_.blks[id].ins, fn_.blks[s1])
         empty[id] = empty[id] && empty[s1]
         // Redirect s1's successors' phis from s1 to id.
-        let succs : Array[Int] = [js1[s1], js2[s1]]
+        let succs : Array[Int32] = [js1[s1], js2[s1]]
         for succ in succs {
           if succ >= 0 {
             for pi in 0..<fn_.blks[succ].phi.length() {

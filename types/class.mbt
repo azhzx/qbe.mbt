@@ -10,7 +10,7 @@ pub(all) enum Class {
 
 ///|
 /// Return 1 if wide (l/d), 0 otherwise (corresponds to C KWIDE()).
-pub fn Class::wide(self : Class) -> Int {
+pub fn Class::wide(self : Class) -> Int32 {
   match self {
     Kx => 0
     Kw => 0
@@ -22,7 +22,7 @@ pub fn Class::wide(self : Class) -> Int {
 
 ///|
 /// Return the base class: 0 for int (w/l), 1 for float (s/d) (corresponds to C KBASE()).
-pub fn Class::base(self : Class) -> Int {
+pub fn Class::base(self : Class) -> Int32 {
   match self {
     Kx => 0
     Kw => 0
@@ -34,7 +34,7 @@ pub fn Class::base(self : Class) -> Int {
 
 ///|
 /// Construct a class from its code: 0->Kw, 1->Kl, 2->Ks, 3->Kd, else Kx.
-pub fn Class::from_code(c : Int) -> Class {
+pub fn Class::from_code(c : Int32) -> Class {
   match c {
     0 => Kw
     1 => Kl
@@ -46,7 +46,7 @@ pub fn Class::from_code(c : Int) -> Class {
 
 ///|
 /// Return the class code: Kx->-1, Kw->0, Kl->1, Ks->2, Kd->3.
-pub fn Class::code(self : Class) -> Int {
+pub fn Class::code(self : Class) -> Int32 {
   match self {
     Kx => -1
     Kw => 0

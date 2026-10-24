@@ -16,12 +16,17 @@ fn Memory::new() -> Memory {
 }
 
 ///|
-fn Memory::store8(self : Memory, addr : UInt64, v : Int) -> Unit {
+fn Memory::store8(self : Memory, addr : UInt64, v : Int32) -> Unit {
   self.bytes[addr] = (v & 0xFF).to_byte()
 }
 
 ///|
-fn Memory::store_int(self : Memory, addr : UInt64, v : Int64, n : Int) -> Unit {
+fn Memory::store_int(
+  self : Memory,
+  addr : UInt64,
+  v : Int64,
+  n : Int32,
+) -> Unit {
   let u = v.reinterpret_as_uint64()
   for i in 0..<n {
     let b = ((u >> (i * 8)) & 0xFFUL).to_int()
@@ -38,7 +43,7 @@ fn Memory::zero(self : Memory, addr : UInt64, n : Int64) -> Unit {
 }
 
 ///|
-fn Memory::load8(self : Memory, addr : UInt64) -> Int {
+fn Memory::load8(self : Memory, addr : UInt64) -> Int32 {
   match self.bytes.get(addr) {
     Some(b) => b.to_int()
     None => 0
@@ -47,7 +52,7 @@ fn Memory::load8(self : Memory, addr : UInt64) -> Int {
 
 ///|
 // Load an n-byte little-endian integer.
-fn Memory::load_int(self : Memory, addr : UInt64, n : Int) -> Int64 {
+fn Memory::load_int(self : Memory, addr : UInt64, n : Int32) -> Int64 {
   let mut v : UInt64 = 0UL
   for i in 0..<n {
     let b = self.load8(addr + i.to_uint64())
@@ -58,7 +63,7 @@ fn Memory::load_int(self : Memory, addr : UInt64, n : Int) -> Int64 {
 
 ///|
 // Zero-extended n-byte load as unsigned (for unsigned word compares).
-fn Memory::load_uint(self : Memory, addr : UInt64, n : Int) -> UInt64 {
+fn Memory::load_uint(self : Memory, addr : UInt64, n : Int32) -> UInt64 {
   let mut v : UInt64 = 0UL
   for i in 0..<n {
     let b = self.load8(addr + i.to_uint64())

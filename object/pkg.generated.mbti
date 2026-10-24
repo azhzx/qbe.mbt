@@ -2,273 +2,273 @@
 package "azhzx/qbe/object"
 
 // Values
-pub const ARM64_RELOC_ADDEND : Int = 10
+pub const ARM64_RELOC_ADDEND : Int32 = 10
 
-pub const ARM64_RELOC_BRANCH26 : Int = 2
+pub const ARM64_RELOC_BRANCH26 : Int32 = 2
 
-pub const ARM64_RELOC_GOT_LOAD_PAGE21 : Int = 5
+pub const ARM64_RELOC_GOT_LOAD_PAGE21 : Int32 = 5
 
-pub const ARM64_RELOC_GOT_LOAD_PAGEOFF12 : Int = 6
+pub const ARM64_RELOC_GOT_LOAD_PAGEOFF12 : Int32 = 6
 
-pub const ARM64_RELOC_PAGE21 : Int = 3
+pub const ARM64_RELOC_PAGE21 : Int32 = 3
 
-pub const ARM64_RELOC_PAGEOFF12 : Int = 4
+pub const ARM64_RELOC_PAGEOFF12 : Int32 = 4
 
-pub const ARM64_RELOC_POINTER_TO_GOT : Int = 7
+pub const ARM64_RELOC_POINTER_TO_GOT : Int32 = 7
 
-pub const ARM64_RELOC_SUBTRACTOR : Int = 1
+pub const ARM64_RELOC_SUBTRACTOR : Int32 = 1
 
-pub const ARM64_RELOC_UNSIGNED : Int = 0
+pub const ARM64_RELOC_UNSIGNED : Int32 = 0
 
-pub fn enc_add_ext(Int, Int, Int) -> Int
+pub fn enc_add_ext(Int32, Int32, Int32) -> Int32
 
-pub fn enc_add_imm(Int, Int, Int) -> Int
+pub fn enc_add_imm(Int32, Int32, Int32) -> Int32
 
-pub fn enc_add_imm32(Int, Int, Int) -> Int
+pub fn enc_add_imm32(Int32, Int32, Int32) -> Int32
 
-pub fn enc_add_imm_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_add_imm_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_add_reg(Int, Int, Int) -> Int
+pub fn enc_add_reg(Int32, Int32, Int32) -> Int32
 
-pub fn enc_add_reg_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_add_reg_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_addsub_ext(Bool, Bool, Int, Int, Int) -> Int
+pub fn enc_addsub_ext(Bool, Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_adrp(Int, Int) -> Int
+pub fn enc_adrp(Int32, Int32) -> Int32
 
-pub fn enc_and_reg(Int, Int, Int) -> Int
+pub fn enc_and_reg(Int32, Int32, Int32) -> Int32
 
-pub fn enc_and_reg_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_and_reg_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_asr(Int, Int, Int) -> Int
+pub fn enc_asr(Int32, Int32, Int32) -> Int32
 
-pub fn enc_asr_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_asr_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_b(Int) -> Int
+pub fn enc_b(Int32) -> Int32
 
-pub fn enc_bcond(Int, Int) -> Int
+pub fn enc_bcond(Int32, Int32) -> Int32
 
-pub fn enc_bitfield(Bool, Int, Int, Int, Int, Int, Int) -> Int
+pub fn enc_bitfield(Bool, Int32, Int32, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_bl(Int) -> Int
+pub fn enc_bl(Int32) -> Int32
 
-pub fn enc_blr(Int) -> Int
+pub fn enc_blr(Int32) -> Int32
 
-pub fn enc_br(Int) -> Int
+pub fn enc_br(Int32) -> Int32
 
-pub fn enc_cbz(Bool, Bool, Int, Int) -> Int
+pub fn enc_cbz(Bool, Bool, Int32, Int32) -> Int32
 
-pub fn enc_cmn(Int, Int) -> Int
+pub fn enc_cmn(Int32, Int32) -> Int32
 
-pub fn enc_cmn_imm_sf(Bool, Int, Int) -> Int
+pub fn enc_cmn_imm_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_cmn_sf(Bool, Int, Int) -> Int
+pub fn enc_cmn_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_cmp(Int, Int) -> Int
+pub fn enc_cmp(Int32, Int32) -> Int32
 
-pub fn enc_cmp_imm_sf(Bool, Int, Int) -> Int
+pub fn enc_cmp_imm_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_cmp_sf(Bool, Int, Int) -> Int
+pub fn enc_cmp_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_cset(Bool, Int, Int) -> Int
+pub fn enc_cset(Bool, Int32, Int32) -> Int32
 
-pub fn enc_csinc(Bool, Int, Int, Int, Int) -> Int
+pub fn enc_csinc(Bool, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_dmb_ish() -> Int
+pub fn enc_dmb_ish() -> Int32
 
-pub fn enc_dp2(Int, Int, Int, Int) -> Int
+pub fn enc_dp2(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_dp2_sf(Bool, Int, Int, Int, Int) -> Int
+pub fn enc_dp2_sf(Bool, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_eor_reg(Int, Int, Int) -> Int
+pub fn enc_eor_reg(Int32, Int32, Int32) -> Int32
 
-pub fn enc_eor_reg_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_eor_reg_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_fadd_d(Int, Int, Int) -> Int
+pub fn enc_fadd_d(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fadd_s(Int, Int, Int) -> Int
+pub fn enc_fadd_s(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fcmp_d(Int, Int) -> Int
+pub fn enc_fcmp_d(Int32, Int32) -> Int32
 
-pub fn enc_fcmpe_d(Int, Int) -> Int
+pub fn enc_fcmpe_d(Int32, Int32) -> Int32
 
-pub fn enc_fcmpe_s(Int, Int) -> Int
+pub fn enc_fcmpe_s(Int32, Int32) -> Int32
 
-pub fn enc_fcvt_d_s(Int, Int) -> Int
+pub fn enc_fcvt_d_s(Int32, Int32) -> Int32
 
-pub fn enc_fcvt_s_d(Int, Int) -> Int
+pub fn enc_fcvt_s_d(Int32, Int32) -> Int32
 
-pub fn enc_fcvtzs_w_d(Int, Int) -> Int
+pub fn enc_fcvtzs_w_d(Int32, Int32) -> Int32
 
-pub fn enc_fcvtzs_w_s(Int, Int) -> Int
+pub fn enc_fcvtzs_w_s(Int32, Int32) -> Int32
 
-pub fn enc_fcvtzs_x_d(Int, Int) -> Int
+pub fn enc_fcvtzs_x_d(Int32, Int32) -> Int32
 
-pub fn enc_fcvtzs_x_s(Int, Int) -> Int
+pub fn enc_fcvtzs_x_s(Int32, Int32) -> Int32
 
-pub fn enc_fdiv_d(Int, Int, Int) -> Int
+pub fn enc_fdiv_d(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fdiv_s(Int, Int, Int) -> Int
+pub fn enc_fdiv_s(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fmov_d(Int, Int) -> Int
+pub fn enc_fmov_d(Int32, Int32) -> Int32
 
-pub fn enc_fmov_d_x(Int, Int) -> Int
+pub fn enc_fmov_d_x(Int32, Int32) -> Int32
 
-pub fn enc_fmov_s(Int, Int) -> Int
+pub fn enc_fmov_s(Int32, Int32) -> Int32
 
-pub fn enc_fmov_s_w(Int, Int) -> Int
+pub fn enc_fmov_s_w(Int32, Int32) -> Int32
 
-pub fn enc_fmov_w_s(Int, Int) -> Int
+pub fn enc_fmov_w_s(Int32, Int32) -> Int32
 
-pub fn enc_fmov_x_d(Int, Int) -> Int
+pub fn enc_fmov_x_d(Int32, Int32) -> Int32
 
-pub fn enc_fmul_d(Int, Int, Int) -> Int
+pub fn enc_fmul_d(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fmul_s(Int, Int, Int) -> Int
+pub fn enc_fmul_s(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fsub_d(Int, Int, Int) -> Int
+pub fn enc_fsub_d(Int32, Int32, Int32) -> Int32
 
-pub fn enc_fsub_s(Int, Int, Int) -> Int
+pub fn enc_fsub_s(Int32, Int32, Int32) -> Int32
 
-pub fn enc_hint(Int) -> Int
+pub fn enc_hint(Int32) -> Int32
 
-pub fn enc_ldar(Bool, Int, Int) -> Int
+pub fn enc_ldar(Bool, Int32, Int32) -> Int32
 
-pub fn enc_ldp(Int, Int, Int, Int) -> Int
+pub fn enc_ldp(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldp_post(Int, Int, Int, Int) -> Int
+pub fn enc_ldp_post(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldp_stp(Bool, Bool, Int, Int, Int, Int, Bool, Bool) -> Int
+pub fn enc_ldp_stp(Bool, Bool, Int32, Int32, Int32, Int32, Bool, Bool) -> Int32
 
-pub fn enc_ldr_w(Int, Int, Int) -> Int
+pub fn enc_ldr_w(Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldr_x(Int, Int, Int) -> Int
+pub fn enc_ldr_x(Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldrb(Int, Int, Int) -> Int
+pub fn enc_ldrb(Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldrh(Int, Int, Int) -> Int
+pub fn enc_ldrh(Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldrsw(Int, Int, Int) -> Int
+pub fn enc_ldrsw(Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldst(Int, Int, Int, Int, Int) -> Int
+pub fn enc_ldst(Int32, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_ldst_fp(Int, Int, Int, Int, Int) -> Int
+pub fn enc_ldst_fp(Int32, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_logic(Int, Int, Int, Int) -> Int
+pub fn enc_logic(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_logic_sf(Bool, Int, Int, Int, Int) -> Int
+pub fn enc_logic_sf(Bool, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_logimm_sf(Bool, Int, Int, Int, Int, Int, Int) -> Int
+pub fn enc_logimm_sf(Bool, Int32, Int32, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_lsl(Int, Int, Int) -> Int
+pub fn enc_lsl(Int32, Int32, Int32) -> Int32
 
-pub fn enc_lsl_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_lsl_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_lsr(Int, Int, Int) -> Int
+pub fn enc_lsr(Int32, Int32, Int32) -> Int32
 
-pub fn enc_lsr_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_lsr_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_madd(Bool, Bool, Int, Int, Int, Int) -> Int
+pub fn enc_madd(Bool, Bool, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_mov_reg(Int, Int) -> Int
+pub fn enc_mov_reg(Int32, Int32) -> Int32
 
-pub fn enc_mov_reg_sf(Bool, Int, Int) -> Int
+pub fn enc_mov_reg_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_movk(Int, Int, Int) -> Int
+pub fn enc_movk(Int32, Int32, Int32) -> Int32
 
-pub fn enc_movk_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_movk_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_movn_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_movn_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_movz(Int, Int, Int) -> Int
+pub fn enc_movz(Int32, Int32, Int32) -> Int32
 
-pub fn enc_movz_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_movz_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_msub(Int, Int, Int, Int) -> Int
+pub fn enc_msub(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_msub_sf(Bool, Int, Int, Int, Int) -> Int
+pub fn enc_msub_sf(Bool, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_mul(Int, Int, Int) -> Int
+pub fn enc_mul(Int32, Int32, Int32) -> Int32
 
-pub fn enc_mul_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_mul_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_nop() -> Int
+pub fn enc_nop() -> Int32
 
-pub fn enc_orr_reg(Int, Int, Int) -> Int
+pub fn enc_orr_reg(Int32, Int32, Int32) -> Int32
 
-pub fn enc_orr_reg_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_orr_reg_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_ret() -> Int
+pub fn enc_ret() -> Int32
 
-pub fn enc_scvtf_d_w(Int, Int) -> Int
+pub fn enc_scvtf_d_w(Int32, Int32) -> Int32
 
-pub fn enc_scvtf_d_x(Int, Int) -> Int
+pub fn enc_scvtf_d_x(Int32, Int32) -> Int32
 
-pub fn enc_scvtf_s_w(Int, Int) -> Int
+pub fn enc_scvtf_s_w(Int32, Int32) -> Int32
 
-pub fn enc_scvtf_s_x(Int, Int) -> Int
+pub fn enc_scvtf_s_x(Int32, Int32) -> Int32
 
-pub fn enc_sdiv(Int, Int, Int) -> Int
+pub fn enc_sdiv(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sdiv_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_sdiv_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_stlr(Bool, Int, Int) -> Int
+pub fn enc_stlr(Bool, Int32, Int32) -> Int32
 
-pub fn enc_stp_pre(Int, Int, Int, Int) -> Int
+pub fn enc_stp_pre(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn enc_str_w(Int, Int, Int) -> Int
+pub fn enc_str_w(Int32, Int32, Int32) -> Int32
 
-pub fn enc_str_x(Int, Int, Int) -> Int
+pub fn enc_str_x(Int32, Int32, Int32) -> Int32
 
-pub fn enc_strb(Int, Int, Int) -> Int
+pub fn enc_strb(Int32, Int32, Int32) -> Int32
 
-pub fn enc_strh(Int, Int, Int) -> Int
+pub fn enc_strh(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_ext(Int, Int, Int) -> Int
+pub fn enc_sub_ext(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_imm(Int, Int, Int) -> Int
+pub fn enc_sub_imm(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_imm32(Int, Int, Int) -> Int
+pub fn enc_sub_imm32(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_imm_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_sub_imm_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_reg(Int, Int, Int) -> Int
+pub fn enc_sub_reg(Int32, Int32, Int32) -> Int32
 
-pub fn enc_sub_reg_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_sub_reg_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_sxtb(Int, Int) -> Int
+pub fn enc_sxtb(Int32, Int32) -> Int32
 
-pub fn enc_sxtb_sf(Bool, Int, Int) -> Int
+pub fn enc_sxtb_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_sxth(Int, Int) -> Int
+pub fn enc_sxth(Int32, Int32) -> Int32
 
-pub fn enc_sxth_sf(Bool, Int, Int) -> Int
+pub fn enc_sxth_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_sxtw(Int, Int) -> Int
+pub fn enc_sxtw(Int32, Int32) -> Int32
 
-pub fn enc_udiv(Int, Int, Int) -> Int
+pub fn enc_udiv(Int32, Int32, Int32) -> Int32
 
-pub fn enc_udiv_sf(Bool, Int, Int, Int) -> Int
+pub fn enc_udiv_sf(Bool, Int32, Int32, Int32) -> Int32
 
-pub fn enc_uxtb(Int, Int) -> Int
+pub fn enc_uxtb(Int32, Int32) -> Int32
 
-pub fn enc_uxtb_sf(Bool, Int, Int) -> Int
+pub fn enc_uxtb_sf(Bool, Int32, Int32) -> Int32
 
-pub fn enc_uxth(Int, Int) -> Int
+pub fn enc_uxth(Int32, Int32) -> Int32
 
-pub fn enc_uxth_sf(Bool, Int, Int) -> Int
+pub fn enc_uxth_sf(Bool, Int32, Int32) -> Int32
 
-pub fn section_flags_cstring() -> Int
+pub fn section_flags_cstring() -> Int32
 
-pub fn section_flags_data() -> Int
+pub fn section_flags_data() -> Int32
 
-pub fn section_flags_literal4() -> Int
+pub fn section_flags_literal4() -> Int32
 
-pub fn section_flags_literal8() -> Int
+pub fn section_flags_literal8() -> Int32
 
-pub fn section_flags_text() -> Int
+pub fn section_flags_text() -> Int32
 
-pub fn words_to_bytes(Array[Int]) -> Bytes
+pub fn words_to_bytes(Array[Int32]) -> Bytes
 
 pub fn write_object(Array[MachoSection], Array[MachoSym]) -> Bytes
 
@@ -276,11 +276,11 @@ pub fn write_object(Array[MachoSection], Array[MachoSym]) -> Bytes
 
 // Types and methods
 pub(all) struct MachoReloc {
-  offset : Int
-  sym : Int
+  offset : Int32
+  sym : Int32
   pcrel : Bool
-  length : Int
-  rtype : Int
+  length : Int32
+  rtype : Int32
   is_extern : Bool
 }
 
@@ -288,15 +288,15 @@ pub(all) struct MachoSection {
   name : String
   seg : String
   data : Bytes
-  align : Int
-  flags : Int
+  align : Int32
+  flags : Int32
   relocs : Array[MachoReloc]
 }
 
 pub(all) struct MachoSym {
   name : String
-  sect : Int
-  value : Int
+  sect : Int32
+  value : Int32
   is_ext : Bool
 }
 

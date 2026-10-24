@@ -35,7 +35,7 @@ fn gvn_pipeline(
 }
 
 ///|
-fn count_op(f : @types.Fn, op : @types.Op) -> Int {
+fn count_op(f : @types.Fn, op : @types.Op) -> Int32 {
   let mut n = 0
   for id in f.def_order {
     for ins in f.blks[id].ins {

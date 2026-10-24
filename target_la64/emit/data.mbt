@@ -68,7 +68,7 @@ pub fn gasemitdat_la64(
 ///|
 // Extract the 32-bit word at 4-byte offset p from the 16-byte little-endian
 // value (b0, b1), as a signed integer.
-fn la64_word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
+fn la64_word_i32(b0 : Int64, b1 : Int64, p : Int32) -> Int32 {
   let u = if p == 0 {
     b0 & 0xFFFFFFFF
   } else if p == 4 {

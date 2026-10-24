@@ -37,7 +37,7 @@ fn la64_abi_parse_pipeline(
 
 ///|
 // Collect the source register of a Copy instruction (for parameter checks).
-fn la64_copy_src(ins : @types.Ins) -> Int {
+fn la64_copy_src(ins : @types.Ins) -> Int32 {
   if ins.op == @types.Copy && ins.arg1.is_tmp() {
     ins.arg1.tmp_val()
   } else {

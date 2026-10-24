@@ -8,10 +8,10 @@ priv struct SpillState {
   fn_ : @types.Fn
   buf : Array[@types.Ins]
   mut fst : @types.BSet?
-  ntmp : Int
-  locs : Int
-  mut slot4 : Int
-  mut slot8 : Int
+  ntmp : Int32
+  locs : Int32
+  mut slot4 : Int32
+  mut slot8 : Int32
   mask : Array[@types.BSet]
 }
 
@@ -54,7 +54,7 @@ fn is_regcpy(i : @types.Ins) -> Bool {
 
 ///|
 // Assign/return the stack slot of a temporary (C slot in spill.c).
-fn sp_slot(st : SpillState, t : Int) -> @types.Ref {
+fn sp_slot(st : SpillState, t : Int32) -> @types.Ref {
   let mut s = st.fn_.tmps[t].slot
   if s == -1 {
     if st.fn_.tmps[t].cls.wide() == 1 {
@@ -79,7 +79,7 @@ fn sp_slot(st : SpillState, t : Int) -> @types.Ref {
 }
 
 ///|
-fn tcmp0(st : SpillState, pa : Int, pb : Int) -> Int {
+fn tcmp0(st : SpillState, pa : Int32, pb : Int32) -> Int32 {
   let ca = st.fn_.tmps[pa].cost
   let cb = st.fn_.tmps[pb].cost
   if cb < ca {
@@ -92,7 +92,7 @@ fn tcmp0(st : SpillState, pa : Int, pb : Int) -> Int {
 }
 
 ///|
-fn tcmp1(st : SpillState, pa : Int, pb : Int) -> Int {
+fn tcmp1(st : SpillState, pa : Int32, pb : Int32) -> Int32 {
   let fst = st.fst.unwrap()
   let c = (if fst.has(pb) { 1 } else { 0 }) - (if fst.has(pa) { 1 } else { 0 })
   if c != 0 {
@@ -104,12 +104,12 @@ fn tcmp1(st : SpillState, pa : Int, pb : Int) -> Int {
 
 ///|
 // Keep only the k highest-priority temps in b, spilling the rest (C limit).
-fn limit(st : SpillState, b : @types.BSet, k : Int, f : @types.BSet?) -> Unit {
+fn limit(st : SpillState, b : @types.BSet, k : Int32, f : @types.BSet?) -> Unit {
   let nt = b.count()
   if nt <= k {
     return
   }
-  let tarr : Array[Int] = []
+  let tarr : Array[Int32] = []
   b.each(t => {
     b.clr(t)
     tarr.push(t)
@@ -136,8 +136,8 @@ fn limit(st : SpillState, b : @types.BSet, k : Int, f : @types.BSet?) -> Unit {
 fn limit2(
   st : SpillState,
   b1 : @types.BSet,
-  k1 : Int,
-  k2 : Int,
+  k1 : Int32,
+  k2 : Int32,
   fst : @types.BSet?,
 ) -> Unit {
   let b2 = @types.BSet::new(st.ntmp)
@@ -156,9 +156,9 @@ fn limit2(
 fn sp_merge(
   st : SpillState,
   u : @types.BSet,
-  bu : Int,
+  bu : Int32,
   v : @types.BSet,
-  bv : Int,
+  bv : Int32,
 ) -> Unit {
   if st.fn_.blks[bu].loop_depth <= st.fn_.blks[bv].loop_depth {
     ignore(u.union(v))
@@ -192,7 +192,7 @@ fn reloads(st : SpillState, u : @types.BSet, v : @types.BSet) -> Unit {
 }
 
 ///|
-fn store(st : SpillState, r : @types.Ref, s : Int) -> Unit {
+fn store(st : SpillState, r : @types.Ref, s : Int32) -> Unit {
   if s != -1 {
     let op = @types.Op::from_index(
       @types.Storew.index() + st.fn_.tmps[r.tmp_val()].cls.code(),
@@ -204,7 +204,7 @@ fn store(st : SpillState, r : @types.Ref, s : Int) -> Unit {
 ///|
 // Process a run of consecutive copy-from-register instructions (C dopm in
 // spill.c). Returns the index of the first copy in the run.
-fn dopm(st : SpillState, b : @types.Blk, i : Int, v : @types.BSet) -> Int {
+fn dopm(st : SpillState, b : @types.Blk, i : Int32, v : @types.BSet) -> Int32 {
   let u = @types.BSet::new(st.ntmp)
   let mut i1 = i + 1
   let mut idx = i + 1
@@ -370,7 +370,7 @@ pub fn spill(
 
     // 2. process the block instructions
     st.buf.clear()
-    let lvarg : Array[Int] = Array::make(2, 0)
+    let lvarg : Array[Int32] = Array::make(2, 0)
     let mut idx = b.ins.length()
     while idx > 0 {
       idx = idx - 1

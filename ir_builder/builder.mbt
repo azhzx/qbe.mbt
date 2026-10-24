@@ -46,7 +46,7 @@ pub fn Ret::jump_kind(self : Ret) -> @types.JumpKind {
 
 ///|
 // Map a class code (0=w, 1=l, 2=s, 3=d, anything else=void) to a return kind.
-pub fn Ret::from_code(c : Int) -> Ret {
+pub fn Ret::from_code(c : Int32) -> Ret {
   match c {
     0 => Word
     1 => Long
@@ -61,10 +61,10 @@ pub fn Ret::from_code(c : Int) -> Ret {
 // target block's params may be declared after the branch that feeds them,
 // matching the textual parser's phi syntax).
 priv struct PendingEdge {
-  fid : Int
-  pred : Int
-  dest : Int
-  args : Array[Int]
+  fid : Int32
+  pred : Int32
+  dest : Int32
+  args : Array[Int32]
 }
 
 ///|
@@ -77,11 +77,11 @@ pub struct Builder {
   // Value handle table (all functions): handle -> Ref.
   vals : Array[@types.Ref]
   // Function id -> currently selected block id.
-  cur : Array[Int]
+  cur : Array[Int32]
   // Function id -> return kind.
   rets : Array[Ret]
   // Function id -> parameter value handles.
-  params : Array[Array[Int]]
+  params : Array[Array[Int32]]
   // Interleaved "f"/"d" definition order for the text emitter.
   order : Array[String]
   // Branch edges awaiting phi-argument binding (see `finalize`).
@@ -115,14 +115,14 @@ pub fn Builder::new() -> Builder {
 
 ///|
 // Append a value to the handle table and return its handle.
-fn Builder::push_ref(self : Builder, r : @types.Ref) -> Int {
+fn Builder::push_ref(self : Builder, r : @types.Ref) -> Int32 {
   self.vals.push(r)
   self.vals.length() - 1
 }
 
 ///|
 // Resolve a value handle to an IR reference (`-1` -> `Ref::none()`).
-pub fn Builder::val_ref(self : Builder, v : Int) -> @types.Ref {
+pub fn Builder::val_ref(self : Builder, v : Int32) -> @types.Ref {
   if v < 0 {
     @types.Ref::none()
   } else {
@@ -132,7 +132,7 @@ pub fn Builder::val_ref(self : Builder, v : Int) -> @types.Ref {
 
 ///|
 // Intern a global symbol name and return its id.
-pub fn Builder::symbol(self : Builder, name : String) -> Int {
+pub fn Builder::symbol(self : Builder, name : String) -> Int32 {
   self.interner.intern(name)
 }
 
@@ -162,9 +162,9 @@ pub fn Builder::set_dbg_compile_unit(
 // Attach a source location (a `dbgloc` instruction) at the current point.
 pub fn Builder::dbg_loc(
   self : Builder,
-  fid : Int,
-  line : Int,
-  col : Int,
+  fid : Int32,
+  line : Int32,
+  col : Int32,
 ) -> Unit {
   let bid = self.cur[fid]
   self.funcs[fid].blks[bid].ins.push(
@@ -181,10 +181,10 @@ pub fn Builder::dbg_loc(
 // Declare a local variable `name : ty` bound to `val` in function `fid`.
 pub fn Builder::dbg_var(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   name : String,
   ty : @types.DbgType,
-  val : Int,
+  val : Int32,
 ) -> Unit {
   let r = self.val_ref(val)
   if r.is_tmp() {
@@ -204,8 +204,8 @@ pub fn Builder::add_func(
   ret : Ret,
   params : Array[@types.Class],
   is_export : Bool,
-  is_vararg? : Bool = false,
-) -> Int {
+  is_vararg~ : Bool = false,
+) -> Int32 {
   let f = @types.Fn::new(name)
   f.is_export = is_export
   f.is_vararg = is_vararg
@@ -230,7 +230,11 @@ pub fn Builder::add_func(
 ///|
 // Add one parameter (a fresh temp plus a `Par` instruction) to a function's
 // entry block. Returns the parameter's value handle.
-pub fn Builder::add_param(self : Builder, fid : Int, cls : @types.Class) -> Int {
+pub fn Builder::add_param(
+  self : Builder,
+  fid : Int32,
+  cls : @types.Class,
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   let t = f.new_tmp("p", cls)
@@ -245,19 +249,19 @@ pub fn Builder::add_param(self : Builder, fid : Int, cls : @types.Class) -> Int 
 
 ///|
 // Value handle of parameter `i` of function `fid`.
-pub fn Builder::param(self : Builder, fid : Int, i : Int) -> Int {
+pub fn Builder::param(self : Builder, fid : Int32, i : Int32) -> Int32 {
   self.params[fid][i]
 }
 
 ///|
 // Value handles of every parameter of function `fid`.
-pub fn Builder::func_params(self : Builder, fid : Int) -> Array[Int] {
+pub fn Builder::func_params(self : Builder, fid : Int32) -> Array[Int32] {
   self.params[fid]
 }
 
 ///|
 // Define a new basic block. Returns its block id.
-pub fn Builder::add_block(self : Builder, fid : Int, label : String) -> Int {
+pub fn Builder::add_block(self : Builder, fid : Int32, label : String) -> Int32 {
   let f = self.funcs[fid]
   let b = f.add_blk(label)
   f.def_order.push(b)
@@ -266,19 +270,19 @@ pub fn Builder::add_block(self : Builder, fid : Int, label : String) -> Int {
 
 ///|
 // Make `bid` the block that subsequent instructions are appended to.
-pub fn Builder::switch_to(self : Builder, fid : Int, bid : Int) -> Unit {
+pub fn Builder::switch_to(self : Builder, fid : Int32, bid : Int32) -> Unit {
   self.cur[fid] = bid
 }
 
 ///|
 // The currently selected block of a function.
-pub fn Builder::current_block(self : Builder, fid : Int) -> Int {
+pub fn Builder::current_block(self : Builder, fid : Int32) -> Int32 {
   self.cur[fid]
 }
 
 ///|
 // The entry block id of a function.
-pub fn Builder::entry_block(self : Builder, fid : Int) -> Int {
+pub fn Builder::entry_block(self : Builder, fid : Int32) -> Int32 {
   self.funcs[fid].start_id
 }
 
@@ -287,10 +291,10 @@ pub fn Builder::entry_block(self : Builder, fid : Int) -> Int {
 // value handle; predecessors pass an argument for it via the jump helpers.
 pub fn Builder::block_param(
   self : Builder,
-  fid : Int,
-  bid : Int,
+  fid : Int32,
+  bid : Int32,
   cls : @types.Class,
-) -> Int {
+) -> Int32 {
   let f = self.funcs[fid]
   let t = f.new_tmp("b", cls)
   let r = @types.Ref::tmp(t)
@@ -300,14 +304,14 @@ pub fn Builder::block_param(
 
 ///|
 // Integer constant.
-pub fn Builder::iconst(self : Builder, fid : Int, v : Int64) -> Int {
+pub fn Builder::iconst(self : Builder, fid : Int32, v : Int64) -> Int32 {
   let f = self.funcs[fid]
   self.push_ref(@types.Ref::con(f.get_con(v)))
 }
 
 ///|
 // Double (`d`) constant.
-pub fn Builder::fconst(self : Builder, fid : Int, v : Double) -> Int {
+pub fn Builder::fconst(self : Builder, fid : Int32, v : Double) -> Int32 {
   let f = self.funcs[fid]
   let con = @types.Ref::con(f.get_con_by(@types.Con::double(v)))
   let to = @types.Ref::tmp(f.new_tmp("t", @types.Kd))
@@ -320,7 +324,7 @@ pub fn Builder::fconst(self : Builder, fid : Int, v : Double) -> Int {
 
 ///|
 // Single (`s`) constant.
-pub fn Builder::sconst(self : Builder, fid : Int, v : Float) -> Int {
+pub fn Builder::sconst(self : Builder, fid : Int32, v : Float) -> Int32 {
   let f = self.funcs[fid]
   let con = @types.Ref::con(f.get_con_by(@types.Con::single(v)))
   let to = @types.Ref::tmp(f.new_tmp("t", @types.Ks))
@@ -333,7 +337,7 @@ pub fn Builder::sconst(self : Builder, fid : Int, v : Float) -> Int {
 
 ///|
 // Address-of-global constant.
-pub fn Builder::global(self : Builder, fid : Int, name : String) -> Int {
+pub fn Builder::global(self : Builder, fid : Int32, name : String) -> Int32 {
   let f = self.funcs[fid]
   let g = self.interner.intern(name)
   self.push_ref(@types.Ref::con(f.get_con_by(@types.Con::addr(g))))
@@ -344,13 +348,13 @@ pub fn Builder::global(self : Builder, fid : Int, name : String) -> Int {
 // `Kx` the instruction has no destination (use `emit_void` for that).
 pub fn Builder::emit_ins(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
   res : @types.Class,
-  a1 : Int,
-  a2 : Int,
-) -> Int {
+  a1 : Int32,
+  a2 : Int32,
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   let to = if res == @types.Kx {
@@ -372,11 +376,11 @@ pub fn Builder::emit_ins(
 // Generic void instruction emitter (stores, calls to void, vastart, ...).
 pub fn Builder::emit_void(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
-  a1 : Int,
-  a2 : Int,
+  a1 : Int32,
+  a2 : Int32,
 ) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -389,12 +393,12 @@ pub fn Builder::emit_void(
 // Binary arithmetic / bitwise operation with the same operand and result class.
 pub fn Builder::arith(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
-  a : Int,
-  b : Int,
-) -> Int {
+  a : Int32,
+  b : Int32,
+) -> Int32 {
   self.emit_ins(fid, op, cls, cls, a, b)
 }
 
@@ -402,12 +406,12 @@ pub fn Builder::arith(
 // Comparison producing a word (`w`) result.
 pub fn Builder::cmp(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
-  a : Int,
-  b : Int,
-) -> Int {
+  a : Int32,
+  b : Int32,
+) -> Int32 {
   self.emit_ins(fid, op, cls, @types.Kw, a, b)
 }
 
@@ -415,12 +419,12 @@ pub fn Builder::cmp(
 // Unary operation (extensions, truncations, casts) whose result class differs.
 pub fn Builder::unop(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
   res : @types.Class,
-  a : Int,
-) -> Int {
+  a : Int32,
+) -> Int32 {
   self.emit_ins(fid, op, cls, res, a, -1)
 }
 
@@ -428,11 +432,11 @@ pub fn Builder::unop(
 // Load: `%t =res op addr`.
 pub fn Builder::load(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   res : @types.Class,
-  addr : Int,
-) -> Int {
+  addr : Int32,
+) -> Int32 {
   self.emit_ins(fid, op, res, res, addr, -1)
 }
 
@@ -440,11 +444,11 @@ pub fn Builder::load(
 // Store: `op val, addr` with the store class `cls`.
 pub fn Builder::store(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   op : @types.Op,
   cls : @types.Class,
-  val : Int,
-  addr : Int,
+  val : Int32,
+  addr : Int32,
 ) -> Unit {
   self.emit_void(fid, op, cls, val, addr)
 }
@@ -454,11 +458,11 @@ pub fn Builder::store(
 // `call`. Returns the result handle, or `-1` for a void call.
 pub fn Builder::call(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   callee : String,
-  args : Array[(@types.Class, Int)],
+  args : Array[(@types.Class, Int32)],
   ret : Ret,
-) -> Int {
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.leaf = false
@@ -497,10 +501,10 @@ pub fn Builder::call(
 // so a block's params may be declared before or after the branches into it.
 fn Builder::add_edge(
   self : Builder,
-  fid : Int,
-  pred : Int,
-  dest : Int,
-  args : Array[Int],
+  fid : Int32,
+  pred : Int32,
+  dest : Int32,
+  args : Array[Int32],
 ) -> Unit {
   self.pending.push(PendingEdge::{ fid, pred, dest, args, })
 }
@@ -509,11 +513,11 @@ fn Builder::add_edge(
 // Indirect call through a value handle holding a function pointer.
 pub fn Builder::call_value(
   self : Builder,
-  fid : Int,
-  callee : Int,
-  args : Array[(@types.Class, Int)],
+  fid : Int32,
+  callee : Int32,
+  args : Array[(@types.Class, Int32)],
   ret : Ret,
-) -> Int {
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.leaf = false
@@ -557,12 +561,12 @@ pub fn Builder::call_value(
 // place the varargs according to the target ABI.
 pub fn Builder::call_vararg(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   callee : String,
-  fixed : Array[(@types.Class, Int)],
-  varargs : Array[(@types.Class, Int)],
+  fixed : Array[(@types.Class, Int32)],
+  varargs : Array[(@types.Class, Int32)],
   ret : Ret,
-) -> Int {
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.leaf = false
@@ -618,7 +622,7 @@ pub fn Builder::call_vararg(
 
 ///|
 // Emit a va_start instruction for the value handle of the va_list storage.
-pub fn Builder::vastart(self : Builder, fid : Int, ap : Int) -> Unit {
+pub fn Builder::vastart(self : Builder, fid : Int32, ap : Int32) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.blks[bid].ins.push(
@@ -636,10 +640,10 @@ pub fn Builder::vastart(self : Builder, fid : Int, ap : Int) -> Unit {
 // Emit a va_arg of the given class and return the result handle.
 pub fn Builder::vaarg(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   cls : @types.Class,
-  ap : Int,
-) -> Int {
+  ap : Int32,
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   let to = @types.Ref::tmp(f.new_tmp("t", cls))
@@ -653,10 +657,10 @@ pub fn Builder::vaarg(
 // Mark the start of the variadic arguments in the following call.
 pub fn Builder::atomic_load(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   cls : @types.Class,
-  addr : Int,
-) -> Int {
+  addr : Int32,
+) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   let to = @types.Ref::tmp(f.new_tmp("t", cls))
@@ -676,10 +680,10 @@ pub fn Builder::atomic_load(
 // Sequentially consistent atomic store.
 pub fn Builder::atomic_store(
   self : Builder,
-  fid : Int,
+  fid : Int32,
   cls : @types.Class,
-  val : Int,
-  addr : Int,
+  val : Int32,
+  addr : Int32,
 ) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -696,7 +700,7 @@ pub fn Builder::atomic_store(
 
 ///|
 // Full sequentially consistent fence (dmb ish).
-pub fn Builder::fence(self : Builder, fid : Int) -> Unit {
+pub fn Builder::fence(self : Builder, fid : Int32) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.blks[bid].ins.push(
@@ -712,7 +716,7 @@ pub fn Builder::fence(self : Builder, fid : Int) -> Unit {
 
 ///|
 // Mark the start of the variadic arguments in the following call.
-pub fn Builder::arg_vararg(self : Builder, fid : Int) -> Unit {
+pub fn Builder::arg_vararg(self : Builder, fid : Int32) -> Unit {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
   f.blks[bid].ins.push(
@@ -817,9 +821,9 @@ fn Builder::finalize(self : Builder) -> Unit {
 // Unconditional branch, optionally passing block-parameter arguments.
 pub fn Builder::jmp(
   self : Builder,
-  fid : Int,
-  dest : Int,
-  args : Array[Int],
+  fid : Int32,
+  dest : Int32,
+  args : Array[Int32],
 ) -> Unit {
   let bid = self.cur[fid]
   self.funcs[fid].blks[bid].jmp = @types.Jump::full(
@@ -835,12 +839,12 @@ pub fn Builder::jmp(
 // Conditional branch on a non-zero word, with per-edge block-parameter args.
 pub fn Builder::jnz(
   self : Builder,
-  fid : Int,
-  cond : Int,
-  then_blk : Int,
-  then_args : Array[Int],
-  else_blk : Int,
-  else_args : Array[Int],
+  fid : Int32,
+  cond : Int32,
+  then_blk : Int32,
+  then_args : Array[Int32],
+  else_blk : Int32,
+  else_args : Array[Int32],
 ) -> Unit {
   let bid = self.cur[fid]
   self.funcs[fid].blks[bid].jmp = @types.Jump::full(
@@ -855,7 +859,7 @@ pub fn Builder::jnz(
 
 ///|
 // Return (value handle `-1` for void).
-pub fn Builder::ret(self : Builder, fid : Int, v : Int) -> Unit {
+pub fn Builder::ret(self : Builder, fid : Int32, v : Int32) -> Unit {
   let bid = self.cur[fid]
   let jk = self.rets[fid].jump_kind()
   self.funcs[fid].blks[bid].jmp = @types.Jump::full(jk, self.val_ref(v), -1, -1)
@@ -989,7 +993,7 @@ pub fn Builder::interner_ref(self : Builder) -> @util.Interner {
 
 ///|
 // Emit arm64 assembly text (self-contained, no assembler needed).
-pub fn Builder::emit_asm(self : Builder, gas? : String = "e") -> String raise {
+pub fn Builder::emit_asm(self : Builder, gas~ : String = "e") -> String raise {
   self.finalize()
   @qbe.compile_ir_asm(
     self.funcs,

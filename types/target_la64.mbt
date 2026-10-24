@@ -9,234 +9,234 @@
 
 ///|
 // The hard-wired zero register ($zero / $r0).
-pub const LA_ZERO : Int = 0
+pub const LA_ZERO : Int32 = 0
 
 ///|
 // Caller-save GPR temporaries (t0-t7; t8 is reserved as emitter scratch).
-pub const LA_T0 : Int = 1
+pub const LA_T0 : Int32 = 1
 
 ///|
-pub const LA_T1 : Int = 2
+pub const LA_T1 : Int32 = 2
 
 ///|
-pub const LA_T2 : Int = 3
+pub const LA_T2 : Int32 = 3
 
 ///|
-pub const LA_T3 : Int = 4
+pub const LA_T3 : Int32 = 4
 
 ///|
-pub const LA_T4 : Int = 5
+pub const LA_T4 : Int32 = 5
 
 ///|
-pub const LA_T5 : Int = 6
+pub const LA_T5 : Int32 = 6
 
 ///|
-pub const LA_T6 : Int = 7
+pub const LA_T6 : Int32 = 7
 
 ///|
-pub const LA_T7 : Int = 8
+pub const LA_T7 : Int32 = 8
 
 ///|
 // Argument registers (a0-a7)
-pub const LA_A0 : Int = 9
+pub const LA_A0 : Int32 = 9
 
 ///|
-pub const LA_A1 : Int = 10
+pub const LA_A1 : Int32 = 10
 
 ///|
-pub const LA_A2 : Int = 11
+pub const LA_A2 : Int32 = 11
 
 ///|
-pub const LA_A3 : Int = 12
+pub const LA_A3 : Int32 = 12
 
 ///|
-pub const LA_A4 : Int = 13
+pub const LA_A4 : Int32 = 13
 
 ///|
-pub const LA_A5 : Int = 14
+pub const LA_A5 : Int32 = 14
 
 ///|
-pub const LA_A6 : Int = 15
+pub const LA_A6 : Int32 = 15
 
 ///|
-pub const LA_A7 : Int = 16
+pub const LA_A7 : Int32 = 16
 
 ///|
 // Callee-save registers (s0-s8)
-pub const LA_S0 : Int = 17
+pub const LA_S0 : Int32 = 17
 
 ///|
-pub const LA_S1 : Int = 18
+pub const LA_S1 : Int32 = 18
 
 ///|
-pub const LA_S2 : Int = 19
+pub const LA_S2 : Int32 = 19
 
 ///|
-pub const LA_S3 : Int = 20
+pub const LA_S3 : Int32 = 20
 
 ///|
-pub const LA_S4 : Int = 21
+pub const LA_S4 : Int32 = 21
 
 ///|
-pub const LA_S5 : Int = 22
+pub const LA_S5 : Int32 = 22
 
 ///|
-pub const LA_S6 : Int = 23
+pub const LA_S6 : Int32 = 23
 
 ///|
-pub const LA_S7 : Int = 24
+pub const LA_S7 : Int32 = 24
 
 ///|
-pub const LA_S8 : Int = 25
+pub const LA_S8 : Int32 = 25
 
 ///|
 // Globally live registers
-pub const LA_FP : Int = 26
+pub const LA_FP : Int32 = 26
 
 ///|
-pub const LA_SP : Int = 27
+pub const LA_SP : Int32 = 27
 
 ///|
-pub const LA_TP : Int = 28
+pub const LA_TP : Int32 = 28
 
 ///|
-pub const LA_RA : Int = 29
+pub const LA_RA : Int32 = 29
 
 ///|
 // Reserved scratch register (t8), used by the emitter and for env arguments.
-pub const LA_T8 : Int = 30
+pub const LA_T8 : Int32 = 30
 
 ///|
 // FP caller-save registers (ft0-ft15)
-pub const LA_FT0 : Int = 32
+pub const LA_FT0 : Int32 = 32
 
 ///|
-pub const LA_FT1 : Int = 33
+pub const LA_FT1 : Int32 = 33
 
 ///|
-pub const LA_FT2 : Int = 34
+pub const LA_FT2 : Int32 = 34
 
 ///|
-pub const LA_FT3 : Int = 35
+pub const LA_FT3 : Int32 = 35
 
 ///|
-pub const LA_FT4 : Int = 36
+pub const LA_FT4 : Int32 = 36
 
 ///|
-pub const LA_FT5 : Int = 37
+pub const LA_FT5 : Int32 = 37
 
 ///|
-pub const LA_FT6 : Int = 38
+pub const LA_FT6 : Int32 = 38
 
 ///|
-pub const LA_FT7 : Int = 39
+pub const LA_FT7 : Int32 = 39
 
 ///|
-pub const LA_FT8 : Int = 40
+pub const LA_FT8 : Int32 = 40
 
 ///|
-pub const LA_FT9 : Int = 41
+pub const LA_FT9 : Int32 = 41
 
 ///|
-pub const LA_FT10 : Int = 42
+pub const LA_FT10 : Int32 = 42
 
 ///|
-pub const LA_FT11 : Int = 43
+pub const LA_FT11 : Int32 = 43
 
 ///|
-pub const LA_FT12 : Int = 44
+pub const LA_FT12 : Int32 = 44
 
 ///|
-pub const LA_FT13 : Int = 45
+pub const LA_FT13 : Int32 = 45
 
 ///|
-pub const LA_FT14 : Int = 46
+pub const LA_FT14 : Int32 = 46
 
 ///|
-pub const LA_FT15 : Int = 47
+pub const LA_FT15 : Int32 = 47
 
 ///|
 // FP argument registers (fa0-fa7)
-pub const LA_FA0 : Int = 48
+pub const LA_FA0 : Int32 = 48
 
 ///|
-pub const LA_FA1 : Int = 49
+pub const LA_FA1 : Int32 = 49
 
 ///|
-pub const LA_FA2 : Int = 50
+pub const LA_FA2 : Int32 = 50
 
 ///|
-pub const LA_FA3 : Int = 51
+pub const LA_FA3 : Int32 = 51
 
 ///|
-pub const LA_FA4 : Int = 52
+pub const LA_FA4 : Int32 = 52
 
 ///|
-pub const LA_FA5 : Int = 53
+pub const LA_FA5 : Int32 = 53
 
 ///|
-pub const LA_FA6 : Int = 54
+pub const LA_FA6 : Int32 = 54
 
 ///|
-pub const LA_FA7 : Int = 55
+pub const LA_FA7 : Int32 = 55
 
 ///|
 // FP callee-save registers (fs0-fs7)
-pub const LA_FS0 : Int = 56
+pub const LA_FS0 : Int32 = 56
 
 ///|
-pub const LA_FS1 : Int = 57
+pub const LA_FS1 : Int32 = 57
 
 ///|
-pub const LA_FS2 : Int = 58
+pub const LA_FS2 : Int32 = 58
 
 ///|
-pub const LA_FS3 : Int = 59
+pub const LA_FS3 : Int32 = 59
 
 ///|
-pub const LA_FS4 : Int = 60
+pub const LA_FS4 : Int32 = 60
 
 ///|
-pub const LA_FS5 : Int = 61
+pub const LA_FS5 : Int32 = 61
 
 ///|
-pub const LA_FS6 : Int = 62
+pub const LA_FS6 : Int32 = 62
 
 ///|
-pub const LA_FS7 : Int = 63
+pub const LA_FS7 : Int32 = 63
 
 ///|
 // Tmp0 - first non-register temporary
-pub const La64Tmp0 : Int = 64
+pub const La64Tmp0 : Int32 = 64
 
 ///|
 // Number of general purpose registers (LA_T0-LA_RA)
-pub const La64NGPR : Int = 29
+pub const La64NGPR : Int32 = 29
 
 ///|
 // Number of float registers (LA_FT0-LA_FS7)
-pub const La64NFPR : Int = 32
+pub const La64NFPR : Int32 = 32
 
 ///|
 // Number of caller-save GPRs (LA_T0-LA_A7)
-pub const La64NGPS : Int = 16
+pub const La64NGPS : Int32 = 16
 
 ///|
 // Number of caller-save FPRs (LA_FT0-LA_FA7)
-pub const La64NFPS : Int = 24
+pub const La64NFPS : Int32 = 24
 
 ///|
 // Number of callee-save registers (LA_S0-LA_S8, LA_FS0-LA_FS7)
-pub const La64NCLR : Int = 17
+pub const La64NCLR : Int32 = 17
 
 ///|
 // Number of globally live registers (LA_FP, LA_SP, LA_TP, LA_RA)
-pub const La64NRGLOB : Int = 4
+pub const La64NRGLOB : Int32 = 4
 
 ///|
 // LoongArch caller-save register list (C la64_rsave in a hypothetical
 // upstream targ.c; not present in vendor/qbe).
-pub let la64_rsave : Array[Int] = [
+pub let la64_rsave : Array[Int32] = [
   LA_T0,
   LA_T1,
   LA_T2,
@@ -281,7 +281,7 @@ pub let la64_rsave : Array[Int] = [
 
 ///|
 // LoongArch callee-save register list (fp is globally live, not saved here).
-pub let la64_rclob : Array[Int] = [
+pub let la64_rclob : Array[Int32] = [
   LA_S0,
   LA_S1,
   LA_S2,
@@ -318,7 +318,7 @@ pub fn la64_rglob_mask() -> UInt64 {
 ///|
 // The registers returned by a call, given its RCall ref.
 // Returns (bits, ngp, nfpr): a0/a1 and fa0/fa1.
-pub fn Ref::la64_retregs(self : Ref) -> (UInt64, Int, Int) {
+pub fn Ref::la64_retregs(self : Ref) -> (UInt64, Int32, Int32) {
   let mut b : UInt64 = 0
   let v = self.call_val()
   let ni = v & 3
@@ -341,7 +341,7 @@ pub fn Ref::la64_retregs(self : Ref) -> (UInt64, Int, Int) {
 ///|
 // The registers used to pass arguments, given an RCall ref.
 // Returns (bits, ngp, nfpr): a0.. and fa0.., plus t8 for the env argument.
-pub fn Ref::la64_argregs(self : Ref) -> (UInt64, Int, Int) {
+pub fn Ref::la64_argregs(self : Ref) -> (UInt64, Int32, Int32) {
   let mut b : UInt64 = 0
   let v = self.call_val()
   let ni = (v >> 4) & 15
@@ -361,7 +361,7 @@ pub fn Ref::la64_argregs(self : Ref) -> (UInt64, Int, Int) {
 
 ///|
 // Map LoongArch register number to ABI name string (without the `$` prefix).
-pub fn la64_reg_name(reg : Int) -> String {
+pub fn la64_reg_name(reg : Int32) -> String {
   match reg {
     LA_FP => "fp"
     LA_SP => "sp"
@@ -431,17 +431,17 @@ pub fn la64_reg_name(reg : Int) -> String {
 
 ///|
 // LoongArch pointer size: Kl (64-bit).
-pub const La64KmIsWide : Int = 1
+pub const La64KmIsWide : Int32 = 1
 
 ///|
 // LoongArch call return registers: LA_A0/LA_A1 and LA_FA0/LA_FA1.
-fn la64_target_retregs(r : Ref) -> (UInt64, Int, Int) {
+fn la64_target_retregs(r : Ref) -> (UInt64, Int32, Int32) {
   r.la64_retregs()
 }
 
 ///|
 // LoongArch call argument registers: LA_A0.. and LA_FA0...
-fn la64_target_argregs(r : Ref) -> (UInt64, Int, Int) {
+fn la64_target_argregs(r : Ref) -> (UInt64, Int32, Int32) {
   r.la64_argregs()
 }
 

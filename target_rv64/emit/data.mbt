@@ -120,7 +120,7 @@ pub fn gasemitdat_rv64(
 ///|
 // Extract the 32-bit word at 4-byte offset p from the 16-byte little-endian
 // value (b0, b1), as a signed integer (C's union {int32_t,float}).
-fn rv64_word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
+fn rv64_word_i32(b0 : Int64, b1 : Int64, p : Int32) -> Int32 {
   let u = if p == 0 {
     b0 & 0xFFFFFFFF
   } else if p == 4 {
@@ -143,7 +143,7 @@ fn rv64_word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
 pub fn gasemitfin_rv64(gasloc : String, sb : StringBuilder) -> Unit {
   if @types.fp_stash_len() > 0 {
     sb.write_string("/* floating point constants */\n")
-    let sizes : Array[Int] = [16, 8, 4]
+    let sizes : Array[Int32] = [16, 8, 4]
     for sz in sizes {
       for i in 0..<@types.fp_stash_len() {
         let b = @types.fp_stash_at(i)

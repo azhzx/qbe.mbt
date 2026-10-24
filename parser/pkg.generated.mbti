@@ -20,16 +20,16 @@ type PState derive(Eq)
 pub struct Parser {
   tokens : Array[@lexer.Token]
   source_file : String
-  mut pos : Int
-  mut line : Int
+  mut pos : Int32
+  mut line : Int32
   funcs : Array[@types.Fn]
   datas : Array[@types.Dat]
   typs : Array[@types.Typ]
   order : Array[String]
   interner : @util.Interner
   mut curfn : @types.Fn?
-  mut curblk : Int
-  mut rcls : Int
+  mut curblk : Int32
+  mut rcls : Int32
   par_ins : Array[@types.Ins]
 }
 pub fn Parser::get_datas(Self) -> Array[@types.Dat]

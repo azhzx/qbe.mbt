@@ -94,9 +94,9 @@ fn cheap(i : @types.Ins) -> Bool {
 ///|
 struct GcmState {
   fn_ : @types.Fn
-  mut depth : Array[Int]
-  gcmbid : Array[Int]
-  mut def_idx : Array[Int]
+  mut depth : Array[Int32]
+  gcmbid : Array[Int32]
+  mut def_idx : Array[Int32]
   sinkbuf : Array[@types.Ins]
 }
 
@@ -112,7 +112,7 @@ fn GcmState::new(fn_ : @types.Fn) -> GcmState {
 }
 
 ///|
-fn gcmbid_get(st : GcmState, t : Int) -> Int {
+fn gcmbid_get(st : GcmState, t : Int32) -> Int32 {
   if t >= 0 && t < st.gcmbid.length() {
     st.gcmbid[t]
   } else {
@@ -121,7 +121,7 @@ fn gcmbid_get(st : GcmState, t : Int) -> Int {
 }
 
 ///|
-fn gcmbid_set(st : GcmState, t : Int, v : Int) -> Unit {
+fn gcmbid_set(st : GcmState, t : Int32, v : Int32) -> Unit {
   while st.gcmbid.length() <= t {
     st.gcmbid.push(-1)
   }
@@ -131,7 +131,7 @@ fn gcmbid_set(st : GcmState, t : Int, v : Int) -> Unit {
 ///|
 fn gcm_def_idx(st : GcmState) -> Unit {
   let fn_ = st.fn_
-  let a : Array[Int] = Array::make(fn_.ntmp(), -1)
+  let a : Array[Int32] = Array::make(fn_.ntmp(), -1)
   for b_id in fn_.def_order {
     let b = fn_.blks[b_id]
     for idx in 0..<b.ins.length() {
@@ -146,7 +146,7 @@ fn gcm_def_idx(st : GcmState) -> Unit {
 
 ///|
 // Dominator tree depth (C cfg.c filldepth).
-fn depth_rec(d : Array[Int], fn_ : @types.Fn, id : Int) -> Int {
+fn depth_rec(d : Array[Int32], fn_ : @types.Fn, id : Int32) -> Int32 {
   if id < 0 || id >= d.length() {
     return 0
   }
@@ -161,7 +161,7 @@ fn depth_rec(d : Array[Int], fn_ : @types.Fn, id : Int) -> Int {
 
 ///|
 fn gcm_filldepth(st : GcmState) -> Unit {
-  let d : Array[Int] = Array::make(st.fn_.nblk(), -1)
+  let d : Array[Int32] = Array::make(st.fn_.nblk(), -1)
   d[st.fn_.start_id] = 0
   for id in 0..<st.fn_.nblk() {
     ignore(depth_rec(d, st.fn_, id))
@@ -174,7 +174,7 @@ fn gcm_filldepth(st : GcmState) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn earlyins(st : GcmState, b_id : Int, i_idx : Int) -> Int {
+fn earlyins(st : GcmState, b_id : Int32, i_idx : Int32) -> Int32 {
   let i = st.fn_.blks[b_id].ins[i_idx]
   let b0 = schedearly(st, i.arg1)
   let b1 = schedearly(st, i.arg2)
@@ -190,7 +190,7 @@ fn earlyins(st : GcmState, b_id : Int, i_idx : Int) -> Int {
 }
 
 ///|
-fn schedearly(st : GcmState, r : @types.Ref) -> Int {
+fn schedearly(st : GcmState, r : @types.Ref) -> Int32 {
   if !r.is_tmp() {
     return st.fn_.start_id
   }
@@ -214,7 +214,7 @@ fn schedearly(st : GcmState, r : @types.Ref) -> Int {
 }
 
 ///|
-fn earlyblk(st : GcmState, b_id : Int) -> Unit {
+fn earlyblk(st : GcmState, b_id : Int32) -> Unit {
   let b = st.fn_.blks[b_id]
   for p in b.phi {
     for a in p.args {
@@ -236,7 +236,7 @@ fn earlyblk(st : GcmState, b_id : Int) -> Unit {
 
 ///|
 // Least common ancestor in the dominator tree.
-fn lca_bid(st : GcmState, b1 : Int, b2 : Int) -> Int {
+fn lca_bid(st : GcmState, b1 : Int32, b2 : Int32) -> Int32 {
   if b1 == -1 {
     return b2
   }
@@ -259,7 +259,7 @@ fn lca_bid(st : GcmState, b1 : Int, b2 : Int) -> Int {
 }
 
 ///|
-fn bestbid(st : GcmState, earlybid : Int, latebid : Int) -> Int {
+fn bestbid(st : GcmState, earlybid : Int32, latebid : Int32) -> Int32 {
   if latebid == -1 {
     return -1
   }
@@ -279,7 +279,7 @@ fn bestbid(st : GcmState, earlybid : Int, latebid : Int) -> Int {
 }
 
 ///|
-fn lateins(st : GcmState, b_id : Int, i_idx : Int, r : @types.Ref) -> Int {
+fn lateins(st : GcmState, b_id : Int32, i_idx : Int32, r : @types.Ref) -> Int32 {
   ignore(r)
   let i = st.fn_.blks[b_id].ins[i_idx]
   let latebid = schedlate(st, i.to)
@@ -293,7 +293,7 @@ fn lateins(st : GcmState, b_id : Int, i_idx : Int, r : @types.Ref) -> Int {
 }
 
 ///|
-fn latephi(st : GcmState, p : @types.Phi, r : @types.Ref) -> Int {
+fn latephi(st : GcmState, p : @types.Phi, r : @types.Ref) -> Int32 {
   if p.args.length() == 0 {
     return -1
   }
@@ -307,7 +307,7 @@ fn latephi(st : GcmState, p : @types.Phi, r : @types.Ref) -> Int {
 }
 
 ///|
-fn latejmp(b : @types.Blk, r : @types.Ref) -> Int {
+fn latejmp(b : @types.Blk, r : @types.Ref) -> Int32 {
   ignore(r)
   if b.jmp.arg.is_none() {
     -1
@@ -317,7 +317,7 @@ fn latejmp(b : @types.Blk, r : @types.Ref) -> Int {
 }
 
 ///|
-fn schedlate(st : GcmState, r : @types.Ref) -> Int {
+fn schedlate(st : GcmState, r : @types.Ref) -> Int32 {
   if !r.is_tmp() {
     return -1
   }
@@ -352,7 +352,7 @@ fn schedlate(st : GcmState, r : @types.Ref) -> Int {
 }
 
 ///|
-fn lateblk(st : GcmState, b_id : Int) -> Unit {
+fn lateblk(st : GcmState, b_id : Int32) -> Unit {
   let b = st.fn_.blks[b_id]
   for pi in 0..<b.phi.length() {
     let p = b.phi[pi]
@@ -431,7 +431,7 @@ fn gcmmove(st : GcmState) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn sinkref(st : GcmState, b_id : Int, pr : @types.Ref) -> @types.Ref {
+fn sinkref(st : GcmState, b_id : Int32, pr : @types.Ref) -> @types.Ref {
   if !pr.is_tmp() {
     return pr
   }
@@ -482,7 +482,7 @@ fn sink(st : GcmState) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn igroup(fn_ : @types.Fn, b : @types.Blk, i_idx : Int) -> (Int, Int) {
+fn igroup(fn_ : @types.Fn, b : @types.Blk, i_idx : Int32) -> (Int32, Int32) {
   ignore(fn_)
   let ie = b.ins.length()
   let op = b.ins[i_idx].op
@@ -520,9 +520,9 @@ fn igroup(fn_ : @types.Fn, b : @types.Blk, i_idx : Int) -> (Int, Int) {
 fn schedins(
   st : GcmState,
   b : @types.Blk,
-  i_idx : Int,
+  i_idx : Int32,
   vins : Array[@types.Ins],
-) -> Int {
+) -> Int32 {
   let (i0, i1) = igroup(st.fn_, b, i_idx)
   for k in i0..<i1 {
     let i = b.ins[k]

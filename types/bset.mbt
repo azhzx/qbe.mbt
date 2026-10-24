@@ -1,7 +1,7 @@
 ///|
 // Bit set - corresponds to struct BSet in QBE
 pub(all) struct BSet {
-  nt : Int // Number of elements (total bits)
+  nt : Int32 // Number of elements (total bits)
   bits : Array[UInt64] // Bit storage (mutable array)
 } derive(Debug)
 
@@ -11,7 +11,7 @@ let nbit = 64
 
 ///|
 // Create a new BSet for nt elements
-pub fn BSet::new(nt : Int) -> BSet {
+pub fn BSet::new(nt : Int32) -> BSet {
   let nwords = (nt + nbit - 1) / nbit
   let zero : UInt64 = 0
   BSet::{ nt, bits: Array::make(nwords, zero), }
@@ -28,7 +28,7 @@ pub fn BSet::zero(self : Self) -> Unit {
 
 ///|
 // Set a bit
-pub fn BSet::set(self : Self, elt : Int) -> Unit {
+pub fn BSet::set(self : Self, elt : Int32) -> Unit {
   let word = elt / nbit
   let bit = elt % nbit
   let one : UInt64 = 1
@@ -37,7 +37,7 @@ pub fn BSet::set(self : Self, elt : Int) -> Unit {
 
 ///|
 // Clear a bit
-pub fn BSet::clr(self : Self, elt : Int) -> Unit {
+pub fn BSet::clr(self : Self, elt : Int32) -> Unit {
   let word = elt / nbit
   let bit = elt % nbit
   let one : UInt64 = 1
@@ -46,7 +46,7 @@ pub fn BSet::clr(self : Self, elt : Int) -> Unit {
 
 ///|
 // Test if a bit is set
-pub fn BSet::has(self : Self, elt : Int) -> Bool {
+pub fn BSet::has(self : Self, elt : Int32) -> Bool {
   let word = elt / nbit
   let bit = elt % nbit
   if word < 0 || word >= self.bits.length() {
@@ -58,7 +58,7 @@ pub fn BSet::has(self : Self, elt : Int) -> Bool {
 
 ///|
 // Count set bits
-pub fn BSet::count(self : Self) -> Int {
+pub fn BSet::count(self : Self) -> Int32 {
   let mut cnt = 0
   for w in self.bits {
     cnt = cnt + w.popcnt()
@@ -123,7 +123,7 @@ pub fn BSet::equal(self : Self, other : BSet) -> Bool {
 ///|
 // Iterate over set bits. Returns the next element index >= start, or -1 if
 // done. Matches C bsiter (inclusive of start).
-pub fn BSet::iter(self : Self, start : Int) -> Int {
+pub fn BSet::iter(self : Self, start : Int32) -> Int32 {
   let mut i = if start < 0 { 0 } else { start }
   let nbits_total = self.bits.length() * nbit
   while i < nbits_total {
@@ -137,7 +137,7 @@ pub fn BSet::iter(self : Self, start : Int) -> Int {
 
 ///|
 // Call f for every set bit, in increasing order.
-pub fn BSet::each(self : Self, f : (Int) -> Unit) -> Unit {
+pub fn BSet::each(self : Self, f : (Int32) -> Unit) -> Unit {
   for i in 0..<(self.bits.length() * nbit) {
     if self.has(i) {
       f(i)
@@ -147,7 +147,7 @@ pub fn BSet::each(self : Self, f : (Int) -> Unit) -> Unit {
 
 ///|
 // Call f for every set bit with index >= start, in increasing order.
-pub fn BSet::each_from(self : Self, start : Int, f : (Int) -> Unit) -> Unit {
+pub fn BSet::each_from(self : Self, start : Int32, f : (Int32) -> Unit) -> Unit {
   for i in start.max(0)..<(self.bits.length() * nbit) {
     if self.has(i) {
       f(i)

@@ -7,9 +7,9 @@ import {
 }
 
 // Values
-pub fn check_alias(@types.Ref, Int, @types.Ref, Int, @types.Fn) -> (AliasResult, Int64)
+pub fn check_alias(@types.Ref, Int32, @types.Ref, Int32, @types.Fn) -> (AliasResult, Int64)
 
-pub fn edgedel(@types.Fn, Int, Int) -> Unit
+pub fn edgedel(@types.Fn, Int32, Int32) -> Unit
 
 pub fn escapes(@types.Ref, @types.Fn) -> Bool
 
@@ -25,7 +25,7 @@ pub fn fillpreds(@types.Fn) -> Unit
 
 pub fn fillrpo(@types.Fn) -> Unit
 
-pub fn loopiter(@types.Fn, (Int, Int) -> Unit) -> Unit
+pub fn loopiter(@types.Fn, (Int32, Int32) -> Unit) -> Unit
 
 pub fn simplcfg(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
 

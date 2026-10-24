@@ -132,7 +132,7 @@ pub fn printref(
 
 ///|
 // Format an int as at least 4 lowercase hex digits (%04x in C).
-fn hex4(v : Int) -> String {
+fn hex4(v : Int32) -> String {
   let sb = StringBuilder::StringBuilder()
   let chars : Array[Char] = []
   let mut x = v
@@ -153,7 +153,7 @@ fn hex4(v : Int) -> String {
 }
 
 ///|
-fn hex_digit(v : Int) -> Char {
+fn hex_digit(v : Int32) -> Char {
   if v < 10 {
     (48 + v).unsafe_to_char() // '0'
   } else {

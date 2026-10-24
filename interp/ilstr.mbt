@@ -7,10 +7,10 @@
 // bytes directly and used to copy the raw characters:
 //   data $x = { b "0x42" }   (spelled with a backslash escape in real input)
 // produced the characters backslash, 'x', '4', '2' instead of 0x42.
-pub fn decode_data_string(raw : String) -> Array[Int] {
+pub fn decode_data_string(raw : String) -> Array[Int32] {
   let a = raw.to_array()
   let n = a.length()
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut i = 0
   while i < n {
     let ch = a[i]
@@ -67,7 +67,7 @@ pub fn decode_data_string(raw : String) -> Array[Int] {
 }
 
 ///|
-fn hex_val(c : Char) -> Int {
+fn hex_val(c : Char) -> Int32 {
   let v = c.to_int()
   if v >= 48 && v <= 57 {
     v - 48

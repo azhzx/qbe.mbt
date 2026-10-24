@@ -5,7 +5,7 @@
 
 ///|
 // Does block a dominate block b?
-fn gcmw_dom(f : @types.Fn, a : Int, b : Int) -> Bool {
+fn gcmw_dom(f : @types.Fn, a : Int32, b : Int32) -> Bool {
   let mut x = b
   let mut steps = 0
   while x >= 0 && steps < 10000 {
@@ -20,9 +20,9 @@ fn gcmw_dom(f : @types.Fn, a : Int, b : Int) -> Bool {
 
 ///|
 // For every temp: the block that defines it, and its index inside that block.
-fn gcmw_defmap(f : @types.Fn) -> (Array[Int], Array[Int]) {
-  let blk : Array[Int] = Array::make(f.ntmp(), -1)
-  let pos : Array[Int] = Array::make(f.ntmp(), -1)
+fn gcmw_defmap(f : @types.Fn) -> (Array[Int32], Array[Int32]) {
+  let blk : Array[Int32] = Array::make(f.ntmp(), -1)
+  let pos : Array[Int32] = Array::make(f.ntmp(), -1)
   for id in f.def_order {
     for p in f.blks[id].phi {
       if p.to.is_tmp() {
@@ -48,7 +48,7 @@ fn gcmw_violations(f : @types.Fn) -> Array[String] {
   @cfg.filldom(f)
   let (blk, pos) = gcmw_defmap(f)
   let bad : Array[String] = []
-  let check = fn(r : @types.Ref, ub : Int, uidx : Int) -> Unit {
+  let check = fn(r : @types.Ref, ub : Int32, uidx : Int32) -> Unit {
     if !r.is_tmp() {
       return
     }

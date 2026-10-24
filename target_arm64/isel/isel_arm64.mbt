@@ -6,19 +6,19 @@
 
 ///|
 // Immediate classification for comparisons (C enum Imm in arm64/isel.c).
-const ARM64_ImmIother : Int = 0
+const ARM64_ImmIother : Int32 = 0
 
 ///|
-const ARM64_Iplo12 : Int = 1
+const ARM64_Iplo12 : Int32 = 1
 
 ///|
-const ARM64_Iphi12 : Int = 2
+const ARM64_Iphi12 : Int32 = 2
 
 ///|
-const ARM64_Inlo12 : Int = 4
+const ARM64_Inlo12 : Int32 = 4
 
 ///|
-const ARM64_Inhi12 : Int = 5
+const ARM64_Inhi12 : Int32 = 5
 
 ///|
 // ARM64 instruction selection state
@@ -60,7 +60,7 @@ fn arm64_isel_getcon(st : Arm64IselState, v : Int64) -> @types.Ref {
 
 ///|
 // Argument class of instruction i's n-th arg (C argcls).
-fn arm64_argcls(i : @types.Ins, n : Int) -> @types.Class {
+fn arm64_argcls(i : @types.Ins, n : Int32) -> @types.Class {
   let info = @types.op_info(i.op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = i.cls.code()
@@ -71,7 +71,7 @@ fn arm64_argcls(i : @types.Ins, n : Int) -> @types.Class {
 ///|
 // Whether op is a comparison; returns (ok, class, comparison code)
 // (shared C iscmp, mirrored from isel/cmp.mbt).
-fn arm64_iscmp(op : @types.Op) -> (Bool, @types.Class, Int) {
+fn arm64_iscmp(op : @types.Op) -> (Bool, @types.Class, Int32) {
   let i = op.index()
   let w = @types.Ceqw.index()
   let l = @types.Ceql.index()
@@ -92,7 +92,7 @@ fn arm64_iscmp(op : @types.Op) -> (Bool, @types.Class, Int) {
 
 ///|
 // The swap version of a comparison code (C cmpop).
-fn arm64_cmpop(c : Int) -> Int {
+fn arm64_cmpop(c : Int32) -> Int32 {
   // CIEQ=0, CINE=1, CISGE=2, CISGT=3, CISLE=4, CISLT=5,
   // CIUGE=6, CIUGT=7, CIULE=8, CIULT=9; NCmpI(10)+: Cfle, Cflt, Cfgt, Cfge,
   // Cfne, Cfeq, Cfo, Cfuo
@@ -117,20 +117,20 @@ fn arm64_cmpop(c : Int) -> Int {
 
 ///|
 // The flag-setting op for a comparison code (C Oflag + x).
-fn arm64_flag_op(x : Int) -> @types.Op {
+fn arm64_flag_op(x : Int32) -> @types.Op {
   @types.Op::from_index(@types.Flagieq.index() + x)
 }
 
 ///|
 // The conditional jump kind for a comparison code (C Jjf + x).
-fn arm64_jjf_op(x : Int) -> @types.JumpKind {
+fn arm64_jjf_op(x : Int32) -> @types.JumpKind {
   @types.JumpKind::from_index(@types.Jjfieq.index() + x)
 }
 
 ///|
 // Classify a constant as an encodable cmp/cmn immediate
 // (C imm in arm64/isel.c). Returns (kind, magnitude).
-fn arm64_imm(c : @types.Con, k : @types.Class) -> (Int, Int64) {
+fn arm64_imm(c : @types.Con, k : @types.Class) -> (Int32, Int64) {
   if c.kind != @types.CBits {
     return (ARM64_ImmIother, 0L)
   }

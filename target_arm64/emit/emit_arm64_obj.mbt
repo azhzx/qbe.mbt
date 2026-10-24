@@ -5,7 +5,7 @@
 // stop depending on clang.
 
 ///|
-fn arm64_obj_bytes(a : Array[Int]) -> Bytes {
+fn arm64_obj_bytes(a : Array[Int32]) -> Bytes {
   let out : Array[Byte] = []
   for b in a {
     out.push(b.to_byte())
@@ -18,12 +18,12 @@ fn arm64_obj_bytes(a : Array[Int]) -> Bytes {
 // at their section, undefined ones (libc calls) are N_UNDF/N_EXT.
 fn arm64_obj_sym(
   syms : Array[@object.MachoSym],
-  index : Map[String, Int],
+  index : Map[String, Int32],
   name : String,
-  sect : Int,
-  value : Int,
+  sect : Int32,
+  value : Int32,
   is_ext : Bool,
-) -> Int {
+) -> Int32 {
   match index.get(name) {
     Some(i) => i
     None => {
@@ -43,10 +43,10 @@ pub fn emit_arm64_object(
   apple : Bool,
 ) -> Bytes raise {
   arm64_emit_reset()
-  let text_words : Array[Int] = []
-  let fns : Array[(String, Int)] = []
-  let calls : Array[(Int, String)] = []
-  let addrs : Array[(Int, Int, Int, String, Int)] = []
+  let text_words : Array[Int32] = []
+  let fns : Array[(String, Int32)] = []
+  let calls : Array[(Int32, String)] = []
+  let addrs : Array[(Int32, Int32, Int32, String, Int32)] = []
   let defined : Array[String] = []
   for fn_ in funcs {
     defined.push(fn_.name)
@@ -74,7 +74,7 @@ pub fn emit_arm64_object(
   let data_bytes = data_bytes0.copy()
 
   let syms : Array[@object.MachoSym] = []
-  let index : Map[String, Int] = Map([])
+  let index : Map[String, Int32] = Map([])
   for f in fns {
     let mut is_ext = false
     for fn_ in funcs {

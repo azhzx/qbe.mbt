@@ -31,7 +31,7 @@ fn clsmerge(t : @types.Tmp, k : @types.Class) -> Bool {
 
 ///|
 // Check that a reference is usable as class k (C parse.c usecheck).
-fn tc_usecheck(r : @types.Ref, k : Int, fn_ : @types.Fn) -> Bool {
+fn tc_usecheck(r : @types.Ref, k : Int32, fn_ : @types.Fn) -> Bool {
   if !r.is_tmp() {
     return true
   }
@@ -41,7 +41,7 @@ fn tc_usecheck(r : @types.Ref, k : Int, fn_ : @types.Fn) -> Bool {
 
 ///|
 // Argument class code of op's n-th operand for instruction class cls.
-fn tc_argcls(op : @types.Op, cls : @types.Class, n : Int) -> Int {
+fn tc_argcls(op : @types.Op, cls : @types.Class, n : Int32) -> Int32 {
   let info = @types.op_info(op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = cls.code()

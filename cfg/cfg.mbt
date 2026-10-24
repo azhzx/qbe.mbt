@@ -7,8 +7,8 @@
 pub fn fillpreds(f : @types.Fn) -> Unit {
   // The iteration order is the link chain (def_order); when it has not been
   // built yet (unit tests), fall back to all blocks.
-  let chain : Array[Int] = if f.def_order.length() == 0 {
-    let a : Array[Int] = []
+  let chain : Array[Int32] = if f.def_order.length() == 0 {
+    let a : Array[Int32] = []
     for i in 0..<f.blks.length() {
       a.push(i)
     }
@@ -50,7 +50,7 @@ pub fn fillpreds(f : @types.Fn) -> Unit {
 ///|
 // DFS post-order traversal for RPO computation (C rporec: visits s1 before
 // s2, swapping them when s1 is more deeply nested in loops).
-fn rpo_dfs(f : @types.Fn, blk_id : Int, post_order : Array[Int]) -> Unit {
+fn rpo_dfs(f : @types.Fn, blk_id : Int32, post_order : Array[Int32]) -> Unit {
   if blk_id < 0 || blk_id >= f.blks.length() {
     return
   }
@@ -80,7 +80,7 @@ fn rpo_dfs(f : @types.Fn, blk_id : Int, post_order : Array[Int]) -> Unit {
 
 ///|
 // Remove one phi argument supplied by a deleted predecessor (C edgedel).
-fn remove_phi_arg(f : @types.Fn, succ : Int, dead : Int) -> Unit {
+fn remove_phi_arg(f : @types.Fn, succ : Int32, dead : Int32) -> Unit {
   for pi in 0..<f.blks[succ].phi.length() {
     let p = f.blks[succ].phi[pi]
     let mut i = 0
@@ -98,7 +98,7 @@ fn remove_phi_arg(f : @types.Fn, succ : Int, dead : Int) -> Unit {
 // Delete the edge from block bs to successor succ (C edgedel in cfg.c).
 // Clears the successor pointer, then removes bs from succ's phi args and
 // predecessor list (unless the edge is doubled: bs jumps to succ twice).
-pub fn edgedel(f : @types.Fn, bs : Int, succ : Int) -> Unit {
+pub fn edgedel(f : @types.Fn, bs : Int32, succ : Int32) -> Unit {
   let b = f.blks[bs]
   let mult = 1 + (if b.jmp.s1 == b.jmp.s2 && b.jmp.s1 >= 0 { 1 } else { 0 })
   if b.jmp.s1 == succ {
@@ -133,7 +133,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
     f.blks[i].rpo_id = -1
   }
   // DFS post-order from start block
-  let post_order : Array[Int] = []
+  let post_order : Array[Int32] = []
   rpo_dfs(f, f.start_id, post_order)
   // Build RPO array (reverse of post-order)
   f.rpo.clear()
@@ -144,7 +144,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
   }
   // Drop unreachable blocks: they keep rpo_id == -1.  This mirrors cfg.c,
   // which deletes b->id == -1u blocks from the start link list.
-  let new_def : Array[Int] = []
+  let new_def : Array[Int32] = []
   for id in f.def_order {
     if f.blks[id].rpo_id >= 0 {
       new_def.push(id)
@@ -168,7 +168,7 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
 
 ///|
 // Intersect two blocks in the dominator tree (Cooper-Harvey-Kennedy)
-fn dom_inter(f : @types.Fn, b1 : Int, b2 : Int) -> Int {
+fn dom_inter(f : @types.Fn, b1 : Int32, b2 : Int32) -> Int32 {
   if b1 < 0 {
     return b2
   }
@@ -242,7 +242,7 @@ pub fn filldom(f : @types.Fn) -> Unit {
 
 ///|
 // Check if b1 strictly dominates b2
-fn sdom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+fn sdom(f : @types.Fn, b1 : Int32, b2 : Int32) -> Bool {
   if b1 == b2 {
     return false
   }
@@ -255,7 +255,7 @@ fn sdom(f : @types.Fn, b1 : Int, b2 : Int) -> Bool {
 
 ///|
 // Add block b to dominance frontier of block a
-fn add_frontier(a : Int, b : Int, f : @types.Fn) -> Unit {
+fn add_frontier(a : Int32, b : Int32, f : @types.Fn) -> Unit {
   for i in 0..<f.blks[a].fron.length() {
     if f.blks[a].fron[i] == b {
       return
@@ -298,7 +298,12 @@ pub fn fillfron(f : @types.Fn) -> Unit {
 
 ///|
 // Recursive loop marking (C loopmark in cfg.c).
-fn loop_mark(f : @types.Fn, hd : Int, b : Int, fv : (Int, Int) -> Unit) -> Unit {
+fn loop_mark(
+  f : @types.Fn,
+  hd : Int32,
+  b : Int32,
+  fv : (Int32, Int32) -> Unit,
+) -> Unit {
   if b < 0 || b >= f.blks.length() {
     return
   }
@@ -316,7 +321,7 @@ fn loop_mark(f : @types.Fn, hd : Int, b : Int, fv : (Int, Int) -> Unit) -> Unit 
 ///|
 // Iterate over loops, calling f(hd, b) for every block b in a loop headed by
 // hd (C loopiter in cfg.c). Requires: fillrpo and fillpreds.
-pub fn loopiter(f : @types.Fn, fv : (Int, Int) -> Unit) -> Unit {
+pub fn loopiter(f : @types.Fn, fv : (Int32, Int32) -> Unit) -> Unit {
   for i in 0..<f.blks.length() {
     f.blks[i].visit = -1
   }
@@ -345,7 +350,7 @@ pub fn fillloop(f : @types.Fn) -> Unit {
 
 ///|
 // Union-find find with path compression (C uffind in cfg.c).
-fn uf_find(f : @types.Fn, pb : Int, uf : Array[Int]) -> Int {
+fn uf_find(f : @types.Fn, pb : Int32, uf : Array[Int32]) -> Int32 {
   let pb1 = uf[f.blks[pb].rpo_id]
   if pb1 >= 0 {
     let root = uf_find(f, pb1, uf)
@@ -366,7 +371,7 @@ pub fn simpljmp(f : @types.Fn) -> Unit {
   ret.jmp.kind = @types.Jret0
   ret.rpo_id = ret_id
   // union-find indexed by block rpo id
-  let uf : Array[Int] = Array::make(f.blks.length(), -1)
+  let uf : Array[Int32] = Array::make(f.blks.length(), -1)
   for id in f.def_order {
     let b = f.blks[id]
     if b.jmp.kind == @types.Jret0 {

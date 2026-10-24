@@ -246,7 +246,7 @@ fn Parser::parsefields(
       break
     }
     // Parse field type
-    let (ftype, fs, fa, fty_idx) : (@types.FieldType, Int64, Int, Int) = match
+    let (ftype, fs, fa, fty_idx) : (@types.FieldType, Int64, Int32, Int32) = match
       t {
       TId =>
         match self.tokens[self.pos - 1].raw {
@@ -278,7 +278,7 @@ fn Parser::parsefields(
     }
     // Parse count (default 1)
     t = self.next_nl()
-    let c : Int = if t == TInt {
+    let c : Int32 = if t == TInt {
       let count = parse_int64(self.tokens[self.pos - 1].raw)
       t = self.next_nl()
       count.to_int()

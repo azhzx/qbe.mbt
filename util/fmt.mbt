@@ -3,7 +3,7 @@
 // (round half to even, used by printfn for printing constants)
 
 ///|
-pub fn fmt_fixed(v : Double, prec : Int) -> String {
+pub fn fmt_fixed(v : Double, prec : Int32) -> String {
   let neg = v < 0.0
   let x = if neg { -v } else { v }
   let mut scale : Int64 = 1

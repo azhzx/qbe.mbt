@@ -39,7 +39,7 @@ fn selcmp(
   a0 : @types.Ref,
   a1 : @types.Ref,
   k : @types.Class,
-  x : Int,
+  x : Int32,
 ) -> Bool {
   // C cmpswap: float predicates fix the operand order, otherwise swap when
   // the first operand is a constant.
@@ -260,7 +260,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
 ///|
 // Lower a sel1 group to conditional moves (C amd64/isel.c selsel). Returns
 // the index of the matching sel0 so the caller continues before it.
-fn selsel(st : IselState, b : @types.Blk, i : Int) -> Int raise {
+fn selsel(st : IselState, b : @types.Blk, i : Int32) -> Int32 raise {
   let mut isel0 = i
   while isel0 > 0 {
     isel0 = isel0 - 1
@@ -355,7 +355,7 @@ fn selsel(st : IselState, b : @types.Blk, i : Int) -> Int raise {
 ///|
 // Find the last instruction setting the zero flag (C flagi). Returns its
 // index in the block, or -1.
-fn flagi(ins : Array[@types.Ins], nins : Int) -> Int {
+fn flagi(ins : Array[@types.Ins], nins : Int32) -> Int32 {
   let mut i = nins
   while i > 0 {
     i = i - 1

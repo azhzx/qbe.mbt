@@ -12,27 +12,27 @@
 
 ///|
 // Classification constants (C enum in arm64/abi.c).
-const Arm64Cstk : Int = 1 // pass on the stack
+const Arm64Cstk : Int32 = 1 // pass on the stack
 
 ///|
-const Arm64Cptr : Int = 2 // replaced by a pointer
+const Arm64Cptr : Int32 = 2 // replaced by a pointer
 
 ///|
 // ARM64 ABI classification for one parameter (C struct Class).
 // Aggregates use up to 4 registers (HFA of <= 4 float/double elements, or
 // 8-byte blocks).
 priv struct Arm64Class {
-  mut class_ : Int
+  mut class_ : Int32
   mut ishfa : Bool
   mut hfa_base : @types.Class
-  mut hfa_size : Int
-  mut size : Int
+  mut hfa_size : Int32
+  mut size : Int32
   mut typ : @types.Typ?
-  reg : Array[Int] // 4 slots
+  reg : Array[Int32] // 4 slots
   cls : Array[@types.Class] // 4 slots
-  mut ngp : Int
-  mut nfp : Int
-  mut nreg : Int
+  mut ngp : Int32
+  mut nfp : Int32
+  mut nreg : Int32
 }
 
 ///|
@@ -55,9 +55,9 @@ fn Arm64Class::new() -> Arm64Class {
 ///|
 // Stack-parameter layout produced by selpar (C struct Params).
 priv struct Arm64Params {
-  mut ngp : Int
-  mut nfp : Int
-  mut nstk : Int
+  mut ngp : Int32
+  mut nfp : Int32
+  mut nstk : Int32
 }
 
 ///|
@@ -132,7 +132,7 @@ fn arm64_getcon(st : Arm64AbiState, v : Int64) -> @types.Ref {
 }
 
 ///|
-fn arm64_call_ref(ca : Int) -> @types.Ref {
+fn arm64_call_ref(ca : Int32) -> @types.Ref {
   @types.Ref::call(ca)
 }
 
@@ -140,7 +140,7 @@ fn arm64_call_ref(ca : Int) -> @types.Ref {
 // The integer/float argument register sequences (C gpreg/fpreg). C sizes
 // these arrays at 12 with the tail zero-initialized; typclass may index past
 // the 8 real registers before argsclass decides to pass on the stack.
-let arm64_gpreg : Array[Int] = [
+let arm64_gpreg : Array[Int32] = [
   @types.ARM64_R0,
   @types.ARM64_R1,
   @types.ARM64_R2,
@@ -156,7 +156,7 @@ let arm64_gpreg : Array[Int] = [
 ]
 
 ///|
-let arm64_fpreg : Array[Int] = [
+let arm64_fpreg : Array[Int32] = [
   @types.ARM64_V0,
   @types.ARM64_V1,
   @types.ARM64_V2,
@@ -191,8 +191,8 @@ fn arm64_typclass(
   st : Arm64AbiState,
   c : Arm64Class,
   t : @types.Typ,
-  gpi : Int,
-  fpi : Int,
+  gpi : Int32,
+  fpi : Int32,
 ) -> Unit raise {
   let sz = (t.size.to_int() + 7) & -8
   c.typ = Some(t)
@@ -288,9 +288,9 @@ fn arm64_isfloatv(
 fn arm64_sttmps(
   st : Arm64AbiState,
   tmp : Array[@types.Ref],
-  base : Int,
+  base : Int32,
   c : Arm64Class,
-  nreg : Int,
+  nreg : Int32,
   mem : @types.Ref,
 ) -> Unit {
   let mut off = 0
@@ -322,7 +322,7 @@ fn arm64_sttmps(
 fn arm64_ldregs(
   st : Arm64AbiState,
   c : Arm64Class,
-  n : Int,
+  n : Int32,
   mem : @types.Ref,
 ) -> Unit {
   let mut off = 0
@@ -350,7 +350,7 @@ fn arm64_ldregs(
 
 ///|
 // Select return value handling (C selret in arm64/abi.c).
-fn arm64_selret(st : Arm64AbiState, bid : Int) -> Unit raise {
+fn arm64_selret(st : Arm64AbiState, bid : Int32) -> Unit raise {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
   if !j.is_ret() || j == @types.Jret0 {
@@ -423,10 +423,10 @@ fn arm64_selret(st : Arm64AbiState, bid : Int) -> Unit raise {
 fn arm64_argsclass(
   st : Arm64AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
   carg : Array[Arm64Class],
-) -> (Int, @types.Ref) raise {
+) -> (Int32, @types.Ref) raise {
   let mut gpi = 0
   let mut fpi = 0
   let mut ngp = 8
@@ -525,8 +525,8 @@ fn arm64_stkblob(st : Arm64AbiState, r : @types.Ref, c : Arm64Class) -> Unit {
 fn arm64_selcall(
   st : Arm64AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
   il : Array[@types.Ins],
 ) -> Unit raise {
   let nargs = i1 - i0
@@ -750,7 +750,7 @@ fn arm64_selcall(
 
 ///|
 // Select parameter handling (C selpar in arm64/abi.c).
-fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
+fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ca : Array[Arm64Class] = []
@@ -851,7 +851,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int) -> Unit raise {
 ///|
 // Split the block being lowered right after its current buffer contents
 // (C split in arm64/abi.c). Returns the new block id.
-fn arm64_split(st : Arm64AbiState, bid : Int) -> Int {
+fn arm64_split(st : Arm64AbiState, bid : Int32) -> Int32 {
   let b = st.fn_.blks[bid]
   b.visit = b.visit + 1
   let nb = st.fn_.add_blk("\{b.name}.\{b.visit}")
@@ -878,7 +878,12 @@ fn arm64_split(st : Arm64AbiState, bid : Int) -> Int {
 
 ///|
 // Redirect phis of block bid from predecessor bp to bp1 (C chpred).
-fn arm64_chpred(st : Arm64AbiState, bid : Int, bp : Int, bp1 : Int) -> Unit {
+fn arm64_chpred(
+  st : Arm64AbiState,
+  bid : Int32,
+  bp : Int32,
+  bp1 : Int32,
+) -> Unit {
   let b = st.fn_.blks[bid]
   for p in b.phi {
     for a in p.args {
@@ -943,7 +948,7 @@ fn arm64_apple_selvastart(st : Arm64AbiState, ap : @types.Ref) -> Unit {
 // @b0
 //       %loc =l phi @bstk %lstk, @breg %lreg
 //       i.to = load %loc
-fn arm64_selvaarg(st : Arm64AbiState, bid : Int, i : @types.Ins) -> Unit {
+fn arm64_selvaarg(st : Arm64AbiState, bid : Int32, i : @types.Ins) -> Unit {
   let c8 = arm64_getcon(st, 8L)
   let c16 = arm64_getcon(st, 16L)
   let c24 = arm64_getcon(st, 24L)
@@ -1136,7 +1141,7 @@ pub fn abi_arm64(
 // loop and the deferred start-block processing).
 fn arm64_process_block(
   st : Arm64AbiState,
-  bid : Int,
+  bid : Int32,
   il : Array[@types.Ins],
 ) -> Unit raise {
   if st.fn_.blks[bid].visit != 0 {

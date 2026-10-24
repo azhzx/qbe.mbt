@@ -6,18 +6,18 @@
 ///|
 // [a, b) with 0 <= a (C struct Range).
 priv struct Range {
-  mut a : Int
-  mut b : Int
+  mut a : Int32
+  mut b : Int32
 }
 
 ///|
-fn range_new(a : Int, b : Int) -> Range {
+fn range_new(a : Int32, b : Int32) -> Range {
   Range::{ a, b, }
 }
 
 ///|
 // C rin.
-fn rin(r : Range, n : Int) -> Bool {
+fn rin(r : Range, n : Int32) -> Bool {
   r.a <= n && n < r.b
 }
 
@@ -29,7 +29,7 @@ fn rovlap(r0 : Range, r1 : Range) -> Bool {
 
 ///|
 // C radd.
-fn radd(r : Range, n : Int) -> Unit {
+fn radd(r : Range, n : Int32) -> Unit {
   if r.b == 0 {
     r.a = n
     r.b = n + 1
@@ -43,22 +43,22 @@ fn radd(r : Range, n : Int) -> Unit {
 ///|
 // A pending store (C struct Store).
 priv struct StoreRec {
-  ip : Int
-  blk : Int
-  idx : Int
+  ip : Int32
+  blk : Int32
+  idx : Int32
 }
 
 ///|
 // A stack slot (C struct Slot).
 priv struct Slot {
-  t : Int
-  sz : Int
+  t : Int32
+  sz : Int32
   m : UInt64
   mut l : UInt64
   r : Range
-  mut s : Int
+  mut s : Int32
   st : Array[StoreRec]
-  mut nst : Int
+  mut nst : Int32
 }
 
 ///|
@@ -78,7 +78,7 @@ fn slot_of(
   r : @types.Ref,
   fn_ : @types.Fn,
   al : Array[AliasL],
-) -> (Int, Int64)? {
+) -> (Int32, Int64)? {
   let a = local_getalias(r, fn_, al)
   if a.kind != @types.ALoc {
     return None
@@ -101,7 +101,7 @@ fn slot_load(
   sl : Array[Slot],
   r : @types.Ref,
   x : UInt64,
-  ip : Int,
+  ip : Int32,
 ) -> Unit {
   match slot_of(r, fn_, al) {
     Some((idx, off)) => {
@@ -124,9 +124,9 @@ fn slot_store(
   sl : Array[Slot],
   r : @types.Ref,
   x : UInt64,
-  ip : Int,
-  blk : Int,
-  idx : Int,
+  ip : Int32,
+  blk : Int32,
+  idx : Int32,
 ) -> Unit {
   match slot_of(r, fn_, al) {
     Some((si, off)) => {
@@ -145,7 +145,7 @@ fn slot_store(
 
 ///|
 // C scmp.
-fn scmp(a : Slot, b : Slot) -> Int {
+fn scmp(a : Slot, b : Slot) -> Int32 {
   if a.sz != b.sz {
     return b.sz - a.sz
   }
@@ -154,7 +154,7 @@ fn scmp(a : Slot, b : Slot) -> Int {
 
 ///|
 // Stable insertion sort with the C scmp ordering (qsort replacement).
-fn sort_slots(a : Array[Slot], n : Int) -> Unit {
+fn sort_slots(a : Array[Slot], n : Int32) -> Unit {
   for i in 1..<n {
     let key = a[i]
     let mut j = i
@@ -186,7 +186,7 @@ fn copy_ins_fields(src : @types.Ins, dst : @types.Ins) -> Unit {
 
 ///|
 // C "\tfuse (% 3db) [" size field (space flag, minimum width 3).
-fn fmt_space3(n : Int) -> String {
+fn fmt_space3(n : Int32) -> String {
   let body = " " + n.to_string()
   if body.length() >= 3 {
     body
@@ -211,9 +211,9 @@ pub fn coalesce(
   }
   local_fillalias(fn_, al)
   // types.Tmp has no def pointer, so record where each tmp is defined.
-  let def_blk : Array[Int] = []
-  let def_idx : Array[Int] = []
-  let def_pos : Array[Int] = []
+  let def_blk : Array[Int32] = []
+  let def_idx : Array[Int32] = []
+  let def_pos : Array[Int32] = []
   for _ in 0..<fn_.ntmp() {
     def_blk.push(-1)
     def_idx.push(-1)
@@ -269,7 +269,7 @@ pub fn coalesce(
     }
   }
   // One-pass liveness analysis (C loopiter(fn, maxrpo)).
-  let max_loop : Array[Int] = []
+  let max_loop : Array[Int32] = []
   for _ in 0..<fn_.blks.length() {
     max_loop.push(-1)
   }
@@ -279,8 +279,8 @@ pub fn coalesce(
     }
   })
   let nblk = fn_.rpo.length()
-  let br_a : Array[Int] = []
-  let br_b : Array[Int] = []
+  let br_a : Array[Int32] = []
+  let br_b : Array[Int32] = []
   for _ in 0..<nblk {
     br_a.push(0)
     br_b.push(0)
@@ -294,7 +294,7 @@ pub fn coalesce(
     let succ2 = b.jmp.s2
     br_b[n] = ip
     ip = ip - 1
-    let succs : Array[Int] = []
+    let succs : Array[Int32] = []
     if succ1 >= 0 {
       succs.push(succ1)
       if succ2 >= 0 {
@@ -359,7 +359,7 @@ pub fn coalesce(
   // Kill slots with an empty live range.
   let mut total = 0
   let mut freed = 0
-  let stk : Array[Int] = []
+  let stk : Array[Int32] = []
   let mut nn = 0
   let mut w = 0
   for si in 0..<nsl {
@@ -458,8 +458,8 @@ pub fn coalesce(
     }
   }
   // Substitute fused slots.
-  let cur_blk : Array[Int] = []
-  let cur_idx : Array[Int] = []
+  let cur_blk : Array[Int32] = []
+  let cur_idx : Array[Int32] = []
   for t in 0..<fn_.ntmp() {
     cur_blk.push(def_blk[t])
     cur_idx.push(def_idx[t])

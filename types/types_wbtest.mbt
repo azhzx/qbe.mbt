@@ -59,7 +59,7 @@ test "BSet iter and copy_from" {
   b.copy_from(a)
   assert_true(b.count() == 3)
   // iter returns the next set bit >= start, or -1
-  let found : Array[Int] = []
+  let found : Array[Int32] = []
   let mut t = a.iter(0)
   while t >= 0 {
     found.push(t)
@@ -76,18 +76,18 @@ test "BSet each and each_from" {
   a.set(1)
   a.set(5)
   a.set(70)
-  let all : Array[Int] = []
+  let all : Array[Int32] = []
   a.each(t => all.push(t))
   assert_true(all == [1, 5, 70])
-  let from : Array[Int] = []
+  let from : Array[Int32] = []
   a.each_from(5, t => from.push(t))
   assert_true(from == [5, 70])
-  let from2 : Array[Int] = []
+  let from2 : Array[Int32] = []
   a.each_from(-5, t => from2.push(t))
   assert_true(from2 == [1, 5, 70])
   // each over an empty set does nothing
   let empty = BSet::new(10)
-  let hits : Array[Int] = []
+  let hits : Array[Int32] = []
   empty.each(t => hits.push(t))
   assert_true(hits.length() == 0)
 }

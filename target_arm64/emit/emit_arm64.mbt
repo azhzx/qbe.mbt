@@ -5,10 +5,10 @@
 // `blr` calls and `.L<id>` local labels.
 
 ///|
-const ARM64_KI : Int = -1
+const ARM64_KI : Int32 = -1
 
 ///|
-const ARM64_KA : Int = -2
+const ARM64_KA : Int32 = -2
 
 ///|
 priv struct Arm64EmitState {
@@ -18,13 +18,13 @@ priv struct Arm64EmitState {
   gasloc : String
   gassym : String
   apple : Bool
-  mut frame : Int
-  mut padding : Int
+  mut frame : Int32
+  mut padding : Int32
 }
 
 ///|
 // Module-wide label counter (C static int id0 in arm64/emit.c).
-let arm64_emit_id0 : Array[Int] = Array::make(1, 0)
+let arm64_emit_id0 : Array[Int32] = Array::make(1, 0)
 
 ///|
 // Reset the module-wide label counter (the C binary resets it per process).
@@ -50,7 +50,7 @@ let arm64_cond_neg : Array[String] = [
 
 ///|
 // Negation of a comparison code (C cmpneg / cmptab[..][0]).
-fn arm64_cmpneg(c : Int) -> Int {
+fn arm64_cmpneg(c : Int32) -> Int32 {
   match c {
     0 => 1
     1 => 0
@@ -88,7 +88,7 @@ fn arm64_s32(n : Int64) -> Int64 {
 
 ///|
 // Register name for class k (C rname in arm64/emit.c).
-fn arm64_rname(r : Int, k : @types.Class) -> String raise {
+fn arm64_rname(r : Int32, k : @types.Class) -> String raise {
   if r == @types.ARM64_SP {
     "sp"
   } else if r >= @types.ARM64_R0 && r <= @types.ARM64_LR {
@@ -150,12 +150,12 @@ fn arm64_logimm(x : Int64, k : @types.Class) -> Bool {
 // Slot offset relative to the frame pointer (C slot in arm64/emit.c). Split from
 // arm64_slot so the binary emitter can share the exact frame math.
 fn arm64_slot_off(
-  frame : Int,
-  padding : Int,
+  frame : Int32,
+  padding : Int32,
   is_vararg : Bool,
   apple : Bool,
-  s : Int,
-) -> Int {
+  s : Int32,
+) -> Int32 {
   let s = if (s & (1 << 28)) != 0 { s - (1 << 29) } else { s }
   if s == -1 {
     16 + frame
@@ -172,13 +172,13 @@ fn arm64_slot_off(
 }
 
 ///|
-fn arm64_slot(st : Arm64EmitState, s : Int) -> Int {
+fn arm64_slot(st : Arm64EmitState, s : Int32) -> Int32 {
   arm64_slot_off(st.frame, st.padding, st.fn_.is_vararg, st.apple, s)
 }
 
 ///|
 // ARM64 instruction format table (C omap).
-let arm64_omap : Array[(Int, Int, String)] = [
+let arm64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), ARM64_KI, "add %=, %0, %1"),
   (@types.Add.index(), ARM64_KA, "fadd %=, %0, %1"),
   (@types.Sub.index(), ARM64_KI, "sub %=, %0, %1"),
@@ -250,7 +250,7 @@ let arm64_omap : Array[(Int, Int, String)] = [
 fn arm64_loadcon(
   st : Arm64EmitState,
   con : @types.Con,
-  r : Int,
+  r : Int32,
   k : @types.Class,
 ) -> Unit raise {
   let sb = st.sb

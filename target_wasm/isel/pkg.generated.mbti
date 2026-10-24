@@ -10,13 +10,13 @@ import {
 // Values
 pub fn convert_ctrl_flow(@types.Fn, @util.Interner) -> Array[Array[WasmCtrl]]
 
-pub fn decompose_addr(@types.Ref, @types.Ref, Int, @types.Con) -> (@types.Ref, @types.Ref, Int, @types.Con)
+pub fn decompose_addr(@types.Ref, @types.Ref, Int32, @types.Con) -> (@types.Ref, @types.Ref, Int32, @types.Con)
 
-pub fn get_loop_header(@types.Fn, Int) -> Int
+pub fn get_loop_header(@types.Fn, Int32) -> Int32
 
-pub fn is_loop_header(@types.Fn, Int) -> Bool
+pub fn is_loop_header(@types.Fn, Int32) -> Bool
 
-pub fn is_simple_addr(@types.Ref, @types.Ref, Int) -> Bool
+pub fn is_simple_addr(@types.Ref, @types.Ref, Int32) -> Bool
 
 pub fn is_wasm_mem_offset(@types.Con) -> Bool
 
@@ -33,10 +33,10 @@ pub enum WasmCtrl {
   WIf(String)
   WElse
   WEnd
-  WBr(Int)
-  WBrIf(Int)
+  WBr(Int32)
+  WBrIf(Int32)
   WReturn
-  WCall(Int)
+  WCall(Int32)
   WUnreachable
 } derive(@debug.Debug)
 

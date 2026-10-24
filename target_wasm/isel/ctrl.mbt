@@ -15,10 +15,10 @@ pub enum WasmCtrl {
   WIf(String)
   WElse
   WEnd
-  WBr(Int)
-  WBrIf(Int)
+  WBr(Int32)
+  WBrIf(Int32)
   WReturn
-  WCall(Int)
+  WCall(Int32)
   WUnreachable
 } derive(Debug)
 
@@ -28,15 +28,15 @@ priv struct CtrlState {
   fn_ : @types.Fn
   interner : @util.Interner
   // Maps block id → wasm label depth for br targets
-  label_map : Map[Int, Int]
+  label_map : Map[Int32, Int32]
   // Current nesting depth
-  mut depth : Int
+  mut depth : Int32
   // Output control flow instructions per block
   ctrl : Array[Array[WasmCtrl]]
   // Loop header detection
   loop_headers : Array[Bool]
   // Block nesting levels
-  block_level : Array[Int]
+  block_level : Array[Int32]
 }
 
 ///|
@@ -84,7 +84,7 @@ fn compute_nesting(st : CtrlState) -> Unit {
 }
 
 ///|
-fn compute_nesting_dfs(st : CtrlState, bid : Int, base_level : Int) -> Unit {
+fn compute_nesting_dfs(st : CtrlState, bid : Int32, base_level : Int32) -> Unit {
   let blk = st.fn_.blks[bid]
   let level = if st.loop_headers[bid] { base_level + 1 } else { base_level }
   st.block_level[bid] = level
@@ -154,7 +154,7 @@ fn gen_jump_ctrl(st : CtrlState, blk : @types.Blk) -> Array[WasmCtrl] {
 ///|
 // Compute the br depth needed to jump from source to target.
 // This is the number of block/loop boundaries that need to be crossed.
-fn compute_br_depth(st : CtrlState, source : Int, target : Int) -> Int {
+fn compute_br_depth(st : CtrlState, source : Int32, target : Int32) -> Int32 {
   let source_level = st.block_level[source]
   let target_level = st.block_level[target]
 
@@ -197,7 +197,7 @@ pub fn convert_ctrl_flow(
 
 ///|
 // Check if a block is a loop header
-pub fn is_loop_header(fn_ : @types.Fn, bid : Int) -> Bool {
+pub fn is_loop_header(fn_ : @types.Fn, bid : Int32) -> Bool {
   let blk = fn_.blks[bid]
   for pred_id in 0..<blk.npred {
     let pred_bid = blk.pred[pred_id]
@@ -211,7 +211,7 @@ pub fn is_loop_header(fn_ : @types.Fn, bid : Int) -> Bool {
 ///|
 // Get the loop header for a block (the block it branches back to).
 // Returns -1 if not a back-edge target.
-pub fn get_loop_header(fn_ : @types.Fn, bid : Int) -> Int {
+pub fn get_loop_header(fn_ : @types.Fn, bid : Int32) -> Int32 {
   let blk = fn_.blks[bid]
   for pred_id in 0..<blk.npred {
     let pred_bid = blk.pred[pred_id]

@@ -13,8 +13,8 @@
 pub(all) struct DbgLoc {
   name : String
   ty : @types.DbgType
-  kind : Int // 0 = register, 1 = frame-base relative (fbreg)
-  value : Int // DWARF register number, or frame-base offset
+  kind : Int32 // 0 = register, 1 = frame-base relative (fbreg)
+  value : Int32 // DWARF register number, or frame-base offset
 } derive(Debug)
 
 ///|
@@ -50,8 +50,8 @@ pub fn record_fn(
 }
 
 ///|
-fn uleb(v : Int) -> Array[Int] {
-  let out : Array[Int] = []
+fn uleb(v : Int32) -> Array[Int32] {
+  let out : Array[Int32] = []
   let mut x = v
   while true {
     let b = x & 0x7F
@@ -67,8 +67,8 @@ fn uleb(v : Int) -> Array[Int] {
 }
 
 ///|
-fn sleb(v : Int) -> Array[Int] {
-  let out : Array[Int] = []
+fn sleb(v : Int32) -> Array[Int32] {
+  let out : Array[Int32] = []
   let mut x = v
   let mut more = true
   while more {
@@ -85,8 +85,8 @@ fn sleb(v : Int) -> Array[Int] {
 }
 
 ///|
-fn loc_expr(loc : DbgLoc) -> Array[Int] {
-  let out : Array[Int] = []
+fn loc_expr(loc : DbgLoc) -> Array[Int32] {
+  let out : Array[Int32] = []
   if loc.kind == 0 {
     out.push(0x90) // DW_OP_regx
     for b in uleb(loc.value) {
@@ -102,7 +102,7 @@ fn loc_expr(loc : DbgLoc) -> Array[Int] {
 }
 
 ///|
-fn emit_bytes(sb : StringBuilder, bs : Array[Int]) -> Unit {
+fn emit_bytes(sb : StringBuilder, bs : Array[Int32]) -> Unit {
   for b in bs {
     sb.write_string("\t.byte ")
     sb.write_string(b.to_string())
@@ -111,7 +111,7 @@ fn emit_bytes(sb : StringBuilder, bs : Array[Int]) -> Unit {
 }
 
 ///|
-fn type_off_for(m : Map[String, Int], ty : @types.DbgType) -> Int {
+fn type_off_for(m : Map[String, Int32], ty : @types.DbgType) -> Int32 {
   match ty {
     @types.DbgW => m["w"]
     @types.DbgL => m["l"]
@@ -152,7 +152,7 @@ pub fn emit_debug_info(
     }
   }
   // DIE offsets (relative to the start of .debug_info).
-  let tmap : Map[String, Int] = Map([], capacity=8)
+  let tmap : Map[String, Int32] = Map([], capacity=8)
   let mut off = 11 // unit header without its length field
   off = off +
     (
@@ -184,7 +184,7 @@ pub fn emit_debug_info(
     tmap["agg:" + n] = off
     off = off + 1 + n.length() + 1 + 1
   }
-  let sub_off : Array[Int] = []
+  let sub_off : Array[Int32] = []
   for f in fns {
     sub_off.push(off)
     off = off + 1 + (f.name.length() + 1) + 8 + 8 + 2
@@ -196,7 +196,7 @@ pub fn emit_debug_info(
   off = off + 1
   let unit_len = off - 4
   // .debug_loc offsets (one range per variable, in emission order).
-  let loc_offs : Array[Int] = []
+  let loc_offs : Array[Int32] = []
   let mut lo = 0
   for f in fns {
     for l in f.locs {

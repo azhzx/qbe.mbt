@@ -30,7 +30,7 @@ fn sext8(v : Int64) -> Int64 {
 ///|
 // The single-precision value stored in the low 32 bits.
 fn bits_to_single(v : Int64) -> Float {
-  let u : UInt = (v & 0xFFFFFFFFL).reinterpret_as_uint64().to_uint()
+  let u : UInt32 = (v & 0xFFFFFFFFL).reinterpret_as_uint64().to_uint()
   Float::reinterpret_from_uint(u)
 }
 

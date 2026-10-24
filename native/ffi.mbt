@@ -6,23 +6,31 @@
 
 ///|
 // 1 on macOS/aarch64, the only host this backend targets.
-pub extern "c" fn mbt_native_host_supported() -> Int = "mbt_native_host_supported"
+pub extern "c" fn mbt_native_host_supported() -> Int32 = "mbt_native_host_supported"
 
 ///|
-pub extern "c" fn mbt_native_alloc(size : Int) -> Int64 = "mbt_native_alloc"
+pub extern "c" fn mbt_native_alloc(size : Int32) -> Int64 = "mbt_native_alloc"
 
 ///|
-pub extern "c" fn mbt_native_protect(addr : Int64, size : Int) -> Int = "mbt_native_protect"
+pub extern "c" fn mbt_native_protect(addr : Int64, size : Int32) -> Int32 = "mbt_native_protect"
 
 ///|
-pub extern "c" fn mbt_native_free(addr : Int64, size : Int) = "mbt_native_free"
+pub extern "c" fn mbt_native_free(addr : Int64, size : Int32) = "mbt_native_free"
 
 ///|
 #borrow(data)
-pub extern "c" fn mbt_native_write_bytes(addr : Int64, off : Int, data : Bytes) = "mbt_native_write_bytes"
+pub extern "c" fn mbt_native_write_bytes(
+  addr : Int64,
+  off : Int32,
+  data : Bytes,
+) = "mbt_native_write_bytes"
 
 ///|
-pub extern "c" fn mbt_native_write_u32(addr : Int64, off : Int, word : UInt) = "mbt_native_write_u32"
+pub extern "c" fn mbt_native_write_u32(
+  addr : Int64,
+  off : Int32,
+  word : UInt32,
+) = "mbt_native_write_u32"
 
 ///|
 #borrow(suffix)
@@ -35,7 +43,7 @@ pub extern "c" fn mbt_native_eprint(s : Bytes) = "mbt_native_eprint"
 
 ///|
 #borrow(path, data)
-pub extern "c" fn mbt_native_write_file(path : Bytes, data : Bytes) -> Int = "mbt_native_write_file"
+pub extern "c" fn mbt_native_write_file(path : Bytes, data : Bytes) -> Int32 = "mbt_native_write_file"
 
 ///|
 #borrow(path)
@@ -43,11 +51,11 @@ pub extern "c" fn mbt_native_read_file(path : Bytes) -> Bytes = "mbt_native_read
 
 ///|
 #borrow(path)
-pub extern "c" fn mbt_native_unlink(path : Bytes) -> Int = "mbt_native_unlink"
+pub extern "c" fn mbt_native_unlink(path : Bytes) -> Int32 = "mbt_native_unlink"
 
 ///|
 #borrow(cmd)
-pub extern "c" fn mbt_native_run(cmd : Bytes) -> Int = "mbt_native_run"
+pub extern "c" fn mbt_native_run(cmd : Bytes) -> Int32 = "mbt_native_run"
 
 ///|
 #borrow(cmd)
@@ -55,7 +63,7 @@ pub extern "c" fn mbt_native_capture(cmd : Bytes) -> Bytes = "mbt_native_capture
 
 ///|
 // Terminate the process with `code`.
-pub extern "c" fn mbt_native_exit(code : Int) = "mbt_native_exit"
+pub extern "c" fn mbt_native_exit(code : Int32) = "mbt_native_exit"
 
 ///|
 #borrow(path)
@@ -73,7 +81,7 @@ pub extern "c" fn mbt_native_sym(name : Bytes) -> Int64 = "mbt_native_sym"
 pub extern "c" fn mbt_native_call_i64_1(addr : Int64, a0 : Int64) -> Int64 = "mbt_native_call_i64_1"
 
 ///|
-pub extern "c" fn mbt_native_icache_flush(addr : Int64, size : Int) = "mbt_native_icache_flush"
+pub extern "c" fn mbt_native_icache_flush(addr : Int64, size : Int32) = "mbt_native_icache_flush"
 
 ///|
 pub extern "c" fn mbt_native_call_i64_0(addr : Int64) -> Int64 = "mbt_native_call_i64_0"

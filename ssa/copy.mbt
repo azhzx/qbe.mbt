@@ -17,7 +17,7 @@ fn update(
   r : @types.Ref,
   rcp : @types.Ref,
   cp : Array[@types.Ref],
-  wl : Array[Int],
+  wl : Array[Int32],
   visited : Array[Bool],
 ) -> Unit {
   let rv = r.tmp_val()
@@ -54,7 +54,7 @@ fn iscopy(i : @types.Ins, r : @types.Ref, fn_ : @types.Fn) -> Bool {
 
 ///|
 // Widths that each width's extension copies can be (C extcpy table)
-fn extcpy_width(w : Int) -> Int {
+fn extcpy_width(w : Int32) -> Int32 {
   match w {
     0 => 0 // WFull
     1 => (1 << 1) | (1 << 3) | (1 << 5) // Wsb: Wsb|Wsh|Wsw
@@ -71,7 +71,7 @@ fn extcpy_width(w : Int) -> Int {
 fn visitphi(
   p : @types.Phi,
   cp : Array[@types.Ref],
-  wl : Array[Int],
+  wl : Array[Int32],
   visited : Array[Bool],
 ) -> Unit {
   let mut r = @types.Ref::none()
@@ -94,7 +94,7 @@ fn visitphi(
 fn visitins(
   i : @types.Ins,
   cp : Array[@types.Ref],
-  wl : Array[Int],
+  wl : Array[Int32],
   visited : Array[Bool],
   fn_ : @types.Fn,
 ) -> Unit {
@@ -117,7 +117,7 @@ pub fn copy(
 ) -> String {
   let nt = fn_.ntmp()
   let cp : Array[@types.Ref] = Array::make(nt, @types.Ref::none())
-  let wl : Array[Int] = []
+  let wl : Array[Int32] = []
   let visited : Array[Bool] = Array::make(nt, false)
   // Initial visit
   for id in fn_.def_order {

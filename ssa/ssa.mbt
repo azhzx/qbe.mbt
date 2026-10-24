@@ -3,7 +3,7 @@
 
 ///|
 // Create a new temporary (like C newtmp with name prefix)
-fn refindex(t : Int, fn_ : @types.Fn) -> @types.Ref {
+fn refindex(t : Int32, fn_ : @types.Fn) -> @types.Ref {
   let id = fn_.new_tmp(fn_.tmps[t].name, fn_.tmps[t].cls)
   @types.Ref::tmp(id)
 }
@@ -12,15 +12,15 @@ fn refindex(t : Int, fn_ : @types.Fn) -> @types.Ref {
 // Rename stack entries
 priv struct Name {
   r : @types.Ref
-  blk_id : Int
-  up : Int
+  blk_id : Int32
+  up : Int32
 }
 
 ///|
 // A pool of Name entries
 priv struct NamePool {
   entries : Array[Name]
-  free : Array[Int]
+  free : Array[Int32]
 }
 
 ///|
@@ -29,7 +29,12 @@ fn NamePool::new() -> NamePool {
 }
 
 ///|
-fn np_alloc(pool : NamePool, r : @types.Ref, blk_id : Int, up : Int) -> Int {
+fn np_alloc(
+  pool : NamePool,
+  r : @types.Ref,
+  blk_id : Int32,
+  up : Int32,
+) -> Int32 {
   let idx = if pool.free.length() > 0 {
     let f = pool.free.pop().unwrap()
     pool.entries[f] = Name::{ r, blk_id, up, }
@@ -42,7 +47,7 @@ fn np_alloc(pool : NamePool, r : @types.Ref, blk_id : Int, up : Int) -> Int {
 }
 
 ///|
-fn np_free(pool : NamePool, idx : Int) -> Unit {
+fn np_free(pool : NamePool, idx : Int32) -> Unit {
   pool.free.push(idx)
 }
 
@@ -54,7 +59,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
   let u = @types.BSet::new(nb)
   let defs = @types.BSet::new(nb)
   // LIFO worklist, mirroring cfg.c's `*--bp` / `*bp++` stack.
-  let work : Array[Int] = []
+  let work : Array[Int32] = []
   for t in @types.Tmp0..<nt {
     fn_.tmps[t].visit = 0
     if fn_.tmps[t].is_phi != 0 {
@@ -103,7 +108,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
               work.push(id)
             }
             // C: if (clsmerge(&k, i->cls)) die("invalid input");
-            let k_ref : Ref[Int] = Ref::{ val: k, }
+            let k_ref : Ref[Int32] = Ref::{ val: k, }
             if clsmerge(k_ref, i.cls.code()) {
               raise @util.QbeError::Ice("invalid input class")
             }
@@ -145,7 +150,7 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
 // Rename temporaries (C renblk) - requires filldom (dom tree) and ssa phis
 pub fn renblk(fn_ : @types.Fn) -> Unit {
   let pool = NamePool::new()
-  let stk : Array[Int] = Array::make(fn_.ntmp(), -1)
+  let stk : Array[Int32] = Array::make(fn_.ntmp(), -1)
   ren_dfs(fn_, fn_.start_id, stk, pool)
 }
 
@@ -153,8 +158,8 @@ pub fn renblk(fn_ : @types.Fn) -> Unit {
 // Recursive rename over dominator tree
 fn ren_dfs(
   fn_ : @types.Fn,
-  bid : Int,
-  stk : Array[Int],
+  bid : Int32,
+  stk : Array[Int32],
   pool : NamePool,
 ) -> Unit {
   let b = fn_.blks[bid]
@@ -206,7 +211,7 @@ fn ren_dfs(
     }
   }
   // Fill phi arguments in successors
-  let succs : Array[Int] = []
+  let succs : Array[Int32] = []
   if b.jmp.s1 >= 0 {
     succs.push(b.jmp.s1)
   }
@@ -246,9 +251,9 @@ fn ren_dfs(
 ///|
 // Get the current renamed version of temp t at block b
 fn getstk(
-  t : Int,
-  b : Int,
-  stk : Array[Int],
+  t : Int32,
+  b : Int32,
+  stk : Array[Int32],
   fn_ : @types.Fn,
   pool : NamePool,
 ) -> @types.Ref {
@@ -269,6 +274,6 @@ fn getstk(
 
 ///|
 // Check if b1 dominates b2 (b1 == b2 or strict)
-fn dom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+fn dom(fn_ : @types.Fn, b1 : Int32, b2 : Int32) -> Bool {
   b1 == b2 || sdom(fn_, b1, b2)
 }

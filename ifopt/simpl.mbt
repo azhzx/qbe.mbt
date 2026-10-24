@@ -10,7 +10,7 @@
 
 ///|
 // The 64-entry de Bruijn table used by ulog2 (C simpl.c ulog2_tab64).
-let ulog2_tab64 : Array[Int] = [
+let ulog2_tab64 : Array[Int32] = [
   63, 0, 1, 41, 37, 2, 16, 42, 38, 29, 32, 3, 12, 17, 43, 55, 39, 35, 30, 53, 33,
   21, 4, 23, 13, 9, 18, 6, 25, 44, 48, 56, 62, 40, 36, 15, 28, 31, 11, 54, 34, 52,
   20, 22, 8, 5, 24, 47, 61, 14, 27, 10, 51, 19, 7, 46, 60, 26, 50, 45, 59, 49, 58,
@@ -19,7 +19,7 @@ let ulog2_tab64 : Array[Int] = [
 
 ///|
 // Floor log2 of a power of two (C simpl.c ulog2).
-fn ulog2(pow2 : UInt64) -> Int {
+fn ulog2(pow2 : UInt64) -> Int32 {
   let idx = ((pow2 * 0x5b31ab928877a7eUL) >> 58).to_int()
   ulog2_tab64[idx]
 }
@@ -38,10 +38,10 @@ fn ispow2(v : UInt64) -> Bool {
 pub fn blit(
   src : @types.Ref,
   dst : @types.Ref,
-  sz : Int,
+  sz : Int32,
   fn_ : @types.Fn,
 ) -> Array[@types.Ins] {
-  let tbl : Array[(@types.Op, @types.Op, @types.Class, Int)] = [
+  let tbl : Array[(@types.Op, @types.Op, @types.Class, Int32)] = [
     (@types.Storel, @types.Load, @types.Kl, 8),
     (@types.Storew, @types.Load, @types.Kw, 4),
     (@types.Storeh, @types.Loaduh, @types.Kw, 2),

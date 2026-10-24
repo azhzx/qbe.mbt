@@ -5,28 +5,28 @@
 pub(all) struct OpInfo {
   name : String
   // arg class for each result class: [Kw, Kl, Ks, Kd]
-  a0 : Array[Int]
-  a1 : Array[Int]
+  a0 : Array[Int32]
+  a1 : Array[Int32]
   canfold : Bool
-  nmem : Int // number of memory arguments
-  zf : Int // sets zero flag
-  lf : Int // leaves flags
+  nmem : Int32 // number of memory arguments
+  zf : Int32 // sets zero flag
+  lf : Int32 // leaves flags
 } derive(Debug)
 
 ///|
 fn mk(
   name : String,
-  a0 : Array[Int],
-  a1 : Array[Int],
+  a0 : Array[Int32],
+  a1 : Array[Int32],
   cf : Bool,
-  x : (Int, Int, Int),
+  x : (Int32, Int32, Int32),
 ) -> OpInfo {
   OpInfo::{ name, a0, a1, canfold: cf, nmem: x.0, zf: x.1, lf: x.2, }
 }
 
 ///|
-fn cls(vals : Array[String]) -> Array[Int] {
-  let r : Array[Int] = []
+fn cls(vals : Array[String]) -> Array[Int32] {
+  let r : Array[Int32] = []
   for v in vals {
     let c = match v {
       "w" => 0
@@ -1126,7 +1126,7 @@ pub fn Op::name(self : Op) -> String {
 
 ///|
 // Convert an optab index back to an Op
-pub fn Op::from_index(i : Int) -> Op {
+pub fn Op::from_index(i : Int32) -> Op {
   match i {
     0 => Oxxx
     1 => Add
@@ -1283,7 +1283,7 @@ pub fn Op::from_index(i : Int) -> Op {
 
 ///|
 // Get the zero-based index of an op in the optab
-pub fn Op::index(self : Op) -> Int {
+pub fn Op::index(self : Op) -> Int32 {
   match self {
     Oxxx => 0
     Add => 1

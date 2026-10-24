@@ -51,7 +51,7 @@ pub fn JumpKind::is_ret(self : JumpKind) -> Bool {
 
 ///|
 // Index of a jump kind in the J enum.
-pub fn JumpKind::index(self : JumpKind) -> Int {
+pub fn JumpKind::index(self : JumpKind) -> Int32 {
   match self {
     Jxxx => 0
     Jret0 => 1
@@ -85,7 +85,7 @@ pub fn JumpKind::index(self : JumpKind) -> Int {
 
 ///|
 // Jump kind from its index in the J enum.
-pub fn JumpKind::from_index(i : Int) -> JumpKind {
+pub fn JumpKind::from_index(i : Int32) -> JumpKind {
   match i {
     0 => Jxxx
     1 => Jret0

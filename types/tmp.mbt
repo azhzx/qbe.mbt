@@ -12,7 +12,7 @@ pub(all) enum TmpWidth {
 
 ///|
 // Width index as int (C: WFull=0, Wsb=1, ... Wuw=6)
-pub fn TmpWidth::code(self : TmpWidth) -> Int {
+pub fn TmpWidth::code(self : TmpWidth) -> Int32 {
   match self {
     WFull => 0
     Wsb => 1
@@ -26,7 +26,7 @@ pub fn TmpWidth::code(self : TmpWidth) -> Int {
 
 ///|
 // Construct TmpWidth from an int code (1..6 => Wsb..Wuw)
-pub fn TmpWidth::from_code(c : Int) -> TmpWidth {
+pub fn TmpWidth::from_code(c : Int32) -> TmpWidth {
   match c {
     1 => Wsb
     2 => Wub
@@ -51,16 +51,16 @@ pub(all) enum UseKind {
 // Use record
 pub(all) struct Use {
   kind : UseKind
-  blk_id : Int
-  ins_idx : Int
-  arg_num : Int
+  blk_id : Int32
+  ins_idx : Int32
+  arg_num : Int32
 } derive(Debug, Eq)
 
 ///|
 // Register allocation hint
 pub(all) struct RegHint {
-  mut r : Int // Preferred register, -1 if unset
-  mut w : Int // Weight
+  mut r : Int32 // Preferred register, -1 if unset
+  mut w : Int32 // Weight
   mut m : UInt64 // Bitmask of registers to avoid
 } derive(Debug)
 
@@ -93,11 +93,11 @@ pub fn AliasType::astack(self : AliasType) -> Bool {
 pub(all) struct AliasInfo {
   mut kind : AliasType
   mut base : Ref
-  mut label : Int
+  mut label : Int32
   mut offset : Int64
   // The underlying stack-slot temporary id (the alloc), or -1.
   // Mirrors C's Alias.slot pointer; for an alloc it points to itself.
-  mut slot : Int
+  mut slot : Int32
 } derive(Debug)
 
 ///|
@@ -110,18 +110,18 @@ pub fn AliasInfo::default() -> AliasInfo {
 pub(all) struct Tmp {
   name : String
   uses : Array[Use]
-  mut ndef : Int
-  mut nuse : Int
-  mut bid : Int // Block id of the definition (C Tmp.bid)
-  mut cost : Int
-  mut slot : Int // Spill slot, -1 if unset
-  mut reg : Int // Allocated register id, -1 if in a slot/untracked
+  mut ndef : Int32
+  mut nuse : Int32
+  mut bid : Int32 // Block id of the definition (C Tmp.bid)
+  mut cost : Int32
+  mut slot : Int32 // Spill slot, -1 if unset
+  mut reg : Int32 // Allocated register id, -1 if in a slot/untracked
   mut cls : Class
   mut hint : RegHint
-  mut is_phi : Int // 0 = no, >0 = phi class id
+  mut is_phi : Int32 // 0 = no, >0 = phi class id
   mut alias_info : AliasInfo
   mut width : TmpWidth
-  mut visit : Int
+  mut visit : Int32
 } derive(Debug)
 
 ///|

@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn blit(@types.Ref, @types.Ref, Int, @types.Fn) -> Array[@types.Ins]
+pub fn blit(@types.Ref, @types.Ref, Int32, @types.Fn) -> Array[@types.Ins]
 
 pub fn ifconvert(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
 

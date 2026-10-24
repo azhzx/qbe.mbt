@@ -16,24 +16,24 @@ priv enum LocType {
 ///|
 priv struct Loc {
   mut kind : LocType
-  mut off : Int
-  mut blk : Int // block id
+  mut off : Int32
+  mut blk : Int32 // block id
 }
 
 ///|
 priv struct Slice {
   r : @types.Ref
-  sz : Int
+  sz : Int32
   cls : @types.Class
 }
 
 ///|
 priv struct Insert {
   isphi : Bool
-  num : Int
-  bid : Int
-  rpo_id : Int // RPO index of bid (the key the reference sorts inserts on)
-  off : Int
+  num : Int32
+  bid : Int32
+  rpo_id : Int32 // RPO index of bid (the key the reference sorts inserts on)
+  off : Int32
   ins : @types.Ins
   phi_m : Slice
   phi_p : @types.Phi
@@ -42,14 +42,14 @@ priv struct Insert {
 ///|
 priv struct LoadState {
   fn_ : @types.Fn
-  mut inum : Int
+  mut inum : Int32
   ilog : Array[Insert]
-  mut nlog : Int
+  mut nlog : Int32
 }
 
 ///|
 // MASK(w) in C: (BIT(8*w-1)*2-1); all low 8*w bits set (works for w == 8).
-fn mask_of(w : Int) -> UInt64 {
+fn mask_of(w : Int32) -> UInt64 {
   let one : UInt64 = 1
   (one << (8 * w - 1)) * 2 - 1
 }
@@ -198,8 +198,8 @@ fn load_abort(
   sl : Slice,
   msk : UInt64,
   il : Loc,
-  oldl : Int,
-  oldt : Int,
+  oldl : Int32,
+  oldt : Int32,
 ) -> @types.Ref {
   st.fn_.tmps.truncate(oldt)
   st.ilog.truncate(oldl)
@@ -218,8 +218,8 @@ fn def(
   st : LoadState,
   sl : Slice,
   msk : UInt64,
-  b : Int,
-  i : Int,
+  b : Int32,
+  i : Int32,
   il : Loc,
 ) -> @types.Ref {
   let oldl = st.nlog
@@ -393,7 +393,7 @@ fn def(
 ///|
 // Comparator for the insertion log (C icmp).
 // Phis in the same block compare equal (return 0), like the reference.
-fn icmp(a : Insert, b : Insert) -> Int {
+fn icmp(a : Insert, b : Insert) -> Int32 {
   // The reference sorts by block->id, which fillrpo sets to the RPO index.
   // MoonBit's block id is the definition order, so key on the RPO index.
   if a.rpo_id != b.rpo_id {
@@ -420,7 +420,7 @@ fn icmp(a : Insert, b : Insert) -> Int {
 // Unstable quicksort (median-of-three, Hoare partition, pivot at the end)
 // emulating the C qsort used by the reference, whose ordering of equal-key
 // phis determines the final phi order in each block.
-fn qsort_log(a : Array[Insert], lo : Int, hi : Int) -> Unit {
+fn qsort_log(a : Array[Insert], lo : Int32, hi : Int32) -> Unit {
   if lo >= hi {
     return
   }
@@ -460,7 +460,7 @@ fn qsort_log(a : Array[Insert], lo : Int, hi : Int) -> Unit {
 }
 
 ///|
-fn swap_insert(a : Array[Insert], i : Int, j : Int) -> Unit {
+fn swap_insert(a : Array[Insert], i : Int32, j : Int32) -> Unit {
   let t = a[i]
   a[i] = a[j]
   a[j] = t

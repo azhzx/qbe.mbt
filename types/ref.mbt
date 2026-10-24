@@ -4,13 +4,13 @@
 /// ADT replacing C bit-field (uint type:3; uint val:29)
 pub(all) enum Ref {
   RNone
-  RTmp(Int)
-  RCon(Int)
-  RInt(Int)
-  RType(Int)
-  RSlot(Int)
-  RCall(Int)
-  RMem(Int)
+  RTmp(Int32)
+  RCon(Int32)
+  RInt(Int32)
+  RType(Int32)
+  RSlot(Int32)
+  RCall(Int32)
+  RMem(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -21,43 +21,43 @@ pub fn Ref::none() -> Ref {
 
 ///|
 /// TMP(x) - temporary reference
-pub fn Ref::tmp(i : Int) -> Ref {
+pub fn Ref::tmp(i : Int32) -> Ref {
   RTmp(i)
 }
 
 ///|
 /// CON(x) - constant reference
-pub fn Ref::con(i : Int) -> Ref {
+pub fn Ref::con(i : Int32) -> Ref {
   RCon(i)
 }
 
 ///|
 /// INT(x) - integer literal reference (used by blit1's size)
-pub fn Ref::rint(i : Int) -> Ref {
+pub fn Ref::rint(i : Int32) -> Ref {
   RInt(i)
 }
 
 ///|
 /// TYPE(x) - type reference
-pub fn Ref::typ(i : Int) -> Ref {
+pub fn Ref::typ(i : Int32) -> Ref {
   RType(i)
 }
 
 ///|
 /// SLOT(x) - stack slot reference (value masked to 29 bits, as C SLOT())
-pub fn Ref::slot(i : Int) -> Ref {
+pub fn Ref::slot(i : Int32) -> Ref {
   RSlot(i & 0x1fffffff)
 }
 
 ///|
 /// CALL(x) - call result reference
-pub fn Ref::call(i : Int) -> Ref {
+pub fn Ref::call(i : Int32) -> Ref {
   RCall(i)
 }
 
 ///|
 /// MEM(x) - memory address reference
-pub fn Ref::mem(i : Int) -> Ref {
+pub fn Ref::mem(i : Int32) -> Ref {
   RMem(i)
 }
 
@@ -96,7 +96,7 @@ pub fn Ref::is_slot(self : Ref) -> Bool {
 
 ///|
 /// mem_val - extract memory index, -1 if not a memory ref
-pub fn Ref::mem_val(self : Ref) -> Int {
+pub fn Ref::mem_val(self : Ref) -> Int32 {
   match self {
     RMem(v) => v
     _ => -1
@@ -114,7 +114,7 @@ pub fn Ref::is_tmp(self : Ref) -> Bool {
 
 ///|
 /// tmp_val - extract temporary index, -1 if not a temp
-pub fn Ref::tmp_val(self : Ref) -> Int {
+pub fn Ref::tmp_val(self : Ref) -> Int32 {
   match self {
     RTmp(v) => v
     _ => -1
@@ -132,7 +132,7 @@ pub fn Ref::is_con(self : Ref) -> Bool {
 
 ///|
 /// con_val - extract constant index, -1 if not a constant
-pub fn Ref::con_val(self : Ref) -> Int {
+pub fn Ref::con_val(self : Ref) -> Int32 {
   match self {
     RCon(v) => v
     _ => -1
@@ -141,7 +141,7 @@ pub fn Ref::con_val(self : Ref) -> Int {
 
 ///|
 /// call_val - extract call info index, -1 if not a call ref
-pub fn Ref::call_val(self : Ref) -> Int {
+pub fn Ref::call_val(self : Ref) -> Int32 {
   match self {
     RCall(v) => v
     _ => -1
@@ -150,7 +150,7 @@ pub fn Ref::call_val(self : Ref) -> Int {
 
 ///|
 /// slot_val - extract slot index, -1 if not a slot ref
-pub fn Ref::slot_val(self : Ref) -> Int {
+pub fn Ref::slot_val(self : Ref) -> Int32 {
   match self {
     RSlot(v) => v
     _ => -1
@@ -177,7 +177,7 @@ pub fn Ref::is_rint(self : Ref) -> Bool {
 
 ///|
 /// rint_val - extract integer literal value, -1 if not an RInt
-pub fn Ref::rint_val(self : Ref) -> Int {
+pub fn Ref::rint_val(self : Ref) -> Int32 {
   match self {
     RInt(v) => v
     _ => -1
@@ -186,7 +186,7 @@ pub fn Ref::rint_val(self : Ref) -> Int {
 
 ///|
 /// typ_val - extract type index, -1 if not a type ref
-pub fn Ref::typ_val(self : Ref) -> Int {
+pub fn Ref::typ_val(self : Ref) -> Int32 {
   match self {
     RType(v) => v
     _ => -1

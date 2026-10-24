@@ -15,7 +15,7 @@ let con01 : Array[@types.Ref] = Array::make(2, @types.Ref::none())
 // ---------------------------------------------------------------------------
 
 ///|
-fn rtype_of(r : @types.Ref) -> Int {
+fn rtype_of(r : @types.Ref) -> Int32 {
   match r {
     @types.RNone => -1
     @types.RTmp(_) => 0
@@ -29,7 +29,7 @@ fn rtype_of(r : @types.Ref) -> Int {
 }
 
 ///|
-fn rval_of(r : @types.Ref) -> Int {
+fn rval_of(r : @types.Ref) -> Int32 {
   match r {
     @types.RNone => 0
     @types.RTmp(v) => v
@@ -114,7 +114,7 @@ fn op_hasid(op : @types.Op) -> Bool {
 }
 
 ///|
-fn op_idval(op : @types.Op) -> Int {
+fn op_idval(op : @types.Op) -> Int32 {
   match op {
     @types.Div | @types.Udiv | @types.Mul | @types.Ceqw => 1
     _ => 0
@@ -161,7 +161,7 @@ fn op_cmplgtewl(op : @types.Op) -> Bool {
 }
 
 ///|
-fn op_eqval(op : @types.Op) -> Int {
+fn op_eqval(op : @types.Op) -> Int32 {
   match op {
     @types.Ceqw
     | @types.Ceql
@@ -208,7 +208,7 @@ fn is_cmp_op(op : @types.Op) -> Bool {
 
 ///|
 // C argcls(i, n) == optab[i->op].argcls[n][i->cls].
-fn argcls(i : @types.Ins, n : Int) -> Int {
+fn argcls(i : @types.Ins, n : Int32) -> Int32 {
   let info = @types.op_info(i.op)
   let c = i.cls.code()
   let idx = if c < 0 { 0 } else { c }
@@ -242,8 +242,8 @@ fn isconbits(fn_ : @types.Fn, r : @types.Ref) -> Int64? {
 ///|
 struct ExtInfo {
   zext : Bool
-  nopw : Int
-  usew : Int
+  nopw : Int32
+  usew : Int32
 }
 
 ///|
@@ -260,7 +260,7 @@ fn ext_of(i : @types.Ins) -> ExtInfo? {
 }
 
 ///|
-fn bitwidth(v : UInt64) -> Int {
+fn bitwidth(v : UInt64) -> Int32 {
   let mut n = 0
   let mut v = v
   if v >> 32 != 0UL {
@@ -291,7 +291,7 @@ fn bitwidth(v : UInt64) -> Int {
 }
 
 ///|
-fn extcpy_width(w : Int) -> Int {
+fn extcpy_width(w : Int32) -> Int32 {
   match w {
     0 => 0
     1 => (1 << 1) | (1 << 3) | (1 << 5)
@@ -321,7 +321,7 @@ fn low32u(v : Int64) -> UInt64 {
 ///|
 fn con_single(c : @types.Con) -> Float {
   let i = c.raw_bits()
-  let u : UInt = (i & 0xFFFFFFFF).reinterpret_as_uint64().to_uint()
+  let u : UInt32 = (i & 0xFFFFFFFF).reinterpret_as_uint64().to_uint()
   Float::reinterpret_from_uint(u)
 }
 
@@ -657,8 +657,8 @@ fn foldref(fn_ : @types.Fn, i : @types.Ins) -> @types.Ref {
 struct GState {
   fn_ : @types.Fn
   mut tbl : Array[@types.Ins?]
-  mut def_idx : Array[Int]
-  mut phi_visit : Array[Int]
+  mut def_idx : Array[Int32]
+  mut phi_visit : Array[Int32]
 }
 
 ///|
@@ -670,7 +670,7 @@ fn GState::new(fn_ : @types.Fn) -> GState {
 // Build tmp -> defining instruction index (within the defining block) map.
 fn build_def_idx(st : GState) -> Unit {
   let fn_ = st.fn_
-  let a : Array[Int] = Array::make(fn_.ntmp(), -1)
+  let a : Array[Int32] = Array::make(fn_.ntmp(), -1)
   for b_id in fn_.def_order {
     let b = fn_.blks[b_id]
     for idx in 0..<b.ins.length() {
@@ -691,7 +691,7 @@ fn clear_phi_visit(st : GState) -> Unit {
 }
 
 ///|
-fn find_phi(fn_ : @types.Fn, bid : Int, r : @types.Ref) -> Int {
+fn find_phi(fn_ : @types.Fn, bid : Int32, r : @types.Ref) -> Int32 {
   let phis = fn_.blks[bid].phi
   for pi in 0..<phis.length() {
     if phis[pi].to.eq(r) {
@@ -702,7 +702,7 @@ fn find_phi(fn_ : @types.Fn, bid : Int, r : @types.Ref) -> Int {
 }
 
 ///|
-fn phiarg(p : @types.Phi, blk_id : Int) -> @types.Ref? {
+fn phiarg(p : @types.Phi, blk_id : Int32) -> @types.Ref? {
   for a in p.args {
     if a.blk_id == blk_id {
       return Some(a.value)
@@ -716,7 +716,7 @@ fn phiarg(p : @types.Phi, blk_id : Int) -> @types.Ref? {
 // ---------------------------------------------------------------------------
 
 ///|
-fn dwl(st : GState, r : @types.Ref, w0 : Int) -> Bool {
+fn dwl(st : GState, r : @types.Ref, w0 : Int32) -> Bool {
   let fn_ = st.fn_
   match isconbits(fn_, r) {
     Some(v) => if bitwidth(v.reinterpret_as_uint64()) <= w0 { return true }
@@ -803,13 +803,13 @@ fn dwl(st : GState, r : @types.Ref, w0 : Int) -> Bool {
 }
 
 ///|
-fn defwidthle(st : GState, r : @types.Ref, w : Int) -> Bool {
+fn defwidthle(st : GState, r : @types.Ref, w : Int32) -> Bool {
   clear_phi_visit(st)
   dwl(st, r, w)
 }
 
 ///|
-fn uwl(st : GState, r : @types.Ref, w : Int) -> Bool {
+fn uwl(st : GState, r : @types.Ref, w : Int32) -> Bool {
   let fn_ = st.fn_
   if !r.is_tmp() {
     return false
@@ -864,7 +864,7 @@ fn uwl(st : GState, r : @types.Ref, w : Int) -> Bool {
 }
 
 ///|
-fn usewidthle(st : GState, r : @types.Ref, w : Int) -> Bool {
+fn usewidthle(st : GState, r : @types.Ref, w : Int32) -> Bool {
   clear_phi_visit(st)
   uwl(st, r, w)
 }
@@ -881,11 +881,11 @@ fn isw1(st : GState, r : @types.Ref) -> Bool {
 ///|
 fn gvn_adduse(
   fn_ : @types.Fn,
-  t : Int,
+  t : Int32,
   kind : @types.UseKind,
-  blk_id : Int,
-  ins_idx : Int,
-  arg_num : Int,
+  blk_id : Int32,
+  ins_idx : Int32,
+  arg_num : Int32,
 ) -> Unit {
   let tmp = fn_.tmps[t]
   tmp.nuse = tmp.nuse + 1
@@ -964,7 +964,7 @@ fn killins(st : GState, i : @types.Ins, r : @types.Ref) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn rcmp(a : @types.Ref, b : @types.Ref) -> Int {
+fn rcmp(a : @types.Ref, b : @types.Ref) -> Int32 {
   let ta = rtype_of(a)
   let tb = rtype_of(b)
   if ta != tb {
@@ -974,7 +974,7 @@ fn rcmp(a : @types.Ref, b : @types.Ref) -> Int {
 }
 
 ///|
-fn sdom_b(st : GState, b1 : Int, b2 : Int) -> Bool {
+fn sdom_b(st : GState, b1 : Int32, b2 : Int32) -> Bool {
   if b1 == b2 {
     return false
   }
@@ -987,12 +987,12 @@ fn sdom_b(st : GState, b1 : Int, b2 : Int) -> Bool {
 }
 
 ///|
-fn dom_b(st : GState, b1 : Int, b2 : Int) -> Bool {
+fn dom_b(st : GState, b1 : Int32, b2 : Int32) -> Bool {
   b1 == b2 || sdom_b(st, b1, b2)
 }
 
 ///|
-fn reachrec(st : GState, b : Int, to : Int) -> Bool {
+fn reachrec(st : GState, b : Int32, to : Int32) -> Bool {
   if b == to {
     return true
   }
@@ -1013,7 +1013,7 @@ fn reachrec(st : GState, b : Int, to : Int) -> Bool {
 }
 
 ///|
-fn reaches(st : GState, b : Int, to : Int) -> Bool {
+fn reaches(st : GState, b : Int32, to : Int32) -> Bool {
   let r = reachrec(st, b, to)
   for id in 0..<st.fn_.nblk() {
     st.fn_.blks[id].visit = 0
@@ -1022,13 +1022,19 @@ fn reaches(st : GState, b : Int, to : Int) -> Bool {
 }
 
 ///|
-fn reachesnotvia(st : GState, b : Int, to : Int, excl : Int) -> Bool {
+fn reachesnotvia(st : GState, b : Int32, to : Int32, excl : Int32) -> Bool {
   st.fn_.blks[excl].visit = 1
   reaches(st, b, to)
 }
 
 ///|
-fn branchdom(st : GState, bif : Int, bbr1 : Int, bbr2 : Int, b : Int) -> Bool {
+fn branchdom(
+  st : GState,
+  bif : Int32,
+  bbr1 : Int32,
+  bbr2 : Int32,
+  b : Int32,
+) -> Bool {
   if b != bif && dom_b(st, bbr1, b) && !reachesnotvia(st, bbr2, b, bif) {
     return true
   }
@@ -1036,7 +1042,7 @@ fn branchdom(st : GState, bif : Int, bbr1 : Int, bbr2 : Int, b : Int) -> Bool {
 }
 
 ///|
-fn domzero(st : GState, d : Int, b : Int) -> Int? {
+fn domzero(st : GState, d : Int32, b : Int32) -> Int32? {
   let db = st.fn_.blks[d]
   if branchdom(st, d, db.jmp.s1, db.jmp.s2, b) {
     return Some(0)
@@ -1048,7 +1054,7 @@ fn domzero(st : GState, d : Int, b : Int) -> Int? {
 }
 
 ///|
-fn cmpeqz(st : GState, r : @types.Ref) -> (@types.Ref, Int, Int)? {
+fn cmpeqz(st : GState, r : @types.Ref) -> (@types.Ref, Int32, Int32)? {
   let fn_ = st.fn_
   if !r.is_tmp() {
     return None
@@ -1068,7 +1074,7 @@ fn cmpeqz(st : GState, r : @types.Ref) -> (@types.Ref, Int, Int)? {
 }
 
 ///|
-fn zeroval(st : GState, b : Int, r : @types.Ref, cls : Int) -> Int? {
+fn zeroval(st : GState, b : Int32, r : @types.Ref, cls : Int32) -> Int32? {
   let fn_ = st.fn_
   let mut d = fn_.blks[b].idom
   while d >= 0 {
@@ -1097,7 +1103,7 @@ fn zeroval(st : GState, b : Int, r : @types.Ref, cls : Int) -> Int? {
 }
 
 ///|
-fn usecls(st : GState, u : @types.Use, r : @types.Ref, cls : Int) -> Int {
+fn usecls(st : GState, u : @types.Use, r : @types.Ref, cls : Int32) -> Int32 {
   match u.kind {
     @types.UIns => {
       let i = st.fn_.blks[u.blk_id].ins[u.ins_idx]
@@ -1132,11 +1138,11 @@ fn usecls(st : GState, u : @types.Use, r : @types.Ref, cls : Int) -> Int {
 ///|
 fn propjnz0(
   st : GState,
-  bif : Int,
-  s0 : Int,
-  snon0 : Int,
+  bif : Int32,
+  s0 : Int32,
+  snon0 : Int32,
   r : @types.Ref,
-  cls : Int,
+  cls : Int32,
 ) -> Unit {
   if st.fn_.blks[s0].npred != 1 || !r.is_tmp() {
     return
@@ -1158,17 +1164,17 @@ fn propjnz0(
 // ---------------------------------------------------------------------------
 
 ///|
-fn mix(x0 : Int, x1 : Int) -> Int {
+fn mix(x0 : Int32, x1 : Int32) -> Int32 {
   x0 + 17 * x1
 }
 
 ///|
-fn ref_hash(r : @types.Ref) -> Int {
+fn ref_hash(r : @types.Ref) -> Int32 {
   mix(rtype_of(r), rval_of(r))
 }
 
 ///|
-fn ins_hash(i : @types.Ins) -> Int {
+fn ins_hash(i : @types.Ins) -> Int32 {
   let mut h = mix(i.op.index(), i.cls.code())
   h = mix(h, ref_hash(i.arg1))
   h = mix(h, ref_hash(i.arg2))
@@ -1248,7 +1254,7 @@ fn normins(st : GState, i : @types.Ins) -> Unit {
 }
 
 ///|
-fn assoccon(st : GState, b : @types.Blk, i : @types.Ins, idx : Int) -> Unit {
+fn assoccon(st : GState, b : @types.Blk, i : @types.Ins, idx : Int32) -> Unit {
   let fn_ = st.fn_
   let mut op = i.op
   if op == @types.Sub {
@@ -1338,7 +1344,7 @@ fn phieq(fn_ : @types.Fn, pa : @types.Phi, pb : @types.Phi) -> Bool {
 }
 
 ///|
-fn phicopyref(st : GState, b : @types.Blk, pi : Int) -> @types.Ref {
+fn phicopyref(st : GState, b : @types.Blk, pi : Int32) -> @types.Ref {
   let fn_ = st.fn_
   let p = b.phi[pi]
   let narg = p.args.length()
@@ -1475,7 +1481,7 @@ fn dedupphi(st : GState, b : @types.Blk) -> Unit {
 }
 
 ///|
-fn dedupins(st : GState, b : @types.Blk, idx : Int) -> Unit {
+fn dedupins(st : GState, b : @types.Blk, idx : Int32) -> Unit {
   let i = b.ins[idx]
   normins(st, i)
   if i.op == @types.Nop || pinned(i) || i.to.is_none() {
@@ -1605,7 +1611,7 @@ fn narrowpars(st : GState) -> Unit {
 ///|
 fn rebuildcfg(st : GState) -> Unit {
   let fn_ = st.fn_
-  let old_rpo : Array[Int] = []
+  let old_rpo : Array[Int32] = []
   for x in fn_.rpo {
     old_rpo.push(x)
   }

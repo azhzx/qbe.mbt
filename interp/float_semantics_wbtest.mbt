@@ -6,8 +6,8 @@
 // Helper to run a test module
 fn float_test_run(
   src : String,
-  entry? : String = "main",
-  args? : Array[InterpValue] = [],
+  entry~ : String = "main",
+  args~ : Array[InterpValue] = [],
 ) -> Result[InterpValue, String] raise {
   let lexer = @lexer.Lexer::new(src, "<test>")
   let parser = @parser.Parser::new(lexer.tokenize(), "<test>")

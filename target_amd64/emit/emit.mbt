@@ -9,8 +9,8 @@ priv struct EmitState {
   gassym : String
   sb : StringBuilder
   mut fp : String // frame pointer: "%rbp" or "%rsp" (C E.fp)
-  mut fsz : Int // frame size (C E.fsz)
-  mut nclob : Int // number of pushed callee-saved registers (C E.nclob)
+  mut fsz : Int32 // frame size (C E.fsz)
+  mut nclob : Int32 // number of pushed callee-saved registers (C E.nclob)
 }
 
 ///|
@@ -61,7 +61,7 @@ let rname : Array[Array[String]] = [
 
 ///|
 // Instruction format table (C omap in amd64/emit.c). (op index, cls code, asm)
-let omap : Array[(Int, Int, String)] = [
+let omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), KA, "+add%k %1, %="),
   (@types.Sub.index(), KA, "-sub%k %1, %="),
   (@types.And.index(), KI, "+and%k %1, %="),
@@ -157,7 +157,7 @@ let ctoa : Array[String] = [
 
 ///|
 // Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int) -> Int {
+fn sign_ext29(s : Int32) -> Int32 {
   if (s & (1 << 28)) != 0 {
     s - (1 << 29)
   } else {
@@ -166,7 +166,7 @@ fn sign_ext29(s : Int) -> Int {
 }
 
 ///|
-fn slot(st : EmitState, s : Int) -> Int {
+fn slot(st : EmitState, s : Int32) -> Int32 {
   let x = sign_ext29(s)
   if x < 0 {
     if st.fp == "%rsp" {
@@ -224,7 +224,7 @@ fn emitcon(st : EmitState, con : @types.Con) -> Unit {
 }
 
 ///|
-fn regtoa(reg : Int, sz : Int) -> String {
+fn regtoa(reg : Int32, sz : Int32) -> String {
   if reg >= @types.XMM0 {
     "xmm\{reg - @types.XMM0}"
   } else {
@@ -280,7 +280,7 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
 
 ///|
 // Emit a %0/%1/%= style reference with a size prefix (C Ref label in emitf).
-fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int) -> Unit raise {
+fn emit_ref(st : EmitState, i : @types.Ins, c : Char, sz : Int32) -> Unit raise {
   let rf = getarg(c, i)
   if rf.is_tmp() {
     st.sb.write_string("%")
@@ -553,7 +553,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
-fn framesz(st : EmitState) -> Int {
+fn framesz(st : EmitState) -> Int32 {
   let mut o = 0
   // C sysv_framesz: only non-leaf functions account for the callee-saved
   // registers they push.
@@ -573,7 +573,7 @@ fn framesz(st : EmitState) -> Int {
 
 ///|
 // Module-wide label counter (C static int id0 in emitfn).
-let emit_id0 : Array[Int] = Array::make(1, 0)
+let emit_id0 : Array[Int32] = Array::make(1, 0)
 
 ///|
 // Emit one function's assembly (C amd64_emitfn).
@@ -771,7 +771,7 @@ pub fn emitfn(
 
 ///|
 // Emit a data item (C gasemitdat in gas.c).
-let gasdat_align : Array[Int] = Array::make(1, 0)
+let gasdat_align : Array[Int32] = Array::make(1, 0)
 
 ///|
 pub fn gasemitdat(
@@ -833,7 +833,7 @@ pub fn gasemitdat(
 
 ///|
 // Extract the int32 word at byte offset p of a 16-byte little-endian value.
-fn word_i32(b0 : Int64, b1 : Int64, p : Int) -> Int {
+fn word_i32(b0 : Int64, b1 : Int64, p : Int32) -> Int32 {
   let u = if p == 0 {
     b0 & 0xFFFFFFFF
   } else if p == 4 {

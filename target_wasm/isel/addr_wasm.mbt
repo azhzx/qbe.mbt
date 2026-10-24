@@ -14,9 +14,9 @@
 pub fn decompose_addr(
   base : @types.Ref,
   index : @types.Ref,
-  scale : Int,
+  scale : Int32,
   offset : @types.Con,
-) -> (@types.Ref, @types.Ref, Int, @types.Con) {
+) -> (@types.Ref, @types.Ref, Int32, @types.Con) {
   // For wasm, we can only handle [base + offset] directly.
   // If there's an index/scale, we need to emit arithmetic.
   (base, index, scale, offset)
@@ -49,7 +49,7 @@ pub fn wasm_mem_offset(c : @types.Con) -> Int64 {
 pub fn is_simple_addr(
   base : @types.Ref,
   index : @types.Ref,
-  scale : Int,
+  scale : Int32,
 ) -> Bool {
   index.is_none() && scale == 1
 }

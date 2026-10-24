@@ -5,15 +5,15 @@
 ///|
 // Block-local register mapping (C struct RMap).
 priv struct RMap {
-  t : Array[Int] // 64 entries
-  r : Array[Int] // 64 entries
-  w : Array[Int] // 64 entries, wait list for unmatched hints
+  t : Array[Int32] // 64 entries
+  r : Array[Int32] // 64 entries
+  w : Array[Int32] // 64 entries, wait list for unmatched hints
   mut b : @types.BSet
-  mut n : Int
+  mut n : Int32
 }
 
 ///|
-fn rmap_new(nt : Int) -> RMap {
+fn rmap_new(nt : Int32) -> RMap {
   RMap::{
     t: Array::make(64, 0),
     r: Array::make(64, 0),
@@ -42,10 +42,10 @@ priv struct RState {
   buf : Array[@types.Ins]
   mut regu : UInt64
   pm : Array[PmEntry]
-  mut npm : Int
-  mut cur_loop : Int
-  mut stmov : Int
-  mut stblk : Int
+  mut npm : Int32
+  mut cur_loop : Int32
+  mut stmov : Int32
+  mut stblk : Int32
 }
 
 ///|
@@ -57,12 +57,12 @@ priv struct PmEntry {
 
 ///|
 // The register hint of a temporary (C hint(), through phicls).
-fn hint(st : RState, t : Int) -> Int {
+fn hint(st : RState, t : Int32) -> Int32 {
   st.fn_.tmps[@types.phicls(t, st.fn_.tmps)].hint.r
 }
 
 ///|
-fn sethint(st : RState, t : Int, r : Int) -> Unit {
+fn sethint(st : RState, t : Int32, r : Int32) -> Unit {
   let pc = @types.phicls(t, st.fn_.tmps)
   if st.fn_.tmps[pc].hint.r == -1 || st.fn_.tmps[pc].hint.w > st.cur_loop {
     st.fn_.tmps[pc].hint.r = r
@@ -98,7 +98,7 @@ fn emit_block(st : RState) -> Array[@types.Ins] {
 }
 
 ///|
-fn rfind(m : RMap, t : Int) -> Int {
+fn rfind(m : RMap, t : Int32) -> Int32 {
   for i in 0..<m.n {
     if m.t[i] == t {
       return m.r[i]
@@ -108,7 +108,7 @@ fn rfind(m : RMap, t : Int) -> Int {
 }
 
 ///|
-fn rref(st : RState, m : RMap, t : Int) -> @types.Ref {
+fn rref(st : RState, m : RMap, t : Int32) -> @types.Ref {
   let r = rfind(m, t)
   if r == -1 {
     let s = st.fn_.tmps[t].slot
@@ -119,7 +119,7 @@ fn rref(st : RState, m : RMap, t : Int) -> @types.Ref {
 }
 
 ///|
-fn radd(st : RState, m : RMap, t : Int, r : Int) -> Unit {
+fn radd(st : RState, m : RMap, t : Int32, r : Int32) -> Unit {
   m.b.set(t)
   m.b.set(r)
   m.t[m.n] = t
@@ -129,7 +129,7 @@ fn radd(st : RState, m : RMap, t : Int, r : Int) -> Unit {
 }
 
 ///|
-fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
+fn ralloctry(st : RState, m : RMap, t : Int32, try_ : Bool) -> @types.Ref raise {
   if t < @types.Tmp0 {
     return @types.Ref::tmp(t)
   }
@@ -211,12 +211,12 @@ fn ralloctry(st : RState, m : RMap, t : Int, try_ : Bool) -> @types.Ref raise {
 }
 
 ///|
-fn ralloc(st : RState, m : RMap, t : Int) -> @types.Ref raise {
+fn ralloc(st : RState, m : RMap, t : Int32) -> @types.Ref raise {
   ralloctry(st, m, t, false)
 }
 
 ///|
-fn rfree(_st : RState, m : RMap, t : Int) -> Int {
+fn rfree(_st : RState, m : RMap, t : Int32) -> Int32 {
   if !m.b.has(t) {
     return -1
   }
@@ -268,7 +268,12 @@ const MOVING = 1
 const MOVED = 2
 
 ///|
-fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
+fn pmrec(
+  st : RState,
+  status : Array[Int32],
+  i : Int32,
+  k : @ref.Ref[Int32],
+) -> Int32 {
   if st.pm[i].src.eq(st.pm[i].dst) {
     status[i] = MOVED
     return -1
@@ -351,7 +356,7 @@ fn pmrec(st : RState, status : Array[Int], i : Int, k : @ref.Ref[Int]) -> Int {
 
 ///|
 fn pmgen(st : RState) -> Unit {
-  let status : Array[Int] = Array::make(st.npm, TOMOVE)
+  let status : Array[Int32] = Array::make(st.npm, TOMOVE)
   for i in 0..<st.npm {
     if status[i] == TOMOVE {
       ignore(pmrec(st, status, i, @ref.new(st.pm[i].cls.code())))
@@ -360,7 +365,7 @@ fn pmgen(st : RState) -> Unit {
 }
 
 ///|
-fn r_move(st : RState, r : Int, to : @types.Ref, m : RMap) -> Unit raise {
+fn r_move(st : RState, r : Int32, to : @types.Ref, m : RMap) -> Unit raise {
   if to.is_tmp() {
     ignore(rfree(st, m, to.tmp_val()))
   }
@@ -382,7 +387,7 @@ fn r_move(st : RState, r : Int, to : @types.Ref, m : RMap) -> Unit raise {
 ///|
 // Process a run of consecutive copy-from-register instructions in rega
 // (C dopm in rega.c). Returns the index of the first copy in the run.
-fn rega_dopm(st : RState, b : @types.Blk, i : Int, m : RMap) -> Int raise {
+fn rega_dopm(st : RState, b : @types.Blk, i : Int32, m : RMap) -> Int32 raise {
   let m0 = rmap_new(st.fn_.ntmp())
   for z in 0..<64 {
     m0.t[z] = m.t[z]
@@ -445,9 +450,9 @@ fn prio1(st : RState, r1 : @types.Ref, r2 : @types.Ref) -> Bool {
 // Insert a ref-slot into the priority list (C insert).
 fn insert(
   st : RState,
-  slot : (Int, Int, Int),
-  rs : Array[(Int, Int, Int)],
-  p : Int,
+  slot : (Int32, Int32, Int32),
+  rs : Array[(Int32, Int32, Int32)],
+  p : Int32,
 ) -> Unit {
   rs[p] = slot
   let mut i = p
@@ -467,7 +472,7 @@ fn insert(
 // Read the current Ref at a ref-slot: (kind, idx1, idx2) where kind 0 is a
 // buffer ins argument (idx1=buf index, idx2=0/1 for arg1/arg2), kind 1 is a
 // mem base, kind 2 is a mem index.
-fn read_slot(st : RState, s : (Int, Int, Int)) -> @types.Ref {
+fn read_slot(st : RState, s : (Int32, Int32, Int32)) -> @types.Ref {
   if s.0 == 0 {
     if s.2 == 0 {
       st.buf[s.1].arg1
@@ -482,7 +487,7 @@ fn read_slot(st : RState, s : (Int, Int, Int)) -> @types.Ref {
 }
 
 ///|
-fn write_slot(st : RState, s : (Int, Int, Int), r : @types.Ref) -> Unit {
+fn write_slot(st : RState, s : (Int32, Int32, Int32), r : @types.Ref) -> Unit {
   if s.0 == 0 {
     if s.2 == 0 {
       st.buf[s.1].arg1 = r
@@ -500,7 +505,7 @@ fn write_slot(st : RState, s : (Int, Int, Int), r : @types.Ref) -> Unit {
 // The default case of the doblk switch (C default in doblk): free the
 // destination's register and rewrite the buffer ins. Returns the freed
 // register, or -1 if the ins has no live-out effect, or -2 if the ins is dead.
-fn doblk_def(st : RState, cur : RMap, last : Int) -> Int {
+fn doblk_def(st : RState, cur : RMap, last : Int32) -> Int32 {
   let ins = st.buf[last]
   if !ins.to.is_none() {
     let r = ins.to.tmp_val()
@@ -560,7 +565,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
       rf = rr
     }
     // collect and prioritize arguments
-    let ra : Array[(Int, Int, Int)] = Array::make(4, (0, 0, 0))
+    let ra : Array[(Int32, Int32, Int32)] = Array::make(4, (0, 0, 0))
     let mut nr = 0
     for x in 0..<2 {
       let arg = if x == 0 { st.buf[last].arg1 } else { st.buf[last].arg2 }
@@ -633,7 +638,7 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
 
 ///|
 // qsort comparison for carve: peel loop nests from inside out.
-fn carve_cmp(st : RState, a : Int, b : Int) -> Int {
+fn carve_cmp(st : RState, a : Int32, b : Int32) -> Int32 {
   let ba = st.fn_.blks[a]
   let bb = st.fn_.blks[b]
   if ba.loop_depth == bb.loop_depth {
@@ -653,7 +658,7 @@ fn carve_cmp(st : RState, a : Int, b : Int) -> Int {
 
 ///|
 // Comparison to order temporaries for allocation at the end of blocks.
-fn prio2(st : RState, t1 : Int, t2 : Int) -> Int {
+fn prio2(st : RState, t1 : Int32, t2 : Int32) -> Int32 {
   if (st.fn_.tmps[t1].visit ^ st.fn_.tmps[t2].visit) < 0 {
     return if st.fn_.tmps[t1].visit != -1 { 1 } else { -1 }
   }
@@ -703,7 +708,7 @@ pub fn rega(
     fn_.tmps[t].reg = -1
   }
   // sort blocks by loop nesting (C carve)
-  let blk : Array[Int] = []
+  let blk : Array[Int32] = []
   for id in fn_.def_order {
     blk.push(id)
   }
@@ -725,7 +730,7 @@ pub fn rega(
     st.cur_loop = b.loop_depth
     let cur = rmap_new(fn_.ntmp())
     // sort out-set temps by priority (C prio2 insertion sort)
-    let rl : Array[Int] = Array::make(64, 0)
+    let rl : Array[Int32] = Array::make(64, 0)
     let mut x = 0
     b.out_set
     .unwrap()
@@ -776,7 +781,7 @@ pub fn rega(
     let m = beg[s.rpo_id]
     // rl maps a register live at the beginning of s to the one used in all
     // predecessors (if any, -1 otherwise)
-    let rl : Array[Int] = Array::make(64, 0)
+    let rl : Array[Int32] = Array::make(64, 0)
     for p in s.phi {
       let r = rfind(m, p.to.tmp_val())
       if r == -1 {
@@ -850,7 +855,7 @@ pub fn rega(
   }
 
   // 4. emit remaining copies in new blocks
-  let blist : Array[Int] = []
+  let blist : Array[Int32] = []
   let nblocks0 = fn_.def_order.length()
   for bi in 0..<nblocks0 {
     let b_id = fn_.def_order[bi]

@@ -43,7 +43,7 @@ fn spill_parse_pipeline(
 
 ///|
 // Count spill reload/store instructions: any Load/Store* family op.
-fn count_mem_ops(f : @types.Fn) -> Int {
+fn count_mem_ops(f : @types.Fn) -> Int32 {
   let mut n = 0
   for id in f.def_order {
     for ins in f.blks[id].ins {

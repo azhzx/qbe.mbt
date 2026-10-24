@@ -2,7 +2,7 @@
 // Comparison code negation (C cmpneg in util.c, via cmptab).
 
 ///|
-pub fn cmpneg(c : Int) -> Int {
+pub fn cmpneg(c : Int32) -> Int32 {
   match c {
     0 => 1
     1 => 0

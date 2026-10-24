@@ -4,9 +4,9 @@
 
 ///|
 priv struct AClass {
-  mut inmem : Int
-  mut align : Int
-  mut size : Int
+  mut inmem : Int32
+  mut align : Int32
+  mut size : Int32
   cls : Array[@types.Class] // 2 slots
   r : Array[@types.Ref] // 2 slots
 }
@@ -35,7 +35,7 @@ priv struct AbiState {
   buf : Array[@types.Ins]
   mut ral : RAlloc?
   mut env : @types.Ref
-  mut fa : Int
+  mut fa : Int32
 }
 
 ///|
@@ -80,12 +80,12 @@ fn getcon(st : AbiState, v : Int64) -> @types.Ref {
 }
 
 ///|
-fn call_ref(ca : Int) -> @types.Ref {
+fn call_ref(ca : Int32) -> @types.Ref {
   @types.Ref::call(ca)
 }
 
 ///|
-fn alloc_op(al : Int) -> @types.Op {
+fn alloc_op(al : Int32) -> @types.Op {
   @types.Op::from_index(@types.Alloc4.index() + al)
 }
 
@@ -94,7 +94,7 @@ fn classify(
   a : AClass,
   typs : Array[@types.Typ],
   t : @types.Typ,
-  s0 : Int,
+  s0 : Int32,
 ) -> Unit {
   let fields = t.fields
   let mut member_start = 0
@@ -155,7 +155,7 @@ fn typclass(st : AbiState, a : AClass, t : @types.Typ) -> AClass {
 }
 
 ///|
-fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
+fn retr(reg : Array[@types.Ref], aret : AClass) -> Int32 {
   let mut nr0 = 0
   let mut nr1 = 0
   let mut ca = 0
@@ -177,7 +177,7 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int {
 }
 
 ///|
-fn selret(st : AbiState, bid : Int) -> Unit {
+fn selret(st : AbiState, bid : Int32) -> Unit {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
   if !j.is_ret() || j == @types.Jret0 {
@@ -246,7 +246,7 @@ fn selret(st : AbiState, bid : Int) -> Unit {
 
 ///|
 // Map a return jump kind to its class code (Jretw=0, Jretl=1, Jrets=2, Jretd=3).
-fn ret_class(j : @types.JumpKind) -> Int {
+fn ret_class(j : @types.JumpKind) -> Int32 {
   match j {
     @types.Jretw => 0
     @types.Jretl => 1
@@ -260,12 +260,12 @@ fn ret_class(j : @types.JumpKind) -> Int {
 fn argsclass(
   st : AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
   ac : Array[AClass],
   op : @types.Op,
   aret : AClass?,
-) -> Int {
+) -> Int32 {
   let mut nint = if aret is Some(a) && a.inmem != 0 { 5 } else { 6 }
   let mut nsse = 8
   let par = op == @types.Par
@@ -328,8 +328,8 @@ fn argsclass(
 fn rarg(
   _st : AbiState,
   ty : @types.Class,
-  ni : @ref.Ref[Int],
-  ns : @ref.Ref[Int],
+  ni : @ref.Ref[Int32],
+  ns : @ref.Ref[Int32],
 ) -> @types.Ref {
   if ty.base() == 0 {
     let r = @types.Ref::tmp(@types.rsave[ni.val])

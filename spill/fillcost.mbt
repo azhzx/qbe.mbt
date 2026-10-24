@@ -4,7 +4,7 @@
 
 ///|
 // Aggregate looping information at loop headers (C aggreg).
-fn aggreg(fn_ : @types.Fn, hd : Int, b : Int) -> Unit {
+fn aggreg(fn_ : @types.Fn, hd : Int32, b : Int32) -> Unit {
   ignore(fn_.blks[hd].gen_set.unwrap().union(fn_.blks[b].gen_set.unwrap()))
   if fn_.blks[b].nlive_w > fn_.blks[hd].nlive_w {
     fn_.blks[hd].nlive_w = fn_.blks[b].nlive_w
@@ -15,7 +15,7 @@ fn aggreg(fn_ : @types.Fn, hd : Int, b : Int) -> Unit {
 }
 
 ///|
-fn tmpuse(fn_ : @types.Fn, r : @types.Ref, use_ : Int, loopv : Int) -> Unit {
+fn tmpuse(fn_ : @types.Fn, r : @types.Ref, use_ : Int32, loopv : Int32) -> Unit {
   if r.is_mem() {
     let m = fn_.mems[r.mem_val()]
     tmpuse(fn_, m.base, 1, loopv)

@@ -62,7 +62,7 @@ fn isreg(r : @types.Ref) -> Bool {
 }
 
 ///|
-fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
+fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int32 {
   if !r.is_tmp() {
     return -1
   }
@@ -71,7 +71,7 @@ fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
 
 ///|
 // Argument class of instruction i's n-th arg (C argcls).
-fn argcls(i : @types.Ins, n : Int) -> @types.Class {
+fn argcls(i : @types.Ins, n : Int32) -> @types.Class {
   let info = @types.op_info(i.op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = i.cls.code()
@@ -186,7 +186,7 @@ fn sel_int_cmp(st : La64IselState, i : @types.Ins) -> Unit {
   let con0 = @types.Ref::con(st.fn_.get_con(0L))
   // Fix the compare's args at buffer index `idx` (helpers precede it after
   // the reversed write-back).
-  fn fix_cmp(st : La64IselState, idx : Int, i : @types.Ins) -> Unit {
+  fn fix_cmp(st : La64IselState, idx : Int32, i : @types.Ins) -> Unit {
     st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, argcls(i, 0), Some(i.op))
     st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, argcls(i, 1), Some(i.op))
   }
@@ -443,7 +443,7 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
 
 ///|
 // Select a jump instruction (C seljmp).
-fn seljmp(st : La64IselState, bid : Int) -> Unit {
+fn seljmp(st : La64IselState, bid : Int32) -> Unit {
   let b = st.fn_.blks[bid]
   // LoongArch uses conditional branches directly
   if b.jmp.kind == @types.Jjnz {

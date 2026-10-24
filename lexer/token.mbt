@@ -54,16 +54,16 @@ pub(all) enum TokenKind {
 // Token struct with position info
 pub(all) struct Token {
   kind : TokenKind
-  line : Int
-  col : Int
+  line : Int32
+  col : Int32
   raw : String // Raw text of the token
 } derive(Debug)
 
 ///|
 pub fn Token::new(
   kind : TokenKind,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
   raw : String,
 ) -> Token {
   Token::{ kind, line, col, raw, }

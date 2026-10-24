@@ -308,7 +308,7 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       }
 
       // Negative number literal
-      ['-', '0'..='9', ..] as c => {
+      ['-', '0'..<='9', ..] as c => {
         let (num, is_flt, r) = read_number(c[1:])
         let raw = "-" + num
         let kind = if is_flt { TFlt } else { TInt }
@@ -319,7 +319,7 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       }
 
       // Number literal
-      ['0'..='9', ..] as c => {
+      ['0'..<='9', ..] as c => {
         let (num, is_flt, r) = read_number(c)
         let kind = if is_flt { TFlt } else { TInt }
         tokens.push(Token::new(kind, line, col, num))
@@ -329,7 +329,7 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       }
 
       // Identifier / keyword / float literal
-      ['a'..='z' | 'A'..='Z' | '_', ..] as c => {
+      ['a'..<='z' | 'A'..<='Z' | '_', ..] as c => {
         let (id, r) = read_ident(c)
         let id_view : StringView = id[:]
         // Check for float literal prefix (s_ or d_)

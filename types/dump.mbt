@@ -5,7 +5,7 @@
 ///|
 // Find the representative of a phi class (C phicls in util.c), with path
 // compression. is_phi is 0 for non-phi temporaries.
-pub fn phicls(t : Int, tmps : Array[Tmp]) -> Int {
+pub fn phicls(t : Int32, tmps : Array[Tmp]) -> Int32 {
   let t1 = tmps[t].is_phi
   if t1 == 0 {
     return t

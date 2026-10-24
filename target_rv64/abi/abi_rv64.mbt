@@ -4,23 +4,23 @@
 
 ///|
 // Classification constants for RISC-V ABI
-const Cptr : Int = 1
+const Cptr : Int32 = 1
 
 ///|
-const Cstk1 : Int = 2
+const Cstk1 : Int32 = 2
 
 ///|
-const Cstk2 : Int = 4
+const Cstk2 : Int32 = 4
 
 ///|
-const Cstk : Int = 6
+const Cstk : Int32 = 6
 
 ///|
-const Cfpint : Int = 8
+const Cfpint : Int32 = 8
 
 ///|
 // Map a return jump kind to its class code (Jretw=0, Jretl=1, Jrets=2, Jretd=3).
-fn ret_class(j : @types.JumpKind) -> Int {
+fn ret_class(j : @types.JumpKind) -> Int32 {
   match j {
     @types.Jretw => 0
     @types.Jretl => 1
@@ -33,14 +33,14 @@ fn ret_class(j : @types.JumpKind) -> Int {
 ///|
 // RISC-V ABI classification for parameters
 priv struct Rv64Class {
-  mut class_ : Int
+  mut class_ : Int32
   mut typ : @types.Typ?
-  reg : Array[Int] // 2 slots
+  reg : Array[Int32] // 2 slots
   cls : Array[@types.Class] // 2 slots
-  off : Array[Int] // 2 slots
-  mut ngp : Int
-  mut nfp : Int
-  mut nreg : Int
+  off : Array[Int32] // 2 slots
+  mut ngp : Int32
+  mut nfp : Int32
+  mut nreg : Int32
 }
 
 ///|
@@ -60,9 +60,9 @@ fn Rv64Class::new() -> Rv64Class {
 ///|
 // Stack-parameter layout produced by selpar (C struct Params)
 priv struct Rv64Params {
-  mut ngp : Int
-  mut nfp : Int
-  mut stk : Int
+  mut ngp : Int32
+  mut nfp : Int32
+  mut stk : Int32
 }
 
 ///|
@@ -126,7 +126,7 @@ fn rv64_getcon(st : Rv64AbiState, v : Int64) -> @types.Ref {
 }
 
 ///|
-fn rv64_call_ref(ca : Int) -> @types.Ref {
+fn rv64_call_ref(ca : Int32) -> @types.Ref {
   @types.Ref::call(ca)
 }
 
@@ -179,8 +179,8 @@ fn rv64_fpstruct(
   st : Rv64AbiState,
   c : Rv64Class,
   t : @types.Typ,
-  off : Int,
-) -> Int {
+  off : Int32,
+) -> Int32 {
   let mut off = off
   let fields = t.fields
   let mut member_start = 0
@@ -306,8 +306,8 @@ fn rv64_ldregs(st : Rv64AbiState, c : Rv64Class, mem : @types.Ref) -> Unit {
 fn rv64_sttmps(
   st : Rv64AbiState,
   tmp : Array[@types.Ref],
-  base : Int,
-  ntmp : Int,
+  base : Int32,
+  ntmp : Int32,
   c : Rv64Class,
   mem : @types.Ref,
 ) -> Unit {
@@ -339,11 +339,11 @@ fn rv64_sttmps(
 fn rv64_argsclass(
   st : Rv64AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
   carg : Array[Rv64Class],
   retptr : Bool,
-) -> Int {
+) -> Int32 {
   let mut ngp = 8
   let mut nfp = 8
   let mut envc = 0
@@ -452,7 +452,7 @@ fn rv64_stkblob(st : Rv64AbiState, r : @types.Ref, t : @types.Typ) -> Unit {
 
 ///|
 // Select return value handling (C selret)
-fn rv64_selret(st : Rv64AbiState, bid : Int) -> Unit {
+fn rv64_selret(st : Rv64AbiState, bid : Int32) -> Unit {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
   if !j.is_ret() || j == @types.Jret0 {
@@ -530,8 +530,8 @@ fn rv64_selret(st : Rv64AbiState, bid : Int) -> Unit {
 fn rv64_selcall(
   st : Rv64AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
   il : Array[@types.Ins],
 ) -> Unit {
   let nargs = i1 - i0
@@ -823,7 +823,7 @@ fn rv64_selcall(
 
 ///|
 // Select parameter handling (C selpar)
-fn rv64_selpar(st : Rv64AbiState, par_end : Int) -> Unit {
+fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ca : Array[Rv64Class] = []

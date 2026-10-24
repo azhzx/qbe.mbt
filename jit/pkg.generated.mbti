@@ -12,22 +12,22 @@ import {
 // Types and methods
 pub struct ExecBlock {
   addr : Int64
-  size : Int
+  size : Int32
 }
 pub fn ExecBlock::base(Self) -> Int64
 pub fn ExecBlock::call1(Self, Int64) -> Int64 raise
-pub fn ExecBlock::call1_at(Self, Int, Int64) -> Int64 raise
+pub fn ExecBlock::call1_at(Self, Int32, Int64) -> Int64 raise
 pub fn ExecBlock::close(Self) -> Unit
-pub fn ExecBlock::load_module(Bytes, Int) -> Self raise
-pub fn ExecBlock::load_module_rw(Bytes, Int) -> Self raise
+pub fn ExecBlock::load_module(Bytes, Int32) -> Self raise
+pub fn ExecBlock::load_module_rw(Bytes, Int32) -> Self raise
 pub fn ExecBlock::load_text(Bytes) -> Self raise
-pub fn ExecBlock::protect(Self, Int) -> Unit raise
+pub fn ExecBlock::protect(Self, Int32) -> Unit raise
 
 pub struct JitModule {
   exec : ExecBlock
-  fns : Array[(String, Int)]
-  datas : Array[(String, Int)]
-  code_bytes : Int
+  fns : Array[(String, Int32)]
+  datas : Array[(String, Int32)]
+  code_bytes : Int32
 }
 pub fn JitModule::call_f64(Self, String, Array[Double]) -> Double raise
 pub fn JitModule::call_i64(Self, String, Array[Int64]) -> Int64 raise

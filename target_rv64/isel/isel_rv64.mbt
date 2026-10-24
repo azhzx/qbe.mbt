@@ -61,7 +61,7 @@ fn isreg(r : @types.Ref) -> Bool {
 }
 
 ///|
-fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
+fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int32 {
   if !r.is_tmp() {
     return -1
   }
@@ -70,7 +70,7 @@ fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
 
 ///|
 // Argument class of instruction i's n-th arg (C argcls).
-fn argcls(i : @types.Ins, n : Int) -> @types.Class {
+fn argcls(i : @types.Ins, n : Int32) -> @types.Class {
   let info = @types.op_info(i.op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = i.cls.code()
@@ -125,7 +125,7 @@ fn fixarg(
   r : @types.Ref,
   k : @types.Class,
   op : @types.Op?,
-  n : Int,
+  n : Int32,
 ) -> @types.Ref {
   let r0 = r
   let mut r1 = r0
@@ -239,7 +239,7 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
   // icmp), so immarg/memarg are decided from it, while k is the operand class.
   fn fix_cmp(
     st : Rv64IselState,
-    idx : Int,
+    idx : Int32,
     op : @types.Op,
     k : @types.Class,
   ) -> Unit {
@@ -493,7 +493,7 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
 
 ///|
 // Select a jump instruction (C seljmp).
-fn seljmp(st : Rv64IselState, bid : Int) -> Unit {
+fn seljmp(st : Rv64IselState, bid : Int32) -> Unit {
   let b = st.fn_.blks[bid]
   // RISC-V uses conditional branches directly
   if b.jmp.kind == @types.Jjnz {

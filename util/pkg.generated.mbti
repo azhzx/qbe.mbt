@@ -12,34 +12,34 @@ pub fn debug_info() -> Bool
 
 pub fn emit_dbgfile(String, StringBuilder) -> Unit
 
-pub fn emit_dbgloc(Int, Int, StringBuilder) -> Unit
+pub fn emit_dbgloc(Int32, Int32, StringBuilder) -> Unit
 
 pub async fn eprint(String) -> Unit
 
-pub fn fmt_fixed(Double, Int) -> String
+pub fn fmt_fixed(Double, Int32) -> String
 
 pub async fn iprint(String) -> Unit
 
-pub fn lpad(String, Int) -> String
+pub fn lpad(String, Int32) -> String
 
-pub fn rpad(Int, Int) -> String
+pub fn rpad(Int32, Int32) -> String
 
 pub fn set_debug_info(Bool) -> Unit
 
 // Errors
 pub(all) suberror QbeError {
-  ParseError(String, Int, String)
+  ParseError(String, Int32, String)
   CompileError(String)
   Ice(String)
 } derive(@debug.Debug)
 
 // Types and methods
 pub struct Interner {
-  table : Map[String, Int]
+  table : Map[String, Int32]
   values : Array[String]
 }
-pub fn Interner::get(Self, Int) -> String
-pub fn Interner::intern(Self, String) -> Int
+pub fn Interner::get(Self, Int32) -> String
+pub fn Interner::intern(Self, String) -> Int32
 pub fn Interner::new() -> Self
 
 // Type aliases

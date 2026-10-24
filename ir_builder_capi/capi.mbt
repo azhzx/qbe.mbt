@@ -39,7 +39,7 @@ fn bytes_to_string(b : Bytes) -> String {
 
 ///|
 // Read a little-endian int32 from a byte buffer.
-fn read_i32(b : Bytes, off : Int) -> Int {
+fn read_i32(b : Bytes, off : Int32) -> Int32 {
   b[off].to_int() |
   (b[off + 1].to_int() << 8) |
   (b[off + 2].to_int() << 16) |
@@ -49,9 +49,9 @@ fn read_i32(b : Bytes, off : Int) -> Int {
 ///|
 // Decode a little-endian int32 array from a byte buffer. Value handles are
 // small non-negative indices, so no sign extension is needed.
-fn read_i32_array(b : Bytes) -> Array[Int] {
+fn read_i32_array(b : Bytes) -> Array[Int32] {
   let n = b.length() / 4
-  let a : Array[Int] = []
+  let a : Array[Int32] = []
   for i in 0..<n {
     a.push(read_i32(b, i * 4))
   }
@@ -87,10 +87,10 @@ pub fn qbe_last_error() -> Bytes {
 pub fn qbe_add_func(
   h : Int64,
   name : Bytes,
-  ret_cls : Int,
-  is_export : Int,
+  ret_cls : Int32,
+  is_export : Int32,
   params : Bytes,
-) -> Int {
+) -> Int32 {
   let b = get_builder(h)
   let n = params.length() / 4
   let ps : Array[@types.Class] = []
@@ -107,56 +107,61 @@ pub fn qbe_add_func(
 
 ///|
 #export_name("qbe_func_param")
-pub fn qbe_func_param(h : Int64, fid : Int, i : Int) -> Int {
+pub fn qbe_func_param(h : Int64, fid : Int32, i : Int32) -> Int32 {
   get_builder(h).param(fid, i)
 }
 
 ///|
 // The entry block id of a function.
 #export_name("qbe_entry_block")
-pub fn qbe_entry_block(h : Int64, fid : Int) -> Int {
+pub fn qbe_entry_block(h : Int64, fid : Int32) -> Int32 {
   get_builder(h).entry_block(fid)
 }
 
 ///|
 #export_name("qbe_add_block")
-pub fn qbe_add_block(h : Int64, fid : Int, label : Bytes) -> Int {
+pub fn qbe_add_block(h : Int64, fid : Int32, label : Bytes) -> Int32 {
   get_builder(h).add_block(fid, bytes_to_string(label))
 }
 
 ///|
 #export_name("qbe_switch_to")
-pub fn qbe_switch_to(h : Int64, fid : Int, bid : Int) -> Unit {
+pub fn qbe_switch_to(h : Int64, fid : Int32, bid : Int32) -> Unit {
   get_builder(h).switch_to(fid, bid)
 }
 
 ///|
 #export_name("qbe_block_param")
-pub fn qbe_block_param(h : Int64, fid : Int, bid : Int, cls : Int) -> Int {
+pub fn qbe_block_param(
+  h : Int64,
+  fid : Int32,
+  bid : Int32,
+  cls : Int32,
+) -> Int32 {
   get_builder(h).block_param(fid, bid, @types.Class::from_code(cls))
 }
 
 ///|
 #export_name("qbe_const_int")
-pub fn qbe_const_int(h : Int64, fid : Int, v : Int64) -> Int {
+pub fn qbe_const_int(h : Int64, fid : Int32, v : Int64) -> Int32 {
   get_builder(h).iconst(fid, v)
 }
 
 ///|
 #export_name("qbe_const_double")
-pub fn qbe_const_double(h : Int64, fid : Int, v : Double) -> Int {
+pub fn qbe_const_double(h : Int64, fid : Int32, v : Double) -> Int32 {
   get_builder(h).fconst(fid, v)
 }
 
 ///|
 #export_name("qbe_const_single")
-pub fn qbe_const_single(h : Int64, fid : Int, v : Float) -> Int {
+pub fn qbe_const_single(h : Int64, fid : Int32, v : Float) -> Int32 {
   get_builder(h).sconst(fid, v)
 }
 
 ///|
 #export_name("qbe_global")
-pub fn qbe_global(h : Int64, fid : Int, name : Bytes) -> Int {
+pub fn qbe_global(h : Int64, fid : Int32, name : Bytes) -> Int32 {
   get_builder(h).global(fid, bytes_to_string(name))
 }
 
@@ -166,13 +171,13 @@ pub fn qbe_global(h : Int64, fid : Int, name : Bytes) -> Int {
 #export_name("qbe_emit")
 pub fn qbe_emit(
   h : Int64,
-  fid : Int,
+  fid : Int32,
   op : Bytes,
-  cls : Int,
-  res_cls : Int,
-  a1 : Int,
-  a2 : Int,
-) -> Int {
+  cls : Int32,
+  res_cls : Int32,
+  a1 : Int32,
+  a2 : Int32,
+) -> Int32 {
   let b = get_builder(h)
   b.emit_ins(
     fid,
@@ -188,11 +193,11 @@ pub fn qbe_emit(
 #export_name("qbe_emit_void")
 pub fn qbe_emit_void(
   h : Int64,
-  fid : Int,
+  fid : Int32,
   op : Bytes,
-  cls : Int,
-  a1 : Int,
-  a2 : Int,
+  cls : Int32,
+  a1 : Int32,
+  a2 : Int32,
 ) -> Unit {
   let b = get_builder(h)
   b.emit_void(
@@ -208,7 +213,7 @@ pub fn qbe_emit_void(
 // Emit one call argument (an `Arg` instruction). Call this for each argument
 // in order, then `qbe_call`.
 #export_name("qbe_arg")
-pub fn qbe_arg(h : Int64, fid : Int, cls : Int, val : Int) -> Unit {
+pub fn qbe_arg(h : Int64, fid : Int32, cls : Int32, val : Int32) -> Unit {
   get_builder(h).emit_void(
     fid,
     @types.Arg,
@@ -221,7 +226,12 @@ pub fn qbe_arg(h : Int64, fid : Int, cls : Int, val : Int) -> Unit {
 ///|
 // Emit a direct call to `callee`. Returns the result handle, or -1 for void.
 #export_name("qbe_call")
-pub fn qbe_call(h : Int64, fid : Int, callee : Bytes, ret_cls : Int) -> Int {
+pub fn qbe_call(
+  h : Int64,
+  fid : Int32,
+  callee : Bytes,
+  ret_cls : Int32,
+) -> Int32 {
   get_builder(h).call(
     fid,
     bytes_to_string(callee),
@@ -233,7 +243,7 @@ pub fn qbe_call(h : Int64, fid : Int, callee : Bytes, ret_cls : Int) -> Int {
 ///|
 // Mark a function as variadic (its last signature parameter is the ellipsis).
 #export_name("qbe_func_set_vararg")
-pub fn qbe_func_set_vararg(h : Int64, fid : Int) -> Unit {
+pub fn qbe_func_set_vararg(h : Int64, fid : Int32) -> Unit {
   let b = get_builder(h)
   b.functions()[fid].is_vararg = true
 }
@@ -241,14 +251,14 @@ pub fn qbe_func_set_vararg(h : Int64, fid : Int) -> Unit {
 ///|
 // Emit va_start for the value handle of the va_list storage.
 #export_name("qbe_vastart")
-pub fn qbe_vastart(h : Int64, fid : Int, ap : Int) -> Unit {
+pub fn qbe_vastart(h : Int64, fid : Int32, ap : Int32) -> Unit {
   get_builder(h).vastart(fid, ap)
 }
 
 ///|
 // Emit a va_arg of the given class; returns the result handle.
 #export_name("qbe_vaarg")
-pub fn qbe_vaarg(h : Int64, fid : Int, cls : Int, ap : Int) -> Int {
+pub fn qbe_vaarg(h : Int64, fid : Int32, cls : Int32, ap : Int32) -> Int32 {
   get_builder(h).vaarg(fid, @types.Class::from_code(cls), ap)
 }
 
@@ -256,31 +266,37 @@ pub fn qbe_vaarg(h : Int64, fid : Int, cls : Int, ap : Int) -> Int {
 // Mark the boundary between fixed and variadic arguments: emit this after the
 // fixed qbe_arg calls and before the variadic ones.
 #export_name("qbe_arg_vararg")
-pub fn qbe_arg_vararg(h : Int64, fid : Int) -> Unit {
+pub fn qbe_arg_vararg(h : Int64, fid : Int32) -> Unit {
   get_builder(h).arg_vararg(fid)
 }
 
 ///|
 #export_name("qbe_ret")
-pub fn qbe_ret(h : Int64, fid : Int, val : Int) -> Unit {
+pub fn qbe_ret(h : Int64, fid : Int32, val : Int32) -> Unit {
   get_builder(h).ret(fid, val)
 }
 
 ///|
 #export_name("qbe_jmp")
-pub fn qbe_jmp(h : Int64, fid : Int, dest : Int) -> Unit {
+pub fn qbe_jmp(h : Int64, fid : Int32, dest : Int32) -> Unit {
   get_builder(h).jmp(fid, dest, [])
 }
 
 ///|
 #export_name("qbe_jmp1")
-pub fn qbe_jmp1(h : Int64, fid : Int, dest : Int, a0 : Int) -> Unit {
+pub fn qbe_jmp1(h : Int64, fid : Int32, dest : Int32, a0 : Int32) -> Unit {
   get_builder(h).jmp(fid, dest, [a0])
 }
 
 ///|
 #export_name("qbe_jmp2")
-pub fn qbe_jmp2(h : Int64, fid : Int, dest : Int, a0 : Int, a1 : Int) -> Unit {
+pub fn qbe_jmp2(
+  h : Int64,
+  fid : Int32,
+  dest : Int32,
+  a0 : Int32,
+  a1 : Int32,
+) -> Unit {
   get_builder(h).jmp(fid, dest, [a0, a1])
 }
 
@@ -288,11 +304,11 @@ pub fn qbe_jmp2(h : Int64, fid : Int, dest : Int, a0 : Int, a1 : Int) -> Unit {
 #export_name("qbe_jmp3")
 pub fn qbe_jmp3(
   h : Int64,
-  fid : Int,
-  dest : Int,
-  a0 : Int,
-  a1 : Int,
-  a2 : Int,
+  fid : Int32,
+  dest : Int32,
+  a0 : Int32,
+  a1 : Int32,
+  a2 : Int32,
 ) -> Unit {
   get_builder(h).jmp(fid, dest, [a0, a1, a2])
 }
@@ -301,12 +317,12 @@ pub fn qbe_jmp3(
 #export_name("qbe_jmp4")
 pub fn qbe_jmp4(
   h : Int64,
-  fid : Int,
-  dest : Int,
-  a0 : Int,
-  a1 : Int,
-  a2 : Int,
-  a3 : Int,
+  fid : Int32,
+  dest : Int32,
+  a0 : Int32,
+  a1 : Int32,
+  a2 : Int32,
+  a3 : Int32,
 ) -> Unit {
   get_builder(h).jmp(fid, dest, [a0, a1, a2, a3])
 }
@@ -315,10 +331,10 @@ pub fn qbe_jmp4(
 #export_name("qbe_jnz")
 pub fn qbe_jnz(
   h : Int64,
-  fid : Int,
-  cond : Int,
-  then_blk : Int,
-  else_blk : Int,
+  fid : Int32,
+  cond : Int32,
+  then_blk : Int32,
+  else_blk : Int32,
 ) -> Unit {
   get_builder(h).jnz(fid, cond, then_blk, [], else_blk, [])
 }
@@ -327,12 +343,12 @@ pub fn qbe_jnz(
 #export_name("qbe_jnz1")
 pub fn qbe_jnz1(
   h : Int64,
-  fid : Int,
-  cond : Int,
-  then_blk : Int,
-  then_arg : Int,
-  else_blk : Int,
-  else_arg : Int,
+  fid : Int32,
+  cond : Int32,
+  then_blk : Int32,
+  then_arg : Int32,
+  else_blk : Int32,
+  else_arg : Int32,
 ) -> Unit {
   get_builder(h).jnz(fid, cond, then_blk, [then_arg], else_blk, [else_arg])
 }
@@ -341,7 +357,7 @@ pub fn qbe_jnz1(
 // Unconditional branch with an arbitrary number of block-parameter arguments,
 // passed as a little-endian int32 array.
 #export_name("qbe_jmp_n")
-pub fn qbe_jmp_n(h : Int64, fid : Int, dest : Int, args : Bytes) -> Unit {
+pub fn qbe_jmp_n(h : Int64, fid : Int32, dest : Int32, args : Bytes) -> Unit {
   get_builder(h).jmp(fid, dest, read_i32_array(args))
 }
 
@@ -350,11 +366,11 @@ pub fn qbe_jmp_n(h : Int64, fid : Int, dest : Int, args : Bytes) -> Unit {
 #export_name("qbe_jnz_n")
 pub fn qbe_jnz_n(
   h : Int64,
-  fid : Int,
-  cond : Int,
-  then_blk : Int,
+  fid : Int32,
+  cond : Int32,
+  then_blk : Int32,
   then_args : Bytes,
-  else_blk : Int,
+  else_blk : Int32,
   else_args : Bytes,
 ) -> Unit {
   get_builder(h).jnz(
@@ -372,7 +388,7 @@ pub fn qbe_jnz_n(
 pub fn qbe_data_string(
   h : Int64,
   name : Bytes,
-  is_export : Int,
+  is_export : Int32,
   s : Bytes,
 ) -> Unit {
   get_builder(h).data_string(
@@ -387,7 +403,7 @@ pub fn qbe_data_string(
 pub fn qbe_data_bytes(
   h : Int64,
   name : Bytes,
-  is_export : Int,
+  is_export : Int32,
   data : Bytes,
 ) -> Unit {
   get_builder(h).data_bytes(bytes_to_string(name), is_export != 0, data)
@@ -435,7 +451,7 @@ pub fn qbe_emit_object(h : Int64) -> Bytes {
 ///|
 // Enable (1) or disable (0) DWARF debug info for this builder's assembly.
 #export_name("qbe_dbg_enable")
-pub fn qbe_dbg_enable(on : Int) -> Unit {
+pub fn qbe_dbg_enable(on : Int32) -> Unit {
   @util.set_debug_info(on != 0)
 }
 
@@ -457,12 +473,12 @@ pub fn qbe_dbg_compile_unit(h : Int64, name : Bytes, dir : Bytes) -> Unit {
 #export_name("qbe_dbg_var")
 pub fn qbe_dbg_var(
   h : Int64,
-  fid : Int,
+  fid : Int32,
   name : Bytes,
-  ty : Int,
+  ty : Int32,
   type_name : Bytes,
-  size : Int,
-  val : Int,
+  size : Int32,
+  val : Int32,
 ) -> Unit {
   let t = match ty {
     0 => @types.DbgW
@@ -478,7 +494,7 @@ pub fn qbe_dbg_var(
 ///|
 // Attach a source location (a `dbgloc` instruction) at the current point.
 #export_name("qbe_dbg_loc")
-pub fn qbe_dbg_loc(h : Int64, fid : Int, line : Int, col : Int) -> Unit {
+pub fn qbe_dbg_loc(h : Int64, fid : Int32, line : Int32, col : Int32) -> Unit {
   get_builder(h).dbg_loc(fid, line, col)
 }
 

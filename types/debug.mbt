@@ -9,7 +9,7 @@ pub(all) enum DbgType {
   DbgS // single-precision float
   DbgD // double-precision float
   DbgPtr // pointer (void*)
-  DbgAgg(String, Int) // aggregate: name, byte size
+  DbgAgg(String, Int32) // aggregate: name, byte size
 } derive(Eq, Debug)
 
 ///|
@@ -19,5 +19,5 @@ pub(all) enum DbgType {
 pub(all) struct DbgVar {
   name : String
   ty : DbgType
-  tmp : Int // tmp id holding the value
+  tmp : Int32 // tmp id holding the value
 } derive(Debug)

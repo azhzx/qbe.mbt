@@ -31,7 +31,7 @@ fn ktoc(k : @types.Class) -> String {
 }
 
 ///|
-fn Builder::tmp_of(self : Builder, h : Int) -> Int {
+fn Builder::tmp_of(self : Builder, h : Int32) -> Int32 {
   match self.vals[h] {
     @types.RTmp(v) => v
     _ => -1
@@ -226,7 +226,7 @@ fn Builder::il_term(
 }
 
 ///|
-fn Builder::il_func(self : Builder, fid : Int, sb : StringBuilder) -> Unit {
+fn Builder::il_func(self : Builder, fid : Int32, sb : StringBuilder) -> Unit {
   let f = self.funcs[fid]
   if f.is_export {
     sb.write_string("export ")
@@ -338,7 +338,7 @@ fn il_data_item(d : @types.Dat, sb : StringBuilder) -> Unit {
 
 ///|
 // Print one `data` section starting at `start`; returns the next index.
-fn Builder::il_data(self : Builder, start : Int, sb : StringBuilder) -> Int {
+fn Builder::il_data(self : Builder, start : Int32, sb : StringBuilder) -> Int32 {
   let mut end = start
   let mut name = ""
   let mut is_export = false

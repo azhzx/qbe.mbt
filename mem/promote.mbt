@@ -7,7 +7,7 @@ pub fn promote(
   print_dbg : Bool,
   interner : @util.Interner,
   typs : Array[@types.Typ],
-  skip_read_before_write? : Bool = false,
+  skip_read_before_write~ : Bool = false,
 ) -> String {
   let b = fn_.blks[fn_.start_id]
   for ii in 0..<b.ins.length() {

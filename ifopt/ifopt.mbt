@@ -18,11 +18,11 @@
 
 ///|
 // MaxIns in ifopt.c.
-let max_ins : Int = 2
+let max_ins : Int32 = 2
 
 ///|
 // MaxPhis in ifopt.c.
-let max_phis : Int = 2
+let max_phis : Int32 = 2
 
 ///|
 // QBE's Osel0 (internal).
@@ -35,11 +35,11 @@ let sel1_op : @types.Op = @types.Sel1
 ///|
 // Return the block iteration order used by the C reference's block link list.
 // Falls back to every block when the caller has not built def_order yet.
-fn block_order(fn_ : @types.Fn) -> Array[Int] {
+fn block_order(fn_ : @types.Fn) -> Array[Int32] {
   if fn_.def_order.length() > 0 {
     return fn_.def_order
   }
-  let a : Array[Int] = []
+  let a : Array[Int32] = []
   for i in 0..<fn_.blks.length() {
     a.push(i)
   }
@@ -124,7 +124,7 @@ fn okjoin(b : @types.Blk) -> Bool {
 
 ///|
 // C ifopt.c ifgraph.  Returns (ok, thenb, elseb, joinb).
-fn ifgraph(fn_ : @types.Fn, ifb : Int) -> (Bool, Int, Int, Int) {
+fn ifgraph(fn_ : @types.Fn, ifb : Int32) -> (Bool, Int32, Int32, Int32) {
   let nb = fn_.blks[ifb]
   if nb.jmp.kind != @types.Jjnz {
     return (false, -1, -1, -1)
@@ -183,10 +183,10 @@ fn ifgraph(fn_ : @types.Fn, ifb : Int) -> (Bool, Int, Int, Int) {
 // C ifopt.c okgraph.
 fn okgraph(
   fn_ : @types.Fn,
-  ifb : Int,
-  thenb : Int,
-  elseb : Int,
-  joinb : Int,
+  ifb : Int32,
+  thenb : Int32,
+  elseb : Int32,
+  joinb : Int32,
 ) -> Bool {
   if fn_.blks[joinb].npred != 2 || !okjoin(fn_.blks[joinb]) {
     return false
@@ -202,7 +202,7 @@ fn okgraph(
 
 ///|
 // C util.c phiarg: value of a phi coming from block b.
-fn phiarg(p : @types.Phi, b : Int) -> @types.Ref {
+fn phiarg(p : @types.Phi, b : Int32) -> @types.Ref {
   for a in p.args {
     if a.blk_id == b {
       return a.value
@@ -232,10 +232,10 @@ fn addbins(vins : Array[@types.Ins], b : @types.Blk) -> Unit {
 // C ifopt.c convert: rebuild the if block with select instructions.
 fn convert(
   fn_ : @types.Fn,
-  ifb : Int,
-  thenb : Int,
-  elseb : Int,
-  joinb : Int,
+  ifb : Int32,
+  thenb : Int32,
+  elseb : Int32,
+  joinb : Int32,
 ) -> Unit {
   let vins : Array[@types.Ins] = []
   addbins(vins, fn_.blks[ifb])

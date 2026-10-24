@@ -153,7 +153,7 @@ test "arm64 emit: vararg prologue saves the argument registers" {
 
 ///|
 // Compare the binary emitter against clang's encoding of the same function.
-fn check_bin_words(words : Array[Int], expected : Array[Int64]) -> Unit raise {
+fn check_bin_words(words : Array[Int32], expected : Array[Int64]) -> Unit raise {
   assert_eq(words.length(), expected.length())
   for i in 0..<words.length() {
     assert_eq(words[i].to_int64() & 0xFFFFFFFFL, expected[i])

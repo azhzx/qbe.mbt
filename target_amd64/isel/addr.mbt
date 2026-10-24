@@ -5,11 +5,11 @@
 ///|
 // Address analysis info per temporary (C struct ANum).
 priv struct ANum {
-  mut n : Int
-  mut l : Int
-  mut r : Int
+  mut n : Int32
+  mut l : Int32
+  mut r : Int32
   // Index of the defining instruction in the current block, -1 if none.
-  mut i : Int
+  mut i : Int32
 }
 
 ///|
@@ -19,7 +19,7 @@ fn ANum::new() -> ANum {
 
 ///|
 // The add[] table of anumber (C static char add[10][10]).
-let add_tab : Array[Array[Int]] = [
+let add_tab : Array[Array[Int32]] = [
   [4, 0, 6, 4, 0, 7, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0],
   [6, 0, 2, 5, 7, 5, 6, 7],
@@ -31,7 +31,7 @@ let add_tab : Array[Array[Int]] = [
 ]
 
 ///|
-fn aref(st : IselState, r : @types.Ref) -> Int raise {
+fn aref(st : IselState, r : @types.Ref) -> Int32 raise {
   if r.is_con() {
     return 2
   }

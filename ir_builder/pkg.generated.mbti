@@ -19,28 +19,28 @@ pub struct Builder {
   typs : Array[@types.Typ]
   interner : @util.Interner
   vals : Array[@types.Ref]
-  cur : Array[Int]
+  cur : Array[Int32]
   rets : Array[Ret]
-  params : Array[Array[Int]]
+  params : Array[Array[Int32]]
   order : Array[String]
   mut dbg_name : String
   mut dbg_dir : String
   dbg_vars : Array[Array[@types.DbgVar]]
   // private fields
 }
-pub fn Builder::add_block(Self, Int, String) -> Int
-pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool, is_vararg? : Bool) -> Int
-pub fn Builder::add_param(Self, Int, @types.Class) -> Int
-pub fn Builder::arg_vararg(Self, Int) -> Unit
-pub fn Builder::arith(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
-pub fn Builder::atomic_load(Self, Int, @types.Class, Int) -> Int
-pub fn Builder::atomic_store(Self, Int, @types.Class, Int, Int) -> Unit
-pub fn Builder::block_param(Self, Int, Int, @types.Class) -> Int
-pub fn Builder::call(Self, Int, String, Array[(@types.Class, Int)], Ret) -> Int
-pub fn Builder::call_value(Self, Int, Int, Array[(@types.Class, Int)], Ret) -> Int
-pub fn Builder::call_vararg(Self, Int, String, Array[(@types.Class, Int)], Array[(@types.Class, Int)], Ret) -> Int
-pub fn Builder::cmp(Self, Int, @types.Op, @types.Class, Int, Int) -> Int
-pub fn Builder::current_block(Self, Int) -> Int
+pub fn Builder::add_block(Self, Int32, String) -> Int32
+pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool, is_vararg? : Bool) -> Int32
+pub fn Builder::add_param(Self, Int32, @types.Class) -> Int32
+pub fn Builder::arg_vararg(Self, Int32) -> Unit
+pub fn Builder::arith(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int32
+pub fn Builder::atomic_load(Self, Int32, @types.Class, Int32) -> Int32
+pub fn Builder::atomic_store(Self, Int32, @types.Class, Int32, Int32) -> Unit
+pub fn Builder::block_param(Self, Int32, Int32, @types.Class) -> Int32
+pub fn Builder::call(Self, Int32, String, Array[(@types.Class, Int32)], Ret) -> Int32
+pub fn Builder::call_value(Self, Int32, Int32, Array[(@types.Class, Int32)], Ret) -> Int32
+pub fn Builder::call_vararg(Self, Int32, String, Array[(@types.Class, Int32)], Array[(@types.Class, Int32)], Ret) -> Int32
+pub fn Builder::cmp(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int32
+pub fn Builder::current_block(Self, Int32) -> Int32
 pub fn Builder::data_align(Self, Int64) -> Unit
 pub fn Builder::data_begin(Self, String, Bool) -> Unit
 pub fn Builder::data_begin_aligned(Self, String, Bool, Int64) -> Unit
@@ -51,38 +51,38 @@ pub fn Builder::data_items(Self) -> Array[@types.Dat]
 pub fn Builder::data_ref(Self, String, Bool, String, Int64) -> Unit
 pub fn Builder::data_ref_item(Self, String, Int64) -> Unit
 pub fn Builder::data_string(Self, String, Bool, String) -> Unit
-pub fn Builder::dbg_loc(Self, Int, Int, Int) -> Unit
-pub fn Builder::dbg_var(Self, Int, String, @types.DbgType, Int) -> Unit
+pub fn Builder::dbg_loc(Self, Int32, Int32, Int32) -> Unit
+pub fn Builder::dbg_var(Self, Int32, String, @types.DbgType, Int32) -> Unit
 pub fn Builder::emit_asm(Self, gas? : String) -> String raise
 pub fn Builder::emit_bin_module(Self) -> @emit.Arm64BinModule raise
 pub fn Builder::emit_bin_module_ex(Self) -> (@emit.Arm64BinModule, @emit.Arm64BinFixups) raise
 pub fn Builder::emit_il(Self) -> String
-pub fn Builder::emit_ins(Self, Int, @types.Op, @types.Class, @types.Class, Int, Int) -> Int
+pub fn Builder::emit_ins(Self, Int32, @types.Op, @types.Class, @types.Class, Int32, Int32) -> Int32
 pub fn Builder::emit_object(Self) -> Bytes raise
-pub fn Builder::emit_void(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
-pub fn Builder::entry_block(Self, Int) -> Int
-pub fn Builder::fconst(Self, Int, Double) -> Int
-pub fn Builder::fence(Self, Int) -> Unit
-pub fn Builder::func_params(Self, Int) -> Array[Int]
+pub fn Builder::emit_void(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Unit
+pub fn Builder::entry_block(Self, Int32) -> Int32
+pub fn Builder::fconst(Self, Int32, Double) -> Int32
+pub fn Builder::fence(Self, Int32) -> Unit
+pub fn Builder::func_params(Self, Int32) -> Array[Int32]
 pub fn Builder::functions(Self) -> Array[@types.Fn]
-pub fn Builder::global(Self, Int, String) -> Int
-pub fn Builder::iconst(Self, Int, Int64) -> Int
+pub fn Builder::global(Self, Int32, String) -> Int32
+pub fn Builder::iconst(Self, Int32, Int64) -> Int32
 pub fn Builder::interner_ref(Self) -> @util.Interner
-pub fn Builder::jmp(Self, Int, Int, Array[Int]) -> Unit
-pub fn Builder::jnz(Self, Int, Int, Int, Array[Int], Int, Array[Int]) -> Unit
-pub fn Builder::load(Self, Int, @types.Op, @types.Class, Int) -> Int
+pub fn Builder::jmp(Self, Int32, Int32, Array[Int32]) -> Unit
+pub fn Builder::jnz(Self, Int32, Int32, Int32, Array[Int32], Int32, Array[Int32]) -> Unit
+pub fn Builder::load(Self, Int32, @types.Op, @types.Class, Int32) -> Int32
 pub fn Builder::new() -> Self
-pub fn Builder::param(Self, Int, Int) -> Int
-pub fn Builder::ret(Self, Int, Int) -> Unit
-pub fn Builder::sconst(Self, Int, Float) -> Int
+pub fn Builder::param(Self, Int32, Int32) -> Int32
+pub fn Builder::ret(Self, Int32, Int32) -> Unit
+pub fn Builder::sconst(Self, Int32, Float) -> Int32
 pub fn Builder::set_dbg_compile_unit(Self, String, String) -> Unit
-pub fn Builder::store(Self, Int, @types.Op, @types.Class, Int, Int) -> Unit
-pub fn Builder::switch_to(Self, Int, Int) -> Unit
-pub fn Builder::symbol(Self, String) -> Int
-pub fn Builder::unop(Self, Int, @types.Op, @types.Class, @types.Class, Int) -> Int
-pub fn Builder::vaarg(Self, Int, @types.Class, Int) -> Int
-pub fn Builder::val_ref(Self, Int) -> @types.Ref
-pub fn Builder::vastart(Self, Int, Int) -> Unit
+pub fn Builder::store(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Unit
+pub fn Builder::switch_to(Self, Int32, Int32) -> Unit
+pub fn Builder::symbol(Self, String) -> Int32
+pub fn Builder::unop(Self, Int32, @types.Op, @types.Class, @types.Class, Int32) -> Int32
+pub fn Builder::vaarg(Self, Int32, @types.Class, Int32) -> Int32
+pub fn Builder::val_ref(Self, Int32) -> @types.Ref
+pub fn Builder::vastart(Self, Int32, Int32) -> Unit
 
 pub(all) enum Ret {
   Void
@@ -92,7 +92,7 @@ pub(all) enum Ret {
   Double
 } derive(Eq, @debug.Debug)
 pub fn Ret::cls(Self) -> @types.Class
-pub fn Ret::from_code(Int) -> Self
+pub fn Ret::from_code(Int32) -> Self
 pub fn Ret::jump_kind(Self) -> @types.JumpKind
 pub fn Ret::text(Self) -> String
 

@@ -15,11 +15,11 @@ pub(all) enum FieldType {
 ///|
 pub(all) struct Field {
   kind : FieldType
-  len : Int
+  len : Int32
 } derive(Debug, Eq)
 
 ///|
-pub fn Field::new(kind : FieldType, len : Int) -> Field {
+pub fn Field::new(kind : FieldType, len : Int32) -> Field {
   Field::{ kind, len, }
 }
 
@@ -32,10 +32,10 @@ pub fn Field::end() -> Field {
 // Aggregate type definition - corresponds to struct Typ in QBE
 pub(all) struct Typ {
   mut name : String
-  mut dark : Int
-  mut align : Int
+  mut dark : Int32
+  mut align : Int32
   mut size : Int64
-  mut nunion : Int
+  mut nunion : Int32
   fields : Array[Field]
 } derive(Debug, Eq)
 

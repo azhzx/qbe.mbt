@@ -7,7 +7,7 @@ priv struct WatEmitState {
   interner : @util.Interner
   sb : StringBuilder
   // Resolved addresses of global data labels (name -> linear-memory offset).
-  dats : Array[(String, Int)]
+  dats : Array[(String, Int32)]
   // Names of module functions that return no value; a call to one must not be
   // followed by local.set even if the IL names a result.
   void_fns : Array[String]
@@ -20,8 +20,8 @@ priv struct WatEmitState {
   ext_names : Array[(String, String)]
   // Classes of the arguments pushed since the last call.
   arg_classes : Array[@types.Class]
-  mut pending_args : Int
-  mut indent : Int
+  mut pending_args : Int32
+  mut indent : Int32
 }
 
 ///|
@@ -29,7 +29,7 @@ fn wat_emit_new(
   fn_ : @types.Fn,
   interner : @util.Interner,
   sb : StringBuilder,
-  dats : Array[(String, Int)],
+  dats : Array[(String, Int32)],
   void_fns : Array[String],
   fn_params : Array[(String, Array[String])],
   fn_vararg : Array[String],
@@ -892,7 +892,11 @@ fn emit_body(st : WatEmitState) -> Unit {
 
 ///|
 // Copy succ's phi arguments that come from pred into the phi locals.
-fn emit_phi_copies(st : WatEmitState, succ_bid : Int, pred_bid : Int) -> Unit {
+fn emit_phi_copies(
+  st : WatEmitState,
+  succ_bid : Int32,
+  pred_bid : Int32,
+) -> Unit {
   for p in st.fn_.blks[succ_bid].phi {
     for a in p.args {
       if a.blk_id == pred_bid {
@@ -907,7 +911,7 @@ fn emit_phi_copies(st : WatEmitState, succ_bid : Int, pred_bid : Int) -> Unit {
 
 ///|
 // Point the pc at succ and re-enter the dispatch loop.
-fn emit_goto(st : WatEmitState, succ_bid : Int) -> Unit {
+fn emit_goto(st : WatEmitState, succ_bid : Int32) -> Unit {
   wat_writeln(st, "i32.const " + st.fn_.blks[succ_bid].rpo_id.to_string())
   wat_writeln(st, "local.set $pc")
   wat_writeln(st, "br $dispatch")
@@ -969,7 +973,7 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
 
 ///|
 // Byte width of a scalar data item.
-fn dat_width(kind : @types.DatKind) -> Int {
+fn dat_width(kind : @types.DatKind) -> Int32 {
   match kind {
     @types.DB => 1
     @types.DH => 2
@@ -981,7 +985,7 @@ fn dat_width(kind : @types.DatKind) -> Int {
 
 ///|
 // Size in bytes of one data item (strings occupy their encoded length).
-fn dat_item_size(d : @types.Dat) -> Int {
+fn dat_item_size(d : @types.Dat) -> Int32 {
   if d.is_str {
     @utf8.encode(d.str).length()
   } else {
@@ -990,7 +994,7 @@ fn dat_item_size(d : @types.Dat) -> Int {
 }
 
 ///|
-fn align_up(v : Int, a : Int) -> Int {
+fn align_up(v : Int32, a : Int32) -> Int32 {
   if a <= 1 {
     v
   } else {
@@ -999,7 +1003,7 @@ fn align_up(v : Int, a : Int) -> Int {
 }
 
 ///|
-fn put_le(buf : Array[Int], off : Int, v : Int64, n : Int) -> Unit {
+fn put_le(buf : Array[Int32], off : Int32, v : Int64, n : Int32) -> Unit {
   let mut x = v
   for i in 0..<n {
     buf[off + i] = (x & 0xFFL).to_int()
@@ -1015,7 +1019,7 @@ let wat_hex_digits : Array[String] = [
 ///|
 // Render a byte array as a WAT string literal (every byte hex-escaped, which
 // the text format always accepts).
-fn wat_byte_string(a : Array[Int]) -> String {
+fn wat_byte_string(a : Array[Int32]) -> String {
   let sb = StringBuilder::StringBuilder()
   sb.write_string("\"")
   for b in a {
@@ -1032,8 +1036,8 @@ fn wat_byte_string(a : Array[Int]) -> String {
 // and the flat byte image starting at WASM_DATA_BASE.
 fn wasm_layout_data(
   datas : Array[@types.Dat],
-) -> (Array[(String, Int)], Array[Int]) {
-  let addr_of : Array[(String, Int)] = []
+) -> (Array[(String, Int32)], Array[Int32]) {
+  let addr_of : Array[(String, Int32)] = []
   // Pass 1: assign addresses (block sizes are independent of ref values).
   let mut off = 0
   let mut align = 8
@@ -1051,7 +1055,7 @@ fn wasm_layout_data(
     }
   }
   // Pass 2: fill the image.
-  let buf : Array[Int] = Array::make(off, 0)
+  let buf : Array[Int32] = Array::make(off, 0)
   let mut cur = 0
   let mut align = 8
   for d in datas {
@@ -1097,11 +1101,11 @@ pub fn emit_fn(
   fn_ : @types.Fn,
   interner : @util.Interner,
   sb : StringBuilder,
-  dats? : Array[(String, Int)] = [],
-  void_fns? : Array[String] = [],
-  fn_params? : Array[(String, Array[String])] = [],
-  fn_vararg? : Array[String] = [],
-  ext_names? : Array[(String, String)] = [],
+  dats~ : Array[(String, Int32)] = [],
+  void_fns~ : Array[String] = [],
+  fn_params~ : Array[(String, Array[String])] = [],
+  fn_vararg~ : Array[String] = [],
+  ext_names~ : Array[(String, String)] = [],
 ) -> Unit {
   let st = wat_emit_new(
     fn_, interner, sb, dats, void_fns, fn_params, fn_vararg, ext_names,

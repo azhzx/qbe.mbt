@@ -3,7 +3,7 @@
 // mmap'd memory and made executable.
 pub struct ExecBlock {
   addr : Int64
-  size : Int
+  size : Int32
 }
 
 ///|
@@ -11,7 +11,7 @@ pub struct ExecBlock {
 // so the JIT loader can patch relocations before protecting it.
 pub fn ExecBlock::load_module_rw(
   image : Bytes,
-  code_bytes : Int,
+  code_bytes : Int32,
 ) -> ExecBlock raise {
   let n = image.length()
   if n == 0 {
@@ -30,7 +30,7 @@ pub fn ExecBlock::load_module_rw(
 
 ///|
 // Make the first code_bytes executable (RX); the data that follows stays RW.
-pub fn ExecBlock::protect(self : ExecBlock, code_bytes : Int) -> Unit raise {
+pub fn ExecBlock::protect(self : ExecBlock, code_bytes : Int32) -> Unit raise {
   if code_bytes < 0 || code_bytes > self.size {
     abort("run-asm: invalid code size")
   }
@@ -45,7 +45,7 @@ pub fn ExecBlock::protect(self : ExecBlock, code_bytes : Int) -> Unit raise {
 // executable (RX) while any global data that follows stays writable (RW).
 pub fn ExecBlock::load_module(
   image : Bytes,
-  code_bytes : Int,
+  code_bytes : Int32,
 ) -> ExecBlock raise {
   let exec = ExecBlock::load_module_rw(image, code_bytes)
   exec.protect(code_bytes)
@@ -81,7 +81,7 @@ pub fn ExecBlock::call1(self : ExecBlock, a0 : Int64) -> Int64 raise {
 // offset used by Arm64BinModule::fns).
 pub fn ExecBlock::call1_at(
   self : ExecBlock,
-  off : Int,
+  off : Int32,
   a0 : Int64,
 ) -> Int64 raise {
   @native.mbt_native_call_i64_1(self.addr + off.to_int64() * 4L, a0)
@@ -106,9 +106,9 @@ pub fn ExecBlock::close(self : ExecBlock) -> Unit {
 // tables needed to resolve functions and globals.
 pub struct JitModule {
   exec : ExecBlock
-  fns : Array[(String, Int)] // function name -> word offset in the text
-  datas : Array[(String, Int)] // global name -> byte offset in the data image
-  code_bytes : Int // size of the (page-aligned) code region
+  fns : Array[(String, Int32)] // function name -> word offset in the text
+  datas : Array[(String, Int32)] // global name -> byte offset in the data image
+  code_bytes : Int32 // size of the (page-aligned) code region
 }
 
 ///|
@@ -136,7 +136,7 @@ fn jit_resolve(symbols : Array[(String, Int64)], name : String) -> Int64 {
 pub fn JitModule::from_bin_module_ex(
   m : @qbe.Arm64BinModule,
   fx : @qbe.Arm64BinFixups,
-  symbols? : Array[(String, Int64)] = [],
+  symbols~ : Array[(String, Int64)] = [],
 ) -> JitModule raise {
   let exec = ExecBlock::load_module_rw(m.image(), m.code_bytes)
   let base = exec.base()

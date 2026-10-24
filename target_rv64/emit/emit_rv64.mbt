@@ -3,42 +3,42 @@
 
 ///|
 // Size codes (C SLong..SByte).
-const SLONG : Int = 0
+const SLONG : Int32 = 0
 
 ///|
-const SWORD : Int = 1
+const SWORD : Int32 = 1
 
 ///|
-const SSHORT : Int = 2
+const SSHORT : Int32 = 2
 
 ///|
-const SBYTE : Int = 3
+const SBYTE : Int32 = 3
 
 ///|
 // Class match codes (C Ki/Ka).
-const KI : Int = -1
+const KI : Int32 = -1
 
 ///|
-const KA : Int = -2
+const KA : Int32 = -2
 
 ///|
-const KW : Int = 0
+const KW : Int32 = 0
 
 ///|
-const KL : Int = 1
+const KL : Int32 = 1
 
 ///|
-const KS : Int = 2
+const KS : Int32 = 2
 
 ///|
-const KD : Int = 3
+const KD : Int32 = 3
 
 ///|
 // Temp registers for scratch.
-const T6 : Int = 62
+const T6 : Int32 = 62
 
 ///|
-const FT11 : Int = 63
+const FT11 : Int32 = 63
 
 ///|
 // Map a class code to the "w/l/s/d" suffix (C clschr).
@@ -46,11 +46,11 @@ let clschr : Array[String] = ["w", "l", "s", "d"]
 
 ///|
 // Map a class code to the size code (C clstosz).
-let clstosz : Array[Int] = [SWORD, SLONG, SSHORT, SBYTE]
+let clstosz : Array[Int32] = [SWORD, SLONG, SSHORT, SBYTE]
 
 ///|
 // Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int) -> Int {
+fn sign_ext29(s : Int32) -> Int32 {
   if (s & (1 << 28)) != 0 {
     s - (1 << 29)
   } else {
@@ -61,7 +61,7 @@ fn sign_ext29(s : Int) -> Int {
 ///|
 // Module-global base for block labels (C rv64/emit.c static id0); advances by
 // fn->nblk after each function so labels stay unique across the module.
-let rv64_id0 : Array[Int] = [0]
+let rv64_id0 : Array[Int32] = [0]
 
 ///|
 // Reset the block-label base (called once per module).
@@ -92,7 +92,7 @@ fn rv64_emit_new(
 ///|
 // RISC-V instruction format table (C omap in rv64/emit.c).
 // (op index, cls code, format string)
-let rv64_omap : Array[(Int, Int, String)] = [
+let rv64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), KI, "add%k %=, %0, %1"),
   (@types.Add.index(), KA, "fadd.%k %=, %0, %1"),
   (@types.Sub.index(), KI, "sub%k %=, %0, %1"),
@@ -169,7 +169,7 @@ let rv64_omap : Array[(Int, Int, String)] = [
 
 ///|
 // Slot offset calculation (C slot in emit.c).
-fn rv64_slot(st : Rv64EmitState, s : Int) -> Int {
+fn rv64_slot(st : Rv64EmitState, s : Int32) -> Int32 {
   let x = sign_ext29(s)
   if x < 0 {
     8 * -x
@@ -368,7 +368,7 @@ fn rv64_far_slot(
   st : Rv64EmitState,
   ldname : String,
   dst : String,
-  off : Int,
+  off : Int32,
 ) -> Unit {
   st.sb.write_string("\tli t6, ")
   st.sb.write_string(off.to_string())

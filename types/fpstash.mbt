@@ -6,12 +6,12 @@
 pub struct FpBits {
   b0 : Int64
   b1 : Int64
-  size : Int
+  size : Int32
 }
 
 ///|
 // Compare the first n bytes of two 16-byte little-endian values.
-fn fp_memcmp(a0 : Int64, a1 : Int64, b0 : Int64, b1 : Int64, n : Int) -> Bool {
+fn fp_memcmp(a0 : Int64, a1 : Int64, b0 : Int64, b1 : Int64, n : Int32) -> Bool {
   if n >= 8 {
     if a0 != b0 {
       return false
@@ -34,7 +34,7 @@ fn fp_memcmp(a0 : Int64, a1 : Int64, b0 : Int64, b1 : Int64, n : Int) -> Bool {
 let fp_stash : Array[FpBits] = []
 
 ///|
-pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int) -> Int {
+pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int32) -> Int32 {
   for i in 0..<fp_stash.length() {
     let e = fp_stash[i]
     if size <= e.size {
@@ -48,12 +48,12 @@ pub fn gasstash(bits0 : Int64, bits1 : Int64, size : Int) -> Int {
 }
 
 ///|
-pub fn fp_stash_len() -> Int {
+pub fn fp_stash_len() -> Int32 {
   fp_stash.length()
 }
 
 ///|
-pub fn fp_stash_at(i : Int) -> FpBits {
+pub fn fp_stash_at(i : Int32) -> FpBits {
   fp_stash[i]
 }
 

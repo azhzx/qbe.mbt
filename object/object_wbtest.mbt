@@ -53,7 +53,7 @@ test "object: writes a Mach-O header, section and symbol" {
 }
 
 ///|
-fn read_u32(b : Bytes, off : Int) -> Int {
+fn read_u32(b : Bytes, off : Int32) -> Int32 {
   b[off].to_int() |
   (b[off + 1].to_int() << 8) |
   (b[off + 2].to_int() << 16) |
@@ -61,7 +61,7 @@ fn read_u32(b : Bytes, off : Int) -> Int {
 }
 
 ///|
-fn read_u64(b : Bytes, off : Int) -> Int64 {
+fn read_u64(b : Bytes, off : Int32) -> Int64 {
   let mut v = 0L
   for i in 0..<8 {
     v = v | (b[off + i].to_int().to_int64() << (8 * i))

@@ -7,10 +7,10 @@
 // file[] and is reset for every module compile.
 
 ///|
-let dbg_nfile : Array[Int] = Array::make(1, 0)
+let dbg_nfile : Array[Int32] = Array::make(1, 0)
 
 ///|
-let dbg_curfile : Array[Int] = Array::make(1, 0)
+let dbg_curfile : Array[Int32] = Array::make(1, 0)
 
 ///|
 let dbg_paths : Array[String] = []
@@ -68,7 +68,7 @@ pub fn emit_dbgfile(path : String, sb : StringBuilder) -> Unit {
 
 ///|
 // C emit.c emitdbgloc: emit `\t.loc <curfile> <line>[ <col>]`.
-pub fn emit_dbgloc(line : Int, col : Int, sb : StringBuilder) -> Unit {
+pub fn emit_dbgloc(line : Int32, col : Int32, sb : StringBuilder) -> Unit {
   sb.write_string("\t.loc ")
   sb.write_string(dbg_curfile[0].to_string())
   sb.write_char(' ')

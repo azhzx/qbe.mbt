@@ -2,7 +2,7 @@
 // String interner - intern strings to integer labels
 // Corresponds to the string interning in QBE for symbol names
 pub struct Interner {
-  table : Map[String, Int]
+  table : Map[String, Int32]
   values : Array[String]
 }
 
@@ -13,7 +13,7 @@ pub fn Interner::new() -> Interner {
 
 ///|
 // Intern a string, returns its unique id
-pub fn Interner::intern(self : Self, s : String) -> Int {
+pub fn Interner::intern(self : Self, s : String) -> Int32 {
   match self.table.get(s) {
     Some(id) => id
     None => {
@@ -27,6 +27,6 @@ pub fn Interner::intern(self : Self, s : String) -> Int {
 
 ///|
 // Get a string by its interned id
-pub fn Interner::get(self : Self, id : Int) -> String {
+pub fn Interner::get(self : Self, id : Int32) -> String {
   self.values[id]
 }

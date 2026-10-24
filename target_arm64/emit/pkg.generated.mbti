@@ -14,9 +14,9 @@ pub fn debug_locs(@types.Fn, Bool) -> Array[@dwarf.DbgLoc]
 
 pub fn emit_arm64(@types.Fn, @util.Interner, Array[@types.Typ], String, String, Bool) -> String raise
 
-pub fn emit_arm64_bin_fn(@types.Fn, @util.Interner, Bool) -> Array[Int] raise
+pub fn emit_arm64_bin_fn(@types.Fn, @util.Interner, Bool) -> Array[Int32] raise
 
-pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool, Array[String]) -> (Array[Int], Array[(Int, String)], Array[(Int, Int, Int, String, Int)]) raise
+pub fn emit_arm64_bin_fn_ex(@types.Fn, @util.Interner, Bool, Array[String]) -> (Array[Int32], Array[(Int32, String)], Array[(Int32, Int32, Int32, String, Int32)]) raise
 
 pub fn emit_arm64_bin_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bool) -> Arm64BinModule raise
 
@@ -28,18 +28,18 @@ pub fn emit_arm64_object(Array[@types.Fn], Array[@types.Dat], @util.Interner, Bo
 
 // Types and methods
 pub(all) struct Arm64BinFixups {
-  ext_calls : Array[(Int, String)]
-  ext_addrs : Array[(Int, Int, Int, String, Int)]
+  ext_calls : Array[(Int32, String)]
+  ext_addrs : Array[(Int32, Int32, Int32, String, Int32)]
 }
 pub fn Arm64BinFixups::empty() -> Self
 
 pub(all) struct Arm64BinModule {
-  words : Array[Int]
-  data : Array[Int]
-  fns : Array[(String, Int)]
-  datas : Array[(String, Int)]
+  words : Array[Int32]
+  data : Array[Int32]
+  fns : Array[(String, Int32)]
+  datas : Array[(String, Int32)]
   exports : Array[String]
-  code_bytes : Int
+  code_bytes : Int32
 }
 pub fn Arm64BinModule::image(Self) -> Bytes
 

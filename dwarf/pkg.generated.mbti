@@ -23,8 +23,8 @@ type DbgFn
 pub(all) struct DbgLoc {
   name : String
   ty : @types.DbgType
-  kind : Int
-  value : Int
+  kind : Int32
+  value : Int32
 } derive(@debug.Debug)
 
 // Type aliases

@@ -38,7 +38,7 @@ fn isel_newtmp(st : IselState, k : @types.Class) -> @types.Ref {
 
 ///|
 // Adjust the use count of a temporary (C chuse).
-fn chuse(st : IselState, r : @types.Ref, du : Int) -> Unit {
+fn chuse(st : IselState, r : @types.Ref, du : Int32) -> Unit {
   if r.is_tmp() {
     st.fn_.tmps[r.tmp_val()].nuse = st.fn_.tmps[r.tmp_val()].nuse + du
   }
@@ -51,7 +51,7 @@ fn isreg(r : @types.Ref) -> Bool {
 }
 
 ///|
-fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
+fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int32 {
   if !r.is_tmp() {
     return -1
   }
@@ -59,7 +59,7 @@ fn rslot(r : @types.Ref, fn_ : @types.Fn) -> Int {
 }
 
 ///|
-fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int {
+fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int32 {
   if !r.is_con() {
     return 0
   }
@@ -79,7 +79,7 @@ fn noimm(r : @types.Ref, fn_ : @types.Fn) -> Int {
 
 ///|
 // Argument class of instruction i's n-th arg (C argcls).
-fn argcls(i : @types.Ins, n : Int) -> @types.Class {
+fn argcls(i : @types.Ins, n : Int32) -> @types.Class {
   let info = @types.op_info(i.op)
   let arr = if n == 0 { info.a0 } else { info.a1 }
   let c = i.cls.code()

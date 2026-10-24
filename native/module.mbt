@@ -25,6 +25,6 @@ pub fn write_file(path : String, data : Bytes) -> Unit raise {
 
 ///|
 // Run a shell command, returning its exit status.
-pub fn run_command(cmd : String) -> Int {
+pub fn run_command(cmd : String) -> Int32 {
   mbt_native_run(cstr(cmd))
 }

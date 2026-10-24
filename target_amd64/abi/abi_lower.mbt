@@ -6,8 +6,8 @@
 fn selcall(
   st : AbiState,
   orig : Array[@types.Ins],
-  i0 : Int,
-  i1 : Int,
+  i0 : Int32,
+  i1 : Int32,
 ) -> Unit raise {
   let nargs = i1 - i0
   let ac : Array[AClass] = []
@@ -269,7 +269,7 @@ fn selcall(
 }
 
 ///|
-fn selpar(st : AbiState, par_end : Int) -> Int raise {
+fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
   // par_end: index of the first non-par instruction in the start block
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
@@ -416,7 +416,7 @@ fn selpar(st : AbiState, par_end : Int) -> Int raise {
 ///|
 // Split the current block: move the emitted instructions into a new block
 // inserted after b (C split). Returns the new block id.
-fn split(st : AbiState, bid : Int) -> Int {
+fn split(st : AbiState, bid : Int32) -> Int32 {
   let b = st.fn_.blks[bid]
   let nb = emit_block(st)
   st.buf.clear()
@@ -444,7 +444,7 @@ fn split(st : AbiState, bid : Int) -> Int {
 
 ///|
 // Update the phi args in block succ, replacing predecessor bp with bp1.
-fn chpred(st : AbiState, succ : Int, bp : Int, bp1 : Int) -> Unit {
+fn chpred(st : AbiState, succ : Int32, bp : Int32, bp1 : Int32) -> Unit {
   for p in st.fn_.blks[succ].phi {
     for a in p.args {
       if a.blk_id == bp {
@@ -455,7 +455,7 @@ fn chpred(st : AbiState, succ : Int, bp : Int, bp1 : Int) -> Unit {
 }
 
 ///|
-fn selvaarg(st : AbiState, bid : Int, va : @types.Ins) -> Unit {
+fn selvaarg(st : AbiState, bid : Int32, va : @types.Ins) -> Unit {
   let b = st.fn_.blks[bid]
   let c4 = getcon(st, 4L)
   let c8 = getcon(st, 8L)
@@ -595,7 +595,7 @@ fn selvastart(st : AbiState, ap : @types.Ref) -> Unit {
 
 ///|
 // Lower a single block's calls/returns/vararg instructions (C abi inner loop).
-fn process_block(st : AbiState, bid : Int) -> Unit raise {
+fn process_block(st : AbiState, bid : Int32) -> Unit raise {
   let b = st.fn_.blks[bid]
   let orig : Array[@types.Ins] = []
   for x in b.ins {

@@ -4,7 +4,7 @@ pub(all) struct Addr {
   mut offset : Con
   mut base : Ref
   mut index : Ref
-  mut scale : Int
+  mut scale : Int32
 } derive(Debug)
 
 ///|
@@ -16,23 +16,23 @@ pub fn Addr::new() -> Addr {
 // Function - corresponds to struct Fn in QBE
 pub(all) struct Fn {
   name : String
-  mut start_id : Int // Start block id
+  mut start_id : Int32 // Start block id
   blks : Array[Blk] // All basic blocks (index = block id)
-  blk_names : Map[String, Int] // Name -> block id
+  blk_names : Map[String, Int32] // Name -> block id
   tmps : Array[Tmp] // Temporaries (index = tmp id)
   cons : Array[Con] // Constants (index = con id)
   mems : Array[Addr] // Memory addresses (index = mem id)
-  rpo : Array[Int] // Reverse Post-Order block ids
-  def_order : Array[Int] // Blocks in definition order
-  mut ret_ty : Int // Return type index, -1 if no aggregate
+  rpo : Array[Int32] // Reverse Post-Order block ids
+  def_order : Array[Int32] // Blocks in definition order
+  mut ret_ty : Int32 // Return type index, -1 if no aggregate
   mut retr : Ref // Return reference
   mut reg : UInt64 // Used register mask
-  mut slot : Int // Stack slot count
+  mut slot : Int32 // Stack slot count
   mut is_export : Bool
   mut is_vararg : Bool
   mut has_dynalloc : Bool
   mut leaf : Bool // no call instructions (C fn->leaf)
-  mut salign : Int // alignment of the largest static alloc (C fn->salign)
+  mut salign : Int32 // alignment of the largest static alloc (C fn->salign)
   // Debug info supplied by the programmatic builder: CU name/dir and the
   // variables declared in this function.
   mut dbg_name : String
@@ -68,23 +68,23 @@ pub fn Fn::new(name : String) -> Fn {
 }
 
 ///|
-pub fn Fn::nblk(self : Fn) -> Int {
+pub fn Fn::nblk(self : Fn) -> Int32 {
   self.blks.length()
 }
 
 ///|
-pub fn Fn::ntmp(self : Fn) -> Int {
+pub fn Fn::ntmp(self : Fn) -> Int32 {
   self.tmps.length()
 }
 
 ///|
-pub fn Fn::ncon(self : Fn) -> Int {
+pub fn Fn::ncon(self : Fn) -> Int32 {
   self.cons.length()
 }
 
 ///|
 // Add a new block, returns its id
-pub fn Fn::add_blk(self : Self, name : String) -> Int {
+pub fn Fn::add_blk(self : Self, name : String) -> Int32 {
   let id = self.blks.length()
   let blk = Blk::new(id, name)
   self.blks.push(blk)
@@ -94,7 +94,7 @@ pub fn Fn::add_blk(self : Self, name : String) -> Int {
 
 ///|
 // Find block id by name, returns -1 if not found
-pub fn Fn::find_blk(self : Fn, name : String) -> Int {
+pub fn Fn::find_blk(self : Fn, name : String) -> Int32 {
   match self.blk_names.get(name) {
     Some(id) => id
     None => -1
@@ -103,7 +103,7 @@ pub fn Fn::find_blk(self : Fn, name : String) -> Int {
 
 ///|
 // Add a new temporary, returns its id
-pub fn Fn::add_tmp(self : Self, name : String, cls : Class) -> Int {
+pub fn Fn::add_tmp(self : Self, name : String, cls : Class) -> Int32 {
   let id = self.tmps.length()
   self.tmps.push(Tmp::new(name, cls))
   id
@@ -133,10 +133,10 @@ pub fn Fn::init_regs(self : Self) -> Unit {
 ///|
 // Module-global counter for newtmp (matches C util.c static int n, which is
 // shared across all functions compiled in one process).
-let newtmp_counter : Array[Int] = Array::make(1, 0)
+let newtmp_counter : Array[Int32] = Array::make(1, 0)
 
 ///|
-pub fn Fn::new_tmp(self : Self, prfx : String, cls : Class) -> Int {
+pub fn Fn::new_tmp(self : Self, prfx : String, cls : Class) -> Int32 {
   let id = self.tmps.length()
   let name = if prfx == "" {
     ""
@@ -154,7 +154,7 @@ pub fn Fn::new_tmp(self : Self, prfx : String, cls : Class) -> Int {
 
 ///|
 // Add a new constant, returns its id
-pub fn Fn::add_con(self : Self, con : Con) -> Int {
+pub fn Fn::add_con(self : Self, con : Con) -> Int32 {
   let id = self.cons.length()
   self.cons.push(con)
   id
@@ -163,7 +163,7 @@ pub fn Fn::add_con(self : Self, con : Con) -> Int {
 ///|
 // Intern a constant: return existing id if a matching one exists,
 // otherwise add it. Matching is by raw bits (like C's union compare).
-pub fn Fn::get_con_by(self : Self, con : Con) -> Int {
+pub fn Fn::get_con_by(self : Self, con : Con) -> Int32 {
   for i in 0..<self.cons.length() {
     if con_eq(self.cons[i], con) {
       return i
@@ -176,13 +176,13 @@ pub fn Fn::get_con_by(self : Self, con : Con) -> Int {
 // The undefined constant (C's UNDEF sentinel).  It is distinct from the
 // zero constant: coalesce turns a load with no reaching store into
 // "copy UNDEF", while CON_Z is the ordinary zero constant.
-pub fn Fn::undef(self : Self) -> Int {
+pub fn Fn::undef(self : Self) -> Int32 {
   self.get_con_by(Con::new())
 }
 
 ///|
 // Get a constant reference for an integer value
-pub fn Fn::get_con(self : Self, val : Int64) -> Int {
+pub fn Fn::get_con(self : Self, val : Int64) -> Int32 {
   for i in 0..<self.cons.length() {
     let c = self.cons[i]
     if c.kind == CBits && c.flt == 0 && c.bits.i == val {
@@ -194,18 +194,18 @@ pub fn Fn::get_con(self : Self, val : Int64) -> Int {
 
 ///|
 // Get block by id
-pub fn Fn::blk(self : Fn, id : Int) -> Blk {
+pub fn Fn::blk(self : Fn, id : Int32) -> Blk {
   self.blks[id]
 }
 
 ///|
 // Get tmp by id
-pub fn Fn::tmp(self : Fn, id : Int) -> Tmp {
+pub fn Fn::tmp(self : Fn, id : Int32) -> Tmp {
   self.tmps[id]
 }
 
 ///|
 // Get con by id
-pub fn Fn::con(self : Fn, id : Int) -> Con {
+pub fn Fn::con(self : Fn, id : Int32) -> Con {
   self.cons[id]
 }

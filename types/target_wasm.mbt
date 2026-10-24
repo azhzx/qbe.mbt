@@ -5,44 +5,44 @@
 ///|
 // Wasm has no physical registers — all temporaries are locals.
 // Tmp0 = 0 means every tmp id maps directly to a wasm local variable.
-pub const WasmTmp0 : Int = 0
+pub const WasmTmp0 : Int32 = 0
 
 ///|
 // Wasm32 pointer size: Kw (32-bit), not Kl (64-bit).
 // On amd64 Km=Kl; on wasm32 Km=Kw.
-pub const WasmKmIsWide : Int = 0
+pub const WasmKmIsWide : Int32 = 0
 
 ///|
 // Number of general purpose registers (wasm: 0)
-pub const WasmNGPR : Int = 0
+pub const WasmNGPR : Int32 = 0
 
 ///|
 // Number of float registers (wasm: 0)
-pub const WasmNFPR : Int = 0
+pub const WasmNFPR : Int32 = 0
 
 ///|
 // Number of caller-save GPRs (wasm: 0)
-pub const WasmNGPS : Int = 0
+pub const WasmNGPS : Int32 = 0
 
 ///|
 // Number of caller-save FPRs (wasm: 0)
-pub const WasmNFPS : Int = 0
+pub const WasmNFPS : Int32 = 0
 
 ///|
 // Number of callee-save registers (wasm: 0)
-pub const WasmNCLR : Int = 0
+pub const WasmNCLR : Int32 = 0
 
 ///|
 // Number of globally live registers (wasm: 0)
-pub const WasmNRGLOB : Int = 0
+pub const WasmNRGLOB : Int32 = 0
 
 ///|
 // Wasm caller-save register list (empty — no physical registers)
-pub let wasm_rsave : Array[Int] = []
+pub let wasm_rsave : Array[Int32] = []
 
 ///|
 // Wasm callee-save register list (empty)
-pub let wasm_rclob : Array[Int] = []
+pub let wasm_rclob : Array[Int32] = []
 
 ///|
 // Wasm globally live register mask (0 — no globally live registers)
@@ -52,20 +52,20 @@ pub fn wasm_rglob_mask() -> UInt64 {
 
 ///|
 // Wasm stack base address in linear memory (64KB)
-pub const WASM_STACK_BASE : Int = 65536
+pub const WASM_STACK_BASE : Int32 = 65536
 
 ///|
 // Wasm stack alignment requirement (16 bytes)
-pub const WASM_STACK_ALIGN : Int = 16
+pub const WASM_STACK_ALIGN : Int32 = 16
 
 ///|
 // Wasm memory initial pages (64KB each)
-pub const WASM_MEMORY_PAGES : Int = 4
+pub const WASM_MEMORY_PAGES : Int32 = 4
 
 ///|
 // Base address of the data segment in linear memory. The stack grows up from
 // WASM_STACK_BASE, so static data lives below it.
-pub const WASM_DATA_BASE : Int = 1024
+pub const WASM_DATA_BASE : Int32 = 1024
 
 ///|
 // Wasm local variable classes (maps QBE Class to wasm type)

@@ -218,7 +218,7 @@ pub fn Op::is_ext(self : Op) -> Bool {
 
 ///|
 // Width index for a load op: Loadsb=Wsb, Loadub=Wub, ... Loaduw=Wuw
-pub fn Op::load_width_idx(self : Op) -> Int {
+pub fn Op::load_width_idx(self : Op) -> Int32 {
   match self {
     Loadsb => 1
     Loadub => 2
@@ -232,7 +232,7 @@ pub fn Op::load_width_idx(self : Op) -> Int {
 
 ///|
 // Width index for an extension op (C: Wsb + (op - Oextsb))
-pub fn Op::ext_width_idx(self : Op) -> Int {
+pub fn Op::ext_width_idx(self : Op) -> Int32 {
   match self {
     Extsb => 1
     Extub => 2

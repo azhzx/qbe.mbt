@@ -3,7 +3,7 @@
 // instruction. Reference words were produced by `clang -c` + `otool`.
 
 ///|
-fn check_word(actual : Int, expected : Int64) -> Unit raise {
+fn check_word(actual : Int32, expected : Int64) -> Unit raise {
   assert_eq(actual.to_int64() & 0xFFFFFFFFL, expected)
 }
 

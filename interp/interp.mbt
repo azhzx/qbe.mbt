@@ -62,9 +62,9 @@ priv struct Interp {
   // code region: function name -> address, and the reverse map
   code_addr : Map[String, UInt64]
   code_name : Map[UInt64, String]
-  mut steps : Int
-  max_steps : Int
-  max_depth : Int
+  mut steps : Int32
+  max_steps : Int32
+  max_depth : Int32
   // current stack bump pointer (frames allocate downward)
   mut sp : UInt64
   // heap bump pointer for malloc
@@ -198,7 +198,7 @@ fn Interp::call_function(
   self : Interp,
   name : String,
   args : Array[InterpValue],
-  depth : Int,
+  depth : Int32,
 ) -> InterpValue raise {
   if depth > self.max_depth {
     raise @util.QbeError::CompileError(
@@ -276,9 +276,9 @@ fn Interp::call_function(
 fn Interp::enter_block(
   self : Interp,
   frame : Frame,
-  bid : Int,
-  from_id : Int,
-  depth : Int,
+  bid : Int32,
+  from_id : Int32,
+  depth : Int32,
 ) -> InterpValue raise {
   // block dispatch is a loop (not tail recursion): wasm has no guaranteed
   // TCO, so an interpreted `jmp @self` loop must not grow the host stack
@@ -431,7 +431,7 @@ fn Interp::exec_call(
   self : Interp,
   frame : Frame,
   ins : @types.Ins,
-  depth : Int,
+  depth : Int32,
 ) -> Unit raise {
   let args = frame.call_args
   frame.call_args = []
@@ -519,9 +519,9 @@ pub fn run_module(
   interner : @util.Interner,
   entry : String,
   args : Array[InterpValue],
-  max_steps? : Int = 10000000,
-  max_depth? : Int = 10000,
-  hook? : ((String, Array[InterpValue]) -> InterpValue?)? = None,
+  max_steps~ : Int32 = 10000000,
+  max_depth~ : Int32 = 10000,
+  hook~ : ((String, Array[InterpValue]) -> InterpValue?)? = None,
 ) -> Result[(InterpValue, String), @util.QbeError] {
   let it = Interp::{
     funcs: Map([], capacity=0),

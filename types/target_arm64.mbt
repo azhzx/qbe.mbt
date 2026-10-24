@@ -11,235 +11,235 @@
 
 ///|
 // General purpose registers x0-x15.
-pub const ARM64_R0 : Int = 1
+pub const ARM64_R0 : Int32 = 1
 
 ///|
-pub const ARM64_R1 : Int = 2
+pub const ARM64_R1 : Int32 = 2
 
 ///|
-pub const ARM64_R2 : Int = 3
+pub const ARM64_R2 : Int32 = 3
 
 ///|
-pub const ARM64_R3 : Int = 4
+pub const ARM64_R3 : Int32 = 4
 
 ///|
-pub const ARM64_R4 : Int = 5
+pub const ARM64_R4 : Int32 = 5
 
 ///|
-pub const ARM64_R5 : Int = 6
+pub const ARM64_R5 : Int32 = 6
 
 ///|
-pub const ARM64_R6 : Int = 7
+pub const ARM64_R6 : Int32 = 7
 
 ///|
-pub const ARM64_R7 : Int = 8
+pub const ARM64_R7 : Int32 = 8
 
 ///|
 // x8: indirect result location register (aggregate return).
-pub const ARM64_R8 : Int = 9
+pub const ARM64_R8 : Int32 = 9
 
 ///|
-pub const ARM64_R9 : Int = 10
+pub const ARM64_R9 : Int32 = 10
 
 ///|
-pub const ARM64_R10 : Int = 11
+pub const ARM64_R10 : Int32 = 11
 
 ///|
-pub const ARM64_R11 : Int = 12
+pub const ARM64_R11 : Int32 = 12
 
 ///|
-pub const ARM64_R12 : Int = 13
+pub const ARM64_R12 : Int32 = 13
 
 ///|
-pub const ARM64_R13 : Int = 14
+pub const ARM64_R13 : Int32 = 14
 
 ///|
-pub const ARM64_R14 : Int = 15
+pub const ARM64_R14 : Int32 = 15
 
 ///|
-pub const ARM64_R15 : Int = 16
+pub const ARM64_R15 : Int32 = 16
 
 ///|
 // Intra-procedure call scratch registers (x16/x17). IP1 is globally live.
-pub const ARM64_IP0 : Int = 17
+pub const ARM64_IP0 : Int32 = 17
 
 ///|
-pub const ARM64_IP1 : Int = 18
+pub const ARM64_IP1 : Int32 = 18
 
 ///|
 // Platform register x18 (reserved on Apple; globally live here).
-pub const ARM64_R18 : Int = 19
+pub const ARM64_R18 : Int32 = 19
 
 ///|
 // Callee-save general purpose registers x19-x28.
-pub const ARM64_R19 : Int = 20
+pub const ARM64_R19 : Int32 = 20
 
 ///|
-pub const ARM64_R20 : Int = 21
+pub const ARM64_R20 : Int32 = 21
 
 ///|
-pub const ARM64_R21 : Int = 22
+pub const ARM64_R21 : Int32 = 22
 
 ///|
-pub const ARM64_R22 : Int = 23
+pub const ARM64_R22 : Int32 = 23
 
 ///|
-pub const ARM64_R23 : Int = 24
+pub const ARM64_R23 : Int32 = 24
 
 ///|
-pub const ARM64_R24 : Int = 25
+pub const ARM64_R24 : Int32 = 25
 
 ///|
-pub const ARM64_R25 : Int = 26
+pub const ARM64_R25 : Int32 = 26
 
 ///|
-pub const ARM64_R26 : Int = 27
+pub const ARM64_R26 : Int32 = 27
 
 ///|
-pub const ARM64_R27 : Int = 28
+pub const ARM64_R27 : Int32 = 28
 
 ///|
-pub const ARM64_R28 : Int = 29
+pub const ARM64_R28 : Int32 = 29
 
 ///|
 // Frame pointer (x29) — globally live.
-pub const ARM64_FP : Int = 30
+pub const ARM64_FP : Int32 = 30
 
 ///|
 // Link register (x30) — caller-save on arm64.
-pub const ARM64_LR : Int = 31
+pub const ARM64_LR : Int32 = 31
 
 ///|
 // Stack pointer (x31) — globally live.
-pub const ARM64_SP : Int = 32
+pub const ARM64_SP : Int32 = 32
 
 ///|
 // FP caller-save registers v0-v7.
-pub const ARM64_V0 : Int = 33
+pub const ARM64_V0 : Int32 = 33
 
 ///|
-pub const ARM64_V1 : Int = 34
+pub const ARM64_V1 : Int32 = 34
 
 ///|
-pub const ARM64_V2 : Int = 35
+pub const ARM64_V2 : Int32 = 35
 
 ///|
-pub const ARM64_V3 : Int = 36
+pub const ARM64_V3 : Int32 = 36
 
 ///|
-pub const ARM64_V4 : Int = 37
+pub const ARM64_V4 : Int32 = 37
 
 ///|
-pub const ARM64_V5 : Int = 38
+pub const ARM64_V5 : Int32 = 38
 
 ///|
-pub const ARM64_V6 : Int = 39
+pub const ARM64_V6 : Int32 = 39
 
 ///|
-pub const ARM64_V7 : Int = 40
+pub const ARM64_V7 : Int32 = 40
 
 ///|
 // FP callee-save registers v8-v15 (lower 64 bits only).
-pub const ARM64_V8 : Int = 41
+pub const ARM64_V8 : Int32 = 41
 
 ///|
-pub const ARM64_V9 : Int = 42
+pub const ARM64_V9 : Int32 = 42
 
 ///|
-pub const ARM64_V10 : Int = 43
+pub const ARM64_V10 : Int32 = 43
 
 ///|
-pub const ARM64_V11 : Int = 44
+pub const ARM64_V11 : Int32 = 44
 
 ///|
-pub const ARM64_V12 : Int = 45
+pub const ARM64_V12 : Int32 = 45
 
 ///|
-pub const ARM64_V13 : Int = 46
+pub const ARM64_V13 : Int32 = 46
 
 ///|
-pub const ARM64_V14 : Int = 47
+pub const ARM64_V14 : Int32 = 47
 
 ///|
-pub const ARM64_V15 : Int = 48
+pub const ARM64_V15 : Int32 = 48
 
 ///|
 // FP caller-save registers v16-v30.
-pub const ARM64_V16 : Int = 49
+pub const ARM64_V16 : Int32 = 49
 
 ///|
-pub const ARM64_V17 : Int = 50
+pub const ARM64_V17 : Int32 = 50
 
 ///|
-pub const ARM64_V18 : Int = 51
+pub const ARM64_V18 : Int32 = 51
 
 ///|
-pub const ARM64_V19 : Int = 52
+pub const ARM64_V19 : Int32 = 52
 
 ///|
-pub const ARM64_V20 : Int = 53
+pub const ARM64_V20 : Int32 = 53
 
 ///|
-pub const ARM64_V21 : Int = 54
+pub const ARM64_V21 : Int32 = 54
 
 ///|
-pub const ARM64_V22 : Int = 55
+pub const ARM64_V22 : Int32 = 55
 
 ///|
-pub const ARM64_V23 : Int = 56
+pub const ARM64_V23 : Int32 = 56
 
 ///|
-pub const ARM64_V24 : Int = 57
+pub const ARM64_V24 : Int32 = 57
 
 ///|
-pub const ARM64_V25 : Int = 58
+pub const ARM64_V25 : Int32 = 58
 
 ///|
-pub const ARM64_V26 : Int = 59
+pub const ARM64_V26 : Int32 = 59
 
 ///|
-pub const ARM64_V27 : Int = 60
+pub const ARM64_V27 : Int32 = 60
 
 ///|
-pub const ARM64_V28 : Int = 61
+pub const ARM64_V28 : Int32 = 61
 
 ///|
-pub const ARM64_V29 : Int = 62
+pub const ARM64_V29 : Int32 = 62
 
 ///|
-pub const ARM64_V30 : Int = 63
+pub const ARM64_V30 : Int32 = 63
 
 ///|
 // Tmp0 - first non-register temporary (NBit = 64; V30 < Tmp0 holds).
-pub const Arm64Tmp0 : Int = 64
+pub const Arm64Tmp0 : Int32 = 64
 
 ///|
 // Number of general purpose registers (R0-SP, matches C NGPR).
-pub const Arm64NGPR : Int = 32
+pub const Arm64NGPR : Int32 = 32
 
 ///|
 // Number of float registers (V0-V30, matches C NFPR).
-pub const Arm64NFPR : Int = 31
+pub const Arm64NFPR : Int32 = 31
 
 ///|
 // Number of caller-save GPRs (R0-R15, IP0, IP1, R18, LR = 20).
-pub const Arm64NGPS : Int = 20
+pub const Arm64NGPS : Int32 = 20
 
 ///|
 // Number of caller-save FPRs (v0-v7 and v16-v30, matches C NFPS).
-pub const Arm64NFPS : Int = 23
+pub const Arm64NFPS : Int32 = 23
 
 ///|
 // Number of callee-save registers (x19-x28 and v8-v15, matches C NCLR).
-pub const Arm64NCLR : Int = 18
+pub const Arm64NCLR : Int32 = 18
 
 ///|
 // Number of globally live registers (FP, SP, R18).
-pub const Arm64NRGLOB : Int = 3
+pub const Arm64NRGLOB : Int32 = 3
 
 ///|
 // ARM64 caller-save register list (C arm64_rsave in targ.c).
-pub let arm64_rsave : Array[Int] = [
+pub let arm64_rsave : Array[Int32] = [
   ARM64_R0,
   ARM64_R1,
   ARM64_R2,
@@ -287,7 +287,7 @@ pub let arm64_rsave : Array[Int] = [
 
 ///|
 // ARM64 callee-save register list (C arm64_rclob in targ.c).
-pub let arm64_rclob : Array[Int] = [
+pub let arm64_rclob : Array[Int32] = [
   ARM64_R19,
   ARM64_R20,
   ARM64_R21,
@@ -322,7 +322,7 @@ pub fn arm64_rglob_mask() -> UInt64 {
 ///|
 // The registers returned by a call, given its RCall ref
 // (C arm64_retregs in abi.c). Returns (bits, ngp, nfpr).
-pub fn Ref::arm64_retregs(self : Ref) -> (UInt64, Int, Int) {
+pub fn Ref::arm64_retregs(self : Ref) -> (UInt64, Int32, Int32) {
   let mut b : UInt64 = 0
   let v = self.call_val()
   let mut ngp = v & 3
@@ -342,7 +342,7 @@ pub fn Ref::arm64_retregs(self : Ref) -> (UInt64, Int, Int) {
 // The registers used to pass arguments, given an RCall ref
 // (C arm64_argregs in abi.c). x8 carries the aggregate-return hidden pointer
 // (bit 13).
-pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int, Int) {
+pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int32, Int32) {
   let mut b : UInt64 = 0
   let v = self.call_val()
   let mut ngp = (v >> 5) & 15
@@ -365,7 +365,7 @@ pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int, Int) {
 ///|
 // Map ARM64 register number to its asm name (C arm64 reg mapping in emit.c).
 // The width variants (w0/d0/s0) are applied by the emitter per class.
-pub fn arm64_reg_name(reg : Int) -> String {
+pub fn arm64_reg_name(reg : Int32) -> String {
   match reg {
     ARM64_R0 => "x0"
     ARM64_R1 => "x1"
@@ -436,17 +436,17 @@ pub fn arm64_reg_name(reg : Int) -> String {
 
 ///|
 // ARM64 pointer size: Kl (64-bit).
-pub const Arm64KmIsWide : Int = 1
+pub const Arm64KmIsWide : Int32 = 1
 
 ///|
 // ARM64 call return registers: x0/x1 and v0-v3 (C arm64_retregs).
-fn arm64_target_retregs(r : Ref) -> (UInt64, Int, Int) {
+fn arm64_target_retregs(r : Ref) -> (UInt64, Int32, Int32) {
   r.arm64_retregs()
 }
 
 ///|
 // ARM64 call argument registers: x0.. and v0.., x8/x9 flags (C arm64_argregs).
-fn arm64_target_argregs(r : Ref) -> (UInt64, Int, Int) {
+fn arm64_target_argregs(r : Ref) -> (UInt64, Int32, Int32) {
   r.arm64_argregs()
 }
 

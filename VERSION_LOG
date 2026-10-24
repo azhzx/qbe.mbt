@@ -446,3 +446,15 @@
     rejects the conversions C otherwise performs silently (pointer to a
     different object type, pointer to integer, floating point to integer,
     narrowing, signedness changes) in initialisers, assignments and returns.
+
+2026.10.24: v0.42.0
+    The tree moves to the current MoonBit toolchain (0.1.20261023, moonc
+    v0.10.17). Two things were needed: float_bits32 now reaches Float through
+    Float::from_double, because Double::to_float is gone (the new spelling also
+    exists in the old core, so it is a plain portability fix), and the sources
+    are re-formatted by the new moon fmt, which makes the integer types explicit
+    (Int -> Int32) and reflows 145 files including the generated interfaces.
+    With that, moon fmt --check, moon build, moon test (376), the qpcc oracle
+    (184), the differential (6720 on amd64 and arm64, 5040 with every debug
+    flag), both assembly suites (420 each), stress (688) and the C ABI smoke
+    test all pass on the new toolchain - which is what CI installs.

@@ -57,27 +57,27 @@ const N_SECT = 0x0E
 const N_EXT = 0x01
 
 ///|
-pub fn section_flags_text() -> Int {
+pub fn section_flags_text() -> Int32 {
   S_ATTR_PURE_INSTRUCTIONS | S_ATTR_SOME_INSTRUCTIONS | S_REGULAR
 }
 
 ///|
-pub fn section_flags_data() -> Int {
+pub fn section_flags_data() -> Int32 {
   S_REGULAR
 }
 
 ///|
-pub fn section_flags_cstring() -> Int {
+pub fn section_flags_cstring() -> Int32 {
   S_CSTRING_LITERALS
 }
 
 ///|
-pub fn section_flags_literal4() -> Int {
+pub fn section_flags_literal4() -> Int32 {
   S_4BYTE_LITERALS
 }
 
 ///|
-pub fn section_flags_literal8() -> Int {
+pub fn section_flags_literal8() -> Int32 {
   S_8BYTE_LITERALS
 }
 
@@ -111,11 +111,11 @@ pub const ARM64_RELOC_ADDEND = 10
 
 ///|
 pub(all) struct MachoReloc {
-  offset : Int // r_address: byte offset in the section
-  sym : Int // symbol table index (or the addend for ARM64_RELOC_ADDEND)
+  offset : Int32 // r_address: byte offset in the section
+  sym : Int32 // symbol table index (or the addend for ARM64_RELOC_ADDEND)
   pcrel : Bool
-  length : Int // 2 => 4 bytes
-  rtype : Int
+  length : Int32 // 2 => 4 bytes
+  rtype : Int32
   is_extern : Bool
 }
 
@@ -124,32 +124,32 @@ pub(all) struct MachoSection {
   name : String // e.g. "__text"
   seg : String // e.g. "__TEXT"
   data : Bytes
-  align : Int // log2 of the required alignment
-  flags : Int
+  align : Int32 // log2 of the required alignment
+  flags : Int32
   relocs : Array[MachoReloc]
 }
 
 ///|
 pub(all) struct MachoSym {
   name : String // Mach-O name, including the leading underscore
-  sect : Int // 1-based section index, 0 when undefined
-  value : Int // offset within the section
+  sect : Int32 // 1-based section index, 0 when undefined
+  value : Int32 // offset within the section
   is_ext : Bool
 }
 
 ///|
-fn push_u8(a : Array[Byte], v : Int) -> Unit {
+fn push_u8(a : Array[Byte], v : Int32) -> Unit {
   a.push((v & 0xFF).to_byte())
 }
 
 ///|
-fn push_u16(a : Array[Byte], v : Int) -> Unit {
+fn push_u16(a : Array[Byte], v : Int32) -> Unit {
   push_u8(a, v & 0xFF)
   push_u8(a, (v >> 8) & 0xFF)
 }
 
 ///|
-fn push_u32(a : Array[Byte], v : Int) -> Unit {
+fn push_u32(a : Array[Byte], v : Int32) -> Unit {
   push_u8(a, v & 0xFF)
   push_u8(a, (v >> 8) & 0xFF)
   push_u8(a, (v >> 16) & 0xFF)
@@ -164,7 +164,7 @@ fn push_u64(a : Array[Byte], v : Int64) -> Unit {
 }
 
 ///|
-fn push_pad(a : Array[Byte], n : Int) -> Unit {
+fn push_pad(a : Array[Byte], n : Int32) -> Unit {
   for _ in 0..<n {
     a.push((0).to_byte())
   }
@@ -190,7 +190,7 @@ fn push_bytes(a : Array[Byte], b : Bytes) -> Unit {
 }
 
 ///|
-fn align_up(n : Int, al : Int) -> Int {
+fn align_up(n : Int32, al : Int32) -> Int32 {
   (n + al - 1) & -al
 }
 
@@ -210,8 +210,8 @@ pub fn write_object(
   // Section file offsets and in-segment addresses. In MH_OBJECT each section
   // carries its offset from the start of the segment; linkers check these for
   // overlaps (GNU ld via gcc rejects all-zero addresses).
-  let sec_off : Array[Int] = []
-  let sec_addr : Array[Int] = []
+  let sec_off : Array[Int32] = []
+  let sec_addr : Array[Int32] = []
   let mut cur = header_size + cmds_size
   let mut acur = 0
   for s in sections {
@@ -224,7 +224,7 @@ pub fn write_object(
   }
   let sec_end = cur
   // Relocation file offsets.
-  let rel_off : Array[Int] = []
+  let rel_off : Array[Int32] = []
   let mut rcur = align_up(sec_end, 4)
   for s in sections {
     rel_off.push(rcur)
@@ -235,7 +235,7 @@ pub fn write_object(
 
   // String table: leading NUL, then each name NUL-terminated.
   let str_tab : Array[Byte] = [(0).to_byte()]
-  let strx : Array[Int] = []
+  let strx : Array[Int32] = []
   for s in syms {
     strx.push(str_tab.length())
     push_bytes(str_tab, @utf8.encode(s.name))

@@ -6,7 +6,7 @@ pub fn cstr(String) -> Bytes
 
 pub fn host_supported() -> Bool
 
-pub fn mbt_native_alloc(Int) -> Int64
+pub fn mbt_native_alloc(Int32) -> Int64
 
 pub fn mbt_native_call_f64_0(Int64) -> Double
 
@@ -52,33 +52,33 @@ pub fn mbt_native_dlsym(Int64, Bytes) -> Int64
 
 pub fn mbt_native_eprint(Bytes) -> Unit
 
-pub fn mbt_native_exit(Int) -> Unit
+pub fn mbt_native_exit(Int32) -> Unit
 
-pub fn mbt_native_free(Int64, Int) -> Unit
+pub fn mbt_native_free(Int64, Int32) -> Unit
 
-pub fn mbt_native_host_supported() -> Int
+pub fn mbt_native_host_supported() -> Int32
 
-pub fn mbt_native_icache_flush(Int64, Int) -> Unit
+pub fn mbt_native_icache_flush(Int64, Int32) -> Unit
 
-pub fn mbt_native_protect(Int64, Int) -> Int
+pub fn mbt_native_protect(Int64, Int32) -> Int32
 
 pub fn mbt_native_read_file(Bytes) -> Bytes
 
-pub fn mbt_native_run(Bytes) -> Int
+pub fn mbt_native_run(Bytes) -> Int32
 
 pub fn mbt_native_sym(Bytes) -> Int64
 
 pub fn mbt_native_temp(Bytes) -> Bytes
 
-pub fn mbt_native_unlink(Bytes) -> Int
+pub fn mbt_native_unlink(Bytes) -> Int32
 
-pub fn mbt_native_write_bytes(Int64, Int, Bytes) -> Unit
+pub fn mbt_native_write_bytes(Int64, Int32, Bytes) -> Unit
 
-pub fn mbt_native_write_file(Bytes, Bytes) -> Int
+pub fn mbt_native_write_file(Bytes, Bytes) -> Int32
 
-pub fn mbt_native_write_u32(Int64, Int, UInt) -> Unit
+pub fn mbt_native_write_u32(Int64, Int32, UInt32) -> Unit
 
-pub fn run_command(String) -> Int
+pub fn run_command(String) -> Int32
 
 pub fn tmp_path(String) -> String
 

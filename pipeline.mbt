@@ -602,7 +602,7 @@ fn run_passes_arm64(
   dbg : DbFlags,
   apple : Bool,
   out : StringBuilder,
-  from_c? : Bool = false,
+  from_c~ : Bool = false,
 ) -> Unit raise {
   @types.init_arm64_target()
   run_frontend_passes(fn_, interner, typs, dbg, false, from_c, out)

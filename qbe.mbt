@@ -50,7 +50,7 @@
 // ```
 pub fn compile(
   text : String,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> Result[String, @util.QbeError] {
   try compile_raise(text, gas) catch {
     @util.QbeError::ParseError(f, l, m) =>
@@ -226,7 +226,7 @@ fn compile_wasm_debug_raise(text : String, flags : String) -> String raise {
 // ```
 pub fn compile_rv64(
   text : String,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> Result[String, @util.QbeError] {
   try compile_rv64_raise(text, gas) catch {
     @util.QbeError::ParseError(f, l, m) =>
@@ -318,7 +318,7 @@ fn compile_rv64_debug_raise(text : String, flags : String) -> String raise {
 // ```
 pub fn compile_la64(
   text : String,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> Result[String, @util.QbeError] {
   try compile_la64_raise(text, gas) catch {
     @util.QbeError::ParseError(f, l, m) =>
@@ -409,7 +409,7 @@ fn compile_la64_debug_raise(text : String, flags : String) -> String raise {
 // ```
 pub fn compile_arm64(
   text : String,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> Result[String, @util.QbeError] {
   try compile_arm64_raise(text, gas) catch {
     @util.QbeError::ParseError(f, l, m) =>
@@ -439,7 +439,7 @@ pub(all) enum Target {
 pub fn compile_target(
   text : String,
   target : Target,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> Result[String, @util.QbeError] {
   match target {
     Target::Amd64Sysv => compile(text, gas~)
@@ -527,13 +527,13 @@ fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
 // Route B (self-contained): compile the module and return the binary arm64
 // instruction words of every function, in definition order. No assembler or
 // linker is involved; the words feed object/macho.mbt or the in-memory JIT.
-pub fn compile_arm64_bin(text : String) -> Array[Array[Int]] raise {
+pub fn compile_arm64_bin(text : String) -> Array[Array[Int32]] raise {
   @types.init_arm64_target()
   let (funcs, _datas, _order, typs, interner) = parse_module(text, "<input>")
   let out = StringBuilder::StringBuilder()
   @types.fp_stash_reset()
   @emit_arm64.arm64_emit_reset()
-  let res : Array[Array[Int]] = []
+  let res : Array[Array[Int32]] = []
   for fn_ in funcs {
     run_passes_arm64(
       fn_,
@@ -581,12 +581,12 @@ pub fn compile_arm64_bin_module(
 pub fn arm64_function_signature(
   text : String,
   name : String,
-) -> (Array[Int], Int) raise {
+) -> (Array[Int32], Int32) raise {
   @types.init_arm64_target()
   let (funcs, _, _, _, _) = parse_module(text, "<input>")
   for fn_ in funcs {
     if fn_.name == name {
-      let params : Array[Int] = []
+      let params : Array[Int32] = []
       let start = fn_.blks[fn_.start_id]
       for ins in start.ins {
         if ins.op == @types.Par {
@@ -761,7 +761,7 @@ pub fn compile_ir_asm(
   order : Array[String],
   typs : Array[@types.Typ],
   interner : @util.Interner,
-  gas? : String = "e",
+  gas~ : String = "e",
 ) -> String raise {
   @types.init_arm64_target()
   let (gasloc, gassym, apple) = gas_setting(gas)
@@ -861,11 +861,11 @@ pub using @interp {type InterpValue}
 // ```
 pub fn interpret(
   src : String,
-  entry? : String = "main",
-  args? : Array[@interp.InterpValue] = [],
-  max_steps? : Int = 10000000,
-  max_depth? : Int = 10000,
-  hook? : ((String, Array[@interp.InterpValue]) -> @interp.InterpValue?)? = None,
+  entry~ : String = "main",
+  args~ : Array[@interp.InterpValue] = [],
+  max_steps~ : Int32 = 10000000,
+  max_depth~ : Int32 = 10000,
+  hook~ : ((String, Array[@interp.InterpValue]) -> @interp.InterpValue?)? = None,
 ) -> Result[(@interp.InterpValue, String), @util.QbeError] {
   try {
     let (funcs, datas, _order, _typs, interner) = parse_module(src, "<input>")

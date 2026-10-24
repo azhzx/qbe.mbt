@@ -6,557 +6,557 @@ import {
 }
 
 // Values
-pub const A0 : Int = 7
+pub const A0 : Int32 = 7
 
-pub const A1 : Int = 8
+pub const A1 : Int32 = 8
 
-pub const A2 : Int = 9
+pub const A2 : Int32 = 9
 
-pub const A3 : Int = 10
+pub const A3 : Int32 = 10
 
-pub const A4 : Int = 11
+pub const A4 : Int32 = 11
 
-pub const A5 : Int = 12
+pub const A5 : Int32 = 12
 
-pub const A6 : Int = 13
+pub const A6 : Int32 = 13
 
-pub const A7 : Int = 14
+pub const A7 : Int32 = 14
 
-pub const ARM64_FP : Int = 30
+pub const ARM64_FP : Int32 = 30
 
-pub const ARM64_IP0 : Int = 17
+pub const ARM64_IP0 : Int32 = 17
 
-pub const ARM64_IP1 : Int = 18
+pub const ARM64_IP1 : Int32 = 18
 
-pub const ARM64_LR : Int = 31
+pub const ARM64_LR : Int32 = 31
 
-pub const ARM64_R0 : Int = 1
+pub const ARM64_R0 : Int32 = 1
 
-pub const ARM64_R1 : Int = 2
+pub const ARM64_R1 : Int32 = 2
 
-pub const ARM64_R10 : Int = 11
+pub const ARM64_R10 : Int32 = 11
 
-pub const ARM64_R11 : Int = 12
+pub const ARM64_R11 : Int32 = 12
 
-pub const ARM64_R12 : Int = 13
+pub const ARM64_R12 : Int32 = 13
 
-pub const ARM64_R13 : Int = 14
+pub const ARM64_R13 : Int32 = 14
 
-pub const ARM64_R14 : Int = 15
+pub const ARM64_R14 : Int32 = 15
 
-pub const ARM64_R15 : Int = 16
+pub const ARM64_R15 : Int32 = 16
 
-pub const ARM64_R18 : Int = 19
+pub const ARM64_R18 : Int32 = 19
 
-pub const ARM64_R19 : Int = 20
+pub const ARM64_R19 : Int32 = 20
 
-pub const ARM64_R2 : Int = 3
+pub const ARM64_R2 : Int32 = 3
 
-pub const ARM64_R20 : Int = 21
+pub const ARM64_R20 : Int32 = 21
 
-pub const ARM64_R21 : Int = 22
+pub const ARM64_R21 : Int32 = 22
 
-pub const ARM64_R22 : Int = 23
+pub const ARM64_R22 : Int32 = 23
 
-pub const ARM64_R23 : Int = 24
+pub const ARM64_R23 : Int32 = 24
 
-pub const ARM64_R24 : Int = 25
+pub const ARM64_R24 : Int32 = 25
 
-pub const ARM64_R25 : Int = 26
+pub const ARM64_R25 : Int32 = 26
 
-pub const ARM64_R26 : Int = 27
+pub const ARM64_R26 : Int32 = 27
 
-pub const ARM64_R27 : Int = 28
+pub const ARM64_R27 : Int32 = 28
 
-pub const ARM64_R28 : Int = 29
+pub const ARM64_R28 : Int32 = 29
 
-pub const ARM64_R3 : Int = 4
+pub const ARM64_R3 : Int32 = 4
 
-pub const ARM64_R4 : Int = 5
+pub const ARM64_R4 : Int32 = 5
 
-pub const ARM64_R5 : Int = 6
+pub const ARM64_R5 : Int32 = 6
 
-pub const ARM64_R6 : Int = 7
+pub const ARM64_R6 : Int32 = 7
 
-pub const ARM64_R7 : Int = 8
+pub const ARM64_R7 : Int32 = 8
 
-pub const ARM64_R8 : Int = 9
+pub const ARM64_R8 : Int32 = 9
 
-pub const ARM64_R9 : Int = 10
+pub const ARM64_R9 : Int32 = 10
 
-pub const ARM64_SP : Int = 32
+pub const ARM64_SP : Int32 = 32
 
-pub const ARM64_V0 : Int = 33
+pub const ARM64_V0 : Int32 = 33
 
-pub const ARM64_V1 : Int = 34
+pub const ARM64_V1 : Int32 = 34
 
-pub const ARM64_V10 : Int = 43
+pub const ARM64_V10 : Int32 = 43
 
-pub const ARM64_V11 : Int = 44
+pub const ARM64_V11 : Int32 = 44
 
-pub const ARM64_V12 : Int = 45
+pub const ARM64_V12 : Int32 = 45
 
-pub const ARM64_V13 : Int = 46
+pub const ARM64_V13 : Int32 = 46
 
-pub const ARM64_V14 : Int = 47
+pub const ARM64_V14 : Int32 = 47
 
-pub const ARM64_V15 : Int = 48
+pub const ARM64_V15 : Int32 = 48
 
-pub const ARM64_V16 : Int = 49
+pub const ARM64_V16 : Int32 = 49
 
-pub const ARM64_V17 : Int = 50
+pub const ARM64_V17 : Int32 = 50
 
-pub const ARM64_V18 : Int = 51
+pub const ARM64_V18 : Int32 = 51
 
-pub const ARM64_V19 : Int = 52
+pub const ARM64_V19 : Int32 = 52
 
-pub const ARM64_V2 : Int = 35
+pub const ARM64_V2 : Int32 = 35
 
-pub const ARM64_V20 : Int = 53
+pub const ARM64_V20 : Int32 = 53
 
-pub const ARM64_V21 : Int = 54
+pub const ARM64_V21 : Int32 = 54
 
-pub const ARM64_V22 : Int = 55
+pub const ARM64_V22 : Int32 = 55
 
-pub const ARM64_V23 : Int = 56
+pub const ARM64_V23 : Int32 = 56
 
-pub const ARM64_V24 : Int = 57
+pub const ARM64_V24 : Int32 = 57
 
-pub const ARM64_V25 : Int = 58
+pub const ARM64_V25 : Int32 = 58
 
-pub const ARM64_V26 : Int = 59
+pub const ARM64_V26 : Int32 = 59
 
-pub const ARM64_V27 : Int = 60
+pub const ARM64_V27 : Int32 = 60
 
-pub const ARM64_V28 : Int = 61
+pub const ARM64_V28 : Int32 = 61
 
-pub const ARM64_V29 : Int = 62
+pub const ARM64_V29 : Int32 = 62
 
-pub const ARM64_V3 : Int = 36
+pub const ARM64_V3 : Int32 = 36
 
-pub const ARM64_V30 : Int = 63
+pub const ARM64_V30 : Int32 = 63
 
-pub const ARM64_V4 : Int = 37
+pub const ARM64_V4 : Int32 = 37
 
-pub const ARM64_V5 : Int = 38
+pub const ARM64_V5 : Int32 = 38
 
-pub const ARM64_V6 : Int = 39
+pub const ARM64_V6 : Int32 = 39
 
-pub const ARM64_V7 : Int = 40
+pub const ARM64_V7 : Int32 = 40
 
-pub const ARM64_V8 : Int = 41
+pub const ARM64_V8 : Int32 = 41
 
-pub const ARM64_V9 : Int = 42
+pub const ARM64_V9 : Int32 = 42
 
-pub const Arm64KmIsWide : Int = 1
+pub const Arm64KmIsWide : Int32 = 1
 
-pub const Arm64NCLR : Int = 18
+pub const Arm64NCLR : Int32 = 18
 
-pub const Arm64NFPR : Int = 31
+pub const Arm64NFPR : Int32 = 31
 
-pub const Arm64NFPS : Int = 23
+pub const Arm64NFPS : Int32 = 23
 
-pub const Arm64NGPR : Int = 32
+pub const Arm64NGPR : Int32 = 32
 
-pub const Arm64NGPS : Int = 20
+pub const Arm64NGPS : Int32 = 20
 
-pub const Arm64NRGLOB : Int = 3
+pub const Arm64NRGLOB : Int32 = 3
 
-pub const Arm64Tmp0 : Int = 64
+pub const Arm64Tmp0 : Int32 = 64
 
-pub const FA0 : Int = 42
+pub const FA0 : Int32 = 42
 
-pub const FA1 : Int = 43
+pub const FA1 : Int32 = 43
 
-pub const FA2 : Int = 44
+pub const FA2 : Int32 = 44
 
-pub const FA3 : Int = 45
+pub const FA3 : Int32 = 45
 
-pub const FA4 : Int = 46
+pub const FA4 : Int32 = 46
 
-pub const FA5 : Int = 47
+pub const FA5 : Int32 = 47
 
-pub const FA6 : Int = 48
+pub const FA6 : Int32 = 48
 
-pub const FA7 : Int = 49
+pub const FA7 : Int32 = 49
 
-pub const FP : Int = 26
+pub const FP : Int32 = 26
 
-pub const FS0 : Int = 50
+pub const FS0 : Int32 = 50
 
-pub const FS1 : Int = 51
+pub const FS1 : Int32 = 51
 
-pub const FS10 : Int = 60
+pub const FS10 : Int32 = 60
 
-pub const FS11 : Int = 61
+pub const FS11 : Int32 = 61
 
-pub const FS2 : Int = 52
+pub const FS2 : Int32 = 52
 
-pub const FS3 : Int = 53
+pub const FS3 : Int32 = 53
 
-pub const FS4 : Int = 54
+pub const FS4 : Int32 = 54
 
-pub const FS5 : Int = 55
+pub const FS5 : Int32 = 55
 
-pub const FS6 : Int = 56
+pub const FS6 : Int32 = 56
 
-pub const FS7 : Int = 57
+pub const FS7 : Int32 = 57
 
-pub const FS8 : Int = 58
+pub const FS8 : Int32 = 58
 
-pub const FS9 : Int = 59
+pub const FS9 : Int32 = 59
 
-pub const FT0 : Int = 31
+pub const FT0 : Int32 = 31
 
-pub const FT1 : Int = 32
+pub const FT1 : Int32 = 32
 
-pub const FT10 : Int = 41
+pub const FT10 : Int32 = 41
 
-pub const FT11 : Int = 63
+pub const FT11 : Int32 = 63
 
-pub const FT2 : Int = 33
+pub const FT2 : Int32 = 33
 
-pub const FT3 : Int = 34
+pub const FT3 : Int32 = 34
 
-pub const FT4 : Int = 35
+pub const FT4 : Int32 = 35
 
-pub const FT5 : Int = 36
+pub const FT5 : Int32 = 36
 
-pub const FT6 : Int = 37
+pub const FT6 : Int32 = 37
 
-pub const FT7 : Int = 38
+pub const FT7 : Int32 = 38
 
-pub const FT8 : Int = 39
+pub const FT8 : Int32 = 39
 
-pub const FT9 : Int = 40
+pub const FT9 : Int32 = 40
 
-pub const GP : Int = 28
+pub const GP : Int32 = 28
 
-pub const LA_A0 : Int = 9
+pub const LA_A0 : Int32 = 9
 
-pub const LA_A1 : Int = 10
+pub const LA_A1 : Int32 = 10
 
-pub const LA_A2 : Int = 11
+pub const LA_A2 : Int32 = 11
 
-pub const LA_A3 : Int = 12
+pub const LA_A3 : Int32 = 12
 
-pub const LA_A4 : Int = 13
+pub const LA_A4 : Int32 = 13
 
-pub const LA_A5 : Int = 14
+pub const LA_A5 : Int32 = 14
 
-pub const LA_A6 : Int = 15
+pub const LA_A6 : Int32 = 15
 
-pub const LA_A7 : Int = 16
+pub const LA_A7 : Int32 = 16
 
-pub const LA_FA0 : Int = 48
+pub const LA_FA0 : Int32 = 48
 
-pub const LA_FA1 : Int = 49
+pub const LA_FA1 : Int32 = 49
 
-pub const LA_FA2 : Int = 50
+pub const LA_FA2 : Int32 = 50
 
-pub const LA_FA3 : Int = 51
+pub const LA_FA3 : Int32 = 51
 
-pub const LA_FA4 : Int = 52
+pub const LA_FA4 : Int32 = 52
 
-pub const LA_FA5 : Int = 53
+pub const LA_FA5 : Int32 = 53
 
-pub const LA_FA6 : Int = 54
+pub const LA_FA6 : Int32 = 54
 
-pub const LA_FA7 : Int = 55
+pub const LA_FA7 : Int32 = 55
 
-pub const LA_FP : Int = 26
+pub const LA_FP : Int32 = 26
 
-pub const LA_FS0 : Int = 56
+pub const LA_FS0 : Int32 = 56
 
-pub const LA_FS1 : Int = 57
+pub const LA_FS1 : Int32 = 57
 
-pub const LA_FS2 : Int = 58
+pub const LA_FS2 : Int32 = 58
 
-pub const LA_FS3 : Int = 59
+pub const LA_FS3 : Int32 = 59
 
-pub const LA_FS4 : Int = 60
+pub const LA_FS4 : Int32 = 60
 
-pub const LA_FS5 : Int = 61
+pub const LA_FS5 : Int32 = 61
 
-pub const LA_FS6 : Int = 62
+pub const LA_FS6 : Int32 = 62
 
-pub const LA_FS7 : Int = 63
+pub const LA_FS7 : Int32 = 63
 
-pub const LA_FT0 : Int = 32
+pub const LA_FT0 : Int32 = 32
 
-pub const LA_FT1 : Int = 33
+pub const LA_FT1 : Int32 = 33
 
-pub const LA_FT10 : Int = 42
+pub const LA_FT10 : Int32 = 42
 
-pub const LA_FT11 : Int = 43
+pub const LA_FT11 : Int32 = 43
 
-pub const LA_FT12 : Int = 44
+pub const LA_FT12 : Int32 = 44
 
-pub const LA_FT13 : Int = 45
+pub const LA_FT13 : Int32 = 45
 
-pub const LA_FT14 : Int = 46
+pub const LA_FT14 : Int32 = 46
 
-pub const LA_FT15 : Int = 47
+pub const LA_FT15 : Int32 = 47
 
-pub const LA_FT2 : Int = 34
+pub const LA_FT2 : Int32 = 34
 
-pub const LA_FT3 : Int = 35
+pub const LA_FT3 : Int32 = 35
 
-pub const LA_FT4 : Int = 36
+pub const LA_FT4 : Int32 = 36
 
-pub const LA_FT5 : Int = 37
+pub const LA_FT5 : Int32 = 37
 
-pub const LA_FT6 : Int = 38
+pub const LA_FT6 : Int32 = 38
 
-pub const LA_FT7 : Int = 39
+pub const LA_FT7 : Int32 = 39
 
-pub const LA_FT8 : Int = 40
+pub const LA_FT8 : Int32 = 40
 
-pub const LA_FT9 : Int = 41
+pub const LA_FT9 : Int32 = 41
 
-pub const LA_RA : Int = 29
+pub const LA_RA : Int32 = 29
 
-pub const LA_S0 : Int = 17
+pub const LA_S0 : Int32 = 17
 
-pub const LA_S1 : Int = 18
+pub const LA_S1 : Int32 = 18
 
-pub const LA_S2 : Int = 19
+pub const LA_S2 : Int32 = 19
 
-pub const LA_S3 : Int = 20
+pub const LA_S3 : Int32 = 20
 
-pub const LA_S4 : Int = 21
+pub const LA_S4 : Int32 = 21
 
-pub const LA_S5 : Int = 22
+pub const LA_S5 : Int32 = 22
 
-pub const LA_S6 : Int = 23
+pub const LA_S6 : Int32 = 23
 
-pub const LA_S7 : Int = 24
+pub const LA_S7 : Int32 = 24
 
-pub const LA_S8 : Int = 25
+pub const LA_S8 : Int32 = 25
 
-pub const LA_SP : Int = 27
+pub const LA_SP : Int32 = 27
 
-pub const LA_T0 : Int = 1
+pub const LA_T0 : Int32 = 1
 
-pub const LA_T1 : Int = 2
+pub const LA_T1 : Int32 = 2
 
-pub const LA_T2 : Int = 3
+pub const LA_T2 : Int32 = 3
 
-pub const LA_T3 : Int = 4
+pub const LA_T3 : Int32 = 4
 
-pub const LA_T4 : Int = 5
+pub const LA_T4 : Int32 = 5
 
-pub const LA_T5 : Int = 6
+pub const LA_T5 : Int32 = 6
 
-pub const LA_T6 : Int = 7
+pub const LA_T6 : Int32 = 7
 
-pub const LA_T7 : Int = 8
+pub const LA_T7 : Int32 = 8
 
-pub const LA_T8 : Int = 30
+pub const LA_T8 : Int32 = 30
 
-pub const LA_TP : Int = 28
+pub const LA_TP : Int32 = 28
 
-pub const LA_ZERO : Int = 0
+pub const LA_ZERO : Int32 = 0
 
-pub const La64KmIsWide : Int = 1
+pub const La64KmIsWide : Int32 = 1
 
-pub const La64NCLR : Int = 17
+pub const La64NCLR : Int32 = 17
 
-pub const La64NFPR : Int = 32
+pub const La64NFPR : Int32 = 32
 
-pub const La64NFPS : Int = 24
+pub const La64NFPS : Int32 = 24
 
-pub const La64NGPR : Int = 29
+pub const La64NGPR : Int32 = 29
 
-pub const La64NGPS : Int = 16
+pub const La64NGPS : Int32 = 16
 
-pub const La64NRGLOB : Int = 4
+pub const La64NRGLOB : Int32 = 4
 
-pub const La64Tmp0 : Int = 64
+pub const La64Tmp0 : Int32 = 64
 
-pub const NCLR : Int = 5
+pub const NCLR : Int32 = 5
 
-pub const NFPR : Int = 15
+pub const NFPR : Int32 = 15
 
-pub const NFPS : Int = 15
+pub const NFPS : Int32 = 15
 
-pub const NGPR : Int = 16
+pub const NGPR : Int32 = 16
 
-pub const NGPS : Int = 9
+pub const NGPS : Int32 = 9
 
-pub const NRGLOB : Int = 2
+pub const NRGLOB : Int32 = 2
 
-pub const R10 : Int = 8
+pub const R10 : Int32 = 8
 
-pub const R11 : Int = 9
+pub const R11 : Int32 = 9
 
-pub const R12 : Int = 11
+pub const R12 : Int32 = 11
 
-pub const R13 : Int = 12
+pub const R13 : Int32 = 12
 
-pub const R14 : Int = 13
+pub const R14 : Int32 = 13
 
-pub const R15 : Int = 14
+pub const R15 : Int32 = 14
 
-pub const R8 : Int = 6
+pub const R8 : Int32 = 6
 
-pub const R9 : Int = 7
+pub const R9 : Int32 = 7
 
-pub const RA : Int = 30
+pub const RA : Int32 = 30
 
-pub const RAX : Int = 1
+pub const RAX : Int32 = 1
 
-pub const RBP : Int = 15
+pub const RBP : Int32 = 15
 
-pub const RBX : Int = 10
+pub const RBX : Int32 = 10
 
-pub const RCX : Int = 2
+pub const RCX : Int32 = 2
 
-pub const RDI : Int = 5
+pub const RDI : Int32 = 5
 
-pub const RDX : Int = 3
+pub const RDX : Int32 = 3
 
-pub const RSI : Int = 4
+pub const RSI : Int32 = 4
 
-pub const RSP : Int = 16
+pub const RSP : Int32 = 16
 
-pub const RXX : Int = 0
+pub const RXX : Int32 = 0
 
-pub const Rv64KmIsWide : Int = 1
+pub const Rv64KmIsWide : Int32 = 1
 
-pub const Rv64NCLR : Int = 23
+pub const Rv64NCLR : Int32 = 23
 
-pub const Rv64NFPR : Int = 32
+pub const Rv64NFPR : Int32 = 32
 
-pub const Rv64NFPS : Int = 19
+pub const Rv64NFPS : Int32 = 19
 
-pub const Rv64NGPR : Int = 30
+pub const Rv64NGPR : Int32 = 30
 
-pub const Rv64NGPS : Int = 14
+pub const Rv64NGPS : Int32 = 14
 
-pub const Rv64NRGLOB : Int = 5
+pub const Rv64NRGLOB : Int32 = 5
 
-pub const Rv64Tmp0 : Int = 64
+pub const Rv64Tmp0 : Int32 = 64
 
-pub const S1 : Int = 15
+pub const S1 : Int32 = 15
 
-pub const S10 : Int = 24
+pub const S10 : Int32 = 24
 
-pub const S11 : Int = 25
+pub const S11 : Int32 = 25
 
-pub const S2 : Int = 16
+pub const S2 : Int32 = 16
 
-pub const S3 : Int = 17
+pub const S3 : Int32 = 17
 
-pub const S4 : Int = 18
+pub const S4 : Int32 = 18
 
-pub const S5 : Int = 19
+pub const S5 : Int32 = 19
 
-pub const S6 : Int = 20
+pub const S6 : Int32 = 20
 
-pub const S7 : Int = 21
+pub const S7 : Int32 = 21
 
-pub const S8 : Int = 22
+pub const S8 : Int32 = 22
 
-pub const S9 : Int = 23
+pub const S9 : Int32 = 23
 
-pub const SP : Int = 27
+pub const SP : Int32 = 27
 
-pub const T0 : Int = 1
+pub const T0 : Int32 = 1
 
-pub const T1 : Int = 2
+pub const T1 : Int32 = 2
 
-pub const T2 : Int = 3
+pub const T2 : Int32 = 3
 
-pub const T3 : Int = 4
+pub const T3 : Int32 = 4
 
-pub const T4 : Int = 5
+pub const T4 : Int32 = 5
 
-pub const T5 : Int = 6
+pub const T5 : Int32 = 6
 
-pub const T6 : Int = 62
+pub const T6 : Int32 = 62
 
-pub const TP : Int = 29
+pub const TP : Int32 = 29
 
-pub const Tmp0 : Int = 64
+pub const Tmp0 : Int32 = 64
 
-pub const WASM_DATA_BASE : Int = 1024
+pub const WASM_DATA_BASE : Int32 = 1024
 
-pub const WASM_MEMORY_PAGES : Int = 4
+pub const WASM_MEMORY_PAGES : Int32 = 4
 
-pub const WASM_STACK_ALIGN : Int = 16
+pub const WASM_STACK_ALIGN : Int32 = 16
 
-pub const WASM_STACK_BASE : Int = 65536
+pub const WASM_STACK_BASE : Int32 = 65536
 
-pub const WasmKmIsWide : Int = 0
+pub const WasmKmIsWide : Int32 = 0
 
-pub const WasmNCLR : Int = 0
+pub const WasmNCLR : Int32 = 0
 
-pub const WasmNFPR : Int = 0
+pub const WasmNFPR : Int32 = 0
 
-pub const WasmNFPS : Int = 0
+pub const WasmNFPS : Int32 = 0
 
-pub const WasmNGPR : Int = 0
+pub const WasmNGPR : Int32 = 0
 
-pub const WasmNGPS : Int = 0
+pub const WasmNGPS : Int32 = 0
 
-pub const WasmNRGLOB : Int = 0
+pub const WasmNRGLOB : Int32 = 0
 
-pub const WasmTmp0 : Int = 0
+pub const WasmTmp0 : Int32 = 0
 
-pub const XMM0 : Int = 17
+pub const XMM0 : Int32 = 17
 
-pub const XMM1 : Int = 18
+pub const XMM1 : Int32 = 18
 
-pub const XMM10 : Int = 27
+pub const XMM10 : Int32 = 27
 
-pub const XMM11 : Int = 28
+pub const XMM11 : Int32 = 28
 
-pub const XMM12 : Int = 29
+pub const XMM12 : Int32 = 29
 
-pub const XMM13 : Int = 30
+pub const XMM13 : Int32 = 30
 
-pub const XMM14 : Int = 31
+pub const XMM14 : Int32 = 31
 
-pub const XMM15 : Int = 32
+pub const XMM15 : Int32 = 32
 
-pub const XMM2 : Int = 19
+pub const XMM2 : Int32 = 19
 
-pub const XMM3 : Int = 20
+pub const XMM3 : Int32 = 20
 
-pub const XMM4 : Int = 21
+pub const XMM4 : Int32 = 21
 
-pub const XMM5 : Int = 22
+pub const XMM5 : Int32 = 22
 
-pub const XMM6 : Int = 23
+pub const XMM6 : Int32 = 23
 
-pub const XMM7 : Int = 24
+pub const XMM7 : Int32 = 24
 
-pub const XMM8 : Int = 25
+pub const XMM8 : Int32 = 25
 
-pub const XMM9 : Int = 26
+pub const XMM9 : Int32 = 26
 
-pub let arm64_rclob : Array[Int]
+pub let arm64_rclob : Array[Int32]
 
-pub fn arm64_reg_name(Int) -> String
+pub fn arm64_reg_name(Int32) -> String
 
 pub fn arm64_rglob_mask() -> UInt64
 
-pub let arm64_rsave : Array[Int]
+pub let arm64_rsave : Array[Int32]
 
 pub fn class_to_wasm_type(Class) -> WasmType
 
-pub fn cmpneg(Int) -> Int
+pub fn cmpneg(Int32) -> Int32
 
 pub fn dumpts(BSet, Array[Tmp]) -> String
 
-pub fn fp_stash_at(Int) -> FpBits
+pub fn fp_stash_at(Int32) -> FpBits
 
-pub fn fp_stash_len() -> Int
+pub fn fp_stash_len() -> Int32
 
 pub fn fp_stash_reset() -> Unit
 
-pub fn gasstash(Int64, Int64, Int) -> Int
+pub fn gasstash(Int64, Int64, Int32) -> Int32
 
 pub fn init_amd64_target() -> Unit
 
@@ -566,45 +566,45 @@ pub fn init_la64_target() -> Unit
 
 pub fn init_rv64_target() -> Unit
 
-pub let la64_rclob : Array[Int]
+pub let la64_rclob : Array[Int32]
 
-pub fn la64_reg_name(Int) -> String
+pub fn la64_reg_name(Int32) -> String
 
 pub fn la64_rglob_mask() -> UInt64
 
-pub let la64_rsave : Array[Int]
+pub let la64_rsave : Array[Int32]
 
 pub fn op_info(Op) -> OpInfo
 
-pub fn phicls(Int, Array[Tmp]) -> Int
+pub fn phicls(Int32, Array[Tmp]) -> Int32
 
-pub let rclob : Array[Int]
+pub let rclob : Array[Int32]
 
 pub fn rglob_mask() -> UInt64
 
-pub let rsave : Array[Int]
+pub let rsave : Array[Int32]
 
-pub let rv64_rclob : Array[Int]
+pub let rv64_rclob : Array[Int32]
 
-pub fn rv64_reg_name(Int) -> String
+pub fn rv64_reg_name(Int32) -> String
 
 pub fn rv64_rglob_mask() -> UInt64
 
-pub let rv64_rsave : Array[Int]
+pub let rv64_rsave : Array[Int32]
 
-pub fn target_argregs(Ref) -> (UInt64, Int, Int)
+pub fn target_argregs(Ref) -> (UInt64, Int32, Int32)
 
 pub let target_cfg : TargetCfg
 
-pub fn target_retregs(Ref) -> (UInt64, Int, Int)
+pub fn target_retregs(Ref) -> (UInt64, Int32, Int32)
 
 pub fn wasm_load_op(Class) -> String
 
-pub let wasm_rclob : Array[Int]
+pub let wasm_rclob : Array[Int32]
 
 pub fn wasm_rglob_mask() -> UInt64
 
-pub let wasm_rsave : Array[Int]
+pub let wasm_rsave : Array[Int32]
 
 pub fn wasm_store_op(Class) -> String
 
@@ -617,16 +617,16 @@ pub(all) struct Addr {
   mut offset : Con
   mut base : Ref
   mut index : Ref
-  mut scale : Int
+  mut scale : Int32
 } derive(@debug.Debug)
 pub fn Addr::new() -> Self
 
 pub(all) struct AliasInfo {
   mut kind : AliasType
   mut base : Ref
-  mut label : Int
+  mut label : Int32
   mut offset : Int64
-  mut slot : Int
+  mut slot : Int32
 } derive(@debug.Debug)
 pub fn AliasInfo::default() -> Self
 
@@ -641,47 +641,47 @@ pub(all) enum AliasType {
 pub fn AliasType::astack(Self) -> Bool
 
 pub(all) struct BSet {
-  nt : Int
+  nt : Int32
   bits : Array[UInt64]
 } derive(@debug.Debug)
-pub fn BSet::clr(Self, Int) -> Unit
+pub fn BSet::clr(Self, Int32) -> Unit
 pub fn BSet::copy_from(Self, Self) -> Unit
-pub fn BSet::count(Self) -> Int
+pub fn BSet::count(Self) -> Int32
 pub fn BSet::diff(Self, Self) -> Unit
-pub fn BSet::each(Self, (Int) -> Unit) -> Unit
-pub fn BSet::each_from(Self, Int, (Int) -> Unit) -> Unit
+pub fn BSet::each(Self, (Int32) -> Unit) -> Unit
+pub fn BSet::each_from(Self, Int32, (Int32) -> Unit) -> Unit
 pub fn BSet::equal(Self, Self) -> Bool
-pub fn BSet::has(Self, Int) -> Bool
+pub fn BSet::has(Self, Int32) -> Bool
 pub fn BSet::inter(Self, Self) -> Unit
-pub fn BSet::iter(Self, Int) -> Int
-pub fn BSet::new(Int) -> Self
-pub fn BSet::set(Self, Int) -> Unit
+pub fn BSet::iter(Self, Int32) -> Int32
+pub fn BSet::new(Int32) -> Self
+pub fn BSet::set(Self, Int32) -> Unit
 pub fn BSet::union(Self, Self) -> Bool
 pub fn BSet::zero(Self) -> Unit
 
 pub(all) struct Blk {
-  id : Int
+  id : Int32
   name : String
   phi : Array[Phi]
   ins : Array[Ins]
   mut jmp : Jump
-  pred : Array[Int]
-  mut npred : Int
-  mut idom : Int
-  mut dom_link : Int
-  mut dom_next : Int
-  fron : Array[Int]
-  mut rpo_id : Int
-  mut loop_depth : Int
-  mut nlive_w : Int
-  mut nlive_d : Int
+  pred : Array[Int32]
+  mut npred : Int32
+  mut idom : Int32
+  mut dom_link : Int32
+  mut dom_next : Int32
+  fron : Array[Int32]
+  mut rpo_id : Int32
+  mut loop_depth : Int32
+  mut nlive_w : Int32
+  mut nlive_d : Int32
   mut in_set : BSet?
   mut out_set : BSet?
   mut gen_set : BSet?
-  mut link : Int
-  mut visit : Int
+  mut link : Int32
+  mut visit : Int32
 } derive(@debug.Debug)
-pub fn Blk::new(Int, String) -> Self
+pub fn Blk::new(Int32, String) -> Self
 
 pub(all) enum Class {
   Kx
@@ -690,20 +690,20 @@ pub(all) enum Class {
   Ks
   Kd
 } derive(Eq, @debug.Debug)
-pub fn Class::base(Self) -> Int
-pub fn Class::code(Self) -> Int
-pub fn Class::from_code(Int) -> Self
-pub fn Class::wide(Self) -> Int
+pub fn Class::base(Self) -> Int32
+pub fn Class::code(Self) -> Int32
+pub fn Class::from_code(Int32) -> Self
+pub fn Class::wide(Self) -> Int32
 
 pub(all) struct Con {
   kind : ConType
-  label : Int
+  label : Int32
   bits : ConBits
-  flt : Int
+  flt : Int32
   is_local : Bool
 } derive(Eq, @debug.Debug)
 pub fn Con::add(Self, Self) -> Self
-pub fn Con::addr(Int) -> Self
+pub fn Con::addr(Int32) -> Self
 pub fn Con::double(Double) -> Self
 pub fn Con::int(Int64) -> Self
 pub fn Con::is_zero(Self, Bool) -> Bool
@@ -762,21 +762,21 @@ pub(all) enum DbgType {
   DbgS
   DbgD
   DbgPtr
-  DbgAgg(String, Int)
+  DbgAgg(String, Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct DbgVar {
   name : String
   ty : DbgType
-  tmp : Int
+  tmp : Int32
 } derive(@debug.Debug)
 
 pub(all) struct Field {
   kind : FieldType
-  len : Int
+  len : Int32
 } derive(Eq, @debug.Debug)
 pub fn Field::end() -> Self
-pub fn Field::new(FieldType, Int) -> Self
+pub fn Field::new(FieldType, Int32) -> Self
 
 pub(all) enum FieldType {
   FEnd
@@ -792,49 +792,49 @@ pub(all) enum FieldType {
 
 pub(all) struct Fn {
   name : String
-  mut start_id : Int
+  mut start_id : Int32
   blks : Array[Blk]
-  blk_names : Map[String, Int]
+  blk_names : Map[String, Int32]
   tmps : Array[Tmp]
   cons : Array[Con]
   mems : Array[Addr]
-  rpo : Array[Int]
-  def_order : Array[Int]
-  mut ret_ty : Int
+  rpo : Array[Int32]
+  def_order : Array[Int32]
+  mut ret_ty : Int32
   mut retr : Ref
   mut reg : UInt64
-  mut slot : Int
+  mut slot : Int32
   mut is_export : Bool
   mut is_vararg : Bool
   mut has_dynalloc : Bool
   mut leaf : Bool
-  mut salign : Int
+  mut salign : Int32
   mut dbg_name : String
   mut dbg_dir : String
   mut dbg_vars : Array[DbgVar]
 } derive(@debug.Debug)
-pub fn Fn::add_blk(Self, String) -> Int
-pub fn Fn::add_con(Self, Con) -> Int
-pub fn Fn::add_tmp(Self, String, Class) -> Int
-pub fn Fn::blk(Self, Int) -> Blk
-pub fn Fn::con(Self, Int) -> Con
-pub fn Fn::find_blk(Self, String) -> Int
-pub fn Fn::get_con(Self, Int64) -> Int
-pub fn Fn::get_con_by(Self, Con) -> Int
+pub fn Fn::add_blk(Self, String) -> Int32
+pub fn Fn::add_con(Self, Con) -> Int32
+pub fn Fn::add_tmp(Self, String, Class) -> Int32
+pub fn Fn::blk(Self, Int32) -> Blk
+pub fn Fn::con(Self, Int32) -> Con
+pub fn Fn::find_blk(Self, String) -> Int32
+pub fn Fn::get_con(Self, Int64) -> Int32
+pub fn Fn::get_con_by(Self, Con) -> Int32
 pub fn Fn::init_regs(Self) -> Unit
 pub fn Fn::init_regs_wasm(Self) -> Unit
-pub fn Fn::nblk(Self) -> Int
-pub fn Fn::ncon(Self) -> Int
+pub fn Fn::nblk(Self) -> Int32
+pub fn Fn::ncon(Self) -> Int32
 pub fn Fn::new(String) -> Self
-pub fn Fn::new_tmp(Self, String, Class) -> Int
-pub fn Fn::ntmp(Self) -> Int
-pub fn Fn::tmp(Self, Int) -> Tmp
-pub fn Fn::undef(Self) -> Int
+pub fn Fn::new_tmp(Self, String, Class) -> Int32
+pub fn Fn::ntmp(Self) -> Int32
+pub fn Fn::tmp(Self, Int32) -> Tmp
+pub fn Fn::undef(Self) -> Int32
 
 pub struct FpBits {
   b0 : Int64
   b1 : Int64
-  size : Int
+  size : Int32
 }
 
 pub(all) struct Ins {
@@ -850,10 +850,10 @@ pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
 pub(all) struct Jump {
   mut kind : JumpKind
   mut arg : Ref
-  mut s1 : Int
-  mut s2 : Int
+  mut s1 : Int32
+  mut s2 : Int32
 } derive(@debug.Debug)
-pub fn Jump::full(JumpKind, Ref, Int, Int) -> Self
+pub fn Jump::full(JumpKind, Ref, Int32, Int32) -> Self
 pub fn Jump::new(JumpKind) -> Self
 
 pub(all) enum JumpKind {
@@ -885,8 +885,8 @@ pub(all) enum JumpKind {
   Jjffo
   Jjffuo
 } derive(Eq, @debug.Debug)
-pub fn JumpKind::from_index(Int) -> Self
-pub fn JumpKind::index(Self) -> Int
+pub fn JumpKind::from_index(Int32) -> Self
+pub fn JumpKind::index(Self) -> Int32
 pub fn JumpKind::is_ret(Self) -> Bool
 
 pub(all) enum Op {
@@ -1040,26 +1040,26 @@ pub(all) enum Op {
   Xselfuo
   Argv
 } derive(Eq, @debug.Debug)
-pub fn Op::ext_width_idx(Self) -> Int
-pub fn Op::from_index(Int) -> Self
+pub fn Op::ext_width_idx(Self) -> Int32
+pub fn Op::from_index(Int32) -> Self
 pub fn Op::from_string(String) -> Self
-pub fn Op::index(Self) -> Int
+pub fn Op::index(Self) -> Int32
 pub fn Op::is_arg(Self) -> Bool
 pub fn Op::is_ext(Self) -> Bool
 pub fn Op::is_load(Self) -> Bool
 pub fn Op::is_par(Self) -> Bool
 pub fn Op::is_store(Self) -> Bool
-pub fn Op::load_width_idx(Self) -> Int
+pub fn Op::load_width_idx(Self) -> Int32
 pub fn Op::name(Self) -> String
 
 pub(all) struct OpInfo {
   name : String
-  a0 : Array[Int]
-  a1 : Array[Int]
+  a0 : Array[Int32]
+  a1 : Array[Int32]
   canfold : Bool
-  nmem : Int
-  zf : Int
-  lf : Int
+  nmem : Int32
+  zf : Int32
+  lf : Int32
 } derive(@debug.Debug)
 
 pub(all) struct Phi {
@@ -1071,26 +1071,26 @@ pub fn Phi::new(Ref, Class) -> Self
 
 pub(all) struct PhiArg {
   mut value : Ref
-  mut blk_id : Int
+  mut blk_id : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) enum Ref {
   RNone
-  RTmp(Int)
-  RCon(Int)
-  RInt(Int)
-  RType(Int)
-  RSlot(Int)
-  RCall(Int)
-  RMem(Int)
+  RTmp(Int32)
+  RCon(Int32)
+  RInt(Int32)
+  RType(Int32)
+  RSlot(Int32)
+  RCall(Int32)
+  RMem(Int32)
 } derive(Eq, @debug.Debug)
-pub fn Ref::argregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::arm64_argregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::arm64_retregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::call(Int) -> Self
-pub fn Ref::call_val(Self) -> Int
-pub fn Ref::con(Int) -> Self
-pub fn Ref::con_val(Self) -> Int
+pub fn Ref::argregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::arm64_argregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::arm64_retregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::call(Int32) -> Self
+pub fn Ref::call_val(Self) -> Int32
+pub fn Ref::con(Int32) -> Self
+pub fn Ref::con_val(Self) -> Int32
 pub fn Ref::eq(Self, Self) -> Bool
 pub fn Ref::is_con(Self) -> Bool
 pub fn Ref::is_mem(Self) -> Bool
@@ -1099,60 +1099,60 @@ pub fn Ref::is_rint(Self) -> Bool
 pub fn Ref::is_slot(Self) -> Bool
 pub fn Ref::is_tmp(Self) -> Bool
 pub fn Ref::is_typ(Self) -> Bool
-pub fn Ref::la64_argregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::la64_retregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::mem(Int) -> Self
-pub fn Ref::mem_val(Self) -> Int
+pub fn Ref::la64_argregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::la64_retregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::mem(Int32) -> Self
+pub fn Ref::mem_val(Self) -> Int32
 pub fn Ref::none() -> Self
-pub fn Ref::retregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::rint(Int) -> Self
-pub fn Ref::rint_val(Self) -> Int
-pub fn Ref::rv64_argregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::rv64_retregs(Self) -> (UInt64, Int, Int)
-pub fn Ref::slot(Int) -> Self
-pub fn Ref::slot_val(Self) -> Int
-pub fn Ref::tmp(Int) -> Self
-pub fn Ref::tmp_val(Self) -> Int
-pub fn Ref::typ(Int) -> Self
-pub fn Ref::typ_val(Self) -> Int
+pub fn Ref::retregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::rint(Int32) -> Self
+pub fn Ref::rint_val(Self) -> Int32
+pub fn Ref::rv64_argregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::rv64_retregs(Self) -> (UInt64, Int32, Int32)
+pub fn Ref::slot(Int32) -> Self
+pub fn Ref::slot_val(Self) -> Int32
+pub fn Ref::tmp(Int32) -> Self
+pub fn Ref::tmp_val(Self) -> Int32
+pub fn Ref::typ(Int32) -> Self
+pub fn Ref::typ_val(Self) -> Int32
 
 pub(all) struct RegHint {
-  mut r : Int
-  mut w : Int
+  mut r : Int32
+  mut w : Int32
   mut m : UInt64
 } derive(@debug.Debug)
 pub fn RegHint::default() -> Self
 
 pub struct TargetCfg {
-  mut gpr_base : Int
-  mut fpr_base : Int
-  mut ngpr : Int
-  mut nfpr : Int
-  mut fpr_class_base : Int
-  mut post_call_gpr : Int
-  mut post_call_fpr : Int
+  mut gpr_base : Int32
+  mut fpr_base : Int32
+  mut ngpr : Int32
+  mut nfpr : Int32
+  mut fpr_class_base : Int32
+  mut post_call_gpr : Int32
+  mut post_call_fpr : Int32
   mut rglob_mask : UInt64
-  mut rsave : Array[Int]
-  mut memargs : (Op) -> Int
-  mut retregs : (Ref) -> (UInt64, Int, Int)
-  mut argregs : (Ref) -> (UInt64, Int, Int)
+  mut rsave : Array[Int32]
+  mut memargs : (Op) -> Int32
+  mut retregs : (Ref) -> (UInt64, Int32, Int32)
+  mut argregs : (Ref) -> (UInt64, Int32, Int32)
 }
 
 pub(all) struct Tmp {
   name : String
   uses : Array[Use]
-  mut ndef : Int
-  mut nuse : Int
-  mut bid : Int
-  mut cost : Int
-  mut slot : Int
-  mut reg : Int
+  mut ndef : Int32
+  mut nuse : Int32
+  mut bid : Int32
+  mut cost : Int32
+  mut slot : Int32
+  mut reg : Int32
   mut cls : Class
   mut hint : RegHint
-  mut is_phi : Int
+  mut is_phi : Int32
   mut alias_info : AliasInfo
   mut width : TmpWidth
-  mut visit : Int
+  mut visit : Int32
 } derive(@debug.Debug)
 pub fn Tmp::new(String, Class) -> Self
 
@@ -1165,24 +1165,24 @@ pub(all) enum TmpWidth {
   Wsw
   Wuw
 } derive(Eq, @debug.Debug)
-pub fn TmpWidth::code(Self) -> Int
-pub fn TmpWidth::from_code(Int) -> Self
+pub fn TmpWidth::code(Self) -> Int32
+pub fn TmpWidth::from_code(Int32) -> Self
 
 pub(all) struct Typ {
   mut name : String
-  mut dark : Int
-  mut align : Int
+  mut dark : Int32
+  mut align : Int32
   mut size : Int64
-  mut nunion : Int
+  mut nunion : Int32
   fields : Array[Field]
 } derive(Eq, @debug.Debug)
 pub fn Typ::new(String) -> Self
 
 pub(all) struct Use {
   kind : UseKind
-  blk_id : Int
-  ins_idx : Int
-  arg_num : Int
+  blk_id : Int32
+  ins_idx : Int32
+  arg_num : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) enum UseKind {
@@ -1201,6 +1201,6 @@ pub enum WasmType {
 } derive(Eq, @debug.Debug)
 
 // Type aliases
-pub type BlkId = Int
+pub type BlkId = Int32
 
 // Traits

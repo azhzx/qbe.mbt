@@ -42,7 +42,7 @@ fn con_double(c : @types.Con) -> Double {
 // The single value of a con (C union's .fs view of the raw bits).
 fn con_single(c : @types.Con) -> Float {
   let i = c.raw_bits()
-  let u : UInt = (i & 0xFFFFFFFF).reinterpret_as_uint64().to_uint()
+  let u : UInt32 = (i & 0xFFFFFFFF).reinterpret_as_uint64().to_uint()
   Float::reinterpret_from_uint(u)
 }
 
@@ -280,7 +280,7 @@ fn opfold(
   cls : @types.Class,
   cl : @types.Con,
   cr : @types.Con,
-) -> Int raise {
+) -> Int32 raise {
   if (
       op == @types.Div ||
       op == @types.Udiv ||

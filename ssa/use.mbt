@@ -3,13 +3,13 @@
 
 ///|
 // Class enumeration values (match C: Kx=-1, Kw=0, Kl=1, Ks=2, Kd=3)
-fn kx() -> Int {
+fn kx() -> Int32 {
   -1
 }
 
 ///|
 // Merge a class into a running class. Returns true if incompatible.
-fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
+fn clsmerge(pk : Ref[Int32], k : Int32) -> Bool {
   let k1 = pk.val
   if k1 == kx() {
     pk.val = k
@@ -24,7 +24,7 @@ fn clsmerge(pk : Ref[Int], k : Int) -> Bool {
 
 ///|
 // Phi class resolution with path compression (C phicls)
-fn phicls(t : Int, tmps : Array[@types.Tmp]) -> Int {
+fn phicls(t : Int32, tmps : Array[@types.Tmp]) -> Int32 {
   let mut t1 = tmps[t].is_phi
   if t1 == 0 {
     return t
@@ -36,7 +36,7 @@ fn phicls(t : Int, tmps : Array[@types.Tmp]) -> Int {
 
 ///|
 // Load size in bytes (C load.c loadsz: Oload size depends on the class width)
-fn loadsz(i : @types.Ins) -> Int {
+fn loadsz(i : @types.Ins) -> Int32 {
   match i.op {
     @types.Loadsb | @types.Loadub => 1
     @types.Loadsh | @types.Loaduh => 2
@@ -48,7 +48,7 @@ fn loadsz(i : @types.Ins) -> Int {
 
 ///|
 // Store size in bytes
-fn storesz(i : @types.Ins) -> Int {
+fn storesz(i : @types.Ins) -> Int32 {
   match i.op {
     @types.Storeb => 1
     @types.Storeh => 2
@@ -135,11 +135,11 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
 // Add a use to a temporary's use list
 fn adduse(
   fn_ : @types.Fn,
-  t : Int,
+  t : Int32,
   kind : @types.UseKind,
-  blk_id : Int,
-  ins_idx : Int,
-  arg_num : Int,
+  blk_id : Int32,
+  ins_idx : Int32,
+  arg_num : Int32,
 ) -> Unit {
   let tmp = fn_.tmps[t]
   tmp.nuse = tmp.nuse + 1

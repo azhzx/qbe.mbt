@@ -40,7 +40,7 @@ const CIULT = 9
 // Whether op is a comparison; returns (ok, class, icmp code).
 // Matches util.c iscmp: float comparisons map to NCmpI + offset (the
 // CmpF enum positions), which index the Flagfeq..Flagfuo flag ops.
-fn iscmp(op : @types.Op) -> (Bool, @types.Class, Int) {
+fn iscmp(op : @types.Op) -> (Bool, @types.Class, Int32) {
   let i = op.index()
   let w = @types.Ceqw.index()
   let l = @types.Ceql.index()
@@ -61,7 +61,7 @@ fn iscmp(op : @types.Op) -> (Bool, @types.Class, Int) {
 
 ///|
 // The swap version of a comparison code (C cmpop, cmptab).
-fn cmpop(c : Int) -> Int {
+fn cmpop(c : Int32) -> Int32 {
   if c == CIULE {
     CIUGE
   } else if c == CIULT {
@@ -113,13 +113,13 @@ fn cmpop(c : Int) -> Int {
 
 ///|
 // The flag-setting op for an ICmp code (C Oflag + x).
-fn flag_op(x : Int) -> @types.Op {
+fn flag_op(x : Int32) -> @types.Op {
   @types.Op::from_index(@types.Flagieq.index() + x)
 }
 
 ///|
 // The conditional jump kind for an ICmp code (C Jjf + x).
-fn jjf_op(x : Int) -> @types.JumpKind {
+fn jjf_op(x : Int32) -> @types.JumpKind {
   @types.JumpKind::from_index(@types.Jjfieq.index() + x)
 }
 
@@ -132,13 +132,13 @@ fn isxsel(op : @types.Op) -> Bool {
 
 ///|
 // The xsel op for an ICmp code (C Oxsel + x).
-fn xsel_op(x : Int) -> @types.Op {
+fn xsel_op(x : Int32) -> @types.Op {
   @types.Op::from_index(@types.Xselieq.index() + x)
 }
 
 ///|
 // Whether the operands must be swapped for a comparison code (C cmpswap).
-fn cmpswap(a0 : @types.Ref, c : Int) -> Bool {
+fn cmpswap(a0 : @types.Ref, c : Int32) -> Bool {
   if c == NCMPI + 4 || c == NCMPI + 3 {
     // Cflt, Cfle
     true

@@ -3,7 +3,7 @@
 
 ///|
 // Helper to create a simple function with blocks
-fn make_test_fn(name : String, nblk : Int) -> @types.Fn {
+fn make_test_fn(name : String, nblk : Int32) -> @types.Fn {
   let f = @types.Fn::new(name)
   for i in 0..<nblk {
     let id = f.add_blk("b\{i}")

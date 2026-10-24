@@ -12,18 +12,18 @@ const TOP = -1
 
 ///|
 priv struct Edge {
-  dest : Int // RPO index of the successor, -1 if none
+  dest : Int32 // RPO index of the successor, -1 if none
   mut dead : Bool
 }
 
 ///|
 priv struct FoldState {
   fn_ : @types.Fn
-  val : Array[Int] // per-tmp lattice value
+  val : Array[Int32] // per-tmp lattice value
   edges : Array[Array[Edge]] // edges[n] = [s1, s2] for block at RPO n
   usewrk : Array[@types.Use]
-  mut nuse : Int
-  work : Array[Int] // stack of edge ids: 2*n+slot, or -1 for the start edge
+  mut nuse : Int32
+  work : Array[Int32] // stack of edge ids: 2*n+slot, or -1 for the start edge
 }
 
 ///|
@@ -41,7 +41,7 @@ fn czero(c : @types.Con, w : Bool) -> Bool {
 }
 
 ///|
-fn latval(st : FoldState, r : @types.Ref) -> Int {
+fn latval(st : FoldState, r : @types.Ref) -> Int32 {
   match r {
     @types.RTmp(v) => st.val[v]
     @types.RCon(v) => v
@@ -50,7 +50,7 @@ fn latval(st : FoldState, r : @types.Ref) -> Int {
 }
 
 ///|
-fn latmerge(v : Int, m : Int) -> Int {
+fn latmerge(v : Int32, m : Int32) -> Int32 {
   if m == TOP {
     v
   } else if v == TOP || v == m {
@@ -61,7 +61,7 @@ fn latmerge(v : Int, m : Int) -> Int {
 }
 
 ///|
-fn update(st : FoldState, t : Int, m : Int) -> Unit {
+fn update(st : FoldState, t : Int32, m : Int32) -> Unit {
   let m = latmerge(st.val[t], m)
   if m != st.val[t] {
     for u in st.fn_.tmps[t].uses {
@@ -74,7 +74,7 @@ fn update(st : FoldState, t : Int, m : Int) -> Unit {
 
 ///|
 // Whether edge from RPO-indexed block s to block d is currently alive.
-fn deadedge(st : FoldState, s : Int, d : Int) -> Bool {
+fn deadedge(st : FoldState, s : Int32, d : Int32) -> Bool {
   let e = st.edges[s]
   if e[0].dest == d && !e[0].dead {
     return false
@@ -86,7 +86,7 @@ fn deadedge(st : FoldState, s : Int, d : Int) -> Bool {
 }
 
 ///|
-fn visitphi(st : FoldState, p : @types.Phi, n : Int) -> Unit {
+fn visitphi(st : FoldState, p : @types.Phi, n : Int32) -> Unit {
   let mut v = TOP
   for a in p.args {
     if !deadedge(st, st.fn_.blks[a.blk_id].rpo_id, n) {
@@ -121,7 +121,7 @@ fn visitins(st : FoldState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
-fn visitjmp(st : FoldState, b : @types.Blk, n : Int) -> Unit {
+fn visitjmp(st : FoldState, b : @types.Blk, n : Int32) -> Unit {
   match b.jmp.kind {
     @types.Jjnz => {
       let l = latval(st, b.jmp.arg)
@@ -141,7 +141,7 @@ fn visitjmp(st : FoldState, b : @types.Blk, n : Int) -> Unit {
 
 ///|
 // Visit the block at RPO index d (shared by the start edge and block edges).
-fn visit_blk(st : FoldState, d : Int) -> Unit raise {
+fn visit_blk(st : FoldState, d : Int32) -> Unit raise {
   let b = st.fn_.blks[st.fn_.rpo[d]]
   for p in b.phi {
     visitphi(st, p, d)
@@ -281,7 +281,7 @@ pub fn fold(
 
   // 2. trim dead code, replace constants
   let mut d = 0
-  let new_def : Array[Int] = []
+  let new_def : Array[Int32] = []
   for id in fn_.def_order {
     let b = fn_.blks[id]
     if b.visit == 0 {

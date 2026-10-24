@@ -3,7 +3,7 @@
 
 ///|
 // Check if b1 strictly dominates b2
-fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
+fn sdom(fn_ : @types.Fn, b1 : Int32, b2 : Int32) -> Bool {
   if b1 == b2 {
     return false
   }
@@ -16,7 +16,7 @@ fn sdom(fn_ : @types.Fn, b1 : Int, b2 : Int) -> Bool {
 
 ///|
 // Check phi: whether phi p in block b uses temp t illegally
-fn phicheck(fn_ : @types.Fn, p : @types.Phi, b : Int, t : @types.Ref) -> Bool {
+fn phicheck(fn_ : @types.Fn, p : @types.Phi, b : Int32, t : @types.Ref) -> Bool {
   for a in p.args {
     if a.value.eq(t) {
       let b1 = a.blk_id
