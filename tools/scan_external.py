@@ -19,6 +19,19 @@ SRC = os.path.join(BASE, "src")
 RAW = os.path.join(BASE, "raw")
 QPCC = os.path.join(ROOT, "_build", "native", "debug", "build", "qpcc", "cmd", "cmd.exe")
 INC = os.path.join(ROOT, "qpcc", "include", "qbe")
+def _env_json():
+    q = os.path.join(BASE, "env.json")
+    if not os.path.exists(q):
+        return {}
+    try:
+        return json.load(open(q, encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+ENV = _env_json()
+# Third-party library headers (libpng, jpeg, openssl, X11) live outside the SDK.
+EXTRA_INC = ENV.get("include_dirs", [])
 CC = "/usr/bin/clang" if os.path.exists("/usr/bin/clang") else "cc"
 TIMEOUT = 240
 
@@ -108,7 +121,9 @@ def scan(proj, fname, path):
     i = os.path.join(BASE, "i", proj + "__" + fname[:-2] + ".i")
     o = os.path.join(BASE, "o", proj + "__" + fname[:-2] + ".o")
     inc = ["-I", INC, "-I", d]
-    cfg = config_dir(proj, root)
+    for x in EXTRA_INC:
+        inc += ["-I", x]
+    cfg = config_dir(proj, root) or (os.path.join(CFG, proj) if os.path.isdir(os.path.join(CFG, proj)) else None)
     if cfg:
         inc = ["-I", cfg] + inc
     for sub in ("", "src", "lib", "include", "src/lua"):
