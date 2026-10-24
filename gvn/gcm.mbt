@@ -37,7 +37,14 @@ fn op_pinned(i : @types.Ins) -> Bool {
     | @types.Argc
     | @types.Arge
     | @types.Call
-    | @types.Vacall => true
+    | @types.Vacall
+    | @types.AtomicLoad
+    | @types.AtomicStore
+    // QPCC extensions with memory side effects: QBE has no atomics, so the
+    // optab pinned column has to name them here. Without AtomicStore in this
+    // list gcm treats the store as movable, never schedules the value it uses,
+    // and then lateblk deletes the phi that defines it (dangling use).
+    | @types.Fence => true
     _ => false
   }
 }

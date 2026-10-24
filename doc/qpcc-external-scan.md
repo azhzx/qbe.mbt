@@ -6,15 +6,16 @@
 > 同日修完 `__inline__` 外部链接语义后扫了第四次（§7.5），
 > 又修完三个 SEMA 失败后扫了第五次（§7.6）；
 > 最后弄清 Apple 扩展与 GCC 的立场、改用 `-U__BLOCKS__` 预处理后扫了第六次（§7.7）；
-> 再补上结构体打包后又扫了第七次（§7.8）。
+> 再补上结构体打包后扫了第七次（§7.8）；
+> 最后修掉 `gcm` 删 phi 的问题后扫了第八次（§7.10）。
 > 抓取与扫描脚本在 tools/scan_external_fetch.py、tools/scan_external.py，中间产物在 build/scan/（未提交）。
 ## 0. 一句话结论
 
-17 个真实 C 项目、201 个源文件：**151 个完整通过（75%）**。第一版是 88 个（44%）。
+17 个真实 C 项目、201 个源文件：**152 个完整通过（76%）**。第一版是 88 个（44%）。
 另有 44 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
-扣掉它们，**到达 qpcc 的 157 个文件里 151 个通过 —— 96%**（第一版 65%，上一轮 92%）。
+扣掉它们，**到达 qpcc 的 157 个文件里 152 个通过 —— 97%**（第一版 65%，上一轮 92%）。
 
-修复过程分七轮，逐文件对照见 §7：
+修复过程分八轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -25,6 +26,7 @@
 | 第五轮 | 三个 SEMA 失败（文件作用域 `sizeof`、自带头、扫描器 `-D`）| SEMA 3 → 0 |
 | 第六轮 | 预处理 `-U__BLOCKS__`、C23 enum 属性 | PARSE 12 → 5，OK → 150 |
 | 第七轮（最新）| `#pragma pack` 结构体打包 | **SEMA 2 → 0，OK → 151** |
+| 第八轮（最新）| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -68,20 +70,20 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | sic | 3 | 1 | 1 | 0 | 1 |
 | slstatus | 24 | 20 | 0 | 0 | 4 |
 | smu | 1 | 1 | 0 | 0 | 0 |
-| sqlite | 1 | 0 | 0 | 1 | 0 |
+| sqlite | 1 | 1 | 0 | 0 | 0 |
 | yyjson | 4 | 4 | 0 | 0 | 0 |
 | zlib | 30 | 28 | 0 | 0 | 2 |
-| **合计** | **201** | **151** | **5** | **1** | **44** |
+| **合计** | **201** | **152** | **5** | **0** | **44** |
 
 ## 3. 阶段分布
 
 | 阶段 | 文件数 | 占全部 201 |
 | --- | ---: | ---: |
-| OK | 151 | 75% |
+| OK | 152 | 76% |
 | PREPROCESS | 44 | 22% |
 | PARSE | 5 | 2% |
 | SEMA | 0 | 0% |
-| CODEGEN-PANIC | 1 | 0% |
+| CODEGEN-PANIC | 0 | 0% |
 
 ## 4. 诊断签名排名（跨项目计数，只统计到达 qpcc 的文件）
 
@@ -89,9 +91,7 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 | --- | ---: | ---: |
 | `expected ';'` | 5 | 3 |
 
-生成失败（CODEGEN-PANIC）现在只有 1 个文件：
-
-- sqlite/sqlite3.c - `qpcc: object emission failed: b.5205 is used undefined in @logic.join.970`
+生成失败（CODEGEN-PANIC）现在只有 0 个文件：
 
 第二至第七轮修掉的诊断不再出现：ICE（arm64 二进制发射器）、PanicError、optarg、VERSION、常量除零。
 
@@ -221,7 +221,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 七轮重扫：与第一版的逐文件对照
+## 7. 八轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -452,16 +452,46 @@ sizeof(mach_msg_context_trailer_t)                     → 60 ✓（原来 64 �
 
 回归用例 `qpcc/tests/pragma_pack.c` ✓（`pack(1)`/push/pop、成员 `offsetof`、以及仿 Mach 的 60 字节结构 ✓）。
 
-### 7.9 现在还剩什么
+### 7.10 第八轮（`gcm` 把原子写当成可搬动，删掉了还在用的 phi）
+
+第七轮之后 sqlite3.c 只剩一处代码生成失败：
+
+    qpcc: object emission failed: b.5205 is used undefined in @logic.join.970
+
+定位过程（对照 `vendor/qbe/gcm.c`）：
+
+1. 失败的函数是 `sqlite3_soft_heap_limit64`，可疑语句是
+   `__atomic_store_n(&mem0.nearlyFull, n>0 && n<=nUsed, 0);`
+   - 一个 `&&` 的值形式，作为原子写的实参。
+2. 在 `ssacheck` 里加打印：`@logic.join.970` 的 **phi 不见了**
+   （`nphi=0`），但 `ins0` 仍在用它的结果。
+3. 逐 pass 二分：`ssa` 之后正常 → `loadopt+coalesce` 之后正常 →
+   **`gvn+gcm` 之后 phi 被删**。
+4. `gcm` 的 `lateblk` 会删掉「看起来没人用」的 phi（原版 QBE 也这么干），
+   判据是 `schedlate(p.to)` 返回 -1，即这个 temp 从未被 early-scheduled。
+5. 根因：`op_pinned`（对应 QBE `optab` 的 pinned 列）**漏了
+   `AtomicStore`**。于是 `gcm` 认为这次原子写可以搬动，从不给它用到的值做
+   early scheduling → phi 的 `gcmbid` 永远是 -1 → `lateblk` 判它无用并删除 →
+   留下悬空使用，`ssacheck` 报 undefined。
+   原版 QBE 没有原子指令，这一列是 qpcc 自己加的扩展，容易漏。
+
+修复：`op_pinned` 补上 `AtomicLoad` / `AtomicStore` / `Fence`。
+
+回归用例 `qpcc/tests/atomic_gcm_phi.c`：**去掉修复时**报
+`b.3 is used undefined in @logic.join.3`，加上修复后正常。
+
+结果：**sqlite3.c 通过**，扫描里最后一处 CODEGEN 失败消失。
+
+### 7.11 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
-| RUNS | 4 | lua、bzip2、smu、farbfeld（farbfeld 无 stdin 输入时 rc=1） |
-| RUNS-DRIVER | 2 | cjson、yyjson（扫描器的小驱动调库） |
-| LINK-FAIL | 2 | lchat（缺 slackline.c，它预处理失败；不是 qpcc） |
-| LIB-LINK-FAIL | 1 | zlib（测试工具 blast.c 混进库里；库本身正确） |
-| NO-COMPILE | 5 | abduco、dash、ii、lz4、sic、slstatus 的入口文件仍 PARSE/PREPROCESS 失败 |
-| NO-MAIN | 3 | hiredis、miniz、sqlite 是库，没有 main |
+| RUNS | 4 | bzip2、farbfeld、lua、smu |
+| RUNS-DRIVER | 2 | cjson、yyjson |
+| LINK-FAIL | 2 | lchat、lz4 |
+| LIB-LINK-FAIL | 1 | zlib |
+| NO-COMPILE | 5 | abduco、dash、ii、sic、slstatus |
+| NO-MAIN | 3 | hiredis、miniz、sqlite |
 
 ## 8. 方法的局限（所以数字是下界）
 
@@ -661,7 +691,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | slstatus | slstatus/volume.c | PREPROCESS | FAIL | 'sys/soundcard.h' file not found |
 | slstatus | slstatus/wifi.c | OK | OK | - |
 | smu | smu/smu.c | OK | OK | - |
-| sqlite | sqlite/sqlite3.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: b.5205 is used undefined in @l |
+| sqlite | sqlite/sqlite3.c | OK | OK | - |
 | yyjson | yyjson/experiment_depth_limit.c | OK | OK | - |
 | yyjson | yyjson/jsoninfo.c | OK | OK | - |
 | yyjson | yyjson/make_tables.c | OK | OK | - |
