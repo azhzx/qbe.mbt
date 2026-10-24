@@ -212,6 +212,16 @@ fn load_abort(
 }
 
 ///|
+// Whether block b dominates block c (C cfg.c dom).
+fn dominates(fn_ : @types.Fn, b : Int32, c : Int32) -> Bool {
+  let mut c = c
+  while c >= 0 && fn_.blks[c].rpo_id > fn_.blks[b].rpo_id {
+    c = fn_.blks[c].idom
+  }
+  c == b
+}
+
+///|
 // Returns a ref containing the contents of the slice, with all bits zeroed in
 // the result where the mask has zeroes (C def). Returns ref_none on failure.
 fn def(
@@ -222,6 +232,16 @@ fn def(
   i : Int32,
   il : Loc,
 ) -> @types.Ref {
+  // C load.c def(): "invariants: -1- b dominates il->blk; so we can use
+  // temporaries of b in il->blk". The reference asserts it; this port used to
+  // walk on, and the resulting insert could be placed in a block that does not
+  // dominate its use (hiredis read.c, ffc_digit_comp).
+  if !dominates(st.fn_, b, il.blk) {
+    abort(
+      "loadopt: block @\{st.fn_.blks[b].name} does not dominate " +
+      "@\{st.fn_.blks[il.blk].name} (def invariant 1)",
+    )
+  }
   let oldl = st.nlog
   let oldt = st.fn_.tmps.length()
   let b_ins = st.fn_.blks[b].ins

@@ -63,7 +63,8 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
           }
         } else if bu.id != id && !sdom(fn_, id, bu.id) {
           raise @util.QbeError::CompileError(
-            "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
+            "function $\{fn_.name}: \{tmp.name} is defined at @\{b.name} " +
+            "which does not dominate its use at @\{bu.name} (SSA)",
           )
         }
       }
@@ -88,12 +89,15 @@ pub fn ssacheck(fn_ : @types.Fn) -> Unit raise {
         } else if bu.id == id {
           if u.kind == @types.UIns && u.ins_idx <= ii {
             raise @util.QbeError::CompileError(
-              "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
+              "function $\{fn_.name}: \{tmp.name} is defined at @\{b.name}:\{ii} " +
+              "but first used at @\{b.name}:\{u.ins_idx} (SSA: a value must be " +
+              "defined before any use in the same block)",
             )
           }
         } else if !sdom(fn_, id, bu.id) {
           raise @util.QbeError::CompileError(
-            "function $\{fn_.name}: \{tmp.name} is used before its definition (SSA)",
+            "function $\{fn_.name}: \{tmp.name} is defined at @\{b.name} " +
+            "which does not dominate its use at @\{bu.name} (SSA)",
           )
         }
       }
