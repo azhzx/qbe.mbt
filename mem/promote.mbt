@@ -58,6 +58,15 @@ pub fn promote(
     if skip {
       continue
     }
+    // A slot that is only ever read has no value to promote. QBE treats
+    // that as an error because its front end never produces one, but a C
+    // front end does: a local that is read before being written (dash's
+    // printf reads an uninitialised struct) or one whose only write is an
+    // inline asm output operand, which this port cannot execute. Leave
+    // such a slot in memory instead of failing the compilation.
+    if k == -1 {
+      continue
+    }
     // Get rid of the alloc and replace its uses.
     i.op = @types.Nop
     i.cls = @types.Kw

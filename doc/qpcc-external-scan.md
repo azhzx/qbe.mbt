@@ -16,7 +16,7 @@
 另有 42 个文件**根本没走到 qpcc**（缺第三方或平台依赖，属环境问题）。
 扣掉它们，**到达 qpcc 的 194 个文件里 186 个通过 —— 96%**（第一版 65%，上一轮 92%）。
 
-修复过程分十一轮，逐文件对照见 §7：
+修复过程分十二轮，逐文件对照见 §7：
 
 | 轮次 | 内容 | 效果 |
 | --- | --- | --- |
@@ -30,7 +30,8 @@
 | 第八轮| `gcm` 漏了 `AtomicStore`，删掉了仍在用的 phi | **CODEGEN 1 -> 0，OK -> 152** |
 | 第九轮| 修正扫描口径（自动生成 `config.h`）+ 补 `PRI*` 宏与 `__builtin_bzero` | **OK 152 -> 154，PREPROCESS 44 -> 42** |
 | 第十轮| `__bf16__`/`__mfp8__` + 真正配置环境（第三方头、生成头）| **OK 154 -> 185，PREPROCESS 44 -> 7** |
-| 第十一轮（最新）| `simplcfg` 链式合并后 phi 参数悬空 | **OK 185 -> 186，dash/jobs.c 通过** |
+| 第十一轮| `simplcfg` 链式合并后 phi 参数悬空 | **OK 185 -> 186，dash/jobs.c 通过** |
+| 第十二轮（最新）| `promote` 跳过只读槽（内联汇编/未初始化局部）| 取消该中止，前进到下一层问题 |
 
 第二轮的五个修复（都有最小复现用例，见 `qpcc/tests/sizeof_lit.c`、`builtin_bits.c`）：
 
@@ -98,9 +99,9 @@ qpcc f.i -std=c11 -o f.o      ② 代码生成
 
 生成失败（CODEGEN-PANIC）现在只有 2 个文件：
 
-- dash/printf.c - `PanicError`
+- dash/printf.c - `qpcc: object emission failed: t.1028 violates ssa invariant`
 
-- hiredis/read.c - `PanicError`
+- hiredis/read.c - `qpcc: object emission failed: ld.75544 violates ssa invariant`
 
 第二至第七轮修掉的诊断不再出现：ICE（arm64 二进制发射器）、PanicError、optarg、VERSION、常量除零。
 
@@ -222,7 +223,7 @@ static void freereg (FuncState *fs, int reg) {
 差分测试也看不到——`compare.py` 给两个编译器喂的是 **IR**，从不经过 qpcc 的 C 前端，
 所以 C→IR 的运算符选择实际上长期无人覆盖。要覆盖它，需要**跑起来比结果**的用例。
 
-## 7. 十一轮重扫：与第一版的逐文件对照
+## 7. 十二轮重扫：与第一版的逐文件对照
 
 第一版把源文件摊平到一个目录再扫 ✗，破坏了 "`#include "../x.h"`" 这类相对包含 ✗。
 现在的扫描改为**原地**进行 ✓ 并加入各项目自己的头文件目录 ✓，所以下面的变化要分两类看 ✓：
@@ -587,7 +588,31 @@ zlib 的 PowerPC VMX 和 Windows 文件、slstatus 的 Linux `sys/soundcard.h`�
 后者是**内联汇编的输出操作数** ✗（`__asm__("..." : "=&r"(result))`）。
 两者都是「槽的写入不在 qpcc 能看到的 IR 里」✓，需要让 `promote` 正确识别**逃逸** ✓。
 
-### 7.14 现在还剩什么
+### 7.14 第十二轮（`promote`：只被读、从未被写的槽）
+
+`dash/bltin/printf.c` 和 `hiredis/read.c` 都停在 `promote` 的
+
+    slot %t.N is read but never stored to
+
+✗。原版 QBE 在 `mem.c` 里遇到这种槽直接 `err` ✓ —— 因为**它自己的 C 前端不会产生这种槽** ✗；
+但 qpcc 是 C 前端 ✓，两种来源完全合法：
+
+- **内联汇编的输出操作数** ✗：`__asm__("..." : "=&r"(result))`，qpcc 解析后丢弃 asm
+  ✗ → `result` 只剩 load ✗；
+- **读先于写的局部变量** ✓（C 里取值未指定 ✓）。
+
+修复：`promote` 发现「一个槽的所有使用都是 load、没有任何 store」时（`k == -1`）
+**跳过提升、把槽留在内存里** ✓，而不是中止编译 ✓。这样 load 依然读那块栈内存 ✓，
+语义与原来一致（未初始化 ✓），但 IR 合法 ✓。
+
+回归用例 `qpcc/tests/asm_output_operand.c` ✓。
+
+修完之后这两个文件**不再卡在 promote** ✓，而是前进到一个**新**问题 ✗：
+`dash printf.c` 的 `mklong`、`hiredis read.c` 的 `ffc_digit_comp`
+在 **SSA 构造完成时**就报 `violates ssa invariant` ✗（`t.1028` / `ld.75544`）。
+这两个 bug 之前被 promote 的中止**掩盖**了 ✓，是**独立的老问题** ✗，留作下一轮。
+
+### 7.15 现在还剩什么
 
 | 结果 | 项目数 | 项目 |
 | --- | ---: | --- |
@@ -674,7 +699,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | dash | dash/options.c | OK | OK | - |
 | dash | dash/output.c | OK | OK | - |
 | dash | dash/parser.c | OK | OK | - |
-| dash | dash/printf.c | CODEGEN-PANIC | FAIL | PanicError |
+| dash | dash/printf.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: t.1028 violates ssa invariant |
 | dash | dash/redir.c | OK | OK | - |
 | dash | dash/show.c | OK | OK | - |
 | dash | dash/system.c | OK | OK | - |
@@ -693,7 +718,7 @@ python3 tools/scan_run.py           # 写 build/scan/run.tsv
 | hiredis | hiredis/dict.c | OK | OK | - |
 | hiredis | hiredis/hiredis.c | OK | OK | - |
 | hiredis | hiredis/net.c | OK | OK | - |
-| hiredis | hiredis/read.c | CODEGEN-PANIC | FAIL | PanicError |
+| hiredis | hiredis/read.c | CODEGEN-PANIC | FAIL | qpcc: object emission failed: ld.75544 violates ssa invarian |
 | hiredis | hiredis/sds.c | OK | OK | - |
 | hiredis | hiredis/sockcompat.c | OK | OK | - |
 | hiredis | hiredis/ssl.c | OK | OK | - |
