@@ -367,6 +367,11 @@ pub fn coalesce(
     for k in 0..<s.nst {
       let st = s.st[k]
       if !rin(s.r, st.ip) {
+        // C mem.c: a blit stores through a pair of instructions, so killing
+        // one half has to kill the other as well.
+        if fn_.blks[st.blk].ins[st.idx].op == @types.Blit0 {
+          set_nop(fn_.blks[st.blk].ins[st.idx + 1])
+        }
         set_nop(fn_.blks[st.blk].ins[st.idx])
       }
     }
