@@ -5,21 +5,30 @@ a pointer to the C front end.
 
 ## qbe/ - the reference QBE, pinned
 
-`qbe/` is a git submodule. It is the reference implementation this repository
-reimplements: the differential tests build it and compare its IR and assembly
+`qbe/` is a git submodule: the reference implementation this repository
+reimplements. The differential tests build it and compare its IR and assembly
 with ours, byte for byte.
 
-- pinned commit: the submodule commit recorded in this repository;
-- mirror it is pinned from: https://github.com/ripe-lang/qbe.git (a fork that
-  carries the build tweaks the tests need);
-- **original upstream: https://c9x.me/git/qbe.git** - this is the project by
-  Quentin Carbonneaux that everything here derives from. It is listed here for
-  provenance: the pinned commit is a fork commit, and c9x.me does not serve
-  it, so the submodule is fetched from the mirror.
+- **original project: git://c9x.me/qbe.git** - QBE by Quentin Carbonneaux,
+  everything here derives from it. Its master is e786f06, which is the base of
+  the pin below.
+- pinned commit: the submodule commit recorded in this repository. It is
+  e786f06 plus two build commits that the tests need (an -O2 tweak and its
+  merge), i.e. upstream master with a fork on top.
+- fetched from: https://github.com/ripe-lang/qbe.git, a mirror of the fork, so
+  that `git submodule update` works everywhere; c9x.me serves only git:// and
+  does not publish the fork commits.
 
 ```sh
 git submodule update --init vendor/qbe
 make -C vendor/qbe            # the reference binary the tests compare against
+```
+
+To build the untouched upstream instead, clone it and point the tests at it:
+
+```sh
+git clone git://c9x.me/qbe.git qbe-upstream
+make -C qbe-upstream
 ```
 
 ## qiang - the C front end (not vendored)

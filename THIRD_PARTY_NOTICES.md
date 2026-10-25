@@ -29,7 +29,7 @@ from QBE:
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 
-Upstream: <https://c9x.me/compile/> (vendored mirror: <https://github.com/ripe-lang/qbe>)
+Upstream: <git://c9x.me/qbe.git>, project page <https://c9x.me/compile/> (vendored mirror: <https://github.com/ripe-lang/qbe>)
 
 ## MoonBit standard libraries
 
