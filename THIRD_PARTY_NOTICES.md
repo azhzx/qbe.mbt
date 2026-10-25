@@ -52,7 +52,8 @@ runtime objects named above.
 
 ## QPCC (Qopple C Compiler)
 
-`qpcc/` is an original MoonBit program written for this repository. Its design
+The C front end used to live here as `qpcc/`; it is now its own
+repository and module, Qiang, which depends on this one for the IR types. Its design
 is informed by:
 
 - chibicc — MIT License, Copyright (c) 2019 Rui Ueyama

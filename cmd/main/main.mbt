@@ -106,7 +106,7 @@ fn format_qbe_error(e : @util.QbeError, src_file~ : String = "") -> String {
     @util.QbeError::Ice(msg) =>
       "qbe: internal error: \{msg}\n" +
       "  hint: this is a bug in qbe.mbt, not in your input. Please report " +
-      "the .ssa file (or the C file, for qpcc) that triggered it."
+      "the .ssa file (or the C file, for Qiang) that triggered it."
   }
 }
 

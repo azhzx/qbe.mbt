@@ -1,7 +1,7 @@
 # TODO / known issues
 
-Tracked after the `feat/qpcc` self-host work: the QPCC-built `qbe` now passes
-all 58 `examples/qpcc-selfhost/semantic-check.sh` fixtures, and the debug / asm
+Tracked after the `feat/Qiang` self-host work: the QPCC-built `qbe` now passes
+all 58 `the semantic-check.sh demo in the Qiang repository` fixtures, and the debug / asm
 differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
 
 ## Testing gaps
@@ -113,7 +113,7 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
 
 - **A C99 `inline` definition must not be emitted as a strong global.** Fixed for
   the linkage (an `inline` without `static`/`extern` is now non-exported, which
-  is what unblocked Lua's link), but qpcc makes the symbol local where C says
+  is what unblocked Lua's link), but Qiang makes the symbol local where C says
   the definition simply is not external; a library that relies on one external
   definition from an `extern inline` in a chosen translation unit is not
   modelled.
@@ -130,15 +130,15 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   than truncating.
 - **FIXED: integer promotion.** C promotes char and short to int before the
   usual arithmetic conversions, so `int >= unsigned char` is a SIGNED
-  comparison; qpcc asked only whether either operand was unsigned. Lua's
+  comparison; Qiang asked only whether either operand was unsigned. Lua's
   freereg does `if (reg >= luaY_nvarstack(fs))` with reg an int and
   luaY_nvarstack returning lu_byte, so a -1 register was compared as
   0xFFFFFFFF, freereg was decremented when it should not have been, and every
   later register in the emitted bytecode shifted by one. That is why
   `local i=1 while i<=3 do print(i) i=i+1 end` overwrote i with print's value.
-  The differential never caught it because it feeds IR, not C, so qpcc's C to
+  The differential never caught it because it feeds IR, not C, so Qiang's C to
   IR conversion for comparison operators was untested there. Fixture:
-  qpcc/tests/promote_cmp.c; oracle 167/167.
+  Qiang/tests/promote_cmp.c; oracle 167/167.
 - **RESOLVED (Lua): it builds, links and runs correctly.** All 34 sources
   compile, and lua -v, arithmetic, strings, tables, closures, metatables,
   coroutines, pcall, numeric and float for loops, while loops and recursion
@@ -146,18 +146,18 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   The historical notes below record how it was found.
 - **REMAINING (Lua), localized to lcode.o: the emitted bytecode has the wrong
   register.** \`local i=1 while i<=3 do print(i) i=i+1 end\` prints a function
-  instead of 1, 2, 3, and swapping qpcc-compiled objects into a clang-built Lua
+  instead of 1, 2, 3, and swapping Qiang-compiled objects into a clang-built Lua
   gives a single offender: lcode.o. The bytecode itself is the oracle - the
   clang-built luac says
       GETTABUP 1 0 0 / MOVE 2 0 / CALL 1 2 1   and 3 slots
-  while luac with qpcc's lcode.o says
+  while luac with Qiang's lcode.o says
       GETTABUP 0 0 0 / MOVE 1 0 / CALL 0 2 1   and 2 slots
   so the call's base register is one too low and maxstacksize is one too small -
   the register-reservation path in lcode.c assigns R0, which holds the local.
-  Probes in luaK_reserveregs/freereg/luaK_checkstack show qpcc calling
+  Probes in luaK_reserveregs/freereg/luaK_checkstack show Qiang calling
   luaK_reserveregs before the freereg of freeexp, i.e. the calls are ordered
   differently; FuncState's layout and its lu_byte arithmetic match clang
-  exactly, so the fault is in how qpcc compiles that ordering. Next: reduce
+  exactly, so the fault is in how Qiang compiles that ordering. Next: reduce
   \`luaK_exp2nextreg\` (dischargevars/freeexp/reserveregs) to a standalone case.
 - **FIXED (Lua): missing declarations in the bundled headers.** An implicitly
   declared function returns int, so pointer results were truncated: string.h had
@@ -171,7 +171,7 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   segfaults, and so does the bare statement `local x = 1.0`; integers
   (`print(1)`) and runtime floats (`print(math.pi)`, which is a table field)
   are fine. The bytecode for `print(1.0)` is GETTABUP/LOADF/CALL, so it is the
-  LOADF of a float constant. Swapping qpcc-compiled objects one at a time into
+  LOADF of a float constant. Swapping Qiang-compiled objects one at a time into
   a clang-built Lua shows a single offender: lobject.o. That object was fine
   before this round's changes, so it is worth checking how the two fixes here
   (the shadowed-local rename and the large-offset scratch) interact with
@@ -208,22 +208,22 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   liveness used for coalescing. Next: `mem/coalesce.mbt`'s liveness around
   variadic calls (`call ... ...`), with `doc/live.md` as the reference.
 - **Lua's VM is miscompiled; localized to lvm.o only.** Method: build all of
-  Lua with clang (correct), then swap in one qpcc-compiled object at a time and
+  Lua with clang (correct), then swap in one Qiang-compiled object at a time and
   rerun `for k=1,2 do print(k) end`. Only `lvm.o` breaks it, so the defect is in
-  qpcc's compilation of `src/lvm.c`, not in the backend or the other 33 files.
-  Ruled out along the way: the bytecode (qpcc-built `luac -l` matches), pointer
+  Qiang's compilation of `src/lvm.c`, not in the backend or the other 33 files.
+  Ruled out along the way: the bytecode (Qiang-built `luac -l` matches), pointer
   arithmetic on 16-byte structs and typedef'd pointers, and `io.write` itself.
   Instrumentation evidence (insert `fprintf` probes into `forprep`, compile that
-  one object with qpcc, keep the other 33 from clang, and run the same probe
+  one object with Qiang, keep the other 33 from clang, and run the same probe
   build with clang):
-      qpcc : init=8462350312 step=4376879632 raw=1 raw1=2 raw2=1
+      Qiang : init=8462350312 step=4376879632 raw=1 raw1=2 raw2=1
       clang: init=1          step=1          raw=1 raw1=2 raw2=1
   So the expressions are right - `pinit->value_.i`, `plimit->value_.i`,
   `pstep->value_.i` all read 1/2/1 - and the tags are right, but the *locals*
   `init` and `step` hold garbage; `step` is even exactly the pointer `pinit`
   (4376879632 == 0x104e1e210). A local declared with an initializer is read back
   from the wrong slot. Extracting `forprep` + `forlimit` verbatim into a
-  standalone file is *correct* under qpcc, even with a variadic `luaG_runerror`,
+  standalone file is *correct* under Qiang, even with a variadic `luaG_runerror`,
   so the trigger is elsewhere in `lvm.c`; the next step is to binary-search the
   file by `#if 0`-ing ranges with the swap test as the oracle.
   The symptom - a numeric `for` never entering its body, and a local becoming

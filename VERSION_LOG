@@ -458,3 +458,13 @@
     (184), the differential (6720 on amd64 and arm64, 5040 with every debug
     flag), both assembly suites (420 each), stress (688) and the C ABI smoke
     test all pass on the new toolchain - which is what CI installs.
+
+2026.10.25: v0.43.0
+    The C front end moves out of this repository. What was qpcc - a C11 compiler
+    lowering to this port's IR - is now Qiang: its own repository, its own
+    module (azhzx/qiang, depending on azhzx/qbe), with its sources, headers,
+    tests, external-scan tooling and self-host demo. The split used git subtree
+    split, so its 142 commits of front-end history came along, and a moon.work
+    workspace next to this checkout resolves the dependency locally while both
+    are developed together. Nothing in the optimizer changed: the differential
+    stays at 6720/6720 and the assembly suites at 420/420.
