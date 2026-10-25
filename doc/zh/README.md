@@ -139,7 +139,7 @@
 
 - 总体介绍：[README.mbt.md](../../README.mbt.md)
 - 调试信息（`dbgfile`/`dbgloc` → `.file`/`.loc`）：[debug_info.md](debug_info.md)
-- QPCC C 语言支持：[qpcc.md](qpcc.md)
+- C 语言支持：前端已独立成项目 [Qiang](https://github.com/azhzx/qiang)
 - 踩坑总集：[pitfalls.md](pitfalls.md)
 - 演示样例：[demo/](../../demo/README.md)
 - 回归测试：[test/](../../test/)

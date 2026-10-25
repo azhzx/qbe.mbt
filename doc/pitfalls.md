@@ -145,7 +145,7 @@ Ironclad IR evidence:
 **The root cause is one type inference**:
 
 ```moonbit
-// qpcc/sema/expr.mbt  check_binary
+// sema/expr.mbt  check_binary
 (CPtr(e), _) => if op == "+" || op == "-" { CPtr(e) } else { lt }
 ```
 
@@ -154,7 +154,7 @@ The result type of `p - q` (two pointers) was judged to be **`CPtr(elem)`**. In 
 Then codegen used the **index's type** to decide whether to scale:
 
 ```moonbit
-// qpcc/codegen/codegen.mbt  gen_bin
+// codegen/codegen.mbt  gen_bin
 (CPtr(el), _) =>
   if !is_ptr_ty(r.ty) {        // scale only when the index type is an integer
     ... idx * sizeof(el) ...
@@ -354,15 +354,15 @@ same way, or a decision to loosen the debug differential.
 
 ### 4.8 `--emit asm` panics on some inputs (open)
 
-`qpcc decompress.i --emit asm` aborts in the text emitter (`cmd/main.mbt:380`)
+`Qiang decompress.i --emit asm` aborts in the text emitter (`cmd/main.mbt:380`)
 for the IR of bzip2's `decompress.c`, while `--emit obj` on the same IR works.
 The text emitter presumably has a gap the binary emitter does not. Found while
 trying to swap backends; not yet localized.
 ### 4.9 `--emit asm` ICE on slot operands: the generic `nmem` table (`f1fc34f`)
 
-`qpcc decompress.i --emit asm` failed with
+`Qiang decompress.i --emit asm` failed with
 
-    qpcc: asm emission ICE: invalid register r=-1 k=0
+    Qiang: asm emission ICE: invalid register r=-1 k=0
 
 while `--emit obj` on the same IR worked. The text emitter formats generic
 instructions with `arm64_rname(i.to.tmp_val(), k)` / `i.arg1.tmp_val()`, and
@@ -390,10 +390,10 @@ output decompresses with the system `bunzip2`), but decompressing produces wrong
 data: `data integrity (CRC) error`.
 
 Localized by instrumenting `BZ2_decompress` with state and bit-buffer prints and
-compiling it with clang and with qpcc:
+compiling it with clang and with Qiang:
 
 - clang walks 42 state transitions and 256 `BZ_X_MAPPING_2` iterations;
-- qpcc reserves one iteration too many: `M1 i=16` and `M2 i=16 j=16` where the
+- Qiang reserves one iteration too many: `M1 i=16` and `M2 i=16 j=16` where the
   loop bounds are `i < 16` and `j < 16`. The extra iteration writes
   `s->inUse[i*16+j]` out of bounds, corrupting `DState`, and the first state
   that fails is `BZ_X_SELECTOR_1` with a desynchronized bit stream.
@@ -403,13 +403,13 @@ What is ruled out:
 - the IR for those loops is correct by inspection (`storew 0, %t.40` for
   `i = 0`, `csltw ...,16` for the condition, `storew 0, %t.41` for `j = 0`,
   `jmp @for.step.396`), and no other code writes those slots;
-- feeding the same qpcc IR to a freshly built `vendor/qbe` also produces wrong
+- feeding the same Qiang IR to a freshly built `vendor/qbe` also produces wrong
   data, so the two independent backends agree.
 
 So the remaining bug is either a subtlety of this IR that both backends get
 wrong, or a frontend/IR-builder issue that inspection has not caught.
 Reproductions attempted so far (a plain nested loop, and the Duff-device shape
-of `switch` cases inside nested `for` loops) both behave correctly under qpcc,
+of `switch` cases inside nested `for` loops) both behave correctly under Qiang,
 so the trigger needs more of the surrounding function.
 ### 4.11 bzip2 decompress: reduction and the instrumentation trap
 
@@ -418,7 +418,7 @@ instrumented copy of decompress.c that counts state entries in globals (no
 calls at all in the loops) and dumps them from atexit in a patched bzip2.c:
 
     clang : ... 28:16, 29:256, 30:1, ...   (walks both blocks)
-    qpcc  : ... 28:17, 29:257, 30:1       (already wrong in the first block)
+    Qiang  : ... 28:17, 29:257, 30:1       (already wrong in the first block)
 
 Cutting the tail of BZ2_decompress makes the counts agree, and adding back a
 single statement after the mapping loops
@@ -451,12 +451,12 @@ nonsensical nGroups and the CRC check then fails.
 The first localisation used fprintf(stderr, ...) inside the mapping loops and
 reported M1 i=16, i.e. an extra loop iteration. That was an artifact of the
 instrumentation: replacing the same prints with plain global increments makes
-all three compilers (clang, qpcc, vendor QBE) agree again. A call - especially
+all three compilers (clang, Qiang, vendor QBE) agree again. A call - especially
 a variadic one - inside those loops changes the generated code enough to move
 the bug. Any future bisection must use call-free instrumentation.
 
 Related: a printf(...) placed inside those loops makes the reduced program
-produce no output at all under qpcc while clang is fine, which is a separate
+produce no output at all under Qiang while clang is fine, which is a separate
 code-generation bug worth its own fixture.
 #### Update: vendor QBE is wrong too, with call-free counters
 
@@ -464,7 +464,7 @@ Instrumenting only with global counters (state entries, RETURN count, mapping
 iterations, and the maximum i/j seen), and dumping them from atexit, gives:
 
     clang  : c28=16 c29=256 rt=42 m1=16 m2=256 imax=15 jmax=15
-    qpcc   : c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
+    Qiang   : c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
     QBE ref: c28=17 c29=257 rt=1  m1=17 m2=257 imax=16 jmax=16
 
 where c28/c29 are entries of BZ_X_MAPPING_1/MAPPING_2, rt counts RETURN
@@ -472,11 +472,11 @@ executions, imax/jmax are the largest i/j ever seen inside the mapping loops.
 
 Two things follow:
 
-1. vendor QBE, compiled from qpcc's IR, produces exactly the same wrong
+1. vendor QBE, compiled from Qiang's IR, produces exactly the same wrong
    numbers as the port, so the error is already in the IL;
 2. inside a single call the loop really does reach i == 16 and still executes
    the body (imax == 16, m1 == 17), although the IL condition is
-   '%t =w csltw <i>, 16'. qpcc also reports rt == 1, i.e. it never returns for
+   '%t =w csltw <i>, 16'. Qiang also reports rt == 1, i.e. it never returns for
    input exhaustion - it processes everything in one call and then reports
    BZ_DATA_ERROR.
 
@@ -510,7 +510,7 @@ the loop body only.**
 
 Everything else that was checked is correct:
 
-- `DState`/`EState` layouts agree between clang and qpcc
+- `DState`/`EState` layouts agree between clang and Qiang
   (`DState: bsBuff=32 bsLive=36 blockSize100k=40 origPtr=56`);
 - `s+56` in the `@while.end.348` block is `origPtr`, matching
   `s->origPtr = (s->origPtr << 8) | uc`;
@@ -547,7 +547,7 @@ the labels actually registered.
 
 Trigger shape: a case label inside a loop, with statements after the loop and
 another case label after them. 20-line reproducer, now
-`qpcc/tests/switch_nested_case.c`:
+`tests/switch_nested_case.c`:
 
     switch (n) {
     case 0:
@@ -560,9 +560,9 @@ another case label after them. 20-line reproducer, now
       r = g;
     }
 
-clang: `f(0) == 14`. Pre-fix qpcc: `15`.
+clang: `f(0) == 14`. Pre-fix Qiang: `15`.
 
-Verification of the bzip2 fix: `decompress.c` compiled by qpcc and linked
+Verification of the bzip2 fix: `decompress.c` compiled by Qiang and linked
 against clang-built neighbours decompresses 200 KB of random data to a
 byte-identical file; oracle 170/170, arm64 and amd64 differential 6720/6720
 each, `--asm` 420/420, stress 688/688, `moon test` 375/375.
@@ -649,14 +649,14 @@ Linking object files produced by this repository with clang reports `ld: -lto_li
 
 ### 7.7 Two scripts must not share an output directory
 
-`build-qbe-with-qpcc.sh` starts by `rm -rf`-ing its own output directory. It once shared `.qpcc_build/` with the quick script, so the corpus was deleted halfway through and the comparison "finished" after only 31/76. They now use separate directories.
+`build-qbe-with-Qiang.sh` starts by `rm -rf`-ing its own output directory. It once shared `.Qiang_build/` with the quick script, so the corpus was deleted halfway through and the comparison "finished" after only 31/76. They now use separate directories.
 
 ---
 
 ## 8. Notes on vendor/qbe
 
 - **`alloc()` zeroes memory** (`alloc` → `emalloc` → `calloc(1, n)`). C code relies heavily on "uninitialized fields are 0". When you read garbage, **suspect the struct layout/offsets first**, not "it was not zeroed".
-- **`struct Tmp` is 128 bytes**, `struct Alias` is 40 bytes, `alias.slot` is at +32, `tmp[i].alias` is at +72. If these offsets are wrong it does not crash in an obvious place; instead `escapes()` dereferences NULL. See `qpcc/tests/alias_shape.c`.
+- **`struct Tmp` is 128 bytes**, `struct Alias` is 40 bytes, `alias.slot` is at +32, `tmp[i].alias` is at +72. If these offsets are wrong it does not crash in an obvious place; instead `escapes()` dereferences NULL. See `tests/alias_shape.c`.
 - **`parseline` is a Duff's device**; the three result-less instructions `blit`/`call`/`vastart` depend on it.
 - **`escapes()` assumes that when `alias.type` is odd, `alias.slot` is necessarily non-null**; `fillalias` is responsible for establishing this invariant.
 - **`optab`/`kwmap` are filled in at runtime**: `lexinit()` copies `optab[i].name` into `kwmap[i]` and then computes the `lexh[]` hash. Reading `kwmap` with lldb right after the process starts shows only 0; **read it inside `lex()`**.
@@ -670,7 +670,7 @@ Linking object files produced by this repository with clang reports `ld: -lto_li
 2. **Temporary instrumentation + immediate revert.** Add `fprintf(stderr, "DBG ...")` in `vendor/qbe`, build once to see the value, then `cd vendor/qbe && git checkout -- <file>`. Much faster than guessing addresses in lldb.
 3. **Instrument only scalars.** The first version printed `a->type->align`, and `a->type` was exactly the garbage pointer → the debug code itself crashed, turning the **key evidence** that "the data is garbage" into an ordinary segfault.
 4. **Disassemble and read registers**: `lldb -b -o run -k 'register read x19 x20'`, together with `otool -tvV` to see offsets.
-5. **Write a minimal fixture into `qpcc/tests/`**. `sh qpcc/test.sh` is the clang oracle and immediately distinguishes "a QPCC bug" from "an isolated case".
+5. **Write a minimal fixture into `tests/`**. `sh test.sh` is the clang oracle and immediately distinguishes "a QPCC bug" from "an isolated case".
 6. **For layout bugs, write `__builtin_offsetof` assertions** into the oracle (`alias_shape.c`).
 7. **For hand-written encoders/backends, use differential testing**: compare byte-for-byte against the reference implementation (see 4.6).
 
@@ -771,7 +771,7 @@ that path has no semantic validation and is not a target produced by QPCC itself
 The first time I ran `semantic-check.sh` with `-t arm64_apple`, the result was:
 
 ```
-$ qbe-qpcc -t arm64_apple env.ssa
+$ qbe-Qiang -t arm64_apple env.ssa
 Abort trap: 6          # SIGABRT
 $ vendor/qbe/qbe -t arm64_apple env.ssa
 (normal)
@@ -780,7 +780,7 @@ $ vendor/qbe/qbe -t arm64_apple env.ssa
 Partial classification from what has run (~29/76):
 
 ```
-total 59: both correct 6, only reference 52, only qpcc 0, neither 1
+total 59: both correct 6, only reference 52, only Qiang 0, neither 1
 ```
 
 That is: **on the arm64 target, the self-hosted qbe produces 52 semantic errors out of 59 fixtures** (not "suboptimal code" — genuinely wrong results).
@@ -867,7 +867,7 @@ I wanted to directly compare "QPCC's IR" with "the reference qbe's IR" to pin do
 **Result one: the IR gcm produces is legal, it is simply semantically wrong.**
 
 ```sh
-qpcc <file>.c --emit qbe > x.ssa      # gcm has already run
+Qiang <file>.c --emit qbe > x.ssa      # gcm has already run
 ./vendor/qbe/qbe -t arm64_apple x.ssa  # the reference version consumes it
 → rc=0, no errors at all
 ```
@@ -897,7 +897,7 @@ you cannot rely on `--emit qbe`.
 
 The lesson from this section is more expensive than the previous two, because it contaminated **an entire round** of conclusions.
 
-`examples/qpcc-selfhost/semantic-check.sh` reads `QBE_NEW=.qpcc_build/qbe-qpcc` by default.
+`examples/Qiang-selfhost/semantic-check.sh` reads `QBE_NEW=.Qiang_build/qbe-Qiang` by default.
 And that file **is updated only when the demo script runs** — I never rebuilt it after changing QPCC.
 
 So that binary stayed **before `c1e7596` (the pointer-difference fix)**. Every arm64 measurement afterwards,
@@ -906,7 +906,7 @@ including the report of "52 semantic errors out of 59", **was measuring the comp
 It was discovered by running the two binaries side by side:
 
 ```
-.qpcc_build/qbe-qpcc   (old, before c1e7596)   env: SIGABRT
+.Qiang_build/qbe-Qiang   (old, before c1e7596)   env: SIGABRT
 /tmp/v_base/qbe        (rebuilt from the current tree)       env: byte-for-byte identical to the reference
 ```
 
@@ -940,7 +940,7 @@ Re-running `semantic-check.sh` with a binary **rebuilt from the current tree**:
 
      both correct          : 23
      only reference correct: 13
-     only qpcc correct     :  0
+     only Qiang correct     :  0
      neither               :  1
 
 Compared with 6 / 52 on the stale binary — **the stale binary explained about 45 of the failures**.
@@ -962,7 +962,7 @@ nor realized I was chasing a phenomenon that had partly ceased to exist for many
 
 ## 16. Worklist for item 3 (self-hosted qbe correctness)
 
-Goal: make `examples/qpcc-selfhost/semantic-check.sh` report 0
+Goal: make `examples/Qiang-selfhost/semantic-check.sh` report 0
 `only reference correct` and 0 `neither`.
 
 ### 16.1 Trusted baseline (binary rebuilt from the current tree)
@@ -993,7 +993,7 @@ This was obtained by **reading the stack on a running binary**, without changing
 
 Extracted `blit` as-is (keeping the struct table, `abs`, and `p++` walking the table), replaced
 `newtmp`/`getcon`/`emit` with stubs, and on the ten sizes **0/1/2/3/4/8/11/15/16/20**
-the results of QPCC and clang are **completely identical**. See `qpcc/repro_blit.c` (marked as a negative result).
+the results of QPCC and clang are **completely identical**. See `repro_blit.c` (marked as a negative result).
 
 ### 16.4 Next steps
 
@@ -1036,7 +1036,7 @@ so the macro was never defined at all, and `INT(i)` became a call to a function 
 **The right approach**: as with the self-host build, preprocess with clang first:
 
 ```sh
-clang -E -P foo.c > foo.i && qpcc foo.i -o foo.o
+clang -E -P foo.c > foo.i && Qiang foo.i -o foo.o
 ```
 
 **After adding preprocessing, all 7 `INT` cases (constant/variable/array element/function argument/expression/struct field) passed.**
@@ -1120,7 +1120,7 @@ int main(void) { g = -1; return g == -1 ? 0 : 1; }
 ```
 
 QPCC stored `0x00000000FFFFFFFF`, but it should be `0xFFFFFFFFFFFFFFFF`.
-See `qpcc/repro_neg2.c` for the reproduction.
+See `repro_neg2.c` for the reproduction.
 
 ### 17.1 Scope ruled out
 
@@ -1423,7 +1423,7 @@ the first version did not check, and panicked with an out-of-bounds index in the
 
 ### 18.5 Effect
 
-* `qpcc/tests/widen_word_const.c` covers: wide store, word-width use, unaffected positive folding
+* `tests/widen_word_const.c` covers: wide store, word-width use, unaffected positive folding
 * After rebuilding the self-hosted qbe, **3 of the 20 failures became fully identical** (including `max` and `queen`)
 
 ### 18.6 Methodological lesson from this round
@@ -1573,7 +1573,7 @@ but the -dI/-dS/-dR step-by-step comparison pinned the scope to rega.c in one ro
 
 ### 19.6 Authoritative numbers (full harness run to completion)
 
-    total 59: both correct 42, only reference 16, only qpcc 0, neither 1
+    total 59: both correct 42, only reference 16, only Qiang 0, neither 1
 
 | | Baseline | Now |
 | --- | --- | --- |
@@ -1757,7 +1757,7 @@ The semantics of Ke is "no constraint in the table"; for a store, the value's cl
 ### 22.3 Verification
 
     oracle 133/133   moon test 362/362
-    all 6 constant cases pass; new regression test qpcc/tests/store_wide_const.c
+    all 6 constant cases pass; new regression test tests/store_wide_const.c
 
 ## 23. `isel6`'s stack allocation: localized to concrete values
 
@@ -1975,21 +1975,21 @@ pointer scaling"** — pointer scaling depends on `sizeof(Ins)` and the field la
 frame #0: __sfvwrite
 frame #1: __vfprintf
 frame #2: _vsnprintf
-frame #3: qbe-qpcc`strf + 72
-frame #4: qbe-qpcc`newtmp + 280
-frame #5: qbe-qpcc`blit + 632      <-- the blit that hung earlier
-frame #6: qbe-qpcc`ins + 904
-frame #7: qbe-qpcc`simpl + 168
+frame #3: qbe-Qiang`strf + 72
+frame #4: qbe-Qiang`newtmp + 280
+frame #5: qbe-Qiang`blit + 632      <-- the blit that hung earlier
+frame #6: qbe-Qiang`ins + 904
+frame #7: qbe-Qiang`simpl + 168
 ```
 
 **It crashes in `strf` (a variadic function)** ✓ — and `blit` → `newtmp` → `strf`
 is exactly the path the earlier "hang" group (`ifc`/`isel2`) took ✓.
 
-### 26.2 Minimal reproduction: `qpcc/repro_strf.c`
+### 26.2 Minimal reproduction: `repro_strf.c`
 
 ```
 clang rc=0
-qpcc  rc=19      <- bit1 + bit2 + bit16
+Qiang  rc=19      <- bit1 + bit2 + bit16
 ```
 
 The shape of `strf` (`vendor/qbe/util.c`):
@@ -2034,7 +2034,7 @@ while `emalloc` only uses `calloc` ✓. **This is the next construct to test.**
 
 ## 27. [Root cause identified] the return value of a variadic call is read one step late
 
-In `qpcc/repro_strf.c`, after each `p = strf...(...)`, print
+In `repro_strf.c`, after each `p = strf...(...)`, print
 `pooloff` / `inpool(p)` / `strlen(p)`:
 
 ```
@@ -2113,7 +2113,7 @@ static int  h(int k, ...)    { va_list ap; int v; va_start(ap,k);
                                v = va_arg(ap,int); va_end(ap); return v + k; }
 ```
 
-**clang rc=0, qpcc rc=0** ⇒ **the return value of the variadic function is completely normal** ✗,
+**clang rc=0, Qiang rc=0** ⇒ **the return value of the variadic function is completely normal** ✗,
 Section 27's "one step late" conclusion is **void** ✗.
 
 Looking at the trace again:
@@ -2163,11 +2163,11 @@ you cannot infer from instrumented output alone ✓.
 
 ## 28. [Unambiguous hard facts] alloc's call count and the pool state differ from clang
 
-Added a global counter to each of the two allocators in `qpcc/repro_strf.c`, and printed at the end of `main`:
+Added a global counter to each of the two allocators in `repro_strf.c`, and printed at the end of `main`:
 
 ```
 clang: alloc=41  emalloc=2  pooloff=360  last_in=1  last_len=36   rc=0
-qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
+Qiang:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 ```
 
 **Two independent indicators corroborate each other**:
@@ -2181,7 +2181,7 @@ qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 And `emalloc`'s count is **2 on both sides** ✓ ⇒ in those 36 iterations **`strfA` was never called at all** ✗,
 rather than "it took the other branch" ✓.
 
-### 28.1 Ruled out (all have independent minimal tests; both clang and qpcc give rc=0)
+### 28.1 Ruled out (all have independent minimal tests; both clang and Qiang give rc=0)
 
 | Construct | Result |
 | --- | --- |
@@ -2220,7 +2220,7 @@ so this section keeps only **two mutually corroborating hard indicators** (the c
 ## 29. [Milestone] Item three achieved: all self-hosted qbe fixtures are semantically correct
 
 ```
-total 58: both correct 58, only reference 0, only qpcc 0, neither 0, skipped 1
+total 58: both correct 58, only reference 0, only Qiang 0, neither 0, skipped 1
 ```
 
 **The acceptance criterion (`only reference correct` = 0 and `neither` = 0) is satisfied.**

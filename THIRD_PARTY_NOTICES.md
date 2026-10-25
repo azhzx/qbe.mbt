@@ -60,4 +60,4 @@ is informed by:
   (<https://github.com/rui314/chibicc>)
 - mbtcc — Apache License 2.0 (<https://github.com/moonbitlang/mbtcc>)
 
-No third-party source code was copied into `qpcc/`.
+No third-party source code was copied into the front end.

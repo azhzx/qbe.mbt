@@ -143,7 +143,7 @@ IR 铁证:
 **根因是一条类型推导**:
 
 ```moonbit
-// qpcc/sema/expr.mbt  check_binary
+// sema/expr.mbt  check_binary
 (CPtr(e), _) => if op == "+" || op == "-" { CPtr(e) } else { lt }
 ```
 
@@ -152,7 +152,7 @@ IR 铁证:
 然后 codegen 靠**下标的类型**决定要不要缩放:
 
 ```moonbit
-// qpcc/codegen/codegen.mbt  gen_bin
+// codegen/codegen.mbt  gen_bin
 (CPtr(el), _) =>
   if !is_ptr_ty(r.ty) {        // 下标的类型是整数才缩放
     ... idx * sizeof(el) ...
@@ -388,14 +388,14 @@ xcrun ld -syslibroot $(xcrun --show-sdk-path) -o qbe -lSystem *.o
 
 ### 7.7 两个脚本不要共用输出目录
 
-`build-qbe-with-qpcc.sh` 开头会 `rm -rf` 自己的输出目录。曾经和 quick 脚本共用 `.qpcc_build/`,于是跑到一半 corpus 被删掉,对比只做了 31/76 就"结束"了。现在各用各的目录。
+`build-qbe-with-Qiang.sh` 开头会 `rm -rf` 自己的输出目录。曾经和 quick 脚本共用 `.Qiang_build/`,于是跑到一半 corpus 被删掉,对比只做了 31/76 就"结束"了。现在各用各的目录。
 
 ---
 
 ## 8. vendor/qbe 须知
 
 - **`alloc()` 会清零**(`alloc` → `emalloc` → `calloc(1, n)`)。C 代码大量依赖"未初始化字段为 0"。读到垃圾时**优先怀疑结构布局/偏移**,而不是"没清零"。
-- **`struct Tmp` 128 字节**,`struct Alias` 40 字节,`alias.slot` 在 +32,`tmp[i].alias` 在 +72。这些偏移错了不会崩在明显的地方,而是 `escapes()` 里对 NULL 解引用。见 `qpcc/tests/alias_shape.c`。
+- **`struct Tmp` 128 字节**,`struct Alias` 40 字节,`alias.slot` 在 +32,`tmp[i].alias` 在 +72。这些偏移错了不会崩在明显的地方,而是 `escapes()` 里对 NULL 解引用。见 `tests/alias_shape.c`。
 - **`parseline` 是 Duff device**,`blit`/`call`/`vastart` 三个无结果的指令靠它。
 - **`escapes()` 假设 `alias.type` 是奇数时 `alias.slot` 一定非空**,`fillalias` 负责建立这个不变式。
 - **`optab`/`kwmap` 是运行时填的**:`lexinit()` 把 `optab[i].name` 拷进 `kwmap[i]` 再算 `lexh[]` 哈希。用 lldb 在进程刚启动时读 `kwmap` 只会看到 0,**要在 `lex()` 里读**。
@@ -409,7 +409,7 @@ xcrun ld -syslibroot $(xcrun --show-sdk-path) -o qbe -lSystem *.o
 2. **临时插桩 + 立刻还原**。在 `vendor/qbe` 里加 `fprintf(stderr, "DBG ...")`,编一次看值,然后 `cd vendor/qbe && git checkout -- <file>`。比 lldb 猜地址快得多。
 3. **插桩只打标量**。第一版我打了 `a->type->align`,而 `a->type` 正是垃圾指针 → 调试代码自己崩了,把"数据是垃圾"这个**关键证据**变成了一个普通段错误。
 4. **反汇编读寄存器**:`lldb -b -o run -k 'register read x19 x20'`,配合 `otool -tvV` 看偏移。
-5. **写最小 fixture 进 `qpcc/tests/`**。`sh qpcc/test.sh` 是 clang oracle,能立刻区分"QPCC 的错"和"个例"。
+5. **写最小 fixture 进 `tests/`**。`sh test.sh` 是 clang oracle,能立刻区分"QPCC 的错"和"个例"。
 6. **布局类 bug 用 `__builtin_offsetof` 写成断言**进 oracle(`alias_shape.c`)。
 7. **手写编码器/后端用差分测试**:和参考实现逐字节对比(见 4.6)。
 
@@ -510,7 +510,7 @@ DBG chk ac=0x6000009800a0 a=0x60000098007a off=-38 inmem=196608 align=524288
 第一次用 `-t arm64_apple` 跑 `semantic-check.sh`,结果:
 
 ```
-$ qbe-qpcc -t arm64_apple env.ssa
+$ qbe-Qiang -t arm64_apple env.ssa
 Abort trap: 6          # SIGABRT
 $ vendor/qbe/qbe -t arm64_apple env.ssa
 (正常)
@@ -519,7 +519,7 @@ $ vendor/qbe/qbe -t arm64_apple env.ssa
 已跑出的部分分类(~29/76):
 
 ```
-total 59: both correct 6, only reference 52, only qpcc 0, neither 1
+total 59: both correct 6, only reference 52, only Qiang 0, neither 1
 ```
 
 也就是说:**arm64 目标上,自举 qbe 编 59 个 fixture 有 52 个语义错误**(不是"次优代码",是真的算错)。
@@ -606,7 +606,7 @@ total 59: both correct 6, only reference 52, only qpcc 0, neither 1
 **结果一:gcm 产出的 IR 是合法的,只是语义错了。**
 
 ```sh
-qpcc <file>.c --emit qbe > x.ssa      # gcm 已跑过
+Qiang <file>.c --emit qbe > x.ssa      # gcm 已跑过
 ./vendor/qbe/qbe -t arm64_apple x.ssa  # 参考版消费它
 → rc=0,无任何报错
 ```
@@ -636,7 +636,7 @@ diff     (空)
 
 这一节的教训比前两次更贵,因为它污染了**一整轮**的结论。
 
-`examples/qpcc-selfhost/semantic-check.sh` 默认读 `QBE_NEW=.qpcc_build/qbe-qpcc`。
+`examples/Qiang-selfhost/semantic-check.sh` 默认读 `QBE_NEW=.Qiang_build/qbe-Qiang`。
 而这个文件**只有跑 demo 脚本时才会更新** —— 我从没在改动 QPCC 之后重建它。
 
 于是那个二进制停留在 **`c1e7596`(指针差修复)之前**。之后所有 arm64 测量,
@@ -645,7 +645,7 @@ diff     (空)
 发现的方式是并排跑两个二进制:
 
 ```
-.qpcc_build/qbe-qpcc   (旧, 早于 c1e7596)   env: SIGABRT
+.Qiang_build/qbe-Qiang   (旧, 早于 c1e7596)   env: SIGABRT
 /tmp/v_base/qbe        (用当前树重建)       env: 与参考版逐字节相同
 ```
 
@@ -679,7 +679,7 @@ diff     (空)
 
      both correct          : 23
      only reference correct: 13
-     only qpcc correct     :  0
+     only Qiang correct     :  0
      neither               :  1
 
 对比陈旧二进制上的 6 / 52 —— **陈旧二进制解释了大约 45 个失败**。
@@ -701,7 +701,7 @@ diff     (空)
 
 ## 16. 第 3 项(自举 qbe 正确性)的工作清单
 
-目标:让 `examples/qpcc-selfhost/semantic-check.sh` 报 0 个
+目标:让 `examples/Qiang-selfhost/semantic-check.sh` 报 0 个
 `only reference correct` 和 0 个 `neither`。
 
 ### 16.1 可信基线(当前树重建的二进制)
@@ -732,7 +732,7 @@ diff     (空)
 
 把 `blit` 原样抽出(保留结构体表、`abs`、`p++` 走表),用 stub 顶替
 `newtmp`/`getcon`/`emit`,QPCC 与 clang 在 **0/1/2/3/4/8/11/15/16/20**
-十个尺寸上结果**完全一致**。见 `qpcc/repro_blit.c`(标注为否定结果)。
+十个尺寸上结果**完全一致**。见 `repro_blit.c`(标注为否定结果)。
 
 ### 16.4 下一步
 
@@ -775,7 +775,7 @@ QPCC 编译后链接报 `Undefined symbols: _INT` —— 看起来像"宏没展�
 **正确做法**:和自举构建一样,先用 clang 预处理:
 
 ```sh
-clang -E -P foo.c > foo.i && qpcc foo.i -o foo.o
+clang -E -P foo.c > foo.i && Qiang foo.i -o foo.o
 ```
 
 **加上预处理之后,7 个 `INT` 用例(常量/变量/数组元素/函数实参/表达式/结构体字段)全部通过。**
@@ -859,7 +859,7 @@ int main(void) { g = -1; return g == -1 ? 0 : 1; }
 ```
 
 QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `0xFFFFFFFFFFFFFFFF`。
-复现见 `qpcc/repro_neg2.c`。
+复现见 `repro_neg2.c`。
 
 ### 17.1 已排除的范围
 
@@ -1162,7 +1162,7 @@ QPCC 存进去的是 `0x00000000FFFFFFFF`,应为 `-1`。汇编是:
 
 ### 18.5 效果
 
-* `qpcc/tests/widen_word_const.c` 覆盖:宽存储、字宽使用、未受影响的正数折叠
+* `tests/widen_word_const.c` 覆盖:宽存储、字宽使用、未受影响的正数折叠
 * 自举 qbe 重建后,**20 个失败里 3 个转为完全一致**(含 `max`、`queen`)
 
 ### 18.6 这一轮的方法学教训
@@ -1312,7 +1312,7 @@ rglob = BIT(32) | BIT(31) 丢掉 BIT(32) 之后,SP 不再被当作固定寄存�
 
 ### 19.6 权威数字(完整 harness 跑完)
 
-    total 59: both correct 42, only reference 16, only qpcc 0, neither 1
+    total 59: both correct 42, only reference 16, only Qiang 0, neither 1
 
 | | 基线 | 现在 |
 | --- | --- | --- |
@@ -1496,7 +1496,7 @@ Ke 的语义是"表里没约束";对 store 来说值的类别就是 store 自己
 ### 22.3 验证
 
     oracle 133/133   moon test 362/362
-    6 个常量用例全过;新回归测试 qpcc/tests/store_wide_const.c
+    6 个常量用例全过;新回归测试 tests/store_wide_const.c
 
 ## 23. `isel6` 的栈分配:已定位到具体数值
 
@@ -1714,21 +1714,21 @@ b1->s1 = s;
 frame #0: __sfvwrite
 frame #1: __vfprintf
 frame #2: _vsnprintf
-frame #3: qbe-qpcc`strf + 72
-frame #4: qbe-qpcc`newtmp + 280
-frame #5: qbe-qpcc`blit + 632      <-- 就是之前挂死的 blit
-frame #6: qbe-qpcc`ins + 904
-frame #7: qbe-qpcc`simpl + 168
+frame #3: qbe-Qiang`strf + 72
+frame #4: qbe-Qiang`newtmp + 280
+frame #5: qbe-Qiang`blit + 632      <-- 就是之前挂死的 blit
+frame #6: qbe-Qiang`ins + 904
+frame #7: qbe-Qiang`simpl + 168
 ```
 
 **崩在 `strf`(变参函数)** ✓ —— 而 `blit` → `newtmp` → `strf`
 正是之前"挂死"组(`ifc`/`isel2`)走过的路径 ✓。
 
-### 26.2 最小复现:`qpcc/repro_strf.c`
+### 26.2 最小复现:`repro_strf.c`
 
 ```
 clang rc=0
-qpcc  rc=19      <- bit1 + bit2 + bit16
+Qiang  rc=19      <- bit1 + bit2 + bit16
 ```
 
 `strf` 的形状(`vendor/qbe/util.c`):
@@ -1773,7 +1773,7 @@ p = (pool == PFn ? alloc : emalloc)(n + 1);
 
 ## 27. 【根因确定】变参函数调用的返回值被滞后一拍读取
 
-在 `qpcc/repro_strf.c` 的每次 `p = strf...(...)` 之后打印
+在 `repro_strf.c` 的每次 `p = strf...(...)` 之后打印
 `pooloff` / `inpool(p)` / `strlen(p)`:
 
 ```
@@ -1852,7 +1852,7 @@ static int  h(int k, ...)    { va_list ap; int v; va_start(ap,k);
                                v = va_arg(ap,int); va_end(ap); return v + k; }
 ```
 
-**clang rc=0,qpcc rc=0** ⇒ **变参函数的返回值本身完全正常** ✗,
+**clang rc=0,Qiang rc=0** ⇒ **变参函数的返回值本身完全正常** ✗,
 第 27 节的"滞后一拍"结论**作废** ✗。
 
 重看轨迹:
@@ -1902,11 +1902,11 @@ static int  h(int k, ...)    { va_list ap; int v; va_start(ap,k);
 
 ## 28. 【不含糊的硬事实】alloc 的调用次数和池状态与 clang 不同
 
-在 `qpcc/repro_strf.c` 的两个分配器里各加一个全局计数器,并在 `main` 末尾打印:
+在 `repro_strf.c` 的两个分配器里各加一个全局计数器,并在 `main` 末尾打印:
 
 ```
 clang: alloc=41  emalloc=2  pooloff=360  last_in=1  last_len=36   rc=0
-qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
+Qiang:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 ```
 
 **两个独立指标互相印证**:
@@ -1920,7 +1920,7 @@ qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 而 `emalloc` 次数**两边都是 2** ✓ ⇒ 那 36 次迭代里 **`strfA` 根本没被调用** ✗,
 而不是"走了另一个分支" ✓。
 
-### 28.1 已排除(全部有独立最小测试,clang 与 qpcc 均 rc=0)
+### 28.1 已排除(全部有独立最小测试,clang 与 Qiang 均 rc=0)
 
 | 构造 | 结果 |
 | --- | --- |
@@ -1959,7 +1959,7 @@ qpcc:  alloc=5   emalloc=2  pooloff=72   last_in=0  last_len=36   rc=19
 ## 29. 【里程碑】第三项达成:自举 qbe 全部 fixture 语义正确
 
 ```
-total 58: both correct 58, only reference 0, only qpcc 0, neither 0, skipped 1
+total 58: both correct 58, only reference 0, only Qiang 0, neither 0, skipped 1
 ```
 
 **验收标准(`only reference correct` = 0 且 `neither` = 0)已满足。**
