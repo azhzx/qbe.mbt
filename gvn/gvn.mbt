@@ -1193,8 +1193,11 @@ fn gvndup(st : GState, i : @types.Ins, insert : Bool) -> @types.Ins? {
   if n == 0 {
     return None
   }
-  let h = ins_hash(i)
-  let mut idx = (h % n + n) % n
+  // C's ihash returns uint, so its bucket is ihash % gvntbln with unsigned
+  // semantics. Reading the same bits as a signed Int32 would pick a different
+  // bucket whenever the hash is negative, so mask to unsigned first.
+  let h = ins_hash(i).to_int64() & 0xFFFFFFFFL
+  let mut idx = (h % n.to_int64()).to_int()
   let mut result : @types.Ins? = None
   let mut searching = true
   while searching {
