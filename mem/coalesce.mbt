@@ -106,11 +106,11 @@ fn slot_load(
   match slot_of(r, fn_, al) {
     Some((idx, off)) => {
       let s = sl[idx]
+      // C load(): radd first and unconditionally - a slot that is read for the
+      // first time becomes live here - then OR in the bits.
+      radd(s.r, ip)
       s.l = s.l | shl_bits(x, off)
       s.l = s.l & s.m
-      if s.l != 0UL {
-        radd(s.r, ip)
-      }
     }
     None => ()
   }
