@@ -465,8 +465,11 @@ fn icmp(a : Insert, b : Insert) -> Int32 {
     return a.rpo_id - b.rpo_id
   }
   if a.isphi && b.isphi {
-    // The reference's qsort preserves the insertion order of equal-key phis
-    // (macOS stable qsort); `num` is a unique monotone insertion counter.
+    // C's icmp returns 0 here (same block, both phis), and the reference runs
+    // on a platform whose qsort leaves equal keys in place, so its phi order
+    // ends up being the insertion order. qsort_c is deliberately unstable, so
+    // keying on `num` - a unique, monotone insertion counter - reproduces that
+    // same order without depending on sort stability.
     return a.num - b.num
   }
   if a.isphi {
