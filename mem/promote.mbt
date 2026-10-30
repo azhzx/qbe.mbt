@@ -76,6 +76,21 @@ pub fn promote(
     // printf reads an uninitialised struct) or one whose only write is an
     // inline asm output operand, which this port cannot execute. Leave
     // such a slot in memory instead of failing the compilation.
+    // An alloc that nothing uses is dead: C drops it (its use loop is empty, so
+    // the promotion still runs and the alloc becomes a nop). Leaving it in
+    // memory instead would make coalescing reserve a stack slot for it and
+    // then kill it, which changes the frame layout and leaves a copy behind.
+    if fn_.tmps[alloc_t].uses.length() == 0 {
+      // C does *i = (Ins){.op = Onop}: the whole instruction is cleared, not
+      // just the opcode, so the printer shows a bare nop.
+      i.op = @types.Nop
+      i.cls = @types.Kw
+      i.to = @types.Ref::none()
+      i.arg1 = @types.Ref::none()
+      i.arg2 = @types.Ref::none()
+      fn_.tmps[alloc_t].ndef = fn_.tmps[alloc_t].ndef - 1
+      continue
+    }
     if k == -1 {
       continue
     }
