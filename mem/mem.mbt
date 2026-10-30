@@ -205,12 +205,18 @@ fn local_fillalias(fn_ : @types.Fn, al : Array[AliasL]) -> Unit {
       let has_to = !ins.to.is_none()
       let cur = if has_to { al[ins.to.tmp_val()].kind } else { @types.AUnk }
       if !has_to || cur == @types.AUnk {
-        if !ins.op.is_load() {
-          local_esc(ins.arg1, al)
-        }
-        if !ins.op.is_store() {
-          if ins.op != @types.Argc {
-            local_esc(ins.arg2, al)
+        // C alias.c skips a blit here: it writes through arg2 and reads arg1,
+        // so neither address escapes. This copy of fillalias has to skip it
+        // too, or the blit's destination never becomes a coalescing slot and
+        // its dead copy survives into the assembly.
+        if ins.op != @types.Blit0 {
+          if !ins.op.is_load() {
+            local_esc(ins.arg1, al)
+          }
+          if !ins.op.is_store() {
+            if ins.op != @types.Argc {
+              local_esc(ins.arg2, al)
+            }
           }
         }
       }
