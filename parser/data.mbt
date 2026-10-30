@@ -269,10 +269,14 @@ fn Parser::parsefields(
     if fa > al {
       al = fa
     }
-    // Handle alignment padding
-    let a = sz & (fs - 1L)
+    // Pad to the field's alignment, not to its size: C does
+    //   a = (1 << a) - 1; a = ((sz + a) & ~a) - sz;
+    // with a the field's alignment. Using the size instead pushes an
+    // 8-aligned, 16-byte member out to offset 16 and inflates the struct.
+    let fmask = (1 << fa).to_int64() - 1L
+    let a = sz & fmask
     if a != 0L {
-      let pad = fs - a
+      let pad = fmask + 1L - a
       ty.fields.push(@types.Field::new(@types.FPad, pad.to_int()))
       sz = sz + pad
     }
