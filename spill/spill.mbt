@@ -115,10 +115,10 @@ fn limit(st : SpillState, b : @types.BSet, k : Int32, f : @types.BSet?) -> Unit 
     tarr.push(t)
   })
   if f is None {
-    tarr.sort_by(fn(pa, pb) { tcmp0(st, pa, pb) })
+    @util.qsort_c(tarr, fn(pa, pb) { tcmp0(st, pa, pb) })
   } else {
     st.fst = f
-    tarr.sort_by(fn(pa, pb) { tcmp1(st, pa, pb) })
+    @util.qsort_c(tarr, fn(pa, pb) { tcmp1(st, pa, pb) })
   }
   let mut i = 0
   while i < k && i < nt {

@@ -482,56 +482,6 @@ fn icmp(a : Insert, b : Insert) -> Int32 {
 }
 
 ///|
-// Unstable quicksort (median-of-three, Hoare partition, pivot at the end)
-// emulating the C qsort used by the reference, whose ordering of equal-key
-// phis determines the final phi order in each block.
-fn qsort_log(a : Array[Insert], lo : Int32, hi : Int32) -> Unit {
-  if lo >= hi {
-    return
-  }
-  let mid = lo + (hi - lo) / 2
-  // median of three at lo, mid, hi
-  if icmp(a[mid], a[lo]) < 0 {
-    swap_insert(a, mid, lo)
-  }
-  if icmp(a[hi], a[lo]) < 0 {
-    swap_insert(a, hi, lo)
-  }
-  if icmp(a[hi], a[mid]) < 0 {
-    swap_insert(a, hi, mid)
-  }
-  // move pivot to the end
-  swap_insert(a, mid, hi)
-  let p = hi
-  let mut i = lo
-  let mut j = hi - 1
-  while true {
-    while i <= j && icmp(a[i], a[p]) < 0 {
-      i = i + 1
-    }
-    while j >= i && icmp(a[j], a[p]) > 0 {
-      j = j - 1
-    }
-    if i >= j {
-      break
-    }
-    swap_insert(a, i, j)
-    i = i + 1
-    j = j - 1
-  }
-  swap_insert(a, i, p)
-  qsort_log(a, lo, i - 1)
-  qsort_log(a, i + 1, hi)
-}
-
-///|
-fn swap_insert(a : Array[Insert], i : Int32, j : Int32) -> Unit {
-  let t = a[i]
-  a[i] = a[j]
-  a[j] = t
-}
-
-///|
 // Redundancy elimination of loads (C loadopt).
 // Returns the -dM debug text (empty when print_dbg is false).
 pub fn loadopt(
@@ -555,7 +505,7 @@ pub fn loadopt(
     }
   }
   // Sort the insertion log and append a sentinel
-  qsort_log(st.ilog, 0, st.ilog.length() - 1)
+  @util.qsort_c(st.ilog, icmp)
   st.ilog.push(Insert::{
     isphi: false,
     num: 0,

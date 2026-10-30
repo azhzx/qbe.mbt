@@ -638,6 +638,10 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
 
 ///|
 // qsort comparison for carve: peel loop nests from inside out.
+// Unlike scmp and tcmp, this one is a total order on distinct blocks: ties on
+// loop_depth fall back to rpo_id, which fillrpo makes unique, so it never
+// returns 0 and the stability of the sort cannot be observed. That is why the
+// sort_by below is safe where the other two sorts are not.
 fn carve_cmp(st : RState, a : Int32, b : Int32) -> Int32 {
   let ba = st.fn_.blks[a]
   let bb = st.fn_.blks[b]

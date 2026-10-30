@@ -153,17 +153,10 @@ fn scmp(a : Slot, b : Slot) -> Int32 {
 }
 
 ///|
-// Stable insertion sort with the C scmp ordering (qsort replacement).
+// The C qsort with scmp, unstable and therefore order-compatible: equal slots
+// keep the arrangement the reference produces, which decides the fusing order.
 fn sort_slots(a : Array[Slot], n : Int32) -> Unit {
-  for i in 1..<n {
-    let key = a[i]
-    let mut j = i
-    while j > 0 && scmp(a[j - 1], key) > 0 {
-      a[j] = a[j - 1]
-      j = j - 1
-    }
-    a[j] = key
-  }
+  @util.qsort_c_n(a, n, scmp)
 }
 
 ///|

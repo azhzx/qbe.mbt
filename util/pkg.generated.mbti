@@ -22,6 +22,10 @@ pub async fn iprint(String) -> Unit
 
 pub fn lpad(String, Int32) -> String
 
+pub fn[T] qsort_c(Array[T], (T, T) -> Int32) -> Unit
+
+pub fn[T] qsort_c_n(Array[T], Int32, (T, T) -> Int32) -> Unit
+
 pub fn rpad(Int32, Int32) -> String
 
 pub fn set_debug_info(Bool) -> Unit
