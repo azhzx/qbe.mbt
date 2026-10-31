@@ -1643,24 +1643,6 @@ fn rebuildcfg(st : GState) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn g_filluse(fn_ : @types.Fn) -> Unit {
-  try @ssa.filluse(fn_) catch {
-    _ => ()
-  } noraise {
-    _ => ()
-  }
-}
-
-///|
-fn g_ssacheck(fn_ : @types.Fn) -> Unit {
-  try @ssa.ssacheck(fn_) catch {
-    _ => ()
-  } noraise {
-    _ => ()
-  }
-}
-
-///|
 // Global value numbering (C gvn.c).  Requires rpo/pred/ssa/use/dom; this port
 // refreshes them defensively.  Returns the -dG debug text (empty when
 // print_dbg is false).
@@ -1669,20 +1651,20 @@ pub fn gvn(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = GState::new(fn_)
   con01[0] = @types.Ref::con(fn_.get_con(0))
   con01[1] = @types.Ref::con(fn_.get_con(1))
   @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @cfg.filldom(fn_)
-  g_filluse(fn_)
+  @ssa.filluse(fn_)
   @cfg.fillloop(fn_)
   narrowpars(st)
-  g_filluse(fn_)
+  @ssa.filluse(fn_)
   // narrowpars may have created temporaries; keep the phi visit table sized.
   st.phi_visit = Array::make(fn_.ntmp(), 0)
-  g_ssacheck(fn_)
+  @ssa.ssacheck(fn_)
   let mut nins = 0
   for id in fn_.def_order {
     fn_.blks[id].visit = 0

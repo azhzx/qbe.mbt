@@ -547,12 +547,12 @@ pub fn gcm(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = GcmState::new(fn_)
   @cfg.fillrpo(fn_)
   @cfg.fillpreds(fn_)
   @cfg.filldom(fn_)
-  g_filluse(fn_)
+  @ssa.filluse(fn_)
   @cfg.fillloop(fn_)
   gcm_filldepth(st)
   gcm_def_idx(st)
@@ -581,10 +581,10 @@ pub fn gcm(
     }
   }
   gcmmove(st)
-  g_filluse(fn_)
+  @ssa.filluse(fn_)
   gcm_def_idx(st)
   sink(st)
-  g_filluse(fn_)
+  @ssa.filluse(fn_)
   gcm_def_idx(st)
   schedblk(st)
   if print_dbg {
