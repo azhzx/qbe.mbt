@@ -7,9 +7,9 @@ import {
 }
 
 // Values
-pub fn gcm(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+pub fn gcm(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
-pub fn gvn(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+pub fn gvn(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
 // Errors
 

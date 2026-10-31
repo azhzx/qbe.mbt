@@ -38,9 +38,9 @@ pub fn Builder::arith(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int
 pub fn Builder::atomic_load(Self, Int32, @types.Class, Int32) -> Int32
 pub fn Builder::atomic_store(Self, Int32, @types.Class, Int32, Int32) -> Unit
 pub fn Builder::block_param(Self, Int32, Int32, @types.Class) -> Int32
-pub fn Builder::call(Self, Int32, String, Array[(@types.Class, Int32)], Ret) -> Int32
-pub fn Builder::call_value(Self, Int32, Int32, Array[(@types.Class, Int32)], Ret) -> Int32
-pub fn Builder::call_vararg(Self, Int32, String, Array[(@types.Class, Int32)], Array[(@types.Class, Int32)], Ret) -> Int32
+pub fn Builder::call(Self, Int32, String, Array[(@types.Class, Int32)], Ret, retty? : Int32) -> Int32
+pub fn Builder::call_value(Self, Int32, Int32, Array[(@types.Class, Int32)], Ret, retty? : Int32) -> Int32
+pub fn Builder::call_vararg(Self, Int32, String, Array[(@types.Class, Int32)], Array[(@types.Class, Int32)], Ret, retty? : Int32) -> Int32
 pub fn Builder::cmp(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int32
 pub fn Builder::current_block(Self, Int32) -> Int32
 pub fn Builder::data_align(Self, Int64) -> Unit

@@ -52,7 +52,10 @@ pub(all) enum UseKind {
 pub(all) struct Use {
   kind : UseKind
   blk_id : Int32
-  ins_idx : Int32
+  // Mutable because narrowpars moves the start block's tail up by npar: C
+  // keeps a pointer into the old array (alive in the function arena), this
+  // port keeps an index and has to re-address it.
+  mut ins_idx : Int32
   arg_num : Int32
 } derive(Debug, Eq)
 

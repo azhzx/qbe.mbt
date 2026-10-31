@@ -1589,6 +1589,18 @@ fn narrowpars(st : GState) -> Unit {
   for k in npar..<old.length() {
     b.ins.push(old[k])
   }
+  // C keeps a pointer in each Use, so the old array staying alive in the
+  // function arena keeps the queries correct. This port keeps (block, index),
+  // so the tail that moved up by npar has to be re-addressed here; otherwise
+  // uwl follows whichever instruction now sits at the old index, can walk
+  // into a cycle and recurse until the stack is gone.
+  for t in 0..<fn_.ntmp() {
+    for u in fn_.tmps[t].uses {
+      if u.kind == @types.UIns && u.blk_id == fn_.start_id && u.ins_idx >= npar {
+        u.ins_idx = u.ins_idx + npar
+      }
+    }
+  }
   for k in 0..<npar {
     let par = b.ins[k]
     let ext = nop_ins()
@@ -1655,10 +1667,10 @@ pub fn gvn(
   let st = GState::new(fn_)
   con01[0] = @types.Ref::con(fn_.get_con(0))
   con01[1] = @types.Ref::con(fn_.get_con(1))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
-  @cfg.filldom(fn_)
-  @ssa.filluse(fn_)
+  // C gvn.c prologue, in this order: reset the copy.c visit bits, fillloop,
+  // narrowpars, filluse, ssacheck. The pipeline already ran filldom/ssacheck
+  // before gvn, so no cfg or use rebuild belongs here.
+  clear_phi_visit(st)
   @cfg.fillloop(fn_)
   narrowpars(st)
   @ssa.filluse(fn_)

@@ -1189,7 +1189,7 @@ pub fn Typ::new(String) -> Self
 pub(all) struct Use {
   kind : UseKind
   blk_id : Int32
-  ins_idx : Int32
+  mut ins_idx : Int32
   arg_num : Int32
 } derive(Eq, @debug.Debug)
 
