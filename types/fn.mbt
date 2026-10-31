@@ -177,7 +177,11 @@ pub fn Fn::get_con_by(self : Self, con : Con) -> Int32 {
 // zero constant: coalesce turns a load with no reaching store into
 // "copy UNDEF", while CON_Z is the ordinary zero constant.
 pub fn Fn::undef(self : Self) -> Int32 {
-  self.get_con_by(Con::new())
+  // C spells this `#define UNDEF (Ref){RCon, 0}` and has parse.c set
+  // con[0].bits.i to 0xdeaddead, so a stray UNDEF reaching the emitter prints a
+  // number there. Materialising it as a CUndef constant instead made emitcon's
+  // "unreachable" fire on input the reference compiles.
+  self.get_con_by(Con::int(0xdeaddeadL))
 }
 
 ///|

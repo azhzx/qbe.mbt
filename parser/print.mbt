@@ -57,7 +57,8 @@ fn printcon(
   sb : StringBuilder,
 ) -> Unit {
   match c.kind {
-    // C parse.c prints the sentinel constant (UNDEF, con[0]) as "UNDEF".
+    // C parse.c prints the sentinel constant (UNDEF, con[0]) as "UNDEF"; the
+    // sentinel is an ordinary CBits holding 0xdeaddead (see Fn::undef).
     @types.CUndef => sb.write_string("UNDEF")
     @types.CAddr => {
       sb.write_string("$")
@@ -80,7 +81,11 @@ fn printcon(
       }
     }
     @types.CBits =>
-      if c.flt == 1 {
+      if c.flt == 0 && c.bits.i == 0xdeaddeadL {
+        // C parse.c printcon prints its UNDEF sentinel (con[0] = 0xdeaddead)
+        // as "UNDEF"; Fn::undef reuses that value.
+        sb.write_string("UNDEF")
+      } else if c.flt == 1 {
         sb.write_string("s_")
         sb.write_string(@util.fmt_fixed(c.bits.s.to_double(), 6))
       } else if c.flt == 2 {
