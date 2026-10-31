@@ -13,7 +13,7 @@ pub enum AliasResult {
 ///|
 // Fetch the alias info of a reference, following stack slots up to the
 // underlying alloc's current type (C getalias).
-fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
+pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
   match r {
     @types.RTmp(v) => {
       let a = fn_.tmps[v].alias_info

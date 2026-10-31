@@ -79,14 +79,15 @@ fn slot_of(
   fn_ : @types.Fn,
   al : Array[AliasL],
 ) -> (Int32, Int64)? {
-  let a = local_getalias(r, fn_, al)
+  let a = @cfg.getalias(r, fn_)
   if a.kind != @types.ALoc {
     return None
   }
-  if a.base < 0 || a.base >= fn_.ntmp() {
+  let base = if a.base.is_tmp() { a.base.tmp_val() } else { -1 }
+  if base < 0 || base >= fn_.ntmp() {
     return None
   }
-  let t = fn_.tmps[a.base]
+  let t = fn_.tmps[base]
   if t.visit < 0 {
     return None
   }
@@ -202,7 +203,7 @@ pub fn coalesce(
   for _ in 0..<fn_.ntmp() {
     al.push(alias_default())
   }
-  local_fillalias(fn_, al)
+  load_alias_from_fn(fn_, al)
   // types.Tmp has no def pointer, so record where each tmp is defined.
   let def_blk : Array[Int32] = []
   let def_idx : Array[Int32] = []

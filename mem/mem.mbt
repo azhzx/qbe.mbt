@@ -45,12 +45,12 @@ fn load_to_ext(op : @types.Op) -> @types.Op {
 ///|
 // Local alias record mirroring the parts of C's Alias used by mem.c.
 priv struct AliasL {
-  mut kind : @types.AliasType
-  mut base : Int32
-  mut offset : Int64
-  mut slot : Int32
-  mut sz : Int32
-  mut m : UInt64
+  kind : @types.AliasType
+  base : Int32
+  offset : Int64
+  slot : Int32
+  sz : Int32
+  m : UInt64
 }
 
 ///|
@@ -71,169 +71,18 @@ fn alias_copy(a : AliasL) -> AliasL {
 }
 
 ///|
-// C getalias, adapted to the local AliasL (cfg/alias.mbt copy).
-fn local_getalias(
-  r : @types.Ref,
-  fn_ : @types.Fn,
-  al : Array[AliasL],
-) -> AliasL {
-  match r {
-    @types.RTmp(v) => {
-      let a = alias_copy(al[v])
-      if a.kind.astack() {
-        if a.slot >= 0 {
-          a.kind = al[a.slot].kind
-        }
-      }
-      a
-    }
-    @types.RCon(v) => {
-      let c = fn_.cons[v]
-      AliasL::{
-        kind: if c.kind == @types.CAddr {
-          @types.ASym
-        } else {
-          @types.ACon
-        },
-        base: -1,
-        offset: c.bits.i,
-        slot: -1,
-        sz: -1,
-        m: 0UL,
-      }
-    }
-    _ => alias_default()
-  }
-}
-
-///|
-// C esc.
-fn local_esc(r : @types.Ref, al : Array[AliasL]) -> Unit {
-  match r {
-    @types.RTmp(v) => {
-      let a = al[v]
-      if a.kind.astack() && a.slot >= 0 {
-        al[a.slot].kind = @types.AEsc
-      }
-    }
-    _ => ()
-  }
-}
-
-///|
-// C fillalias's store mask accumulation.
-fn local_store(r : @types.Ref, sz : Int32, al : Array[AliasL]) -> Unit {
-  match r {
-    @types.RTmp(v) => {
-      let a = al[v]
-      if a.slot >= 0 {
-        let off = a.offset
-        let m = if sz >= 64 || off < 0L || off >= 64L {
-          0xFFFFFFFFFFFFFFFFUL
-        } else {
-          ((1UL << sz) - 1UL) << off.to_int()
-        }
-        al[a.slot].m = al[a.slot].m | m
-      }
-    }
-    _ => ()
-  }
-}
-
-///|
-// Port of C fillalias keeping the slot size and store mask that coalesce needs.
-// The blit0 branch of the reference is omitted (the MoonBit Op has no blit0).
-fn local_fillalias(fn_ : @types.Fn, al : Array[AliasL]) -> Unit {
+// C mem.c reads the alias table fillalias built; there is no second pass here.
+// This adapts AliasInfo to the shape coalescing wants (base as a temp index).
+fn load_alias_from_fn(fn_ : @types.Fn, al : Array[AliasL]) -> Unit {
   for t in 0..<fn_.ntmp() {
-    al[t].kind = @types.ABot
-    al[t].base = -1
-    al[t].offset = 0
-    al[t].slot = -1
-    al[t].sz = -1
-    al[t].m = 0UL
-  }
-  for n in 0..<fn_.rpo.length() {
-    let b = fn_.blks[fn_.rpo[n]]
-    for p in b.phi {
-      let to = p.to.tmp_val()
-      al[to].kind = @types.AUnk
-      al[to].base = to
-      al[to].offset = 0
-      al[to].slot = -1
-    }
-    for ins in b.ins {
-      if !ins.to.is_none() {
-        let to = ins.to.tmp_val()
-        if ins.op == @types.Alloc4 ||
-          ins.op == @types.Alloc8 ||
-          ins.op == @types.Alloc16 {
-          al[to].kind = @types.ALoc
-          al[to].slot = to
-          al[to].sz = -1
-          if ins.arg1.is_con() {
-            let c = fn_.cons[ins.arg1.con_val()]
-            if c.kind == @types.CBits {
-              let x = c.bits.i
-              if x >= 0L && x <= 64L {
-                al[to].sz = x.to_int()
-              }
-            }
-          }
-        } else {
-          al[to].kind = @types.AUnk
-          al[to].slot = -1
-        }
-        al[to].base = to
-        al[to].offset = 0
-      }
-      if ins.op == @types.Copy {
-        let to = ins.to.tmp_val()
-        al[to] = local_getalias(ins.arg1, fn_, al)
-      }
-      if ins.op == @types.Add {
-        let a0 = local_getalias(ins.arg1, fn_, al)
-        let a1 = local_getalias(ins.arg2, fn_, al)
-        let to = ins.to.tmp_val()
-        if a0.kind == @types.ACon {
-          al[to] = a1
-          al[to].offset = al[to].offset + a0.offset
-        } else if a1.kind == @types.ACon {
-          al[to] = a0
-          al[to].offset = al[to].offset + a1.offset
-        }
-      }
-      let has_to = !ins.to.is_none()
-      let cur = if has_to { al[ins.to.tmp_val()].kind } else { @types.AUnk }
-      if !has_to || cur == @types.AUnk {
-        // C alias.c skips a blit here: it writes through arg2 and reads arg1,
-        // so neither address escapes. This copy of fillalias has to skip it
-        // too, or the blit's destination never becomes a coalescing slot and
-        // its dead copy survives into the assembly.
-        if ins.op != @types.Blit0 {
-          if !ins.op.is_load() {
-            local_esc(ins.arg1, al)
-          }
-          if !ins.op.is_store() {
-            if ins.op != @types.Argc {
-              local_esc(ins.arg2, al)
-            }
-          }
-        }
-      }
-      if ins.op.is_store() {
-        local_store(ins.arg2, storesz(ins), al)
-      }
-    }
-    if b.jmp.kind != @types.Jretc {
-      local_esc(b.jmp.arg, al)
-    }
-  }
-  for id in fn_.def_order {
-    let b = fn_.blks[id]
-    for p in b.phi {
-      for a in p.args {
-        local_esc(a.value, al)
-      }
+    let a = fn_.tmps[t].alias_info
+    al[t] = AliasL::{
+      kind: a.kind,
+      base: if a.base.is_tmp() { a.base.tmp_val() } else { -1 },
+      offset: a.offset,
+      slot: a.slot,
+      sz: a.sz,
+      m: a.m,
     }
   }
 }
