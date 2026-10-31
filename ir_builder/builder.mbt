@@ -485,6 +485,9 @@ pub fn Builder::call(
   callee : String,
   args : Array[(@types.Class, Int32)],
   ret : Ret,
+  // For an aggregate result: the type index. The IL writes it as
+  // `%r =:type.N call $f(...)` and the ABI pass reads it off the call.
+  retty~ : Int32 = -1,
 ) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -509,8 +512,13 @@ pub fn Builder::call(
     @types.Ref::tmp(f.new_tmp("t", ret_cls))
   }
   let call_cls = if ret_cls == @types.Kx { @types.Kw } else { ret_cls }
+  let ret_ty_ref = if retty >= 0 {
+    @types.Ref::typ(retty)
+  } else {
+    @types.Ref::none()
+  }
   f.blks[bid].ins.push(
-    @types.Ins::new(@types.Call, call_cls, to, callee_ref, @types.Ref::none()),
+    @types.Ins::new(@types.Call, call_cls, to, callee_ref, ret_ty_ref),
   )
   if ret_cls == @types.Kx {
     -1
@@ -540,6 +548,9 @@ pub fn Builder::call_value(
   callee : Int32,
   args : Array[(@types.Class, Int32)],
   ret : Ret,
+  // For an aggregate result: the type index. The IL writes it as
+  // `%r =:type.N call $f(...)` and the ABI pass reads it off the call.
+  retty~ : Int32 = -1,
 ) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -562,14 +573,13 @@ pub fn Builder::call_value(
     @types.Ref::tmp(f.new_tmp("t", ret_cls))
   }
   let call_cls = if ret_cls == @types.Kx { @types.Kw } else { ret_cls }
+  let ret_ty_ref = if retty >= 0 {
+    @types.Ref::typ(retty)
+  } else {
+    @types.Ref::none()
+  }
   f.blks[bid].ins.push(
-    @types.Ins::new(
-      @types.Call,
-      call_cls,
-      to,
-      self.val_ref(callee),
-      @types.Ref::none(),
-    ),
+    @types.Ins::new(@types.Call, call_cls, to, self.val_ref(callee), ret_ty_ref),
   )
   if ret_cls == @types.Kx {
     -1
@@ -589,6 +599,7 @@ pub fn Builder::call_vararg(
   fixed : Array[(@types.Class, Int32)],
   varargs : Array[(@types.Class, Int32)],
   ret : Ret,
+  retty~ : Int32 = -1,
 ) -> Int32 {
   let f = self.funcs[fid]
   let bid = self.cur[fid]
@@ -633,8 +644,13 @@ pub fn Builder::call_vararg(
     @types.Ref::tmp(f.new_tmp("t", ret_cls))
   }
   let call_cls = if ret_cls == @types.Kx { @types.Kw } else { ret_cls }
+  let ret_ty_ref = if retty >= 0 {
+    @types.Ref::typ(retty)
+  } else {
+    @types.Ref::none()
+  }
   f.blks[bid].ins.push(
-    @types.Ins::new(@types.Call, call_cls, to, callee_ref, @types.Ref::none()),
+    @types.Ins::new(@types.Call, call_cls, to, callee_ref, ret_ty_ref),
   )
   if ret_cls == @types.Kx {
     -1
