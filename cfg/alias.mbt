@@ -26,6 +26,8 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           label: a.label,
           offset: a.offset,
           slot: a.slot,
+          sz: a.sz,
+          m: a.m,
         }
       } else {
         @types.AliasInfo::{
@@ -34,6 +36,8 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           label: a.label,
           offset: a.offset,
           slot: a.slot,
+          sz: a.sz,
+          m: a.m,
         }
       }
     }
@@ -46,6 +50,8 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           label: c.label,
           offset: c.bits.i,
           slot: -1,
+          sz: -1,
+          m: 0UL,
         }
       } else {
         @types.AliasInfo::{
@@ -54,6 +60,8 @@ fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           label: 0,
           offset: c.bits.i,
           slot: -1,
+          sz: -1,
+          m: 0UL,
         }
       }
     }
@@ -131,6 +139,24 @@ fn esc(r : @types.Ref, fn_ : @types.Fn) -> Unit {
 }
 
 ///|
+// C alias.c store(): record in the slot mask which bytes something writes
+// through a pointer that aliases it.
+fn store_mask(r : @types.Ref, sz : Int32, fn_ : @types.Fn) -> Unit {
+  if r.is_tmp() {
+    let a = fn_.tmps[r.tmp_val()].alias_info
+    if a.slot >= 0 {
+      let off = a.offset
+      let m = if sz >= 64 || off < 0L || off >= 64L {
+        0xFFFFFFFFFFFFFFFFUL
+      } else {
+        ((1UL << sz.to_int64().to_int()) - 1UL) << off.to_int()
+      }
+      fn_.tmps[a.slot].alias_info.m = fn_.tmps[a.slot].alias_info.m | m
+    }
+  }
+}
+
+///|
 // Fill alias information for all temporaries (C fillalias).
 pub fn fillalias(fn_ : @types.Fn) -> Unit {
   for n in 0..<fn_.rpo.length() {
@@ -144,10 +170,14 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
         label: 0,
         offset: 0,
         slot: -1,
+        sz: -1,
+        m: 0UL,
       }
     }
-    // Instructions
-    for ins in b.ins {
+    // Instructions (indexed: a blit consumes its blit1 as well)
+    let mut ii = 0
+    while ii < b.ins.length() {
+      let ins = b.ins[ii]
       let mut has_to = false
       if !ins.to.is_none() {
         let to = ins.to.tmp_val()
@@ -155,6 +185,17 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
         if is_alloc(ins.op) {
           fn_.tmps[to].alias_info.kind = @types.ALoc
           fn_.tmps[to].alias_info.slot = to // points to itself
+          // C alias.c: the slot size comes from the alloc's constant argument.
+          fn_.tmps[to].alias_info.sz = -1
+          if ins.arg1.is_con() {
+            let c = fn_.cons[ins.arg1.con_val()]
+            if c.kind == @types.CBits {
+              let x = c.bits.i
+              if x >= 0L && x <= 64L {
+                fn_.tmps[to].alias_info.sz = x.to_int()
+              }
+            }
+          }
         } else {
           fn_.tmps[to].alias_info.kind = @types.AUnk
           fn_.tmps[to].alias_info.slot = -1
@@ -191,13 +232,37 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
             esc(ins.arg1, fn_)
           }
           if !ins.op.is_store() {
-            esc(ins.arg2, fn_)
+            if ins.op != @types.Argc {
+              esc(ins.arg2, fn_)
+            }
           }
         }
       }
+      // C alias.c: a blit writes its size through the destination.
+      if ins.op == @types.Blit0 {
+        let b1 = b.ins[ii + 1]
+        let raw = b1.arg1.rint_val()
+        let sz = if raw < 0 { -raw } else { raw }
+        store_mask(ins.arg2, sz, fn_)
+        ii = ii + 1
+      }
+      if ins.op.is_store() {
+        store_mask(ins.arg2, @types.op_storesz(ins), fn_)
+      }
+      ii = ii + 1
     }
-    // Jump argument
-    esc(b.jmp.arg, fn_)
+    // C alias.c: a Jretc returns a memory copy, not an escape.
+    if b.jmp.kind != @types.Jretc {
+      esc(b.jmp.arg, fn_)
+    }
+  }
+  // C alias.c: phi arguments escape.
+  for blk in fn_.blks {
+    for p in blk.phi {
+      for a in p.args {
+        esc(a.value, fn_)
+      }
+    }
   }
 }
 

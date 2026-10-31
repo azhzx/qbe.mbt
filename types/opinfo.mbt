@@ -1436,3 +1436,26 @@ pub fn Op::index(self : Op) -> Int32 {
     Fence => 148
   }
 }
+
+///|
+// Size in bytes of a load (C load.c loadsz).
+pub fn op_loadsz(i : Ins) -> Int32 {
+  match i.op {
+    Loadsb | Loadub => 1
+    Loadsh | Loaduh => 2
+    Loadsw | Loaduw => 4
+    Load => if i.cls.wide() == 1 { 8 } else { 4 }
+    _ => 0
+  }
+}
+
+///|
+// Size in bytes of a store (C load.c storesz).
+pub fn op_storesz(i : Ins) -> Int32 {
+  match i.op {
+    Storeb => 1
+    Storeh => 2
+    Storew | Stores => 4
+    _ => 8
+  }
+}

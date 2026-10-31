@@ -98,11 +98,23 @@ pub(all) struct AliasInfo {
   // The underlying stack-slot temporary id (the alloc), or -1.
   // Mirrors C's Alias.slot pointer; for an alloc it points to itself.
   mut slot : Int32
+  // C's Alias.u.loc: the slot size (-1 when unknown) and the mask of the
+  // bytes something has stored through the slot. fillalias fills both.
+  mut sz : Int32
+  mut m : UInt64
 } derive(Debug)
 
 ///|
 pub fn AliasInfo::default() -> AliasInfo {
-  AliasInfo::{ kind: ABot, base: Ref::none(), label: 0, offset: 0, slot: -1, }
+  AliasInfo::{
+    kind: ABot,
+    base: Ref::none(),
+    label: 0,
+    offset: 0,
+    slot: -1,
+    sz: -1,
+    m: 0UL,
+  }
 }
 
 ///|
