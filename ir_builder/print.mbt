@@ -15,6 +15,10 @@ pub fn Ret::text(self : Ret) -> String {
     Long => "l"
     Single => "s"
     Double => "d"
+    // An aggregate return carries no class letter: the signature spells it
+    // `function :type.N $f(...)` instead, so il_func handles it. Reaching here
+    // means a caller expected a letter for a wide return, which is a bug.
+    Wide => abort("Ret::text: a wide return has no class letter")
   }
 }
 
@@ -232,10 +236,24 @@ fn Builder::il_func(self : Builder, fid : Int32, sb : StringBuilder) -> Unit {
     sb.write_string("export ")
   }
   sb.write_string("function")
-  let rc = self.rets[fid].text()
-  if rc != "" {
-    sb.write_char(' ')
-    sb.write_string(rc)
+  // `function :type.N $f(...)` for an aggregate return, `function w $f(...)`
+  // for a scalar one (the IL spells the return type either way).
+  match self.rets[fid] {
+    Wide => {
+      if f.ret_ty < 0 {
+        abort("il_func: a wide return needs a ret_ty; use add_func_ty")
+      }
+      sb.write_char(' ')
+      sb.write_string(":type.")
+      sb.write_string(f.ret_ty.to_string())
+    }
+    r => {
+      let rc = r.text()
+      if rc != "" {
+        sb.write_char(' ')
+        sb.write_string(rc)
+      }
+    }
   }
   sb.write_string(" $")
   sb.write_string(f.name)

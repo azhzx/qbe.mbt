@@ -18,6 +18,10 @@ pub(all) enum Ret {
   Long
   Single
   Double
+  // An aggregate returned through memory: the IL spells this `ret %x` with a
+  // `function :type` signature, and the target's ABI pass decides whether the
+  // value goes in registers or through a hidden pointer (C retc).
+  Wide
 } derive(Eq, Debug)
 
 ///|
@@ -29,6 +33,7 @@ pub fn Ret::cls(self : Ret) -> @types.Class {
     Long => @types.Kl
     Single => @types.Ks
     Double => @types.Kd
+    Wide => @types.Kl
   }
 }
 
@@ -41,6 +46,7 @@ pub fn Ret::jump_kind(self : Ret) -> @types.JumpKind {
     Long => @types.Jretl
     Single => @types.Jrets
     Double => @types.Jretd
+    Wide => @types.Jretc
   }
 }
 
@@ -206,8 +212,25 @@ pub fn Builder::add_func(
   is_export : Bool,
   is_vararg~ : Bool = false,
 ) -> Int32 {
+  self.add_func_ty(name, -1, ret, params, is_export, is_vararg~)
+}
+
+///|
+// Like add_func, but the function returns an aggregate of the given type
+// (`function :type $f(...)` in the IL). retty is the type index; the target's
+// ABI pass needs it to decide how the value is returned.
+pub fn Builder::add_func_ty(
+  self : Builder,
+  name : String,
+  retty : Int32,
+  ret : Ret,
+  params : Array[@types.Class],
+  is_export : Bool,
+  is_vararg~ : Bool = false,
+) -> Int32 {
   let f = @types.Fn::new(name)
   f.is_export = is_export
+  f.ret_ty = retty
   f.is_vararg = is_vararg
   f.init_regs()
   let _ = f.get_con(0L)
@@ -863,6 +886,19 @@ pub fn Builder::ret(self : Builder, fid : Int32, v : Int32) -> Unit {
   let bid = self.cur[fid]
   let jk = self.rets[fid].jump_kind()
   self.funcs[fid].blks[bid].jmp = @types.Jump::full(jk, self.val_ref(v), -1, -1)
+}
+
+///|
+// Return an aggregate by value (C Jretc): `ret %x` with `function :type`.
+// Unlike ret, the value must be a reference to the memory holding it.
+pub fn Builder::ret_wide(self : Builder, fid : Int32, v : Int32) -> Unit {
+  let bid = self.cur[fid]
+  self.funcs[fid].blks[bid].jmp = @types.Jump::full(
+    @types.Jretc,
+    self.val_ref(v),
+    -1,
+    -1,
+  )
 }
 
 ///|

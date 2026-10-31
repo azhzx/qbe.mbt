@@ -216,3 +216,17 @@ test "builder: variadic signature, va ops and call_vararg round-trip" {
   }
   assert_eq(strip_regs(direct), strip_regs(parsed))
 }
+
+
+test "builder: aggregate return prints a typed signature and retc" {
+  let b = Builder::new()
+  let f = b.add_func_ty("mk", 0, Wide, [], true)
+  let v = b.iconst(f, 0L)
+  b.ret_wide(f, v)
+  let il = b.emit_il()
+  // the IL spelling the parser accepts for an aggregate return
+  assert_true(il.contains("function :type.0 $mk("))
+  // white box: the ABI pass looks for exactly this jump kind
+  let bid = b.cur[f]
+  assert_eq(b.funcs[f].blks[bid].jmp.kind, @types.Jretc)
+}
