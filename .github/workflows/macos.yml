@@ -1,0 +1,112 @@
+# macOS-only jobs: the C ABI builder and the Rust glue both need an arm64
+# macOS runner, so they live in their own workflow. The compiler gates are in
+# ci.yml and run on Linux; splitting them keeps a macOS runner that never gets
+# scheduled from hiding whether the Linux gates passed.
+name: macos
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capi:
+    name: C ABI builder (macOS arm64)
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
+
+      - name: Sync dependencies
+        run: moon update
+
+      # Builds ir_builder_capi (foreign library), then compiles the C driver
+      # against include/qbe_builder.h, emits add.o + fib.o through the C ABI,
+      # links them with the driver and checks the results.
+      - name: Build & run C ABI smoke test
+        run: bash scripts/build_capi.sh
+
+      # demo/12_builder_capi.c builds a phi loop ($tri) and $add from C,
+      # prints the generated assembly, emits Mach-O objects and runs them.
+      - name: Build & run C builder demo
+        run: bash scripts/run_builder_demo.sh
+
+      # Emits arm64 assembly with -g, links it, and checks that lldb sets a
+      # source breakpoint and unwinds (DWARF line table + CU + CFI).
+      - name: Debug info (lldb) smoke test
+        run: bash scripts/run_dbg_demo.sh
+
+  rust:
+    name: Rust bindings (macOS arm64)
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Toolchain versions
+        run: |
+          moon version --all
+          rustc --version
+          cargo --version
+
+      - name: Sync dependencies
+        run: moon update
+
+      # build.rs runs `moon build --target native ir_builder_capi` and links the
+      # object plus the MoonBit runtime into the crate.
+      - name: Check formatting
+        run: cargo fmt --manifest-path rust/Cargo.toml --all --check
+
+      - name: Build & test Rust bindings
+        run: cargo test --manifest-path rust/Cargo.toml
+
+      - name: Build & test qopple-cli
+        run: cargo test --manifest-path rust/qopple-cli/Cargo.toml
+
+      # demo/13_builder_rust builds $add/$tri/$fib in Rust, prints the QBE IL
+      # and JITs the functions.
+      - name: Build & run Rust builder demo
+        run: cargo run --manifest-path demo/13_builder_rust/Cargo.toml
+
+      # Declares a variable through the Rust debug API, links the -g assembly
+      # and checks that lldb can show it (DWARF .debug_info + .debug_loc).
+      - name: Debug variables (lldb) smoke test
+        run: bash scripts/run_dbg_vars_demo.sh
+
