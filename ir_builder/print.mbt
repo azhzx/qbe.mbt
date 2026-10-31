@@ -206,7 +206,7 @@ fn Builder::il_term(
 ) -> Unit {
   match b.jmp.kind {
     @types.Jret0 => sb.write_string("\tret\n")
-    @types.Jretw | @types.Jretl | @types.Jrets | @types.Jretd => {
+    @types.Jretw | @types.Jretl | @types.Jrets | @types.Jretd | @types.Jretc => {
       sb.write_string("\tret ")
       self.il_ref(f, b.jmp.arg, sb)
       sb.write_char('\n')
@@ -413,6 +413,44 @@ fn Builder::il_data(self : Builder, start : Int32, sb : StringBuilder) -> Int32 
 }
 
 ///|
+// Print one aggregate type definition. The IL has no explicit padding, it is
+// implied by the alignment rules, so FPad is skipped. Unions would need the
+// nested-brace form and a record of where each member starts, which the field
+// table does not keep; refuse rather than print a struct instead.
+fn Builder::il_type(self : Builder, ti : Int32, sb : StringBuilder) -> Unit {
+  let t = self.typs[ti]
+  if t.nunion > 1 {
+    abort("il_type: printing a union type is not supported")
+  }
+  sb.write_string("type :")
+  sb.write_string(t.name)
+  sb.write_string(" = align ")
+  sb.write_string((1 << t.align).to_string())
+  sb.write_string(" {")
+  let mut first = true
+  for f in t.fields {
+    let part = match f.kind {
+      @types.FEnd | @types.FPad => ""
+      @types.FTyp => " :type." + f.len.to_string() + " 1"
+      @types.Fb => " b 1"
+      @types.Fh => " h 1"
+      @types.Fw => " w 1"
+      @types.Fl => " l 1"
+      @types.Fs => " s 1"
+      @types.Fd => " d 1"
+    }
+    if part != "" {
+      if !first {
+        sb.write_string(",")
+      }
+      sb.write_string(part)
+      first = false
+    }
+  }
+  sb.write_string(" }\n")
+}
+
+///|
 // Serialize the module to QBE IL text. The output is accepted by the textual
 // parser, so `emit_il` followed by `@qbe.compile_arm64` reproduces `emit_asm`.
 pub fn Builder::emit_il(self : Builder) -> String {
@@ -420,10 +458,14 @@ pub fn Builder::emit_il(self : Builder) -> String {
   let sb = StringBuilder::StringBuilder()
   let mut fi = 0
   let mut di = 0
+  let mut ti = 0
   for item in self.order {
     if item == "f" {
       self.il_func(fi, sb)
       fi = fi + 1
+    } else if item == "t" {
+      self.il_type(ti, sb)
+      ti = ti + 1
     } else {
       di = self.il_data(di, sb)
     }

@@ -78,7 +78,11 @@ fn load_alias_from_fn(fn_ : @types.Fn, al : Array[AliasL]) -> Unit {
     let a = fn_.tmps[t].alias_info
     al[t] = AliasL::{
       kind: a.kind,
-      base: if a.base.is_tmp() { a.base.tmp_val() } else { -1 },
+      base: if a.base.is_tmp() {
+        a.base.tmp_val()
+      } else {
+        -1
+      },
       offset: a.offset,
       slot: a.slot,
       sz: a.sz,

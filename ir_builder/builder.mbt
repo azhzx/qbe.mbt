@@ -902,6 +902,34 @@ pub fn Builder::ret_wide(self : Builder, fid : Int32, v : Int32) -> Unit {
 }
 
 ///|
+// Append an aggregate type definition and return its index, the number the
+// IL's `:type.N` refers to. `fields` lists (kind, len) pairs the way the IL
+// field table does: Fb/Fh/Fw/Fl/Fs/Fd carry their size in len, FTyp carries the
+// index of another type, and FPad carries the padding size. nunion is the
+// number of union members (1 for a plain struct). The end marker is appended
+// here, so callers never spell FEnd.
+pub fn Builder::add_type(
+  self : Builder,
+  name : String,
+  align : Int32,
+  fields : Array[(@types.FieldType, Int32)],
+  nunion~ : Int32 = 1,
+) -> Int32 {
+  let t = @types.Typ::new(name)
+  t.align = align
+  t.nunion = nunion
+  for f in fields {
+    t.fields.push(@types.Field::new(f.0, f.1))
+  }
+  t.fields.push(@types.Field::end())
+  // the size is not a caller argument: the IL derives it from the fields
+  t.compute_layout(self.typs)
+  self.typs.push(t)
+  self.order.push("t")
+  self.typs.length() - 1
+}
+
+///|
 // Append a data section holding the given bytes as `b` items.
 pub fn Builder::data_bytes(
   self : Builder,

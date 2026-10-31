@@ -217,7 +217,7 @@ test "builder: variadic signature, va ops and call_vararg round-trip" {
   assert_eq(strip_regs(direct), strip_regs(parsed))
 }
 
-
+///|
 test "builder: aggregate return prints a typed signature and retc" {
   let b = Builder::new()
   let f = b.add_func_ty("mk", 0, Wide, [], true)
@@ -229,4 +229,23 @@ test "builder: aggregate return prints a typed signature and retc" {
   // white box: the ABI pass looks for exactly this jump kind
   let bid = b.cur[f]
   assert_eq(b.funcs[f].blks[bid].jmp.kind, @types.Jretc)
+}
+
+///|
+test "builder: add_type makes a usable :type for a wide return" {
+  let b = Builder::new()
+  // struct { long a; long b; }
+  let t = b.add_type("pair", 3, [(@types.Fl, 8), (@types.Fl, 8)])
+  assert_eq(t, 0)
+  // the size is derived from the fields, not passed in
+  assert_eq(b.typs[t].size, 16L)
+  assert_eq(b.typs[t].align, 3)
+  let f = b.add_func_ty("mk", t, Wide, [], true)
+  let v = b.iconst(f, 0L)
+  b.ret_wide(f, v)
+  let il = b.emit_il()
+  // the type definition and a signature that refers to it
+  assert_true(il.contains(":type.0"))
+  assert_true(il.contains("type :pair = align 8 {"))
+  assert_true(il.contains("function :type.0 $mk("))
 }

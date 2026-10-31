@@ -576,6 +576,10 @@ pub let la64_rsave : Array[Int32]
 
 pub fn op_info(Op) -> OpInfo
 
+pub fn op_loadsz(Ins) -> Int32
+
+pub fn op_storesz(Ins) -> Int32
+
 pub fn phicls(Int32, Array[Tmp]) -> Int32
 
 pub let rclob : Array[Int32]
@@ -627,6 +631,8 @@ pub(all) struct AliasInfo {
   mut label : Int32
   mut offset : Int64
   mut slot : Int32
+  mut sz : Int32
+  mut m : UInt64
 } derive(@debug.Debug)
 pub fn AliasInfo::default() -> Self
 
@@ -1177,6 +1183,7 @@ pub(all) struct Typ {
   mut nunion : Int32
   fields : Array[Field]
 } derive(Eq, @debug.Debug)
+pub fn Typ::compute_layout(Self, Array[Self]) -> Unit
 pub fn Typ::new(String) -> Self
 
 pub(all) struct Use {

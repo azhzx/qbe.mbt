@@ -25,6 +25,8 @@ pub fn fillpreds(@types.Fn) -> Unit
 
 pub fn fillrpo(@types.Fn) -> Unit
 
+pub fn getalias(@types.Ref, @types.Fn) -> @types.AliasInfo
+
 pub fn loopiter(@types.Fn, (Int32, Int32) -> Unit) -> Unit
 
 pub fn simplcfg(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String raise
