@@ -919,11 +919,11 @@ pub fn Builder::ret_wide(self : Builder, fid : Int32, v : Int32) -> Unit {
 
 ///|
 // Append an aggregate type definition and return its index, the number the
-// IL's `:type.N` refers to. `fields` lists (kind, len) pairs the way the IL
-// field table does: Fb/Fh/Fw/Fl/Fs/Fd carry their size in len, FTyp carries the
-// index of another type, and FPad carries the padding size. nunion is the
-// number of union members (1 for a plain struct). The end marker is appended
-// here, so callers never spell FEnd.
+// builder and the ABI passes use to refer to it. `fields` lists (kind, len)
+// pairs the way the IL field table does: Fb/Fh/Fw/Fl/Fs/Fd carry their size in
+// len, FTyp carries the index of another type, and FPad carries the padding
+// size. nunion is the number of union members (1 for a plain struct). The end
+// marker is appended here, so callers never spell FEnd.
 pub fn Builder::add_type(
   self : Builder,
   name : String,
@@ -931,13 +931,74 @@ pub fn Builder::add_type(
   fields : Array[(@types.FieldType, Int32)],
   nunion~ : Int32 = 1,
 ) -> Int32 {
-  let t = @types.Typ::new(name)
-  t.align = align
-  t.nunion = nunion
-  for f in fields {
-    t.fields.push(@types.Field::new(f.0, f.1))
+  self.add_type_lists(name, align, [fields], nunion)
+}
+
+///|
+// Append a union type definition: each element of `members` is one member's
+// field list, laid out at offset 0 like C's parsetyp. The IL spells this
+// `type :name = align N { { ... } { ... } }`, and the target ABI passes merge
+// the member classes the way they merge C unions.
+pub fn Builder::add_union_type(
+  self : Builder,
+  name : String,
+  align : Int32,
+  members : Array[Array[(@types.FieldType, Int32)]],
+) -> Int32 {
+  self.add_type_lists(name, align, members, members.length())
+}
+
+///|
+// The IL refers to types by name, so a name has to be unique: an anonymous C
+// aggregate gets one derived from its index, and a tag that shadows an earlier
+// one in an inner C scope gets the index appended. Emitting the plain tag twice
+// would make every reference resolve to the last definition.
+fn Builder::unique_type_name(self : Builder, name : String) -> String {
+  let base = if name == "" {
+    "type." + self.typs.length().to_string()
+  } else {
+    name
   }
-  t.fields.push(@types.Field::end())
+  let mut candidate = base
+  let mut n = 1
+  while self.has_type_name(candidate) {
+    candidate = base + "." + n.to_string()
+    n = n + 1
+  }
+  candidate
+}
+
+///|
+fn Builder::has_type_name(self : Builder, name : String) -> Bool {
+  for t in self.typs {
+    if t.name == name {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn Builder::add_type_lists(
+  self : Builder,
+  name : String,
+  align : Int32,
+  members : Array[Array[(@types.FieldType, Int32)]],
+  nunion : Int32,
+) -> Int32 {
+  let t = @types.Typ::new(self.unique_type_name(name))
+  t.align = align
+  t.nunion = if nunion > 0 { nunion } else { 1 }
+  for list in members {
+    for f in list {
+      t.fields.push(@types.Field::new(f.0, f.1))
+    }
+    // every member list is FEnd-terminated; the union's layout walks them
+    t.fields.push(@types.Field::end())
+  }
+  if members.length() == 0 {
+    t.fields.push(@types.Field::end())
+  }
   // the size is not a caller argument: the IL derives it from the fields
   t.compute_layout(self.typs)
   self.typs.push(t)

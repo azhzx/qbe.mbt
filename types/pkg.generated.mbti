@@ -548,6 +548,8 @@ pub fn class_to_wasm_type(Class) -> WasmType
 
 pub fn cmpneg(Int32) -> Int32
 
+pub fn decode_data_string(String) -> Array[Int32]
+
 pub fn dumpts(BSet, Array[Tmp]) -> String
 
 pub fn fp_stash_at(Int32) -> FpBits

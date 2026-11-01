@@ -33,6 +33,7 @@ pub fn Builder::add_func(Self, String, Ret, Array[@types.Class], Bool, is_vararg
 pub fn Builder::add_func_ty(Self, String, Int32, Ret, Array[@types.Class], Bool, is_vararg? : Bool) -> Int32
 pub fn Builder::add_param(Self, Int32, @types.Class) -> Int32
 pub fn Builder::add_type(Self, String, Int32, Array[(@types.FieldType, Int32)], nunion? : Int32) -> Int32
+pub fn Builder::add_union_type(Self, String, Int32, Array[Array[(@types.FieldType, Int32)]]) -> Int32
 pub fn Builder::arg_vararg(Self, Int32) -> Unit
 pub fn Builder::arith(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int32
 pub fn Builder::atomic_load(Self, Int32, @types.Class, Int32) -> Int32

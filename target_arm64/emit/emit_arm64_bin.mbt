@@ -1350,41 +1350,12 @@ fn arm64_bin_dat_width(kind : @types.DatKind) -> Int32 {
 }
 
 ///|
-// Decode the escapes an assembler would interpret in a b "..." data string
-// (\n, \t, \r, \0, \\, \"), so the self-contained data image (object and JIT)
-// matches the route A text that goes through clang. Multi-byte UTF-8 never
-// contains 0x5C, so byte-level scanning is safe.
+// Decode the escapes an assembler would interpret in a b "..." data string, so
+// the self-contained data image (object and JIT) holds the same bytes as the
+// text route that goes through clang. The decoder lives in `types` because the
+// interpreter needs it too; see `decode_data_string`.
 fn arm64_bin_str_bytes(s : String) -> Array[Int32] {
-  let b = @utf8.encode(s)
-  let out : Array[Int32] = []
-  let mut i = 0
-  while i < b.length() {
-    let c = b[i].to_int()
-    if c == 92 && i + 1 < b.length() {
-      let e = b[i + 1].to_int()
-      let decoded : Int32 = match e {
-        110 => 10 // n
-        116 => 9 // t
-        114 => 13 // r
-        48 => 0 // 0
-        98 => 8 // b
-        102 => 12 // f
-        118 => 11 // v
-        97 => 7 // a
-        92 => 92 // backslash
-        34 => 34 // quote
-        _ => -1
-      }
-      if decoded >= 0 {
-        out.push(decoded)
-        i = i + 2
-        continue
-      }
-    }
-    out.push(c)
-    i = i + 1
-  }
-  out
+  @types.decode_data_string(s)
 }
 
 ///|

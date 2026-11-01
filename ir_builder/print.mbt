@@ -236,16 +236,18 @@ fn Builder::il_func(self : Builder, fid : Int32, sb : StringBuilder) -> Unit {
     sb.write_string("export ")
   }
   sb.write_string("function")
-  // `function :type.N $f(...)` for an aggregate return, `function w $f(...)`
-  // for a scalar one (the IL spells the return type either way).
+  // `function :T $f(...)` for an aggregate return, `function w $f(...)` for a
+  // scalar one (the IL spells the return type either way). The IL refers to
+  // types by name, so the reference is the name the type table carries, not
+  // its index.
   match self.rets[fid] {
     Wide => {
       if f.ret_ty < 0 {
         abort("il_func: a wide return needs a ret_ty; use add_func_ty")
       }
       sb.write_char(' ')
-      sb.write_string(":type.")
-      sb.write_string(f.ret_ty.to_string())
+      sb.write_char(':')
+      sb.write_string(self.typs[f.ret_ty].name)
     }
     r => {
       let rc = r.text()
@@ -414,38 +416,53 @@ fn Builder::il_data(self : Builder, start : Int32, sb : StringBuilder) -> Int32 
 
 ///|
 // Print one aggregate type definition. The IL has no explicit padding, it is
-// implied by the alignment rules, so FPad is skipped. Unions would need the
-// nested-brace form and a record of where each member starts, which the field
-// table does not keep; refuse rather than print a struct instead.
+// implied by the alignment rules, so FPad is skipped. A union is the nested
+// brace form `{ { member } { member } }`, one brace pair per member, which is
+// what parse.c parsetyp expects; the field table keeps the members apart with
+// the FEnd terminator each of them already carries.
 fn Builder::il_type(self : Builder, ti : Int32, sb : StringBuilder) -> Unit {
   let t = self.typs[ti]
-  if t.nunion > 1 {
-    abort("il_type: printing a union type is not supported")
-  }
   sb.write_string("type :")
   sb.write_string(t.name)
   sb.write_string(" = align ")
   sb.write_string((1 << t.align).to_string())
   sb.write_string(" {")
-  let mut first = true
-  for f in t.fields {
-    let part = match f.kind {
-      @types.FEnd | @types.FPad => ""
-      @types.FTyp => " :type." + f.len.to_string() + " 1"
-      @types.Fb => " b 1"
-      @types.Fh => " h 1"
-      @types.Fw => " w 1"
-      @types.Fl => " l 1"
-      @types.Fs => " s 1"
-      @types.Fd => " d 1"
+  let nested = t.nunion > 1
+  let mut fi = 0
+  let mut mi = 0
+  while mi < t.nunion {
+    if nested {
+      sb.write_string(" {")
     }
-    if part != "" {
-      if !first {
-        sb.write_string(",")
+    let mut first = true
+    while fi < t.fields.length() && t.fields[fi].kind != @types.FEnd {
+      let f = t.fields[fi]
+      fi = fi + 1
+      let part = match f.kind {
+        @types.FEnd | @types.FPad => ""
+        @types.FTyp => " :" + self.typs[f.len].name + " 1"
+        @types.Fb => " b 1"
+        @types.Fh => " h 1"
+        @types.Fw => " w 1"
+        @types.Fl => " l 1"
+        @types.Fs => " s 1"
+        @types.Fd => " d 1"
       }
-      sb.write_string(part)
-      first = false
+      if part != "" {
+        if !first {
+          sb.write_string(",")
+        }
+        sb.write_string(part)
+        first = false
+      }
     }
+    while fi < t.fields.length() && t.fields[fi].kind == @types.FEnd {
+      fi = fi + 1
+    }
+    if nested {
+      sb.write_string(" }")
+    }
+    mi = mi + 1
   }
   sb.write_string(" }\n")
 }

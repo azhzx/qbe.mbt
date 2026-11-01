@@ -45,46 +45,71 @@ pub fn Typ::new(name : String) -> Typ {
 }
 
 ///|
+// Size and alignment of one field, as bits: an FTyp names another type in
+// typs[len], everything else is a scalar whose alignment follows its size.
+fn field_size_align(f : Field, typs : Array[Typ]) -> (Int64, Int32) {
+  match f.kind {
+    FTyp => {
+      let t = typs[f.len]
+      (t.size, t.align)
+    }
+    Fb => (1L, 0)
+    Fh => (2L, 1)
+    Fw | Fs => (4L, 2)
+    Fl | Fd => (8L, 3)
+    FPad => (f.len.to_int64(), 0)
+    FEnd => (0L, 0)
+  }
+}
+
+///|
 // Lay a type out from its fields and its stated alignment, the way parsefields
 // does in C parse.c: pad up to each field's own alignment, accumulate, then
 // round the total up to the type's alignment. Padding entries are inserted here
 // so callers only list members. FTyp refers to typs[len].
+//
+// A union holds nunion member lists, each terminated by FEnd and each starting
+// at offset 0 (C parsetyp). The member lists are laid out one after the other
+// and the union's size is the largest member, aligned to the largest alignment
+// seen so far; the alignment carries into later members, exactly as parsefields
+// does when it is called again for the next member.
 pub fn Typ::compute_layout(self : Typ, typs : Array[Typ]) -> Unit {
-  let mut sz = 0L
   let mut al = self.align
+  let mut size = 0L
   let built : Array[Field] = []
-  for f in self.fields {
-    if f.kind == FEnd {
-      continue
-    }
-    let (fs, fa) = match f.kind {
-      FTyp => {
-        let t = typs[f.len]
-        (t.size, t.align)
+  let mut fi = 0
+  let mut members = 0
+  while members < self.nunion {
+    let mut sz = 0L
+    while fi < self.fields.length() && self.fields[fi].kind != FEnd {
+      let f = self.fields[fi]
+      fi = fi + 1
+      let (fs, fa) = field_size_align(f, typs)
+      if fa > al {
+        al = fa
       }
-      Fb => (1L, 0)
-      Fh => (2L, 1)
-      Fw | Fs => (4L, 2)
-      Fl | Fd => (8L, 3)
-      FPad => (f.len.to_int64(), 0)
-      FEnd => (0L, 0)
+      let mask = (1L << fa) - 1L
+      let a = sz & mask
+      if a != 0L {
+        let pad = mask + 1L - a
+        built.push(Field::new(FPad, pad.to_int()))
+        sz = sz + pad
+      }
+      built.push(f)
+      sz = sz + fs
     }
-    if fa > al {
-      al = fa
+    while fi < self.fields.length() && self.fields[fi].kind == FEnd {
+      fi = fi + 1
     }
-    let mask = (1L << fa) - 1L
-    let a = sz & mask
-    if a != 0L {
-      let pad = mask + 1L - a
-      built.push(Field::new(FPad, pad.to_int()))
-      sz = sz + pad
+    built.push(Field::end())
+    if sz < size {
+      sz = size
     }
-    built.push(f)
-    sz = sz + fs
+    let a = 1L << al
+    size = (sz + (a - 1L)) & (0L - a)
+    members = members + 1
   }
-  built.push(Field::end())
-  let a = 1L << al
-  self.size = (sz + (a - 1L)) & (0L - a)
+  self.size = size
   self.align = al
   self.fields.clear()
   for f in built {

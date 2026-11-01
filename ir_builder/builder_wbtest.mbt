@@ -220,15 +220,31 @@ test "builder: variadic signature, va ops and call_vararg round-trip" {
 ///|
 test "builder: aggregate return prints a typed signature and retc" {
   let b = Builder::new()
-  let f = b.add_func_ty("mk", 0, Wide, [], true)
+  // struct { long a; }
+  let t = b.add_type("one", 3, [(@types.Fl, 8)])
+  let f = b.add_func_ty("mk", t, Wide, [], true)
   let v = b.iconst(f, 0L)
   b.ret_wide(f, v)
   let il = b.emit_il()
   // the IL spelling the parser accepts for an aggregate return
-  assert_true(il.contains("function :type.0 $mk("))
+  assert_true(il.contains("function :one $mk("))
   // white box: the ABI pass looks for exactly this jump kind
   let bid = b.cur[f]
   assert_eq(b.funcs[f].blks[bid].jmp.kind, @types.Jretc)
+}
+
+///|
+test "builder: a duplicate type name is made unique" {
+  let b = Builder::new()
+  let first = b.add_type("T", 2, [(@types.Fw, 4)])
+  // a C tag redefined in an inner scope shadows the outer one; the IL names
+  // have to stay distinct or every reference resolves to the later definition
+  let second = b.add_type("T", 2, [(@types.Fw, 4), (@types.Fw, 4)])
+  assert_eq(b.typs[first].name, "T")
+  assert_eq(b.typs[second].name, "T.1")
+  // an anonymous aggregate still gets a usable name
+  let anon = b.add_type("", 2, [(@types.Fw, 4)])
+  assert_eq(b.typs[anon].name, "type.2")
 }
 
 ///|
@@ -245,7 +261,44 @@ test "builder: add_type makes a usable :type for a wide return" {
   b.ret_wide(f, v)
   let il = b.emit_il()
   // the type definition and a signature that refers to it
-  assert_true(il.contains(":type.0"))
   assert_true(il.contains("type :pair = align 8 {"))
-  assert_true(il.contains("function :type.0 $mk("))
+  assert_true(il.contains("function :pair $mk("))
+}
+
+///|
+test "builder: a union type takes the size of its largest member" {
+  let b = Builder::new()
+  // union { long l; char c; }
+  let t = b.add_union_type("u", 3, [[(@types.Fl, 8)], [(@types.Fb, 1)]])
+  assert_eq(b.typs[t].size, 8L)
+  assert_eq(b.typs[t].align, 3)
+  assert_eq(b.typs[t].nunion, 2)
+  // and the IL spells the members as separate brace pairs
+  let f = b.add_func_ty("mk", t, Wide, [], true)
+  let v = b.iconst(f, 0L)
+  b.ret_wide(f, v)
+  let il = b.emit_il()
+  assert_true(il.contains("type :u = align 8 { { l 1 } { b 1 } }"))
+  // the parser accepts that form; round-tripping it back must agree
+  let parsed = match @qbe.compile_arm64(il) {
+    Ok(s) => s
+    Err(e) => fail("re-parse failed: \{Repr(e)}\n--- IL ---\n\{il}")
+  }
+  assert_eq(strip_regs(b.emit_asm()), strip_regs(parsed))
+}
+
+///|
+test "builder: union type size follows the largest member, not the last" {
+  let b = Builder::new()
+  // union { char c; long l; } - the member order must not change the size
+  let t = b.add_union_type("u", 3, [[(@types.Fb, 1)], [(@types.Fl, 8)]])
+  assert_eq(b.typs[t].size, 8L)
+  assert_eq(b.typs[t].align, 3)
+  // a union of a nested aggregate uses FTyp and keeps the nested size
+  let inner = b.add_type("inner", 3, [(@types.Fl, 8), (@types.Fl, 8)])
+  let outer = b.add_union_type("outer", 3, [
+    [(@types.FTyp, inner)],
+    [(@types.Fw, 4)],
+  ])
+  assert_eq(b.typs[outer].size, 16L)
 }

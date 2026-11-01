@@ -1,12 +1,16 @@
 ///|
 // Decode the escape sequences of a data-string token into bytes.
 //
-// The lexer keeps string escapes raw (see lexer/lexer.mbt), so every consumer
-// that needs the actual bytes has to decode them. The assembly emitters get
-// this for free by passing the raw text to gas, but the interpreter stores
-// bytes directly and used to copy the raw characters:
-//   data $x = { b "0x42" }   (spelled with a backslash escape in real input)
-// produced the characters backslash, 'x', '4', '2' instead of 0x42.
+// The IL keeps string escapes raw: the assembly emitters hand the text to the
+// assembler, which decodes it, and the object writer and the interpreter have
+// to reproduce the same bytes. That makes the assembler the definition of this
+// function, so it matches GNU as on aarch64: \b \f \n \t \r \\ \" \' and
+// \ooo octal (1-3 digits) are escapes; \x with up to two hex digits is accepted
+// as well. Anything else yields the character itself.
+//
+// One copy lives here rather than in each consumer: the interpreter and the
+// arm64 object writer used to disagree, and a string that reached the object
+// image as `\a` came out as a BEL byte instead of a backslash and an 'a'.
 pub fn decode_data_string(raw : String) -> Array[Int32] {
   let a = raw.to_array()
   let n = a.length()
@@ -18,7 +22,13 @@ pub fn decode_data_string(raw : String) -> Array[Int32] {
       i = i + 1
       let e = a[i]
       let ev = e.to_int()
-      if ev == 110 {
+      if ev == 98 {
+        // \b is a backspace in the assembler, not the letter b
+        out.push(8)
+      } else if ev == 102 {
+        // \f is a form feed
+        out.push(12)
+      } else if ev == 110 {
         out.push(10)
       } else if ev == 116 {
         out.push(9)
