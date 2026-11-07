@@ -65,6 +65,13 @@ fn printcon(
     // sentinel is an ordinary CBits holding 0xdeaddead (see Fn::undef).
     @types.CUndef => sb.write_string("UNDEF")
     @types.CAddr => {
+      // C printcon: extern before thread.
+      if c.is_ext() {
+        sb.write_string("extern ")
+      }
+      if c.is_thr() {
+        sb.write_string("thread ")
+      }
       sb.write_string("$")
       // The fp-constant stash uses a local label; the reference stores it as
       // the quoted symbol "\".LfpN\" (amd64/isel.c: sprintf(buf, "\"%sfp%d\"",

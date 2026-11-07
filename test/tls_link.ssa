@@ -1,0 +1,25 @@
+# Linkage varieties: thread data (tdata/tbss), common, custom sections,
+# and extern (GOT) symbol references.
+thread data $ti = align 4 {w 7}
+thread data $tz = {z 16}
+export thread data $te = {l 1}
+
+common data $ci = {z 8}
+common data $ca = align 4 {z 12}
+
+section ".mydata" "aw" data $sd = {w 5}
+section ".mysection" data $sn = {b 1}
+
+section ".mytext" "ax" function w $sf() {
+@start
+	ret 0
+}
+
+function w $use_extern() {
+@start
+	%p =l copy extern $ext_data
+	%v =w loadw %p
+	%f =l copy extern $ext_fn
+	call %f()
+	ret %v
+}

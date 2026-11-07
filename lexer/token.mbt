@@ -16,6 +16,10 @@ pub(all) enum TokenKind {
   TData // data
   TType // type
   TExport // export
+  TExtern // extern
+  TThread // thread
+  TCommon // common
+  TSection // section
   TPhi // phi
   Tdbgfile // dbgfile
 
@@ -85,6 +89,10 @@ pub fn Token::kind_str(self : Token) -> String {
     TData => "data"
     TType => "type"
     TExport => "export"
+    TExtern => "extern"
+    TThread => "thread"
+    TCommon => "common"
+    TSection => "section"
     TPhi => "phi"
     Tdbgfile => "dbgfile"
     TJmp => "jmp"
@@ -128,6 +136,10 @@ pub fn TokenKind::to_string(self : TokenKind) -> String {
     TData => "data"
     TType => "type"
     TExport => "export"
+    TExtern => "extern"
+    TThread => "thread"
+    TCommon => "common"
+    TSection => "section"
     TPhi => "phi"
     Tdbgfile => "dbgfile"
     TJmp => "jmp"

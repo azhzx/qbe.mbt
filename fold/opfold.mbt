@@ -63,6 +63,7 @@ fn foldint(
   let r = cr.bits.i
   let mut typ = @types.CBits
   let mut lab = 0
+  let mut sym_type = 0
   if op == @types.Add {
     if cl.kind == @types.CAddr {
       if cr.kind == @types.CAddr {
@@ -254,6 +255,7 @@ fn foldint(
         if cl.kind == @types.CAddr {
           lab = cl.label
           typ = @types.CAddr
+          sym_type = cl.sym_type
         }
         // See gvn: a float constant's bits live in bits.d / bits.s.
         cl.raw_bits()
@@ -269,6 +271,7 @@ fn foldint(
       bits: @types.ConBits::{ i: x, d: 0.0, s: 0.0, },
       flt: 0,
       is_local: false,
+      sym_type,
     },
   )
 }
@@ -306,6 +309,7 @@ fn foldflt(
       bits: @types.ConBits::{ i: xd.reinterpret_as_int64(), d: xd, s: 0.0, },
       flt: 2,
       is_local: false,
+      sym_type: 0,
     }
   } else {
     let ls = con_single(cl)
@@ -335,6 +339,7 @@ fn foldflt(
       },
       flt: 1,
       is_local: false,
+      sym_type: 0,
     }
   }
 }

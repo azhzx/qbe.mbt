@@ -3,47 +3,70 @@
 // Parses the entire token stream into functions, data, and types
 pub fn Parser::parse(self : Self) -> Unit raise {
   while true {
-    let t = self.next_nl()
+    let lnk = Linkage::new()
+    let t = self.parselnk(lnk)
     match t {
-      TEof => break
-      TExport =>
-        // C parse.c parselnk: linkage keywords may repeat ("export export
-        // function" is accepted) and only data/function may follow them.
-        while true {
-          let t2 = self.next_nl()
-          match t2 {
-            TExport => continue
-            TFunc => {
-              self.order.push("f")
-              self.parsefn(true)
-              break
-            }
-            TData => {
-              self.order.push("d")
-              self.parsedat(true)
-              break
-            }
-            _ => raise self.error("only data and function have linkage")
-          }
-        }
       TFunc => {
+        lnk.align = 16
         self.order.push("f")
-        self.parsefn(false)
+        self.parsefn(lnk)
       }
       TData => {
         self.order.push("d")
-        self.parsedat(false)
+        self.parsedat(lnk)
       }
       TType => self.parsetyp()
       Tdbgfile => {
         // Debug file marker. The path is recorded in top-level order so the
-        // emitter can emit `.file <n> <path>` at this point in the output.
+        // emitter can emit .file <n> <path> at this point in the output.
         self.expect(TStr)
         self.order.push("dbgfile:" + self.tokens[self.pos - 1].raw)
       }
+      TEof => break
       _ => raise self.error("top-level definition expected")
     }
   }
+}
+
+///|
+// C parse.c parselnk: collect linkage keywords before a top-level definition.
+fn Parser::parselnk(self : Self, lnk : Linkage) -> @lexer.TokenKind raise {
+  let mut haslnk = false
+  let mut result = @lexer.TEof
+  let mut go = true
+  while go {
+    let t = self.next_nl()
+    match t {
+      TExport => lnk.is_export = true
+      TThread => lnk.thread = true
+      TCommon => lnk.common = true
+      TSection => {
+        if lnk.sec != "" {
+          raise self.error("only one section allowed")
+        }
+        if self.next().kind != @lexer.TStr {
+          raise self.error("section name expected")
+        }
+        lnk.sec = self.tokens[self.pos - 1].raw
+        if self.peek_kind() == @lexer.TStr {
+          let _ = self.next()
+          lnk.secf = self.tokens[self.pos - 1].raw
+        }
+      }
+      _ => {
+        if t == TFunc && lnk.thread {
+          raise self.error("only data may have thread linkage")
+        }
+        if haslnk && t != TData && t != TFunc {
+          raise self.error("only data and function have linkage")
+        }
+        result = t
+        go = false
+      }
+    }
+    haslnk = true
+  }
+  result
 }
 
 ///|

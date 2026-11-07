@@ -65,8 +65,9 @@ test "la64 emit: simple add function" {
   inspect(
     asm,
     content=(
-      #|	.globl add
-      #|	.type add, @function
+      #|.text
+      #|.balign 16
+      #|.globl add
       #|add:
       #|	st.d $fp, $sp, -16
       #|	st.d $ra, $sp, -8
@@ -106,8 +107,9 @@ test "la64 emit: conditional branch and loop labels" {
   inspect(
     asm,
     content=(
-      #|	.globl count
-      #|	.type count, @function
+      #|.text
+      #|.balign 16
+      #|.globl count
       #|count:
       #|	st.d $fp, $sp, -16
       #|	st.d $ra, $sp, -8

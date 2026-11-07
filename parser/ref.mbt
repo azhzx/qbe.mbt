@@ -60,7 +60,23 @@ fn Parser::tmpref(self : Self, name : String) -> @types.Ref raise {
 // Parse a reference (temp, constant, global, int, float)
 // Returns ref_none() if the token is not a valid reference
 fn Parser::parseref(self : Self) -> @types.Ref raise {
-  let t = self.next()
+  // C parseref: extern/thread prefixes may precede a global (and may repeat).
+  let mut sym_type = 0
+  let mut t = self.next()
+  let mut prefixes = true
+  while prefixes {
+    match t.kind {
+      TExtern => {
+        sym_type = sym_type | @types.SYM_EXT
+        t = self.next()
+      }
+      TThread => {
+        sym_type = sym_type | @types.SYM_THR
+        t = self.next()
+      }
+      _ => prefixes = false
+    }
+  }
   match t.kind {
     TTemp =>
       // Temporary variable - look up or create
@@ -89,7 +105,7 @@ fn Parser::parseref(self : Self) -> @types.Ref raise {
     TGlo => {
       // Global symbol address
       let label = self.interner.intern(t.raw)
-      let con = @types.Con::addr(label)
+      let con = @types.Con::addr_sym(label, sym_type)
       @types.Ref::con(self.curfn().get_con_by(con))
     }
     _ => @types.Ref::none()

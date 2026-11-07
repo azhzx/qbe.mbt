@@ -1,10 +1,15 @@
 ///|
 // Parse a data definition
 // export: whether the data is exported
-fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
-  // Emit DStart
+fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
+  // Emit DStart with the linkage information (C Dat.lnk).
   let d = @types.Dat::start()
-  d.is_export = is_export
+  d.is_export = lnk.is_export
+  d.is_thread = lnk.thread
+  d.is_common = lnk.common
+  d.align = 8
+  d.sec = lnk.sec
+  d.secf = lnk.secf
   self.datas.push(d)
   // Parse data name: $name =
   if self.next_nl() != TGlo {
@@ -14,18 +19,30 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
   if self.next_nl() != TEq {
     raise self.error("= expected after data name")
   }
-  // Optional: align N
+  // Optional: align N (C parsedat validation and default 8).
+  let mut align_val = 8L
   let mut t = self.next_nl()
   if t == TId && self.tokens[self.pos - 1].raw == "align" {
     if self.next_nl() != TInt {
       raise self.error("alignment expected")
     }
-    let align_val = parse_int64(self.tokens[self.pos - 1].raw)
+    align_val = parse_int64(self.tokens[self.pos - 1].raw)
+    if align_val <= 0L ||
+      align_val > 127L ||
+      (align_val & (align_val - 1L)) != 0L {
+      raise self.error("invalid alignment")
+    }
     self.datas.push(@types.Dat::align(align_val))
     t = self.next_nl()
   }
-  // Emit DName
-  self.datas.push(@types.Dat::name(name, is_export))
+  // Emit DName with the same linkage.
+  let dn = @types.Dat::name(name, lnk.is_export)
+  dn.is_thread = lnk.thread
+  dn.is_common = lnk.common
+  dn.align = align_val.to_int()
+  dn.sec = lnk.sec
+  dn.secf = lnk.secf
+  self.datas.push(dn)
   // Parse data body: { ... }
   if t != TLbr {
     raise self.error("expected data contents in { .. }")
@@ -75,6 +92,11 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
                   is_ref: false,
                   is_str: false,
                   is_export: false,
+                  is_thread: false,
+                  is_common: false,
+                  align: 8,
+                  sec: "",
+                  secf: "",
                 }
               } else {
                 @types.Dat::{
@@ -88,6 +110,11 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
                   is_ref: false,
                   is_str: false,
                   is_export: false,
+                  is_thread: false,
+                  is_common: false,
+                  align: 8,
+                  sec: "",
+                  secf: "",
                 }
               }
             }
@@ -104,6 +131,11 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
                 is_ref: false,
                 is_str: false,
                 is_export: false,
+                is_thread: false,
+                is_common: false,
+                align: 8,
+                sec: "",
+                secf: "",
               }
             }
             TGlo => {

@@ -29,6 +29,29 @@ pub struct Parser {
 }
 
 ///|
+// C struct Lnk: linkage information collected by parselnk.
+priv struct Linkage {
+  mut is_export : Bool
+  mut thread : Bool
+  mut common : Bool
+  mut align : Int32
+  mut sec : String
+  mut secf : String
+}
+
+///|
+fn Linkage::new() -> Linkage {
+  Linkage::{
+    is_export: false,
+    thread: false,
+    common: false,
+    align: 0,
+    sec: "",
+    secf: "",
+  }
+}
+
+///|
 pub fn Parser::new(
   tokens : Array[@lexer.Token],
   source_file : String,

@@ -226,6 +226,36 @@ the full `compare.py --asm` corpus is now identical on all three targets.
   input still shows a phi *dump order* difference that we attribute to the
   exact libc qsort permutation (assembly is identical, so this is cosmetic).
 
+### TLS, linkage and Sym.type
+
+- The parser now implements C `parselnk` (repeatable `export`/`thread`/`common`/
+  `section "name" ["flags"]` keywords, the "only data may have thread linkage" and
+  "only data and function have linkage" errors) and stores the linkage on
+  `Fn`/`Dat`. Data alignment is validated and carried as `Lnk.align` (default 8,
+  functions 16), and `parseref` accepts the repeatable `extern`/`thread` prefixes on
+  globals, setting C `Sym.type` bits on the address constant. Printing, constant
+  interning, folding, alias analysis and the amd64 address matcher all carry
+  those bits.
+- Data and function labels are emitted by a new shared package `gasdata`, a
+  transcription of the reference `emit.c` `emitdat`/`emitlnk`: zero-fill accumulation
+  (data vs .bss/.tbss), `.comm` for common data, custom sections with flags,
+  `.balign` from Lnk.align, and thread sections `.tdata`/`.tbss` (plus the
+  Mach-O thread-variable bootstrap used by the apple flavor).
+- TLS address materialization is transcribed per reference target: amd64
+  `%fs:0` + `@tpoff` (local-exec), `@gottpoff` (initial-exec) and
+  `@gotpcrel` (extern), with the matching `Oaddr` special cases and the fixarg
+  extern branch; arm64 `mrs tpidr_el0` + `:tprel_hi12:`/`:tprel_lo12_nc:` and
+  `:got:` forms; rv64 `%tprel_hi/add/lo` and `lga` with fixmem scratch
+  registers. la64 (no upstream backend) uses `la.tls.le`/`la.tls.ie` plus `$tp`
+  and `la.got`, verified by the clang assembler gate. Corpora: `test/tls.ssa`
+  (local-exec data, address arithmetic, loads/stores) and
+  `test/tls_link.ssa` (thread tdata/tbss, exported thread data, common data,
+  custom data/text sections, extern GOT references); all three reference
+  targets are byte-identical on dumps and assembly.
+- wasm has no TLS ABI; to keep its gate useful it also adapts call arguments
+  and results whose IL class differs from the callee's actual class
+  (i64.extend/wrap, f32/f64 promote/demote).
+
 ## Verification (this round)
 
 - `moon test` over every package except `run_asm` (host linker fails with
@@ -235,13 +265,13 @@ the full `compare.py --asm` corpus is now identical on all three targets.
   corpus gained `ordered.ssa`, `coalesce_{dead_slot,blit_flip,blit_pair}.ssa`,
   `phi_swap.ssa`, `dup_export.ssa` and `hexfloat.ssa` (hex floats, subnormals,
   inf/nan, `-0.0`, float data).
-- `tools/check_wasm.py`: **361/361 valid**, 0 compile failures, 71 inputs the
+- `tools/check_wasm.py`: **363/363 valid**, 0 compile failures, 71 inputs the
   reference itself rejects. `tools/check_wasm_runtime.py`: **5/5** programs run
   identically under `--run` and `--run-wasm`.
-- `tools/check_la64_asm.py`: **361/361 assembled**.
-- `tools/check_all_backends.py`: **361/361 PASS** on amd64, arm64, rv64, la64
+- `tools/check_la64_asm.py`: **363/363 assembled**.
+- `tools/check_all_backends.py`: **363/363 PASS** on amd64, arm64, rv64, la64
   and wasm.
-- `tools/fuzz_il.py --asm`: seeds 81/91/101 and 111/141/151 are clean
+- `tools/fuzz_il.py --asm`: seeds 81/91/101, 111/141/151 and 161/171 are clean
   (**0 rejects, 0 crashes, 0 dump diffs, 0 assembly diffs**). Earlier seeds
   found the amd64 `movsb` flag bug, the `blit`-between-globals address-folding
   divergence, the `ifgraph` RPO-id bug and the `simpljmp` two-successor
@@ -371,10 +401,8 @@ read those arguments).
   CRLF input is rejected exactly like the reference.
 - Identifiers starting with '.' are lexed (C's `Alpha` allows '.'), which is
   what makes the bare-decimal rejection diagnostic work.
-- Still missing from the lexer/parser: quoted global symbols (`$"name"`, which
-  C interns *with* the quotes so emitters print them verbatim) and the
-  `thread`/`common`/`section`/`extern` linkage keywords (recorded below as
-  part of the TLS/Sym feature gap).
+- Quoted global symbols and the `thread`/`common`/`section`/`extern` linkage keywords are
+  now implemented too; see the TLS/Sym section below.
 
 ## Not reviewed / known gaps
 
@@ -408,6 +436,12 @@ read those arguments).
   not silently miscompiled. Implementing them touches the lexer/parser, the
   class enum, every backend's selector/emitter and the ABI passes, so it is
   the same kind of separate project as TLS below.
-- TLS/`thread`/`common`/`section` and `Sym.type` are still unimplemented
-  (see TODO.md).
-- The object-emission path still has no differential gate.
+- The self-contained arm64 object writer (`--emit obj`, JIT, native) now rejects
+  thread/common/custom-section data, section-linked functions and
+  extern/thread symbol references loudly instead of emitting a wrong object;
+  the text emitters implement them (see the TLS section above). The
+  object-emission path still has no differential gate.
+- The wasm flavor has no TLS model: thread data is emitted as ordinary static
+  data and thread/extern operand modifiers are treated as plain globals.
+  This is a documented port-only backend choice (there is no reference wasm
+  target).

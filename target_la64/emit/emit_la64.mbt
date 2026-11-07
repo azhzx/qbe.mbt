@@ -626,17 +626,8 @@ fn la64_emitins(st : La64EmitState, i : @types.Ins) -> Unit raise {
 fn la64_emitfn(st : La64EmitState) -> Unit raise {
   let fn_ = st.fn_
 
-  st.sb.write_string("\t.globl ")
-  st.sb.write_string(st.gassym)
-  st.sb.write_string(fn_.name)
-  st.sb.write_char('\n')
-  st.sb.write_string("\t.type ")
-  st.sb.write_string(st.gassym)
-  st.sb.write_string(fn_.name)
-  st.sb.write_string(", @function\n")
-  st.sb.write_string(st.gassym)
-  st.sb.write_string(fn_.name)
-  st.sb.write_string(":\n")
+  // C emitlnk (shared with the other GAS targets).
+  @gasdata.emitfnlnk(fn_, st.gassym, st.sb)
 
   if fn_.is_vararg {
     // Save the argument registers into the register save area so that

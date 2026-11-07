@@ -111,6 +111,8 @@ pub(all) struct AliasInfo {
   // bytes something has stored through the slot. fillalias fills both.
   mut sz : Int32
   mut m : UInt64
+  // C Alias.u.sym.type: thread/extern bits are part of symbol identity.
+  mut sym_type : Int32
 }
 
 ///|
@@ -123,6 +125,7 @@ pub fn AliasInfo::default() -> AliasInfo {
     slot: -1,
     sz: -1,
     m: 0UL,
+    sym_type: 0,
   }
 }
 

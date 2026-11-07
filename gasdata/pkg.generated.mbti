@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "azhzx/qbe/gasdata"
+
+import {
+  "azhzx/qbe/types",
+}
+
+// Values
+pub fn emit(@types.Dat, String, Bool, StringBuilder) -> Unit
+
+pub fn emitfnlnk(@types.Fn, String, StringBuilder) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

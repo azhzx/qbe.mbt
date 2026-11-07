@@ -116,6 +116,7 @@ fn fixarg(
       bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
       flt: 0,
       is_local: true,
+      sym_type: 0,
     }
     st.fn_.mems.push(a)
     let fpr = la64_isel_newtmp(st, k)

@@ -319,7 +319,7 @@ fn emit_module(
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit_amd64.gasemitdat(d, gasloc, gassym, sb)
+        @gasdata.emit(d, gassym, apple, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break
@@ -466,7 +466,7 @@ fn emit_rv64_module(
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit_rv64.gasemitdat_rv64(d, gasloc, gassym, sb)
+        @gasdata.emit(d, gassym, false, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break
@@ -572,7 +572,7 @@ fn emit_la64_module(
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit_la64.gasemitdat_la64(d, gasloc, gassym, sb)
+        @gasdata.emit(d, gassym, false, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break
@@ -681,7 +681,7 @@ fn emit_arm64_module(
       while di < datas.length() {
         let d = datas[di]
         di = di + 1
-        @emit_amd64.gasemitdat(d, gasloc, gassym, sb)
+        @gasdata.emit(d, gassym, apple, sb)
         if d.kind == @types.DEnd {
           sb.write_string("/* end data */\n\n")
           break

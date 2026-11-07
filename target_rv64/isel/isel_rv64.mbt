@@ -169,6 +169,7 @@ fn fixarg(
           bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
           flt: 0,
           is_local: true,
+          sym_type: 0,
         })
         emit(st, @types.Load, k, r1, @types.Ref::con(idx), @types.Ref::none())
       } else {

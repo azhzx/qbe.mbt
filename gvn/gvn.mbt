@@ -357,6 +357,7 @@ fn c_foldint(
   let r = cr.bits.i
   let mut typ = @types.CBits
   let mut lab = 0
+  let mut sym_type = 0
   if op == @types.Add {
     if cl.kind == @types.CAddr {
       if cr.kind == @types.CAddr {
@@ -364,15 +365,18 @@ fn c_foldint(
       }
       typ = @types.CAddr
       lab = cl.label
+      sym_type = cl.sym_type
     } else if cr.kind == @types.CAddr {
       typ = @types.CAddr
       lab = cr.label
+      sym_type = cr.sym_type
     }
   } else if op == @types.Sub {
     if cl.kind == @types.CAddr {
       if cr.kind != @types.CAddr {
         typ = @types.CAddr
         lab = cl.label
+        sym_type = cl.sym_type
       } else if cl.label != cr.label {
         return None
       }
@@ -534,6 +538,7 @@ fn c_foldint(
         if cl.kind == @types.CAddr {
           typ = @types.CAddr
           lab = cl.label
+          sym_type = cl.sym_type
         }
         // A float constant keeps its bits in bits.d / bits.s (C's Con.bits is
         // a union, this port's is not), so reinterpret rather than read bits.i.
@@ -548,6 +553,7 @@ fn c_foldint(
     bits: @types.ConBits::{ i: x, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
+    sym_type,
   })
 }
 
@@ -584,6 +590,7 @@ fn c_foldflt(
       bits: @types.ConBits::{ i: xd.reinterpret_as_int64(), d: xd, s: 0.0, },
       flt: 2,
       is_local: false,
+      sym_type: 0,
     })
   } else {
     let ls = con_single(cl)
@@ -613,6 +620,7 @@ fn c_foldflt(
       },
       flt: 1,
       is_local: false,
+      sym_type: 0,
     })
   }
 }
@@ -645,6 +653,7 @@ fn c_opfold(
           },
           flt: c.flt,
           is_local: c.is_local,
+          sym_type: c.sym_type,
         }
       } else {
         c

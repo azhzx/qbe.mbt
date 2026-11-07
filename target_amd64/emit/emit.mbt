@@ -202,6 +202,10 @@ fn s64_plus(v : Int64) -> String {
 fn emitcon(st : EmitState, con : @types.Con) -> Unit {
   match con.kind {
     @types.CAddr => {
+      // C emitcon: local-exec TLS symbols are printed relative to %fs.
+      if con.sym_type == @types.SYM_THR {
+        st.sb.write_string("%fs:")
+      }
       // Local (fp-constant) symbols are interned by the isel without a
       // prefix; the reference prints them quoted, e.g. ".Lfp0" (C emitcon
       // checks l[0] == '"').
@@ -214,6 +218,9 @@ fn emitcon(st : EmitState, con : @types.Con) -> Unit {
         let nm = st.interner.get(con.label)
         st.sb.write_string(@util.sym_prefix(st.gassym, nm))
         st.sb.write_string(nm)
+      }
+      if con.sym_type == @types.SYM_THR {
+        st.sb.write_string("@tpoff")
       }
       if con.bits.i != 0L {
         st.sb.write_string(s64_plus(con.bits.i))
@@ -369,8 +376,11 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
         } else if rf.is_slot() {
           st.sb.write_string("\{slot(st, rf.slot_val())}(\{st.fp})")
         } else if rf.is_con() {
-          emitcon(st, st.fn_.cons[rf.con_val()])
-          st.sb.write_string("(%rip)")
+          let c = st.fn_.cons[rf.con_val()]
+          emitcon(st, c)
+          if !(c.kind == @types.CAddr && c.sym_type == @types.SYM_THR) {
+            st.sb.write_string("(%rip)")
+          }
         } else if rf.is_tmp() {
           st.sb.write_string("(%")
           st.sb.write_string(regtoa(rf.tmp_val(), SLONG))
@@ -542,8 +552,12 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
       }
     @types.Call =>
       if ins.arg1.is_con() {
+        let c = st.fn_.cons[ins.arg1.con_val()]
         st.sb.write_string("\tcallq ")
-        emitcon(st, st.fn_.cons[ins.arg1.con_val()])
+        emitcon(st, c)
+        if c.kind == @types.CAddr && c.is_ext() {
+          st.sb.write_string("@plt")
+        }
         st.sb.write_string("\n")
       } else if ins.arg1.is_tmp() {
         emitf(st, "callq *%L0", ins)
@@ -554,6 +568,63 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
       emitf(st, "subq %L0, %%rsp", ins)
       if !ins.to.is_none() {
         emitcopy(st, ins.to, @types.Ref::tmp(@types.RSP), @types.Kl)
+      }
+    }
+    @types.Addr => {
+      // C amd64 emit.c case Oaddr: GOT/TLS address materialization.
+      let a0 = ins.arg1
+      if !a0.is_con() {
+        emit_omap(st, ins)
+      } else {
+        let con = st.fn_.cons[a0.con_val()]
+        if con.kind != @types.CAddr {
+          emit_omap(st, ins)
+        } else if con.sym_type == @types.SYM_THR {
+          let to = regtoa(ins.to.tmp_val(), SLONG)
+          st.sb.write_string("	movq %fs:0, %")
+          st.sb.write_string(to)
+          st.sb.write_string("\n")
+          let nm = st.interner.get(con.label)
+          let pfx = @util.sym_prefix(st.gassym, nm)
+          st.sb.write_string("	leaq ")
+          st.sb.write_string(pfx)
+          st.sb.write_string(nm)
+          st.sb.write_string("@tpoff")
+          if con.bits.i != 0L {
+            st.sb.write_string(s64_plus(con.bits.i))
+          }
+          st.sb.write_string("(%")
+          st.sb.write_string(to)
+          st.sb.write_string("), %")
+          st.sb.write_string(to)
+          st.sb.write_string("\n")
+        } else if con.sym_type == (2 | 1) {
+          // initial-exec TLS
+          let to = regtoa(ins.to.tmp_val(), SLONG)
+          st.sb.write_string("	movq %fs:0, %")
+          st.sb.write_string(to)
+          st.sb.write_string("\n")
+          let nm = st.interner.get(con.label)
+          let pfx = @util.sym_prefix(st.gassym, nm)
+          st.sb.write_string("	addq ")
+          st.sb.write_string(pfx)
+          st.sb.write_string(nm)
+          st.sb.write_string("@gottpoff(%rip), %")
+          st.sb.write_string(to)
+          st.sb.write_string("\n")
+        } else if con.is_ext() {
+          let to = regtoa(ins.to.tmp_val(), SLONG)
+          let nm = st.interner.get(con.label)
+          let pfx = @util.sym_prefix(st.gassym, nm)
+          st.sb.write_string("	movq ")
+          st.sb.write_string(pfx)
+          st.sb.write_string(nm)
+          st.sb.write_string("@gotpcrel(%rip), %")
+          st.sb.write_string(to)
+          st.sb.write_string("\n")
+        } else {
+          emit_omap(st, ins)
+        }
       }
     }
     @types.Swap =>
@@ -611,14 +682,8 @@ pub fn emitfn(
     fsz: 0,
     nclob: 0,
   }
-  // C emitlnk: section, .balign (function alignment, default 16), .globl, label.
-  st.sb.write_string(".text\n.balign 16\n")
-  if fn_.is_export {
-    st.sb.write_string(
-      ".globl \{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}\n",
-    )
-  }
-  st.sb.write_string("\{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}:\n")
+  // C emitlnk: section, .balign, .globl, label (shared emitter).
+  @gasdata.emitfnlnk(fn_, gassym, st.sb)
   // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
   // reference, which emits no .cfi directives.
   let dbg = @util.debug_info()

@@ -1688,6 +1688,37 @@ fn emit_arm64_bin_module_build(
 }
 
 ///|
+// The self-contained object writer has no TLS/common/section support; reject
+// those inputs loudly instead of emitting a wrong object. The text emitters
+// (--emit asm) implement them (verified against the reference on ELF).
+pub fn check_linkage_supported(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+) -> Unit raise {
+  for d in datas {
+    if d.is_thread || d.is_common || d.sec != "" {
+      raise @util.QbeError::CompileError(
+        "arm64 object writer: thread/common/section data are not supported; use --emit asm",
+      )
+    }
+  }
+  for fn_ in funcs {
+    if fn_.sec != "" {
+      raise @util.QbeError::CompileError(
+        "arm64 object writer: section linkage is not supported; use --emit asm",
+      )
+    }
+    for c in fn_.cons {
+      if c.sym_type != 0 {
+        raise @util.QbeError::CompileError(
+          "arm64 object writer: extern/thread symbol references are not supported; use --emit asm",
+        )
+      }
+    }
+  }
+}
+
+///|
 pub fn emit_arm64_bin_module(
   funcs : Array[@types.Fn],
   datas : Array[@types.Dat],
@@ -1707,5 +1738,6 @@ pub fn emit_arm64_bin_module_ex(
   interner : @util.Interner,
   apple : Bool,
 ) -> (Arm64BinModule, Arm64BinFixups) raise {
+  check_linkage_supported(funcs, datas)
   emit_arm64_bin_module_build(funcs, datas, interner, apple, true)
 }

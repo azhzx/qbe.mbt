@@ -31,6 +31,11 @@ pub(all) struct Fn {
   mut reg : UInt64 // Used register mask
   mut slot : Int32 // Stack slot count
   mut is_export : Bool
+  // C Lnk for the function definition: alignment (16 default) and an optional
+  // section override with its flags.
+  mut align : Int32
+  mut sec : String
+  mut secf : String
   mut is_vararg : Bool
   mut has_dynalloc : Bool
   mut leaf : Bool // no call instructions (C fn->leaf)
@@ -59,6 +64,9 @@ pub fn Fn::new(name : String) -> Fn {
     reg: 0,
     slot: 0,
     is_export: false,
+    align: 16,
+    sec: "",
+    secf: "",
     is_vararg: false,
     has_dynalloc: false,
     leaf: true,

@@ -16,6 +16,9 @@ priv struct WatEmitState {
   fn_params : Array[(String, Array[String])]
   // Names of variadic module functions (they take a hidden i64 buffer pointer).
   fn_vararg : Array[String]
+  // Declared return class per module function (Kx for void), used to adapt
+  // calls whose IL result class differs from the callee's actual class.
+  ret_classes : Array[(String, @types.Class)]
   // External import name per call signature key (ext_key -> wasm identifier).
   ext_names : Array[(String, String)]
   // Classes of the arguments pushed since the last call.
@@ -33,6 +36,7 @@ fn wat_emit_new(
   void_fns : Array[String],
   fn_params : Array[(String, Array[String])],
   fn_vararg : Array[String],
+  ret_classes : Array[(String, @types.Class)],
   ext_names : Array[(String, String)],
 ) -> WatEmitState {
   WatEmitState::{
@@ -43,6 +47,7 @@ fn wat_emit_new(
     void_fns,
     fn_params,
     fn_vararg,
+    ret_classes,
     ext_names,
     arg_classes: [],
     pending_args: 0,
@@ -106,9 +111,9 @@ fn wasm_type(cls : @types.Class) -> String {
 
 ///|
 // The class the function returns, taken from its Jret* terminator.
-fn return_class(st : WatEmitState) -> @types.Class? {
-  for bid in st.fn_.def_order {
-    match st.fn_.blks[bid].jmp.kind {
+fn ret_class_of(fn_ : @types.Fn) -> @types.Class? {
+  for bid in fn_.def_order {
+    match fn_.blks[bid].jmp.kind {
       @types.Jretw => return Some(@types.Kw)
       @types.Jretsb => return Some(@types.Kw)
       @types.Jretub => return Some(@types.Kw)
@@ -122,6 +127,11 @@ fn return_class(st : WatEmitState) -> @types.Class? {
     }
   }
   None
+}
+
+///|
+fn return_class(st : WatEmitState) -> @types.Class? {
+  ret_class_of(st.fn_)
 }
 
 ///|
@@ -457,12 +467,41 @@ fn emit_load(st : WatEmitState, ins : @types.Ins) -> Unit {
 }
 
 ///|
+// Push an argument value, adapting the temporary's own class to the declared
+// parameter class (reference backends just move the register; wasm needs the
+// stack type to match the callee/import signature).
+fn emit_arg(st : WatEmitState, r : @types.Ref, declared : @types.Class) -> Unit {
+  let mut actual = declared
+  if r.is_tmp() {
+    let c = st.fn_.tmps[r.tmp_val()].cls
+    if c != declared {
+      actual = c
+    }
+  }
+  emit_ref(st, r, actual)
+  if actual == declared {
+    return
+  }
+  match (actual, declared) {
+    (@types.Kw, @types.Kl) => wat_writeln(st, "i64.extend_i32_u")
+    (@types.Kl, @types.Kw) => wat_writeln(st, "i32.wrap_i64")
+    (@types.Ks, @types.Kd) => wat_writeln(st, "f64.promote_f32")
+    (@types.Kd, @types.Ks) => wat_writeln(st, "f32.demote_f64")
+    (@types.Kw, @types.Ks) => wat_writeln(st, "f32.reinterpret_i32")
+    (@types.Kl, @types.Kd) => wat_writeln(st, "f64.reinterpret_i64")
+    (@types.Ks, @types.Kw) => wat_writeln(st, "i32.reinterpret_f32")
+    (@types.Kd, @types.Kl) => wat_writeln(st, "i64.reinterpret_f64")
+    _ => ()
+  }
+}
+
+///|
 fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
   match ins.op {
     @types.Nop | @types.Par | @types.Parc | @types.Pare => ()
     // Call arguments: push the value so the following call consumes it.
     @types.Arg | @types.Arge => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_arg(st, ins.arg1, ins.cls)
       st.pending_args = st.pending_args + 1
       st.arg_classes.push(ins.cls)
     }
@@ -626,6 +665,24 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
         }
       }
       if ins.to.is_tmp() && !is_void {
+        // The IL may name a different class than the callee's actual return
+        // class (reference backends just move the register); wasm needs an
+        // explicit conversion to keep the validator happy.
+        let mut actual = ins.cls
+        for rc in st.ret_classes {
+          if rc.0 == target {
+            actual = rc.1
+          }
+        }
+        if actual != ins.cls {
+          match (actual, ins.cls) {
+            (@types.Kw, @types.Kl) => wat_writeln(st, "i64.extend_i32_u")
+            (@types.Kl, @types.Kw) => wat_writeln(st, "i32.wrap_i64")
+            (@types.Ks, @types.Kd) => wat_writeln(st, "f64.promote_f32")
+            (@types.Kd, @types.Ks) => wat_writeln(st, "f32.demote_f64")
+            _ => ()
+          }
+        }
         wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
       }
     }
@@ -1281,10 +1338,11 @@ pub fn emit_fn(
   void_fns~ : Array[String] = [],
   fn_params~ : Array[(String, Array[String])] = [],
   fn_vararg~ : Array[String] = [],
+  ret_classes~ : Array[(String, @types.Class)] = [],
   ext_names~ : Array[(String, String)] = [],
 ) -> Unit {
   let st = wat_emit_new(
-    fn_, interner, sb, dats, void_fns, fn_params, fn_vararg, ext_names,
+    fn_, interner, sb, dats, void_fns, fn_params, fn_vararg, ret_classes, ext_names,
   )
   sb.write_string("  (func $\{fn_.name}")
   emit_params(st)
@@ -1456,6 +1514,15 @@ pub fn emit_wat_module(
       void_fns.push(fn_.name)
     }
   }
+  // Declared return class per module function (Kx is not stored: absence
+  // means void).
+  let ret_classes : Array[(String, @types.Class)] = []
+  for fn_ in funcs {
+    match ret_class_of(fn_) {
+      Some(c) => ret_classes.push((fn_.name, c))
+      None => ()
+    }
+  }
   // Variadic functions take an extra hidden i64 buffer pointer.
   let fn_vararg : Array[String] = []
   for fn_ in funcs {
@@ -1486,6 +1553,7 @@ pub fn emit_wat_module(
       void_fns~,
       fn_params~,
       fn_vararg~,
+      ret_classes~,
       ext_names~,
     )
     sb.write_string("\n")

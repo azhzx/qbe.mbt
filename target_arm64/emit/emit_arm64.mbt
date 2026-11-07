@@ -252,6 +252,55 @@ let arm64_omap : Array[(Int32, Int32, String)] = [
 ]
 
 ///|
+// C arm64/emit.c loadaddr: expand the address template for the symbol type.
+fn arm64_loadaddr(
+  st : Arm64EmitState,
+  con : @types.Con,
+  rn : String,
+) -> Unit raise {
+  let sb = st.sb
+  let l = st.interner.get(con.label)
+  let p = if con.is_local { st.gasloc } else { @util.sym_prefix(st.gassym, l) }
+  let q = if con.is_local { "\"" } else { "" }
+  let sym = q + p + l + q
+  let off = if con.bits.i != 0L { "+" + con.bits.i.to_string() } else { "" }
+  let tpl = match con.sym_type {
+    0 =>
+      if st.apple {
+        "\tadrp\tR, S@pageO\n\tadd\tR, R, S@pageoffO\n"
+      } else {
+        "\tadrp\tR, SO\n\tadd\tR, R, #:lo12:SO\n"
+      }
+    1 =>
+      if st.apple {
+        "\tadrp\tR, S@tlvppage\n\tldr\tR, [R, S@tlvppageoff]\n"
+      } else {
+        "\tmrs\tR, tpidr_el0\n\tadd\tR, R, #:tprel_hi12:SO, lsl #12\n\tadd\tR, R, #:tprel_lo12_nc:SO\n"
+      }
+    2 =>
+      if st.apple {
+        "\tadrp\tR, S@gotpage\n\tldr\tR, [R, S@gotpageoff]\n"
+      } else {
+        "\tadrp\tR, :got:S\n\tldr\tR, [R, #:got_lo12:S]\n"
+      }
+    _ =>
+      if st.apple {
+        "\tadrp\tR, S@tlvppage\n\tldr\tR, [R, S@tlvppageoff]\n"
+      } else {
+        raise @util.QbeError::Ice("extern thread unavailable on arm64")
+      }
+  }
+  for c in tpl.to_array() {
+    match c {
+      'R' => sb.write_string(rn)
+      'S' => sb.write_string(sym)
+      'O' => sb.write_string(off)
+      _ => sb.write_char(c)
+    }
+  }
+}
+
+///|
 // Emit a constant into a register (C loadcon in arm64/emit.c).
 fn arm64_loadcon(
   st : Arm64EmitState,
@@ -262,52 +311,7 @@ fn arm64_loadcon(
   let sb = st.sb
   if con.kind == @types.CAddr {
     let rn = arm64_rname(r, @types.Kl)
-    // Local (fp-constant) symbols use the flavor's local prefix and are
-    // printed quoted, e.g. ".Lfp0" (ELF) or "Lfp0" (Mach-O); globals use the
-    // symbol prefix, e.g. "glo1" (ELF) or "_glo1" (Mach-O).
-    let l = st.interner.get(con.label)
-    let p = if con.is_local {
-      st.gasloc
-    } else {
-      @util.sym_prefix(st.gassym, l)
-    }
-    let mut off = ""
-    if con.bits.i != 0L {
-      off = "+" + con.bits.i.to_string()
-    }
-    let q = if con.is_local { "\"" } else { "" }
-    sb.write_string("\tadrp\t")
-    sb.write_string(rn)
-    sb.write_string(", ")
-    sb.write_string(q)
-    sb.write_string(p)
-    sb.write_string(l)
-    sb.write_string(off)
-    sb.write_string(q)
-    // Mach-O uses sym@page / sym@pageoff; ELF uses sym / #:lo12:sym.
-    if st.apple {
-      sb.write_string("@page\n")
-    } else {
-      sb.write_char('\n')
-    }
-    sb.write_string("\tadd\t")
-    sb.write_string(rn)
-    sb.write_string(", ")
-    sb.write_string(rn)
-    sb.write_string(", ")
-    if !st.apple {
-      sb.write_string("#:lo12:")
-    }
-    sb.write_string(q)
-    sb.write_string(p)
-    sb.write_string(l)
-    sb.write_string(off)
-    sb.write_string(q)
-    if st.apple {
-      sb.write_string("@pageoff\n")
-    } else {
-      sb.write_char('\n')
-    }
+    arm64_loadaddr(st, con, rn)
     return
   }
   let rn = arm64_rname(r, k)
@@ -677,20 +681,8 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   st.frame = 4 * f + 8 * o
 
   // C arm64/emit.c forces the function alignment to 4 for the Mach-O flavor.
-  if st.apple {
-    sb.write_string(".text\n.balign 4\n")
-  } else {
-    sb.write_string(".text\n.balign 16\n")
-  }
-  if fn_.is_export {
-    sb.write_string(".globl ")
-    sb.write_string(@util.sym_prefix(st.gassym, fn_.name))
-    sb.write_string(fn_.name)
-    sb.write_char('\n')
-  }
-  sb.write_string(@util.sym_prefix(st.gassym, fn_.name))
-  sb.write_string(fn_.name)
-  sb.write_string(":\n")
+  // C emitlnk (shared with the other GAS targets).
+  @gasdata.emitfnlnk(fn_, st.gassym, sb)
   // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
   // reference, which emits no .cfi directives.
   let dbg = @util.debug_info()

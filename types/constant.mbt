@@ -25,6 +25,25 @@ pub(all) struct Con {
   bits : ConBits // Value bits
   flt : Int32 // 0=integer, 1=print as s, 2=print as d
   is_local : Bool // True if local symbol
+  sym_type : Int32 // C Sym.type bits: 1 = thread (SThr), 2 = extern (SExt)
+}
+
+///|
+pub const SYM_THR : Int32 = 1
+
+///|
+pub const SYM_EXT : Int32 = 2
+
+///|
+// C (sym.type & SExt)
+pub fn Con::is_ext(self : Con) -> Bool {
+  (self.sym_type & SYM_EXT) != 0
+}
+
+///|
+// C (sym.type & SThr)
+pub fn Con::is_thr(self : Con) -> Bool {
+  (self.sym_type & SYM_THR) != 0
 }
 
 ///|
@@ -35,6 +54,7 @@ pub fn Con::new() -> Con {
     bits: ConBits::{ i: 0, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
+    sym_type: 0,
   }
 }
 
@@ -46,6 +66,7 @@ pub fn Con::int(i : Int64) -> Con {
     bits: ConBits::{ i, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
+    sym_type: 0,
   }
 }
 
@@ -59,6 +80,7 @@ pub fn Con::double(d : Double) -> Con {
     bits: ConBits::{ i: d.reinterpret_as_int64(), d, s: 0.0, },
     flt: 2,
     is_local: false,
+    sym_type: 0,
   }
 }
 
@@ -70,6 +92,7 @@ pub fn Con::single(s : Float) -> Con {
     bits: ConBits::{ i: s.reinterpret_as_uint().to_int64(), d: 0.0, s, },
     flt: 1,
     is_local: false,
+    sym_type: 0,
   }
 }
 
@@ -81,6 +104,20 @@ pub fn Con::addr(label : Int32) -> Con {
     bits: ConBits::{ i: 0, d: 0.0, s: 0.0, },
     flt: 0,
     is_local: false,
+    sym_type: 0,
+  }
+}
+
+///|
+// Symbol address with C Sym.type bits (thread/extern operand prefixes).
+pub fn Con::addr_sym(label : Int32, sym_type : Int32) -> Con {
+  Con::{
+    kind: CAddr,
+    label,
+    bits: ConBits::{ i: 0, d: 0.0, s: 0.0, },
+    flt: 0,
+    is_local: false,
+    sym_type,
   }
 }
 
@@ -115,6 +152,11 @@ pub fn Con::add(self : Con, other : Con) -> Con {
       },
       flt: self.flt,
       is_local: self.is_local,
+      sym_type: if other.kind == CAddr {
+        other.sym_type
+      } else {
+        self.sym_type
+      },
     }
   }
 }
@@ -132,5 +174,6 @@ pub fn Con::raw_bits(self : Con) -> Int64 {
 fn con_eq(c : Con, other : Con) -> Bool {
   c.kind == other.kind &&
   c.raw_bits() == other.raw_bits() &&
-  c.label == other.label
+  c.label == other.label &&
+  c.sym_type == other.sym_type
 }

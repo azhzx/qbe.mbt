@@ -41,6 +41,10 @@ pub(all) enum TokenKind {
   TData
   TType
   TExport
+  TExtern
+  TThread
+  TCommon
+  TSection
   TPhi
   Tdbgfile
   TJmp

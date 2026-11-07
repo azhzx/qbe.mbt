@@ -235,6 +235,7 @@ fn addcon(c0 : @types.Con, c1 : @types.Con, m : Int32) -> @types.Con? {
       },
       flt: c1.flt,
       is_local: c1.is_local,
+      sym_type: c1.sym_type,
     })
   } else if c1.kind == @types.CAddr {
     if c0.kind == @types.CAddr {
@@ -250,6 +251,7 @@ fn addcon(c0 : @types.Con, c1 : @types.Con, m : Int32) -> @types.Con? {
       },
       flt: c0.flt,
       is_local: c0.is_local,
+      sym_type: c1.sym_type,
     })
   } else {
     Some(@types.Con::{
@@ -262,6 +264,7 @@ fn addcon(c0 : @types.Con, c1 : @types.Con, m : Int32) -> @types.Con? {
       },
       flt: c0.flt,
       is_local: c0.is_local,
+      sym_type: c0.sym_type,
     })
   }
 }

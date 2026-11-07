@@ -114,6 +114,7 @@ fn fixarg(
       bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
       flt: 0,
       is_local: true,
+      sym_type: 0,
     }
     st.fn_.mems.push(a)
     r1 = @types.Ref::mem(n)
@@ -132,6 +133,25 @@ fn fixarg(
       @types.Ref::slot(s),
       @types.Ref::none(),
     )
+  } else if op != Some(@types.Call) && fixarg_has_ext_addr(st, r0) {
+    // C fixarg: GOT/TLS address operands (initial-exec/local-exec TLS, GOT).
+    let c = fixarg_addr_con(st, r0)
+    r1 = isel_newtmp(st, @types.Kl)
+    let mut r2 = r1
+    if c.bits.i != 0L {
+      r2 = isel_newtmp(st, @types.Kl)
+      let r3 = @types.Ref::con(st.fn_.get_con(c.bits.i))
+      emit(st, @types.Add, @types.Kl, r1, r2, r3)
+    }
+    let cc = @types.Con::addr_sym(c.label, c.sym_type)
+    let r3 = @types.Ref::con(st.fn_.get_con_by(cc))
+    emit(st, @types.Addr, @types.Kl, r2, r3, @types.Ref::none())
+    if r0.is_mem() {
+      let m = st.fn_.mems[r0.mem_val()]
+      m.offset = @types.Con::new()
+      m.base = r1
+      r1 = r0
+    }
   } else if !mem &&
     r0.is_con() &&
     st.fn_.cons[r0.con_val()].kind == @types.CAddr {
@@ -162,6 +182,30 @@ fn fixarg(
     emit(st, @types.Copy, k, r1, r0, @types.Ref::none())
   }
   r1
+}
+
+///|
+// C hascon for the fixarg GOT/TLS branch (RCon, or RMem's offset).
+fn fixarg_addr_con(st : IselState, r : @types.Ref) -> @types.Con {
+  if r.is_con() {
+    st.fn_.cons[r.con_val()]
+  } else {
+    st.fn_.mems[r.mem_val()].offset
+  }
+}
+
+///|
+// Whether r carries an extern (GOT/TLS) address constant.
+fn fixarg_has_ext_addr(st : IselState, r : @types.Ref) -> Bool {
+  if r.is_con() {
+    let c = st.fn_.cons[r.con_val()]
+    c.kind == @types.CAddr && c.is_ext()
+  } else if r.is_mem() {
+    let c = st.fn_.mems[r.mem_val()].offset
+    c.kind == @types.CAddr && c.is_ext()
+  } else {
+    false
+  }
 }
 
 ///|

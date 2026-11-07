@@ -11,7 +11,7 @@ enum PState {
 ///|
 // Parse a function definition
 // export: whether the function is exported
-fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
+fn Parser::parsefn(self : Self, lnk : Linkage) -> Unit raise {
   self.curblk = -1
   // Parse return class and function name
   // If next token is not TGlo, parse the return class first
@@ -42,7 +42,10 @@ fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
   }
   // Create the function
   let fn_ = @types.Fn::new(name_tok.raw)
-  fn_.is_export = is_export
+  fn_.is_export = lnk.is_export
+  fn_.align = lnk.align
+  fn_.sec = lnk.sec
+  fn_.secf = lnk.secf
   fn_.ret_ty = ret_ty
   // Pre-populate register temporaries (indices 0..Tmp0-1)
   fn_.init_regs()

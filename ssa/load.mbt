@@ -165,6 +165,7 @@ fn load(st : LoadState, sl : Slice, msk : UInt64, l : Loc) -> @types.Ref {
           bits: @types.ConBits::{ i: a.offset, d: 0.0, s: 0.0, },
           flt: 0,
           is_local: false,
+          sym_type: 0,
         })
         r = @types.Ref::con(c)
       }

@@ -27,6 +27,13 @@ pub(all) struct Dat {
   is_ref : Bool
   is_str : Bool
   mut is_export : Bool
+  // C Lnk: thread data goes to .tdata/.tbss, common to .comm, and an optional
+  // section directive overrides the default section. align is the .balign value.
+  mut is_thread : Bool
+  mut is_common : Bool
+  mut align : Int32
+  mut sec : String
+  mut secf : String
 }
 
 ///|
@@ -42,6 +49,11 @@ pub fn Dat::start() -> Dat {
     is_ref: false,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -58,6 +70,11 @@ pub fn Dat::end() -> Dat {
     is_ref: false,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -74,6 +91,11 @@ pub fn Dat::name(name : String, is_export : Bool) -> Dat {
     is_ref: false,
     is_str: false,
     is_export,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -90,6 +112,11 @@ pub fn Dat::align(a : Int64) -> Dat {
     is_ref: false,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -106,6 +133,11 @@ pub fn Dat::byte(b : Int64) -> Dat {
     is_ref: false,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -122,6 +154,11 @@ pub fn Dat::zero(n : Int64) -> Dat {
     is_ref: false,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -138,6 +175,11 @@ pub fn Dat::string(s : String) -> Dat {
     is_ref: false,
     is_str: true,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }
 
@@ -154,5 +196,10 @@ pub fn Dat::ref_to(name : String, offset : Int64) -> Dat {
     is_ref: true,
     is_str: false,
     is_export: false,
+    is_thread: false,
+    is_common: false,
+    align: 8,
+    sec: "",
+    secf: "",
   }
 }

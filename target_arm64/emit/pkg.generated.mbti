@@ -10,6 +10,8 @@ import {
 // Values
 pub fn arm64_emit_reset() -> Unit
 
+pub fn check_linkage_supported(Array[@types.Fn], Array[@types.Dat]) -> Unit raise
+
 pub fn debug_locs(@types.Fn, Bool) -> Array[@dwarf.DbgLoc]
 
 pub fn emit_arm64(@types.Fn, @util.Interner, Array[@types.Typ], String, String, Bool) -> String raise

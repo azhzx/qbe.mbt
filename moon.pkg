@@ -1,4 +1,5 @@
 import {
+  "azhzx/qbe/gasdata",
   "azhzx/qbe/lexer",
   "azhzx/qbe/parser",
   "azhzx/qbe/cfg",

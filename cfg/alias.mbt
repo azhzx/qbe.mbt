@@ -28,6 +28,7 @@ pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           slot: a.slot,
           sz: a.sz,
           m: a.m,
+          sym_type: a.sym_type,
         }
       } else {
         @types.AliasInfo::{
@@ -38,6 +39,7 @@ pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           slot: a.slot,
           sz: a.sz,
           m: a.m,
+          sym_type: a.sym_type,
         }
       }
     }
@@ -52,6 +54,7 @@ pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           slot: -1,
           sz: -1,
           m: 0UL,
+          sym_type: 0,
         }
       } else {
         @types.AliasInfo::{
@@ -62,6 +65,7 @@ pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           slot: -1,
           sz: -1,
           m: 0UL,
+          sym_type: 0,
         }
       }
     }
@@ -93,7 +97,7 @@ pub fn check_alias(
     return (NoAlias, delta)
   }
   if ap.kind == @types.ASym && aq.kind == @types.ASym {
-    if ap.label != aq.label {
+    if ap.label != aq.label || ap.sym_type != aq.sym_type {
       return (MayAlias, delta)
     }
     if ovlap {
@@ -172,6 +176,7 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
         slot: -1,
         sz: -1,
         m: 0UL,
+        sym_type: 0,
       }
     }
     // Instructions (indexed: a blit consumes its blit1 as well)

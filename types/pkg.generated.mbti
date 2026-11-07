@@ -462,6 +462,10 @@ pub const S9 : Int32 = 23
 
 pub const SP : Int32 = 27
 
+pub const SYM_EXT : Int32 = 2
+
+pub const SYM_THR : Int32 = 1
+
 pub const T0 : Int32 = 1
 
 pub const T1 : Int32 = 2
@@ -637,6 +641,7 @@ pub(all) struct AliasInfo {
   mut slot : Int32
   mut sz : Int32
   mut m : UInt64
+  mut sym_type : Int32
 }
 pub fn AliasInfo::default() -> Self
 
@@ -716,11 +721,15 @@ pub(all) struct Con {
   bits : ConBits
   flt : Int32
   is_local : Bool
+  sym_type : Int32
 }
 pub fn Con::add(Self, Self) -> Self
 pub fn Con::addr(Int32) -> Self
+pub fn Con::addr_sym(Int32, Int32) -> Self
 pub fn Con::double(Double) -> Self
 pub fn Con::int(Int64) -> Self
+pub fn Con::is_ext(Self) -> Bool
+pub fn Con::is_thr(Self) -> Bool
 pub fn Con::is_zero(Self, Bool) -> Bool
 pub fn Con::new() -> Self
 pub fn Con::raw_bits(Self) -> Int64
@@ -752,6 +761,11 @@ pub(all) struct Dat {
   is_ref : Bool
   is_str : Bool
   mut is_export : Bool
+  mut is_thread : Bool
+  mut is_common : Bool
+  mut align : Int32
+  mut sec : String
+  mut secf : String
 }
 pub fn Dat::align(Int64) -> Self
 pub fn Dat::byte(Int64) -> Self
@@ -829,6 +843,9 @@ pub(all) struct Fn {
   mut reg : UInt64
   mut slot : Int32
   mut is_export : Bool
+  mut align : Int32
+  mut sec : String
+  mut secf : String
   mut is_vararg : Bool
   mut has_dynalloc : Bool
   mut leaf : Bool

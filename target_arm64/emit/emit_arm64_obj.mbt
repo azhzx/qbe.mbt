@@ -60,6 +60,7 @@ pub fn emit_arm64_object(
   interner : @util.Interner,
   apple : Bool,
 ) -> Bytes raise {
+  check_linkage_supported(funcs, datas)
   arm64_emit_reset()
   let text_words : Array[Int32] = []
   let fns : Array[(String, Int32)] = []

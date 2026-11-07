@@ -212,6 +212,113 @@ fn rv64_emitaddr(st : Rv64EmitState, con : @types.Con) -> Unit {
 }
 
 ///|
+// C rv64/emit.c loadaddr: expand the address for the symbol type.
+fn rv64_loadaddr(
+  st : Rv64EmitState,
+  con : @types.Con,
+  rn : String,
+) -> Unit raise {
+  let l = st.interner.get(con.label)
+  let p = if con.is_local { st.gasloc } else { @util.sym_prefix(st.gassym, l) }
+  let q = if con.is_local { "\"" } else { "" }
+  let sym = q + p + l + q
+  let off = if con.bits.i != 0L {
+    if con.bits.i > 0L {
+      "+" + con.bits.i.to_string()
+    } else {
+      con.bits.i.to_string()
+    }
+  } else {
+    ""
+  }
+  match con.sym_type {
+    0 => {
+      st.sb.write_string("\tlla ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", ")
+      st.sb.write_string(sym)
+      st.sb.write_string(off)
+      st.sb.write_string("\n")
+    }
+    2 => {
+      st.sb.write_string("\tlga ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", ")
+      st.sb.write_string(sym)
+      st.sb.write_string("\n")
+    }
+    1 => {
+      st.sb.write_string("\tlui ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", %tprel_hi(")
+      st.sb.write_string(l)
+      st.sb.write_string(")")
+      st.sb.write_string(off)
+      st.sb.write_string("\n")
+      st.sb.write_string("\tadd ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", tp, %tprel_add(")
+      st.sb.write_string(l)
+      st.sb.write_string(")")
+      st.sb.write_string(off)
+      st.sb.write_string("\n")
+      st.sb.write_string("\taddi ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", %tprel_lo(")
+      st.sb.write_string(l)
+      st.sb.write_string(")")
+      st.sb.write_string(off)
+      st.sb.write_string("\n")
+    }
+    _ => raise @util.QbeError::Ice("extern thread unavailable on rv64")
+  }
+}
+
+///|
+// C rv64/emit.c loadcon.
+fn rv64_loadcon(
+  st : Rv64EmitState,
+  con : @types.Con,
+  reg : Int32,
+  k : @types.Class,
+) -> Unit raise {
+  let rn = @types.rv64_reg_name(reg)
+  match con.kind {
+    @types.CAddr => rv64_loadaddr(st, con, rn)
+    @types.CBits => {
+      let n = if k.wide() == 0 {
+        con.bits.i.to_int().to_int64()
+      } else {
+        con.bits.i
+      }
+      st.sb.write_string("\tli ")
+      st.sb.write_string(rn)
+      st.sb.write_string(", ")
+      st.sb.write_string(n.to_string())
+      st.sb.write_string("\n")
+    }
+    _ => raise @util.QbeError::Ice("invalid constant")
+  }
+}
+
+///|
+// C rv64/emit.c fixmem: GOT/TLS address operands need a scratch register.
+fn rv64_fixmem(st : Rv64EmitState, r : @types.Ref) -> @types.Ref raise {
+  if r.is_con() {
+    let c = st.fn_.cons[r.con_val()]
+    if c.kind == @types.CAddr && c.sym_type != 0 {
+      rv64_loadcon(st, c, @types.T6, @types.Kl)
+      return @types.Ref::tmp(@types.T6)
+    }
+  }
+  r
+}
+
+///|
 // Format and emit an instruction (C emitf).
 fn rv64_emitf(st : Rv64EmitState, fmt : String, i : @types.Ins) -> Unit {
   st.sb.write_char('\t')
@@ -397,7 +504,8 @@ fn rv64_emit_load(
   dst : String,
   addr : @types.Ref,
   is_float : Bool,
-) -> Unit {
+) -> Unit raise {
+  let addr = rv64_fixmem(st, addr)
   if addr.is_tmp() {
     st.sb.write_string("\t")
     st.sb.write_string(ldname)
@@ -472,7 +580,8 @@ fn rv64_emit_store(
   stname : String,
   val : String,
   addr : @types.Ref,
-) -> Unit {
+) -> Unit raise {
+  let addr = rv64_fixmem(st, addr)
   if addr.is_tmp() {
     st.sb.write_string("\t")
     st.sb.write_string(stname)
@@ -527,14 +636,8 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
       if i.arg1.is_con() {
         let con = st.fn_.cons[i.arg1.con_val()]
         match con.kind {
-          @types.CAddr => {
-            let rn = @types.rv64_reg_name(i.to.tmp_val())
-            st.sb.write_string("\tlla ")
-            st.sb.write_string(rn)
-            st.sb.write_string(", ")
-            rv64_emitaddr(st, con)
-            st.sb.write_char('\n')
-          }
+          @types.CAddr =>
+            rv64_loadaddr(st, con, @types.rv64_reg_name(i.to.tmp_val()))
           @types.CBits => {
             let rn = @types.rv64_reg_name(i.to.tmp_val())
             // C loadcon: non-wide constants are truncated to int32.
@@ -592,14 +695,8 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
       } else if i.arg1.is_con() {
         let con = st.fn_.cons[i.arg1.con_val()]
         match con.kind {
-          @types.CAddr => {
-            let rn = @types.rv64_reg_name(i.to.tmp_val())
-            st.sb.write_string("\tlla ")
-            st.sb.write_string(rn)
-            st.sb.write_string(", ")
-            rv64_emitaddr(st, con)
-            st.sb.write_char('\n')
-          }
+          @types.CAddr =>
+            rv64_loadaddr(st, con, @types.rv64_reg_name(i.to.tmp_val()))
           _ => abort("invalid address")
         }
       }
@@ -703,12 +800,8 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
 fn rv64_emitfn(st : Rv64EmitState) -> Unit raise {
   let fn_ = st.fn_
 
-  // C emitfnlnk: section, .balign (default 16), .globl, label.
-  st.sb.write_string(".text\n.balign 16\n")
-  if fn_.is_export {
-    st.sb.write_string(".globl \{st.gassym}\{fn_.name}\n")
-  }
-  st.sb.write_string("\{st.gassym}\{fn_.name}:\n")
+  // C emitfnlnk (shared with the other GAS targets).
+  @gasdata.emitfnlnk(fn_, st.gassym, st.sb)
 
   if fn_.is_vararg {
     st.sb.write_string("\tadd sp, sp, -64\n")

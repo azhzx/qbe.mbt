@@ -319,10 +319,11 @@ found or confirmed during the audit round:
   memory operand where the reference keeps `addr`+`add`, so a `blit` between
   two global symbols is semantically right but not byte-identical. Porting
   the generated matcher is the remaining isel fidelity task.
-- **Quoted global symbols** are lexed/parsed/emitted (the quotes are part of
-  the symbol name; emitters skip the symbol prefix for them). `thread`/
-  `common`/`section`/`extern` linkage and `Sym.type` remain part of the TLS
-  gap.
+- **TLS and linkage are implemented**: quoted globals, `thread`/`common`/
+  `section`/`extern` keywords, `Sym.type` bits, .tdata/.tbss/.comm/custom
+  sections and per-target TLS/GOT relocations (see AUDIT-LEDGER.md). The
+  self-contained arm64 object writer rejects these features loudly (use
+  `--emit asm`); wasm treats thread data as ordinary static data.
 - **Lexer/parser float literals were incomplete.** Signed exponents,
   hexadecimal floats and `inf`/`nan` were split into several tokens and
   rejected; `$` was not allowed inside identifiers. The lexer and the float
