@@ -128,8 +128,8 @@ let omap : Array[(Int32, Int32, String)] = [
   (@types.Flagieq.index() + 11, KI, "setae %B=\n\tmovzb%k %B=, %="),
   (@types.Flagieq.index() + 10, KI, "setz %B=\n\tmovzb%k %B=, %="),
   (@types.Flagieq.index() + 15, KI, "setnz %B=\n\tmovzb%k %B=, %="),
-  (@types.Flagieq.index() + 16, KI, "setnp %B=\n\tmovsb%k %B=, %="),
-  (@types.Flagieq.index() + 17, KI, "setp %B=\n\tmovsb%k %B=, %="),
+  (@types.Flagieq.index() + 16, KI, "setnp %B=\n\tmovzb%k %B=, %="),
+  (@types.Flagieq.index() + 17, KI, "setp %B=\n\tmovzb%k %B=, %="),
 ]
 
 ///|
@@ -211,8 +211,9 @@ fn emitcon(st : EmitState, con : @types.Con) -> Unit {
         st.sb.write_string(st.interner.get(con.label))
         st.sb.write_string("\"")
       } else {
-        st.sb.write_string(st.gassym)
-        st.sb.write_string(st.interner.get(con.label))
+        let nm = st.interner.get(con.label)
+        st.sb.write_string(@util.sym_prefix(st.gassym, nm))
+        st.sb.write_string(nm)
       }
       if con.bits.i != 0L {
         st.sb.write_string(s64_plus(con.bits.i))
@@ -479,6 +480,21 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         emit_omap(st, ins)
       }
     }
+    @types.Neg => {
+      if !ins.to.eq(ins.arg1) {
+        emitf(st, "mov%k %0, %=", ins)
+      }
+      if ins.cls.base() == 0 {
+        emitf(st, "neg%k %=", ins)
+      } else {
+        let n = @types.gasstash(neg_mask(ins.cls), 0L, 16)
+        st.sb.write_string("\txorp")
+        st.sb.write_string(if ins.cls == @types.Ks { "s" } else { "d" })
+        st.sb.write_string(" \{st.gasloc}fp\{n}(%rip), %")
+        st.sb.write_string(regtoa(ins.to.tmp_val(), SLONG))
+        st.sb.write_string("\n")
+      }
+    }
     @types.Sub =>
       if ins.to.eq(ins.arg2) {
         if ins.cls.base() == 0 {
@@ -598,9 +614,11 @@ pub fn emitfn(
   // C emitlnk: section, .balign (function alignment, default 16), .globl, label.
   st.sb.write_string(".text\n.balign 16\n")
   if fn_.is_export {
-    st.sb.write_string(".globl \{gassym}\{fn_.name}\n")
+    st.sb.write_string(
+      ".globl \{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}\n",
+    )
   }
-  st.sb.write_string("\{gassym}\{fn_.name}:\n")
+  st.sb.write_string("\{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}:\n")
   // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
   // reference, which emits no .cfi directives.
   let dbg = @util.debug_info()
@@ -762,8 +780,12 @@ pub fn emitfn(
   // C elf_emitfnfin emits the function type/size after each function; the
   // Mach-O flavor emits nothing.
   if !apple {
-    st.sb.write_string(".type \{gassym}\{fn_.name}, @function\n")
-    st.sb.write_string(".size \{gassym}\{fn_.name}, .-\{gassym}\{fn_.name}\n")
+    st.sb.write_string(
+      ".type \{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}, @function\n",
+    )
+    st.sb.write_string(
+      ".size \{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}, .-\{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}\n",
+    )
   }
   if dbg {
     st.sb.write_string("\t.cfi_endproc\n")
@@ -793,9 +815,9 @@ pub fn gasemitdat(
         sb.write_string(".balign 8\n")
       }
       if d.is_export {
-        sb.write_string(".globl \{gassym}\{d.str}\n")
+        sb.write_string(".globl \{@util.sym_prefix(gassym, d.str)}\{d.str}\n")
       }
-      sb.write_string("\{gassym}\{d.str}:\n")
+      sb.write_string("\{@util.sym_prefix(gassym, d.str)}\{d.str}:\n")
     }
     @types.DZ => sb.write_string("\t.fill \{d.num},1,0\n")
     _ => {
@@ -816,7 +838,7 @@ pub fn gasemitdat(
         // C gasemitdat prefixes referenced symbols with the gas symbol
         // prefix (empty for ELF, "_" for Mach-O).
         sb.write_string(
-          "\{dtoa} \{gassym}\{d.ref_name}\{s64_plus(d.ref_offset)}\n",
+          "\{dtoa} \{@util.sym_prefix(gassym, d.ref_name)}\{d.ref_name}\{s64_plus(d.ref_offset)}\n",
         )
       } else {
         // C emitdat masks the value to the data item width.

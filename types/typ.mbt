@@ -1,5 +1,6 @@
 ///|
 // Field type within aggregate type
+#derive(Eq, Debug)
 pub(all) enum FieldType {
   FEnd
   Fb
@@ -10,13 +11,14 @@ pub(all) enum FieldType {
   Fd
   FPad
   FTyp
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) struct Field {
   kind : FieldType
   len : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Field::new(kind : FieldType, len : Int32) -> Field {
@@ -30,6 +32,7 @@ pub fn Field::end() -> Field {
 
 ///|
 // Aggregate type definition - corresponds to struct Typ in QBE
+#derive(Debug, Eq)
 pub(all) struct Typ {
   mut name : String
   mut dark : Int32
@@ -37,7 +40,7 @@ pub(all) struct Typ {
   mut size : Int64
   mut nunion : Int32
   fields : Array[Field]
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Typ::new(name : String) -> Typ {

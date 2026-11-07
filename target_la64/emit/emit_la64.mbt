@@ -80,6 +80,8 @@ fn la64_emit_new(
 let la64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), KI, "add.%k %=, %0, %1"),
   (@types.Add.index(), KA, "fadd.%k %=, %0, %1"),
+  (@types.Neg.index(), KI, "sub.%k %=, $zero, %0"),
+  (@types.Neg.index(), KA, "fneg.%k %=, %0"),
   (@types.Sub.index(), KI, "sub.%k %=, %0, %1"),
   (@types.Sub.index(), KA, "fsub.%k %=, %0, %1"),
   (@types.Div.index(), KI, "div.%k %=, %0, %1"),
@@ -138,6 +140,12 @@ let la64_omap : Array[(Int32, Int32, String)] = [
   // into the scratch float register first.
   (@types.Swtof.index(), KA, "movgr2fr.w %?, %0\n\tffint.%k.w %=, %?"),
   (@types.Sltof.index(), KA, "movgr2fr.d %?, %0\n\tffint.%k.l %=, %?"),
+  (@types.Stoui.index(), KW, "ftintrz.wu.s $ft15, %0\n\tmovfr2gr.s %=, $ft15"),
+  (@types.Stoui.index(), KL, "ftintrz.lu.s $ft15, %0\n\tmovfr2gr.d %=, $ft15"),
+  (@types.Dtoui.index(), KW, "ftintrz.wu.d $ft15, %0\n\tmovfr2gr.s %=, $ft15"),
+  (@types.Dtoui.index(), KL, "ftintrz.lu.d $ft15, %0\n\tmovfr2gr.d %=, $ft15"),
+  (@types.Uwtof.index(), KA, "movgr2fr.w %?, %0\n\tffint.%k.wu %=, %?"),
+  (@types.Ultowf.index(), KA, "movgr2fr.d %?, %0\n\tffint.%k.lu %=, %?"),
   (@types.Cast.index(), KW, "movfr2gr.s %=, %0"),
   (@types.Cast.index(), KL, "movfr2gr.d %=, %0"),
   (@types.Cast.index(), KS, "movgr2fr.w %=, %0"),
@@ -447,14 +455,14 @@ fn la64_emitcopy(
   to : @types.Ref,
   from : @types.Ref,
   k : @types.Class,
-) -> Unit {
+) -> Unit raise {
   let ins = @types.Ins::new(@types.Copy, k, to, from, @types.Ref::none())
   la64_emitins(st, ins)
 }
 
 ///|
 // Emit a single instruction (C emitins).
-fn la64_emitins(st : La64EmitState, i : @types.Ins) -> Unit {
+fn la64_emitins(st : La64EmitState, i : @types.Ins) -> Unit raise {
   match i.op {
     @types.Nop => ()
     @types.Dbgloc =>
@@ -604,9 +612,10 @@ fn la64_emitins(st : La64EmitState, i : @types.Ins) -> Unit {
         }
       }
       if !found {
-        st.sb.write_string("# unknown instruction: ")
-        st.sb.write_string(i.op.name())
-        st.sb.write_char('\n')
+        // See rv64: never emit plausible assembly with an operation missing.
+        raise @util.QbeError::Ice(
+          "la64: no match for instruction " + i.op.name(),
+        )
       }
     }
   }
@@ -614,7 +623,7 @@ fn la64_emitins(st : La64EmitState, i : @types.Ins) -> Unit {
 
 ///|
 // Emit function prologue, body, and epilogues (C emitfn).
-fn la64_emitfn(st : La64EmitState) -> Unit {
+fn la64_emitfn(st : La64EmitState) -> Unit raise {
   let fn_ = st.fn_
 
   st.sb.write_string("\t.globl ")
@@ -798,7 +807,7 @@ pub fn emit_la64(
   gasloc : String,
   gassym : String,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let _ = all_typs
   let sb = StringBuilder()
   let st = la64_emit_new(fn_, interner, gasloc, gassym, sb)

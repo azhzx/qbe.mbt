@@ -126,6 +126,73 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           emit(st, @types.Copy, k, r0, i.arg2, @types.Ref::none())
         }
       }
+    @types.Uwtof => {
+      let r0 = new_utof_tmp(st, "utof", @types.Kl)
+      emit(st, @types.Sltof, k, i.to, r0, @types.Ref::none())
+      emit(st, @types.Extuw, @types.Kl, r0, i.arg1, @types.Ref::none())
+      let idx = st.buf.length() - 1
+      st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, k, Some(@types.Extuw))
+    }
+    @types.Ultowf => {
+      let kc = if k == @types.Ks { @types.Kw } else { @types.Kl }
+      let sh = if k == @types.Ks { 23L } else { 52L }
+      let r0 = new_utof_tmp(st, "utof", k)
+      let tmp : Array[@types.Ref] = []
+      for _ in 0..<4 {
+        tmp.push(new_utof_tmp(st, "utof", @types.Kl))
+      }
+      for _ in 0..<3 {
+        tmp.push(new_utof_tmp(st, "utof", kc))
+      }
+      emit(st, @types.Cast, k, i.to, tmp[6], @types.Ref::none())
+      emit(st, @types.Add, kc, tmp[6], tmp[4], tmp[5])
+      emit(
+        st,
+        @types.Shl,
+        kc,
+        tmp[5],
+        tmp[1],
+        @types.Ref::con(st.fn_.get_con(sh)),
+      )
+      emit(st, @types.Cast, kc, tmp[4], r0, @types.Ref::none())
+      emit(st, @types.Sltof, k, r0, tmp[3], @types.Ref::none())
+      emit(st, @types.Or, @types.Kl, tmp[3], tmp[0], tmp[2])
+      // C selects this shift in place; do the same before continuing so the
+      // non-constant shift amount goes through RCX.
+      sel(st, @types.Ins::new(@types.Shr, @types.Kl, tmp[2], i.arg1, tmp[1]))
+      emit(
+        st,
+        @types.Shr,
+        @types.Kl,
+        tmp[1],
+        i.arg1,
+        @types.Ref::con(st.fn_.get_con(63L)),
+      )
+      let idx = st.buf.length() - 1
+      st.buf[idx].arg1 = fixarg(
+        st,
+        st.buf[idx].arg1,
+        @types.Kl,
+        Some(@types.Shr),
+      )
+      emit(
+        st,
+        @types.And,
+        @types.Kl,
+        tmp[0],
+        i.arg1,
+        @types.Ref::con(st.fn_.get_con(1L)),
+      )
+      let idx2 = st.buf.length() - 1
+      st.buf[idx2].arg1 = fixarg(
+        st,
+        st.buf[idx2].arg1,
+        @types.Kl,
+        Some(@types.And),
+      )
+    }
+    @types.Stoui => sel_ftoui(st, i, @types.Ks, @types.Stosi)
+    @types.Dtoui => sel_ftoui(st, i, @types.Kd, @types.Dtosi)
     @types.Sar | @types.Shr | @types.Shl =>
       if i.arg2.is_con() {
         sel_emit(st, i)
@@ -184,6 +251,7 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
     | @types.Copy
     | @types.Add
     | @types.Sub
+    | @types.Neg
     | @types.Mul
     | @types.And
     | @types.Or
@@ -550,4 +618,65 @@ fn emit_block(st : IselState) -> Array[@types.Ins] {
     r.push(st.buf[k])
   }
   r
+}
+
+///|
+// A new temporary with C's name prefix (so -d dumps match the reference).
+fn new_utof_tmp(
+  st : IselState,
+  prefix : String,
+  k : @types.Class,
+) -> @types.Ref {
+  @types.Ref::tmp(st.fn_.new_tmp(prefix, k))
+}
+
+///|
+// Lower an unsigned float-to-int conversion (C amd64/isel.c Ostoui/Odtoui).
+// kc is the source floating-point class (Ks or Kd); the instruction op is
+// already Stosi or Dtosi because the caller rewrote it.
+fn sel_ftoui(
+  st : IselState,
+  i : @types.Ins,
+  kc : @types.Class,
+  opsi : @types.Op,
+) -> Unit raise {
+  let k = i.cls
+  if k == @types.Kw {
+    let r0 = new_utof_tmp(st, "ftou", @types.Kl)
+    emit(st, @types.Copy, @types.Kw, i.to, r0, @types.Ref::none())
+    let i2 = i
+    i2.op = opsi
+    i2.cls = @types.Kl
+    i2.to = r0
+    sel(st, i2)
+    return
+  }
+  let bias = if kc == @types.Ks {
+    0xDF000000L
+  } else {
+    0xC3E0000000000000UL.reinterpret_as_int64()
+  }
+  let r0 = new_utof_tmp(st, "ftou", kc)
+  let tmp : Array[@types.Ref] = []
+  for _ in 0..<4 {
+    tmp.push(new_utof_tmp(st, "ftou", @types.Kl))
+  }
+  emit(st, @types.Or, @types.Kl, i.to, tmp[0], tmp[3])
+  emit(st, @types.And, @types.Kl, tmp[3], tmp[2], tmp[1])
+  emit(st, opsi, @types.Kl, tmp[2], r0, @types.Ref::none())
+  emit(st, @types.Add, kc, r0, @types.Ref::con(st.fn_.get_con(bias)), i.arg1)
+  let aidx = st.buf.length() - 1
+  st.buf[aidx].arg1 = fixarg(st, st.buf[aidx].arg1, kc, Some(@types.Add))
+  st.buf[aidx].arg2 = fixarg(st, st.buf[aidx].arg2, kc, Some(@types.Add))
+  emit(
+    st,
+    @types.Sar,
+    @types.Kl,
+    tmp[1],
+    tmp[0],
+    @types.Ref::con(st.fn_.get_con(63L)),
+  )
+  emit(st, opsi, @types.Kl, tmp[0], i.arg1, @types.Ref::none())
+  let idx = st.buf.length() - 1
+  st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, @types.Kl, Some(opsi))
 }

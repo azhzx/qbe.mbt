@@ -8,7 +8,7 @@ priv struct RMap {
   t : Array[Int32] // 64 entries
   r : Array[Int32] // 64 entries
   w : Array[Int32] // 64 entries, wait list for unmatched hints
-  mut b : @types.BSet
+  b : @types.BSet
   mut n : Int32
 }
 
@@ -24,8 +24,9 @@ fn rmap_new(nt : Int32) -> RMap {
 }
 
 ///|
-// Copy of the mapping arrays (C rcopy). The BSet bits are never read from
-// the copies, so sharing the reference is fine.
+// Copy of the mapping arrays and bitmap (C rcopy: memcpy + bscopy). The bits
+// must be copied, not aliased: step 3 mutates beg's bitmap and the end map of
+// the same block would otherwise change with it.
 fn rcopy(ma : RMap, mb : RMap) -> Unit {
   for i in 0..<64 {
     ma.t[i] = mb.t[i]
@@ -33,7 +34,7 @@ fn rcopy(ma : RMap, mb : RMap) -> Unit {
     ma.w[i] = mb.w[i]
   }
   ma.n = mb.n
-  ma.b = mb.b
+  ma.b.copy_from(mb.b)
 }
 
 ///|
@@ -174,26 +175,6 @@ fn ralloctry(st : RState, m : RMap, t : Int32, try_ : Bool) -> @types.Ref raise 
       }
     }
     if found < 0 {
-      let mut dbg = ""
-      for zz in 0..<64 {
-        if m.b.has(zz) {
-          dbg = dbg + zz.to_string() + ","
-        }
-      }
-      println(
-        "DBG ralloctry t=" +
-        t.to_string() +
-        " cls=" +
-        st.fn_.tmps[t].cls.code().to_string() +
-        " r0=" +
-        r0.to_string() +
-        " r1=" +
-        r1.to_string() +
-        " m.n=" +
-        m.n.to_string() +
-        " m.b=" +
-        dbg,
-      )
       raise @util.QbeError::Ice("no more regs")
     }
     r = found
@@ -787,6 +768,11 @@ pub fn rega(
     // predecessors (if any, -1 otherwise)
     let rl : Array[Int32] = Array::make(64, 0)
     for p in s.phi {
+      // C rega.c: only a phi whose destination is still a temporary takes
+      // part in this step (a slot destination is already materialised).
+      if !p.to.is_tmp() {
+        continue
+      }
       let r = rfind(m, p.to.tmp_val())
       if r == -1 {
         continue

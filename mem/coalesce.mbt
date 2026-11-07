@@ -107,11 +107,14 @@ fn slot_load(
   match slot_of(r, fn_, al) {
     Some((idx, off)) => {
       let s = sl[idx]
-      // C load(): radd first and unconditionally - a slot that is read for the
-      // first time becomes live here - then OR in the bits.
-      radd(s.r, ip)
+      // C load(): only a read whose bits survive the slot's write mask makes
+      // the slot live at ip; a read wholly outside the bytes ever written
+      // through it leaves s->l zero and adds nothing.
       s.l = s.l | shl_bits(x, off)
       s.l = s.l & s.m
+      if s.l != 0UL {
+        radd(s.r, ip)
+      }
     }
     None => ()
   }
@@ -434,6 +437,10 @@ pub fn coalesce(
         // C CON_Z: the zero constant is interned at index 0 in this port.
         ui.arg2 = @types.Ref::con(fn_.get_con(0))
       } else {
+        // C mem.c: a blit is a pair, so removing one half removes the other.
+        if ui.op == @types.Blit0 {
+          set_nop(fn_.blks[u.blk_id].ins[u.ins_idx + 1])
+        }
         set_nop(ui)
       }
     }
@@ -529,7 +536,10 @@ pub fn coalesce(
       Some((s_a, off0)) =>
         match slot_of(ins0.arg2, fn_, al) {
           Some((s_b, off1)) =>
-            if s_a == s_b {
+            // C compares the slots the two addresses were *fused* into
+            // (s->s == s0->s), not the slot entries they resolve to: two
+            // entries of one fused group must still be detected.
+            if sl[s_a].s == sl[s_b].s {
               if off0 < off1 {
                 let raw = fn_.blks[bid].ins[ii + 1].arg1.rint_val()
                 if raw >= 0 {

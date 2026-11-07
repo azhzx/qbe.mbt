@@ -1,11 +1,12 @@
 ///|
 // Memory address (amd64-style addressing)
+#derive(Debug)
 pub(all) struct Addr {
   mut offset : Con
   mut base : Ref
   mut index : Ref
   mut scale : Int32
-} derive(Debug)
+}
 
 ///|
 pub fn Addr::new() -> Addr {
@@ -14,6 +15,7 @@ pub fn Addr::new() -> Addr {
 
 ///|
 // Function - corresponds to struct Fn in QBE
+#derive(Debug)
 pub(all) struct Fn {
   name : String
   mut start_id : Int32 // Start block id
@@ -38,7 +40,7 @@ pub(all) struct Fn {
   mut dbg_name : String
   mut dbg_dir : String
   mut dbg_vars : Array[DbgVar]
-} derive(Debug)
+}
 
 ///|
 pub fn Fn::new(name : String) -> Fn {

@@ -97,6 +97,8 @@ let rv64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), KA, "fadd.%k %=, %0, %1"),
   (@types.Sub.index(), KI, "sub%k %=, %0, %1"),
   (@types.Sub.index(), KA, "fsub.%k %=, %0, %1"),
+  (@types.Neg.index(), KI, "neg%k %=, %0"),
+  (@types.Neg.index(), KA, "fneg.%k %=, %0"),
   (@types.Div.index(), KI, "div%k %=, %0, %1"),
   (@types.Div.index(), KA, "fdiv.%k %=, %0, %1"),
   (@types.Rem.index(), KI, "rem%k %=, %0, %1"),
@@ -154,6 +156,12 @@ let rv64_omap : Array[(Int32, Int32, String)] = [
   (@types.Dtosi.index(), KL, "fcvt.l.d %=, %0, rtz"),
   (@types.Swtof.index(), KA, "fcvt.%k.w %=, %0"),
   (@types.Sltof.index(), KA, "fcvt.%k.l %=, %0"),
+  (@types.Stoui.index(), KW, "fcvt.wu.s %=, %0, rtz"),
+  (@types.Stoui.index(), KL, "fcvt.lu.s %=, %0, rtz"),
+  (@types.Dtoui.index(), KW, "fcvt.wu.d %=, %0, rtz"),
+  (@types.Dtoui.index(), KL, "fcvt.lu.d %=, %0, rtz"),
+  (@types.Uwtof.index(), KA, "fcvt.%k.wu %=, %0"),
+  (@types.Ultowf.index(), KA, "fcvt.%k.lu %=, %0"),
   (@types.Cast.index(), KW, "fmv.x.w %=, %0"),
   (@types.Cast.index(), KL, "fmv.x.d %=, %0"),
   (@types.Cast.index(), KS, "fmv.w.x %=, %0"),
@@ -507,7 +515,7 @@ fn rv64_emit_store(
 
 ///|
 // Emit a single instruction (C emitins).
-fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
+fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
   match i.op {
     @types.Nop => ()
     @types.Dbgloc =>
@@ -680,9 +688,11 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
         }
       }
       if !found {
-        st.sb.write_string("# unknown instruction: ")
-        st.sb.write_string(i.op.name())
-        st.sb.write_char('\n')
+        // Silently commenting the instruction out emitted plausible-looking
+        // assembly with the operation missing; fail like amd64/arm64 do.
+        raise @util.QbeError::Ice(
+          "rv64: no match for instruction " + i.op.name(),
+        )
       }
     }
   }
@@ -690,7 +700,7 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit {
 
 ///|
 // Emit function prologue and epilogue (C rv64_emitfn).
-fn rv64_emitfn(st : Rv64EmitState) -> Unit {
+fn rv64_emitfn(st : Rv64EmitState) -> Unit raise {
   let fn_ = st.fn_
 
   // C emitfnlnk: section, .balign (default 16), .globl, label.
@@ -882,7 +892,7 @@ pub fn emit_rv64(
   gassym : String,
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let _ = (gasloc, gassym)
   let sb = StringBuilder()
   let st = rv64_emit_new(fn_, interner, gasloc, gassym, sb)

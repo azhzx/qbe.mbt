@@ -12,6 +12,7 @@
 
 ///|
 // Return classification of a function (matches QBE's `rcls`).
+#derive(Eq, Debug)
 pub(all) enum Ret {
   Void
   Word
@@ -22,7 +23,7 @@ pub(all) enum Ret {
   // `function :type` signature, and the target's ABI pass decides whether the
   // value goes in registers or through a hidden pointer (C retc).
   Wide
-} derive(Eq, Debug)
+}
 
 ///|
 // The IR class corresponding to a return kind (`Kx` for void).

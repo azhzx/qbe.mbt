@@ -33,6 +33,11 @@ fn sext32(v : Int64) -> Int64 {
 }
 
 ///|
+fn zx32_fold(v : Int64) -> UInt64 {
+  v.reinterpret_as_uint64() & 0xFFFFFFFFUL
+}
+
+///|
 // The double value of a con (C union's .fd view of the raw bits).
 fn con_double(c : @types.Con) -> Double {
   c.raw_bits().reinterpret_as_double()
@@ -61,7 +66,7 @@ fn foldint(
   if op == @types.Add {
     if cl.kind == @types.CAddr {
       if cr.kind == @types.CAddr {
-        raise @util.QbeError::Ice("undefined addition (addr + addr)")
+        return (true, @types.Con::new())
       }
       lab = cl.label
       typ = @types.CAddr
@@ -75,16 +80,32 @@ fn foldint(
         lab = cl.label
         typ = @types.CAddr
       } else if cl.label != cr.label {
-        raise @util.QbeError::Ice("undefined substraction (addr1 - addr2)")
+        return (true, @types.Con::new())
       }
     } else if cr.kind == @types.CAddr {
-      raise @util.QbeError::Ice("undefined substraction (num - addr)")
-    }
-  } else if cl.kind == @types.CAddr || cr.kind == @types.CAddr {
-    if is_long_cmp(op) {
       return (true, @types.Con::new())
     }
-    raise @util.QbeError::Ice("invalid address operand")
+  } else if cl.kind == @types.CAddr || cr.kind == @types.CAddr {
+    return (true, @types.Con::new())
+  }
+  if op == @types.Div ||
+    op == @types.Rem ||
+    op == @types.Udiv ||
+    op == @types.Urem {
+    let zero = if w { r == 0 } else { (r & 0xFFFFFFFF) == 0 }
+    if zero {
+      return (true, @types.Con::new())
+    }
+    if op == @types.Div || op == @types.Rem {
+      let overflow = if w {
+        r == -1 && l == -9223372036854775807L - 1L
+      } else {
+        (r & 0xFFFFFFFF) == 0xFFFFFFFF && (l & 0xFFFFFFFF) == 0x80000000
+      }
+      if overflow {
+        return (true, @types.Con::new())
+      }
+    }
   }
   let x : Int64 = if is_word_cmp(op) || is_long_cmp(op) {
     let ci = if is_word_cmp(op) {
@@ -156,22 +177,44 @@ fn foldint(
     }
   } else {
     match op {
-      @types.Add => l + r
-      @types.Sub => l - r
-      @types.Div => l / r
-      @types.Rem => l % r
+      @types.Add =>
+        (l.reinterpret_as_uint64() + r.reinterpret_as_uint64()).reinterpret_as_int64()
+      @types.Sub =>
+        (l.reinterpret_as_uint64() - r.reinterpret_as_uint64()).reinterpret_as_int64()
+      @types.Neg => (0UL - l.reinterpret_as_uint64()).reinterpret_as_int64()
+      @types.Div => if w { l / r } else { sext32(l) / sext32(r) }
+      @types.Rem => if w { l % r } else { sext32(l) % sext32(r) }
       @types.Udiv =>
-        (l.reinterpret_as_uint64() / r.reinterpret_as_uint64()).reinterpret_as_int64()
+        if w {
+          (l.reinterpret_as_uint64() / r.reinterpret_as_uint64()).reinterpret_as_int64()
+        } else {
+          (zx32_fold(l) / zx32_fold(r)).reinterpret_as_int64()
+        }
       @types.Urem =>
-        (l.reinterpret_as_uint64() % r.reinterpret_as_uint64()).reinterpret_as_int64()
-      @types.Mul => l * r
+        if w {
+          (l.reinterpret_as_uint64() % r.reinterpret_as_uint64()).reinterpret_as_int64()
+        } else {
+          (zx32_fold(l) % zx32_fold(r)).reinterpret_as_int64()
+        }
+      @types.Mul =>
+        (l.reinterpret_as_uint64() * r.reinterpret_as_uint64()).reinterpret_as_int64()
       @types.And => l & r
       @types.Or => l | r
       @types.Xor => l ^ r
-      @types.Sar => l >> (r & 63).to_int()
+      @types.Sar =>
+        if w {
+          l >> (r & 63).to_int()
+        } else {
+          sext32(l) >> (r & 31).to_int()
+        }
       @types.Shr =>
-        (l.reinterpret_as_uint64() >> (r & 63).to_int()).reinterpret_as_int64()
-      @types.Shl => l << (r & 63).to_int()
+        if w {
+          (l.reinterpret_as_uint64() >> (r & 63).to_int()).reinterpret_as_int64()
+        } else {
+          (zx32_fold(l) >> (r & 31).to_int()).reinterpret_as_int64()
+        }
+      @types.Shl =>
+        (l.reinterpret_as_uint64() << (r & (if w { 63 } else { 31 })).to_int()).reinterpret_as_int64()
       @types.Extsb => l << 56 >> 56
       @types.Extub => l & 0xFF
       @types.Extsh => l << 48 >> 48
@@ -194,6 +237,18 @@ fn foldint(
           con_double(cl).to_int64()
         } else {
           sext32(con_double(cl).to_int().to_int64())
+        }
+      @types.Stoui =>
+        if w {
+          con_single(cl).to_double().to_uint64().reinterpret_as_int64()
+        } else {
+          (con_single(cl).to_double().to_uint64() & 0xFFFFFFFFUL).reinterpret_as_int64()
+        }
+      @types.Dtoui =>
+        if w {
+          con_double(cl).to_uint64().reinterpret_as_int64()
+        } else {
+          (con_double(cl).to_uint64() & 0xFFFFFFFFUL).reinterpret_as_int64()
         }
       @types.Cast => {
         if cl.kind == @types.CAddr {
@@ -234,10 +289,13 @@ fn foldflt(
     let xd : Double = match op {
       @types.Add => ld + rd
       @types.Sub => ld - rd
+      @types.Neg => -ld
       @types.Div => ld / rd
       @types.Mul => ld * rd
       @types.Swtof => sext32(cl.bits.i).to_double()
+      @types.Uwtof => zx32_fold(cl.bits.i).to_double()
       @types.Sltof => cl.bits.i.to_double()
+      @types.Ultowf => cl.bits.i.reinterpret_as_uint64().to_double()
       @types.Exts => con_single(cl).to_double()
       @types.Cast => ld
       _ => abort("unreachable")
@@ -255,10 +313,14 @@ fn foldflt(
     let xs : Float = match op {
       @types.Add => ls + rs
       @types.Sub => ls - rs
+      @types.Neg => -ls
       @types.Div => ls / rs
       @types.Mul => ls * rs
       @types.Swtof => Float::from_double(sext32(cl.bits.i).to_double())
+      @types.Uwtof => Float::from_double(zx32_fold(cl.bits.i).to_double())
       @types.Sltof => Float::from_double(cl.bits.i.to_double())
+      @types.Ultowf =>
+        Float::from_double(cl.bits.i.reinterpret_as_uint64().to_double())
       @types.Truncd => Float::from_double(con_double(cl))
       @types.Cast => ls
       _ => abort("unreachable")
@@ -286,15 +348,6 @@ fn opfold(
   cl : @types.Con,
   cr : @types.Con,
 ) -> Int32 raise {
-  if (
-      op == @types.Div ||
-      op == @types.Udiv ||
-      op == @types.Rem ||
-      op == @types.Urem
-    ) &&
-    czero(cr, cls.wide() == 1) {
-    raise @util.QbeError::Ice("null divisor")
-  }
   let (is_bot, c) = if cls == @types.Kw || cls == @types.Kl {
     foldint(op, cls == @types.Kl, cl, cr)
   } else {

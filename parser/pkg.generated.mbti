@@ -15,7 +15,8 @@ pub fn printref(@types.Ref, @types.Fn, @util.Interner, StringBuilder, Array[@typ
 // Errors
 
 // Types and methods
-type PState derive(Eq)
+#derive(Eq)
+type PState
 
 pub struct Parser {
   tokens : Array[@lexer.Token]

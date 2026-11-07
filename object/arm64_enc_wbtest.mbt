@@ -153,3 +153,18 @@ test "arm64 enc: floating point" {
   check_word(enc_uxth_sf(true, 0, 1), 0xD3403C20L)
   check_word(enc_sxtw(0, 1), 0x93407C20L)
 }
+
+///|
+test "panic arm64 enc: scaled load/store rejects unaligned offsets" {
+  ignore(enc_ldr_x(0, 1, 1))
+}
+
+///|
+test "panic arm64 enc: pair load/store rejects unaligned offsets" {
+  ignore(enc_ldp(0, 1, 2, 4))
+}
+
+///|
+test "panic arm64 enc: pair load/store rejects out-of-range offsets" {
+  ignore(enc_ldp(0, 1, 2, 512))
+}

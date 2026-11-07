@@ -37,7 +37,8 @@ fn op_pinned_generated(i : @types.Ins) -> Bool {
     | @types.Vacall
     | @types.AtomicLoad
     | @types.AtomicStore
-    | @types.Fence => true
+    | @types.Fence
+    | @types.InlineAsm => true
     _ => false
   }
 }

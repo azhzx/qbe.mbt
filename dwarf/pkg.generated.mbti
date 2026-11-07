@@ -20,12 +20,13 @@ pub fn reset() -> Unit
 // Types and methods
 type DbgFn
 
+#derive(@debug.Debug)
 pub(all) struct DbgLoc {
   name : String
   ty : @types.DbgType
   kind : Int32
   value : Int32
-} derive(@debug.Debug)
+}
 
 // Type aliases
 

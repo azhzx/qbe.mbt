@@ -21,11 +21,16 @@ fn wasm_isel_emit(st : WasmIselState, i : @types.Ins) -> Unit {
 
 ///|
 // Select a single instruction: map QBE op to wasm equivalent.
-fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit {
+//
+// Operations that this backend cannot lower must be rejected here: silently
+// dropping them (the old `_ => ()` fallback for the cases below) produced
+// modules that validated but computed the wrong answer.
+fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit raise {
   match i.op {
     // Arithmetic — direct passthrough
     @types.Add
     | @types.Sub
+    | @types.Neg
     | @types.Mul
     | @types.And
     | @types.Or
@@ -99,9 +104,13 @@ fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit {
     | @types.Exts
     | @types.Truncd
     | @types.Stosi
+    | @types.Stoui
     | @types.Dtosi
+    | @types.Dtoui
     | @types.Swtof
+    | @types.Uwtof
     | @types.Sltof
+    | @types.Ultowf
     | @types.Cast
     | @types.Extsw
     | @types.Extuw => wasm_isel_emit(st, i)
@@ -165,6 +174,21 @@ fn wasm_sel(st : WasmIselState, i : @types.Ins) -> Unit {
     | @types.Argc
     | @types.Arge => ()
 
+    // These ops have no wasm lowering in this backend.  blit0/blit1 should
+    // already have been expanded by @ifopt.simpl, but reject them (and the
+    // port-only atomic/asm ops) rather than emit nothing.
+    @types.Blit0 | @types.Blit1 =>
+      raise @util.QbeError::CompileError(
+        "wasm: blit must be expanded by simpl before instruction selection",
+      )
+    @types.AtomicLoad | @types.AtomicStore | @types.Fence =>
+      raise @util.QbeError::CompileError(
+        "wasm: atomic operations are not supported",
+      )
+    @types.InlineAsm =>
+      raise @util.QbeError::CompileError(
+        "wasm: inline assembly is not supported",
+      )
     // Error/placeholder
     @types.Oxxx => ()
     // Conditional-select ops are amd64-only.

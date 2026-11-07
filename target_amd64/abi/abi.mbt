@@ -249,6 +249,10 @@ fn selret(st : AbiState, bid : Int32) -> Unit {
 fn ret_class(j : @types.JumpKind) -> Int32 {
   match j {
     @types.Jretw => 0
+    @types.Jretsb => 0
+    @types.Jretub => 0
+    @types.Jretsh => 0
+    @types.Jretuh => 0
     @types.Jretl => 1
     @types.Jrets => 2
     @types.Jretd => 3

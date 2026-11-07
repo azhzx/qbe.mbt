@@ -1,0 +1,9 @@
+# C parselnk allows repeated linkage keywords before a definition.
+export
+export
+function w $f() {
+@start
+  ret 0
+}
+
+export data $g = { w 1 }

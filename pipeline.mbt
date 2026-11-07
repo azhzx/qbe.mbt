@@ -128,8 +128,10 @@ fn run_frontend_passes(
     out.write_string("\n> After parsing:\n")
     dbg_function(fn_, interner, typs, out)
   }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  // C main.c: T.abi0(fn) (all upstream targets use elimsb).
+  @ssa.elimsb(fn_)
+  // C main.c: fillcfg = fillrpo + fillpreds + fixphis.
+  @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // promote (mem.c): -dM "After slot promotion".
   out.write_string(
@@ -164,8 +166,7 @@ fn run_frontend_passes(
   @ssa.ssacheck(fn_)
   // gvn/gcm (gvn.c/gcm.c): -dG.
   out.write_string(@gvn.gvn(fn_, dbg.g, interner, typs))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
   // simplcfg (cfg.c): -dC.
   out.write_string(@cfg.simplcfg(fn_, dbg.c, interner, typs))
   @ssa.filluse(fn_)
@@ -176,8 +177,7 @@ fn run_frontend_passes(
   if cansel {
     // ifconvert (ifopt.c): -dK, amd64 only.
     out.write_string(@ifopt.ifconvert(fn_, dbg.k, interner, typs))
-    @cfg.fillrpo(fn_)
-    @cfg.fillpreds(fn_)
+    @cfg.fillcfg(fn_)
     @ssa.filluse(fn_)
     @cfg.filldom(fn_)
     @ssa.ssacheck(fn_)
@@ -201,22 +201,20 @@ fn run_passes(
   out.write_string(@abi_amd64.abi(fn_, typs, dbg.a, interner, typs))
   // simpl (simpl.c), then refill cfg/use.
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // T.isel (amd64/isel.c): -dI.
   out.write_string(@isel.isel(fn_, interner, dbg.i, typs))
-  // Post-isel pipeline (main.c): fillrpo, filllive, fillcost, spill, rega.
+  // Post-isel pipeline (main.c): fillcfg, filllive, fillcost, spill, rega.
   @types.init_amd64_target()
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
 }
 
 ///|
@@ -292,6 +290,7 @@ fn emit_module(
 ) -> Unit raise {
   @types.fp_stash_reset()
   @util.dbg_reset()
+  @dwarf.reset()
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -359,7 +358,12 @@ fn run_passes_wasm(
   run_frontend_passes(fn_, interner, typs, dbg, false, false, out)
   // Wasm ABI lowering
   out.write_string(@abi_wasm.abi_wasm(fn_, typs, dbg.a, interner, typs))
-  @cfg.fillpreds(fn_)
+  // simpl (simpl.c), exactly as every native backend does after its ABI pass:
+  // it expands the blit0/blit1 pseudo pair into load/store/add chunks and
+  // lowers udiv/urem by a power of two.  Without it a `blit` in the input
+  // reached the wasm selector and was silently dropped.
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // Wasm instruction selection
   out.write_string(@isel_wasm.isel_wasm(fn_, interner, dbg.i, typs))
@@ -400,22 +404,20 @@ fn run_passes_rv64(
   // RISC-V ABI lowering
   out.write_string(@abi_rv64.abi_rv64(fn_, typs, dbg.a, interner, typs))
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // RISC-V instruction selection
   out.write_string(@isel_rv64.isel_rv64(fn_, interner, dbg.i, typs))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_rv64_target()
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
 }
 
 ///|
@@ -432,6 +434,7 @@ fn emit_rv64_module(
 ) -> Unit raise {
   @types.fp_stash_reset()
   @util.dbg_reset()
+  @dwarf.reset()
   @emit_rv64.rv64_emit_reset()
   let mut fi = 0
   let mut di = 0
@@ -504,22 +507,24 @@ fn run_passes_la64(
   // LoongArch ABI lowering
   out.write_string(@abi_la64.abi_la64(fn_, typs, dbg.a, interner, typs))
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
+  @ssa.filluse(fn_)
+  // la64 has no scalar unsigned conversion instructions accepted by the
+  // assembler, so lower them with portable bit tricks before selection.
+  lower_unsigned_la64(fn_)
   @ssa.filluse(fn_)
   // LoongArch instruction selection
   out.write_string(@isel_la64.isel_la64(fn_, interner, dbg.i, typs))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_la64_target()
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
 }
 
 ///|
@@ -537,6 +542,7 @@ fn emit_la64_module(
 ) -> Unit raise {
   @types.fp_stash_reset()
   @util.dbg_reset()
+  @dwarf.reset()
   @emit_la64.la64_emit_reset()
   let mut fi = 0
   let mut di = 0
@@ -611,22 +617,20 @@ fn run_passes_arm64(
     @abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, apple, typs),
   )
   out.write_string(@ifopt.simpl(fn_, false, interner, typs))
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // ARM64 instruction selection
   out.write_string(@isel_arm64.isel_arm64(fn_, interner, dbg.i, typs))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_arm64_target()
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
-  @cfg.fillrpo(fn_)
+  @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
 }
 
 ///|
@@ -645,6 +649,7 @@ fn emit_arm64_module(
 ) -> Unit raise {
   @types.fp_stash_reset()
   @util.dbg_reset()
+  @dwarf.reset()
   @emit_arm64.arm64_emit_reset()
   let mut fi = 0
   let mut di = 0

@@ -1,0 +1,13 @@
+# Two slots fuse; the blit source ends up after its destination, so the
+# reference flips the copy direction by negating the blit size.
+type :t = align 8 { l 1, l 1 }
+function :t $f() {
+@start
+  %p =l alloc8 16
+  %q =l alloc8 16
+  storel 1, %p
+  %s =l add %q, 8
+  blit %p, %s, 8
+  storel 2, %q
+  ret %q
+}

@@ -1,0 +1,10 @@
+# mem.c load(): a read outside the slot's write mask leaves s->l zero,
+# so the slot is dead and the load becomes UNDEF.
+function w $f() {
+@start
+  %p =l alloc8 16
+  storew 1, %p
+  %q =l add %p, 8
+  %v =w loadw %q
+  ret %v
+}

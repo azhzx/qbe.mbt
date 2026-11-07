@@ -318,6 +318,44 @@ fn sel_int_cmp(st : Rv64IselState, i : @types.Ins) -> Unit {
 }
 
 ///|
+// Ordered/unordered float comparisons (C selcmp NCmpI+Cfo/Cfuo):
+//   cos/cod  ==  (a == a) & (b == b)   -- false when either operand is NaN
+//   cuos/cuod == !((a == a) & (b == b)) -- true when either operand is NaN
+fn sel_float_ordered(st : Rv64IselState, i : @types.Ins) -> Unit {
+  let k = if i.op == @types.Cos || i.op == @types.Cuos {
+    @types.Ks
+  } else {
+    @types.Kd
+  }
+  let eqop = if k == @types.Kd { @types.Ceqd } else { @types.Ceqs }
+  let mut to = i.to
+  if i.op == @types.Cuos || i.op == @types.Cuod {
+    // C negate(): xor the final result with 1.
+    let r = rv64_isel_newtmp(st, @types.Kw)
+    emit(
+      st,
+      @types.Xor,
+      @types.Kw,
+      i.to,
+      r,
+      @types.Ref::con(st.fn_.get_con(1L)),
+    )
+    to = r
+  }
+  let r0 = rv64_isel_newtmp(st, i.cls)
+  let r1 = rv64_isel_newtmp(st, i.cls)
+  emit(st, @types.And, i.cls, to, r0, r1)
+  emit(st, eqop, i.cls, r0, i.arg1, i.arg1)
+  let idx0 = st.buf.length() - 1
+  st.buf[idx0].arg1 = fixarg(st, st.buf[idx0].arg1, k, Some(eqop), 0)
+  st.buf[idx0].arg2 = fixarg(st, st.buf[idx0].arg2, k, Some(eqop), 1)
+  emit(st, eqop, i.cls, r1, i.arg2, i.arg2)
+  let idx1 = st.buf.length() - 1
+  st.buf[idx1].arg1 = fixarg(st, st.buf[idx1].arg1, k, Some(eqop), 0)
+  st.buf[idx1].arg2 = fixarg(st, st.buf[idx1].arg2, k, Some(eqop), 1)
+}
+
+///|
 // Select a single instruction (C sel).
 fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
   match i.op {
@@ -338,15 +376,20 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Copy
     | @types.Add
     | @types.Sub
+    | @types.Neg
     | @types.Mul
     | @types.And
     | @types.Or
     | @types.Xor
     | @types.Xtest
     | @types.Stosi
+    | @types.Stoui
     | @types.Dtosi
+    | @types.Dtoui
     | @types.Swtof
+    | @types.Uwtof
     | @types.Sltof
+    | @types.Ultowf
     | @types.Exts
     | @types.Truncd
     | @types.Cast => sel_emit(st, i)
@@ -414,6 +457,10 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Cugtl
     | @types.Culel
     | @types.Cultl => sel_int_cmp(st, i)
+    // Ordered/unordered float comparisons are lowered like C selcmp's
+    // Cfo/Cfuo cases; they have no instruction of their own.
+    @types.Cos | @types.Cuos | @types.Cod | @types.Cuod =>
+      sel_float_ordered(st, i)
     // Floating point comparisons - fcmp + movcf2gr (see emit omap)
     @types.Ceqs
     | @types.Cges
@@ -421,16 +468,12 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Cles
     | @types.Clts
     | @types.Cnes
-    | @types.Cos
-    | @types.Cuos
     | @types.Ceqd
     | @types.Cged
     | @types.Cgtd
     | @types.Cled
     | @types.Cltd
-    | @types.Cned
-    | @types.Cod
-    | @types.Cuod => sel_emit(st, i)
+    | @types.Cned => sel_emit(st, i)
     // Load operations
     @types.Load
     | @types.Loadsb

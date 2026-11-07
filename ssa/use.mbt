@@ -102,6 +102,11 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
           raise @util.QbeError::Ice("ins to not a tmp")
         }
         let mut w = @types.WFull
+        if ins.op.is_par_bh() {
+          w = @types.TmpWidth::from_code(
+            1 + (ins.op.index() - @types.Parsb.index()),
+          )
+        }
         if ins.op.is_load() && ins.op != @types.Load {
           w = @types.TmpWidth::from_code(ins.op.load_width_idx())
         }

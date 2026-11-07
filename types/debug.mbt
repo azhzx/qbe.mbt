@@ -3,6 +3,7 @@
 // type system beyond word/long/single/double and opaque `:type` aggregates, so
 // the builder's front end supplies these (the same split Cranelift uses: it
 // exposes value labels and lets the embedder describe the language types).
+#derive(Eq, Debug)
 pub(all) enum DbgType {
   DbgW // 32-bit integer
   DbgL // 64-bit integer
@@ -10,14 +11,15 @@ pub(all) enum DbgType {
   DbgD // double-precision float
   DbgPtr // pointer (void*)
   DbgAgg(String, Int32) // aggregate: name, byte size
-} derive(Eq, Debug)
+}
 
 ///|
 // A variable declared by the builder (or the C ABI): the name and type come
 // from the front end; the value is an IR temp whose final register or stack
 // slot is resolved after register allocation.
+#derive(Debug)
 pub(all) struct DbgVar {
   name : String
   ty : DbgType
   tmp : Int32 // tmp id holding the value
-} derive(Debug)
+}

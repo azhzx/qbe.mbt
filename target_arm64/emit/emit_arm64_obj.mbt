@@ -16,6 +16,19 @@ fn arm64_obj_bytes(a : Array[Int32]) -> Bytes {
 ///|
 // Every relocation target must have a symbol table entry; defined targets point
 // at their section, undefined ones (libc calls) are N_UNDF/N_EXT.
+
+///|
+// Mach-O symbol names get a leading underscore unless the QBE symbol is
+// quoted (the quotes are part of the name, as in the reference emitters).
+fn macho_sym_name(name : String) -> String {
+  if name.length() > 0 && name[0] == '"' {
+    name
+  } else {
+    "_" + name
+  }
+}
+
+///|
 fn arm64_obj_sym(
   syms : Array[@object.MachoSym],
   index : Map[String, Int32],
@@ -29,7 +42,12 @@ fn arm64_obj_sym(
     None => {
       let i = syms.length()
       index[name] = i
-      syms.push(@object.MachoSym::{ name: "_" + name, sect, value, is_ext, })
+      syms.push(@object.MachoSym::{
+        name: macho_sym_name(name),
+        sect,
+        value,
+        is_ext,
+      })
       i
     }
   }

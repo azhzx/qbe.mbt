@@ -390,3 +390,34 @@ test "astack classification" {
   assert_true(!ACon.astack())
   assert_true(!AUnk.astack())
 }
+
+///|
+// The emit tables and the load->extend rewrites index ops by "base + offset":
+// Storew + cls.code(), Extsb + (load - Loadsb), Flagieq + x, Jjfieq + x.
+// Those rewrites are only correct while each family stays contiguous and in
+// upstream order, so pin the relations instead of trusting the hand-written
+// index table.
+test "op index families used by base+offset rewrites are contiguous" {
+  // integer/float comparison families (gvn/fold/isel use index ranges)
+  assert_eq(Cultw.index() - Ceqw.index(), 9)
+  assert_eq(Cultl.index() - Ceql.index(), 9)
+  assert_eq(Cuos.index() - Ceqs.index(), 7)
+  assert_eq(Cuod.index() - Ceqd.index(), 7)
+  // store family: Storew + cls.code() must name storel/stores/stored
+  assert_eq(Storel.index() - Storew.index(), 1)
+  assert_eq(Stores.index() - Storew.index(), 2)
+  assert_eq(Stored.index() - Storew.index(), 3)
+  // alloc family: Alloc4 + n
+  assert_eq(Alloc8.index() - Alloc4.index(), 1)
+  assert_eq(Alloc16.index() - Alloc4.index(), 2)
+  // load -> extend rewrite: Extsb + (load - Loadsb)
+  assert_eq(Extub.index() - Extsb.index(), Loadub.index() - Loadsb.index())
+  assert_eq(Extsh.index() - Extsb.index(), Loadsh.index() - Loadsb.index())
+  assert_eq(Extuh.index() - Extsb.index(), Loaduh.index() - Loadsb.index())
+  assert_eq(Extsw.index() - Extsb.index(), Loadsw.index() - Loadsb.index())
+  assert_eq(Extuw.index() - Extsb.index(), Loaduw.index() - Loadsb.index())
+  // flag / select families: the backends index condition tables with
+  // kind.index() - Jjfieq.index(), which must cover the 18 condition codes.
+  assert_eq(Flagfuo.index() - Flagieq.index(), 17)
+  assert_eq(Xselfuo.index() - Xselieq.index(), 17)
+}

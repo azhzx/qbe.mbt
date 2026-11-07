@@ -14,39 +14,35 @@ pub fn Lexer::new(source : String, source_file : String) -> Lexer {
 
 ///|
 fn is_ident_char(c : Char) -> Bool {
-  c.is_ascii_alphabetic() || c.is_ascii_digit() || c == '_' || c == '.'
+  // C parse.c lex(): isalpha(c) || c == '$' || c == '.' || c == '_' || isdigit(c)
+  c.is_ascii_alphabetic() ||
+  c.is_ascii_digit() ||
+  c == '_' ||
+  c == '.' ||
+  c == '$'
 }
 
 ///|
-// Read an identifier from a StringView, return (identifier, remaining)
+// Read an identifier (C parse.c lex, Alpha label): the first character must be
+// alphabetic, '.' or '_'; continuation adds digits, '$' and '_'.
 fn read_ident(s : StringView) -> (String, StringView) {
   let builder = StringBuilder::StringBuilder()
   let mut rest : StringView = s
-  // Check if this is a float literal prefix (s_ or d_)
-  // Float literals can contain '-' for negative numbers
-  let mut is_float_prefix = false
+  let mut first = true
   for cur = s {
     match cur {
       [c, .. r] => {
-        if is_ident_char(c) {
-          builder.write_char(c)
-          rest = r
-          // After reading 2 chars, check if it's a float prefix
-          if builder.to_string().length() == 2 {
-            let s = builder.to_string()
-            if s == "s_" || s == "d_" {
-              is_float_prefix = true
-            }
+        if first {
+          if !(c.is_ascii_alphabetic() || c == '.' || c == '_') {
+            break
           }
-          continue r
+          first = false
+        } else if !is_ident_char(c) {
+          break
         }
-        // For float literals, allow '-' as part of the number
-        if is_float_prefix && c == '-' {
-          builder.write_char(c)
-          rest = r
-          continue r
-        }
-        break
+        builder.write_char(c)
+        rest = r
+        continue r
       }
       [] => break
     }
@@ -55,31 +51,197 @@ fn read_ident(s : StringView) -> (String, StringView) {
 }
 
 ///|
-// Read a number from a StringView, return (raw, is_float, remaining)
-fn read_number(s : StringView) -> (String, Bool, StringView) {
-  let builder = StringBuilder::StringBuilder()
-  let mut is_float = false
+fn is_ascii_digit(c : Char) -> Bool {
+  c >= '0' && c <= '9'
+}
+
+///|
+fn is_hex_digit(c : Char) -> Bool {
+  is_ascii_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+///|
+fn ascii_lower(c : Char) -> Char {
+  let n = c.to_int()
+  if n >= 65 && n <= 90 {
+    (n + 32).unsafe_to_char()
+  } else {
+    c
+  }
+}
+
+///|
+fn take_while(s : StringView, pred : (Char) -> Bool) -> (String, StringView) {
+  let b = StringBuilder::StringBuilder()
+  let rest = for cur = s {
+    match cur {
+      [c, .. r] =>
+        if pred(c) {
+          b.write_char(c)
+          continue r
+        } else {
+          break cur
+        }
+      [] => break cur
+    }
+  }
+  (b.to_string(), rest)
+}
+
+///|
+// Case-insensitive prefix match (for inf/infinity/nan).
+fn match_ci(s : StringView, lit : String) -> StringView? {
+  let ls = lit.to_array()
+  let mut i = 0
   let mut rest : StringView = s
   for cur = s {
+    if i >= ls.length() {
+      break
+    }
     match cur {
       [c, .. r] => {
-        if c.is_ascii_digit() {
-          builder.write_char(c)
-          rest = r
-          continue r
+        if ascii_lower(c) != ascii_lower(ls[i]) {
+          return None
         }
-        if c == '.' && !is_float {
-          is_float = true
-          builder.write_char(c)
-          rest = r
-          continue r
-        }
-        break
+        i = i + 1
+        rest = r
+        continue r
       }
       [] => break
     }
   }
-  (builder.to_string(), is_float, rest)
+  if i == ls.length() {
+    Some(rest)
+  } else {
+    None
+  }
+}
+
+///|
+// Scan the tail of a C floating literal after the s_/d_ prefix (the text
+// fscanf("%f") would accept): optional sign, decimal or hexadecimal mantissa,
+// optional exponent, or inf/infinity/nan. Returns the matched text, the rest
+// of the input and whether anything was matched.
+fn scan_float_tail(s : StringView) -> (String, StringView, Bool) {
+  let b = StringBuilder::StringBuilder()
+  let mut rest : StringView = s
+  match rest {
+    ['-' | '+' as c, .. r] => {
+      b.write_char(c)
+      rest = r
+    }
+    _ => ()
+  }
+  // hexadecimal prefix (strtod accepts 0x only when a hex digit follows,
+  // possibly after the point)
+  let mut hex = false
+  match rest {
+    ['0', 'x' | 'X' as x, .. r] =>
+      match r {
+        [c, ..] if is_hex_digit(c) => {
+          hex = true
+          b.write_char('0')
+          b.write_char(x)
+          rest = r
+        }
+        ['.', c, ..] if is_hex_digit(c) => {
+          hex = true
+          b.write_char('0')
+          b.write_char(x)
+          rest = r
+        }
+        _ => ()
+      }
+    _ => ()
+  }
+  let mut any = false
+  let pred : (Char) -> Bool = if hex { is_hex_digit } else { is_ascii_digit }
+  let (d1, r1) = take_while(rest, pred)
+  if d1.length() > 0 {
+    b.write_string(d1)
+    any = true
+    rest = r1
+  }
+  // fraction
+  match rest {
+    ['.', .. r] => {
+      let (d2, r2) = take_while(r, pred)
+      if d2.length() > 0 || any {
+        b.write_char('.')
+        b.write_string(d2)
+        rest = r2
+        if d2.length() > 0 {
+          any = true
+        }
+      }
+    }
+    _ => ()
+  }
+  // inf / infinity / nan (decimal only)
+  if !any && !hex {
+    let mut matched = false
+    match match_ci(rest, "infinity") {
+      Some(r) => {
+        b.write_string("infinity")
+        rest = r
+        matched = true
+      }
+      None => ()
+    }
+    if !matched {
+      match match_ci(rest, "inf") {
+        Some(r) => {
+          b.write_string("inf")
+          rest = r
+          matched = true
+        }
+        None => ()
+      }
+    }
+    if !matched {
+      match match_ci(rest, "nan") {
+        Some(r) => {
+          b.write_string("nan")
+          rest = r
+          matched = true
+        }
+        None => ()
+      }
+    }
+    any = matched
+  }
+  // exponent: 'p' for hexadecimal, 'e' otherwise; only consumed when digits
+  // (with an optional sign) follow.
+  let exp_char = if hex { 'p' } else { 'e' }
+  match rest {
+    [c, .. r] if ascii_lower(c) == exp_char => {
+      let eb = StringBuilder::StringBuilder()
+      let mut rr = r
+      match rr {
+        ['-' | '+' as sc, .. r2] => {
+          eb.write_char(sc)
+          rr = r2
+        }
+        _ => ()
+      }
+      let (ed, r3) = take_while(rr, is_ascii_digit)
+      if ed.length() > 0 {
+        b.write_char(c)
+        b.write_string(eb.to_string())
+        b.write_string(ed)
+        rest = r3
+      }
+    }
+    _ => ()
+  }
+  (b.to_string(), rest, any)
+}
+
+///|
+// Read an integer (C parse.c lex getint): digits only. Bare decimals are not
+// floats in QBE IL; float constants are written s_.../d_....
+fn read_number(s : StringView) -> (String, StringView) {
+  take_while(s, is_ascii_digit)
 }
 
 ///|
@@ -111,16 +273,6 @@ fn read_string(s : StringView) -> (String, StringView, Bool) {
 }
 
 ///|
-// Check if an identifier is a float literal (starts with s_ or d_)
-fn is_float_literal(id : StringView) -> Bool {
-  match id {
-    [.. "s_", ..] => true
-    [.. "d_", ..] => true
-    _ => false
-  }
-}
-
-///|
 // Keyword lookup: returns TokenKind if id is a keyword, else None
 fn keyword_of(id : StringView) -> TokenKind? {
   match id {
@@ -132,7 +284,7 @@ fn keyword_of(id : StringView) -> TokenKind? {
     "phi" => Some(TPhi)
     "jmp" => Some(TJmp)
     "jnz" => Some(TJnz)
-    "ret" | "ret0" | "retw" | "retl" | "rets" | "retd" | "retc" => Some(TRet)
+    "ret" => Some(TRet)
     "hlt" => Some(THlt)
     _ => None
   }
@@ -165,7 +317,7 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       }
 
       // Whitespace
-      [' ' | '\t' | '\r', .. rest] => {
+      [' ' | '\t', .. rest] => {
         col = col + 1
         idx = idx + 1
         continue rest
@@ -196,14 +348,35 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
         continue r
       }
 
-      // Global: $name
-      ['$', .. rest] => {
-        let (name, r) = read_ident(rest)
-        tokens.push(Token::new(TGlo, line, col, name))
-        col = col + 1 + name.length()
-        idx = idx + 1 + name.length()
-        continue r
-      }
+      // Global: $name or a quoted symbol $"name" (C parse.c lex keeps the
+      // quotes as part of the symbol name).
+      ['$', .. rest] =>
+        match rest {
+          ['"', .. inner] => {
+            let (text, r, closed) = read_string(inner)
+            if !closed {
+              tokens.push(Token::new(TErr, line, col, "\""))
+              err_msgs.push(
+                "unterminated string at \{source_file}:\{line}:\{col}",
+              )
+              col = col + 1
+              idx = idx + 1
+              continue inner
+            }
+            let name = "\"" + text + "\""
+            tokens.push(Token::new(TGlo, line, col, name))
+            col = col + 3 + text.length()
+            idx = idx + 3 + text.length()
+            continue r
+          }
+          _ => {
+            let (name, r) = read_ident(rest)
+            tokens.push(Token::new(TGlo, line, col, name))
+            col = col + 1 + name.length()
+            idx = idx + 1 + name.length()
+            continue r
+          }
+        }
 
       // Block label: @name
       ['@', .. rest] => {
@@ -309,10 +482,9 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
 
       // Negative number literal
       ['-', '0'..<='9', ..] as c => {
-        let (num, is_flt, r) = read_number(c[1:])
+        let (num, r) = read_number(c[1:])
         let raw = "-" + num
-        let kind = if is_flt { TFlt } else { TInt }
-        tokens.push(Token::new(kind, line, col, raw))
+        tokens.push(Token::new(TInt, line, col, raw))
         col = col + raw.length()
         idx = idx + raw.length()
         continue r
@@ -320,27 +492,61 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
 
       // Number literal
       ['0'..<='9', ..] as c => {
-        let (num, is_flt, r) = read_number(c)
-        let kind = if is_flt { TFlt } else { TInt }
-        tokens.push(Token::new(kind, line, col, num))
+        let (num, r) = read_number(c)
+        tokens.push(Token::new(TInt, line, col, num))
         col = col + num.length()
         idx = idx + num.length()
         continue r
       }
 
-      // Identifier / keyword / float literal
+      // Floating literal: s_... / d_... (C parse.c lex scans these with
+      // fscanf("%f")/fscanf("%lf"), accepting signs, exponents and hex floats)
+      ['s' | 'd', '_', ..] as c => {
+        let prefix = match c {
+          [ch, ..] => ch
+          _ => 's'
+        }
+        let (num, r, ok) = scan_float_tail(c[2:])
+        if ok {
+          let raw = prefix.to_string() + "_" + num
+          tokens.push(Token::new(TFlt, line, col, raw))
+          col = col + raw.length()
+          idx = idx + raw.length()
+          continue r
+        }
+        let (id, r2) = read_ident(c)
+        let id_view : StringView = id[:]
+        match keyword_of(id_view) {
+          Some(kw) => tokens.push(Token::new(kw, line, col, id))
+          None => tokens.push(Token::new(TId, line, col, id))
+        }
+        col = col + id.length()
+        idx = idx + id.length()
+        continue r2
+      }
+
+      // Identifier starting with '.' (C lex allows '.', '_' or alpha there;
+      // this is how a bare decimal such as 3.14 is rejected: '3' is an int
+      // and '.14' becomes a keyword lookup).
+      ['.', ..] as c => {
+        let (id, r) = read_ident(c)
+        let id_view : StringView = id[:]
+        match keyword_of(id_view) {
+          Some(kw) => tokens.push(Token::new(kw, line, col, id))
+          None => tokens.push(Token::new(TId, line, col, id))
+        }
+        col = col + id.length()
+        idx = idx + id.length()
+        continue r
+      }
+
+      // Identifier / keyword
       ['a'..<='z' | 'A'..<='Z' | '_', ..] as c => {
         let (id, r) = read_ident(c)
         let id_view : StringView = id[:]
-        // Check for float literal prefix (s_ or d_)
-        if is_float_literal(id_view) {
-          tokens.push(Token::new(TFlt, line, col, id))
-        } else {
-          // Check for keyword
-          match keyword_of(id_view) {
-            Some(kw) => tokens.push(Token::new(kw, line, col, id))
-            None => tokens.push(Token::new(TId, line, col, id))
-          }
+        match keyword_of(id_view) {
+          Some(kw) => tokens.push(Token::new(kw, line, col, id))
+          None => tokens.push(Token::new(TId, line, col, id))
         }
         col = col + id.length()
         idx = idx + id.length()

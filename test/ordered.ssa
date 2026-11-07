@@ -1,0 +1,16 @@
+# Floating-point ordered/unordered comparisons (cos/cuos/cod/cuod) are lowered
+# by the target backends: amd64/arm64 with flag tests, rv64 as ceq(a,a) & ceq(b,b)
+# plus a final xor for the unordered forms, la64 with fcmp.cor/cun.
+export function w $fcmp(s %a, s %b) {
+@start
+  %o =w cos %a, %b
+  %u =w cuos %a, %b
+  ret %o
+}
+
+export function w $dcmp(d %a, d %b) {
+@start
+  %o =w cod %a, %b
+  %u =w cuod %a, %b
+  ret %o
+}

@@ -1,28 +1,31 @@
 ///|
 // Constant type
+#derive(Eq, Debug)
 pub(all) enum ConType {
   CUndef
   CBits // Numeric constant
   CAddr // Symbol address
-} derive(Eq, Debug)
+}
 
 ///|
 // Constant value bits
+#derive(Debug, Eq)
 pub(all) struct ConBits {
   i : Int64 // Integer value
   d : Double // Double value
   s : Float // Single (float) value
-} derive(Debug, Eq)
+}
 
 ///|
 // Constant - corresponds to struct Con in QBE
+#derive(Debug, Eq)
 pub(all) struct Con {
   kind : ConType
   label : Int32 // Interned string label for CAddr
   bits : ConBits // Value bits
   flt : Int32 // 0=integer, 1=print as s, 2=print as d
   is_local : Bool // True if local symbol
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Con::new() -> Con {

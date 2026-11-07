@@ -167,6 +167,58 @@ pub fn fillrpo(f : @types.Fn) -> Unit {
 }
 
 ///|
+// Drop phi arguments that refer to blocks which are no longer predecessors
+// (C cfg.c fixphis). Passes such as GVN rewrite terminators without touching
+// phi lists, so without this step a phi keeps an argument for an edge that no
+// longer exists; that stale argument then misleads GVN/GCM and the -d dumps.
+pub fn fixphis(f : @types.Fn) -> Unit raise {
+  let chain : Array[Int32] = if f.def_order.length() == 0 {
+    let a : Array[Int32] = []
+    for i in 0..<f.blks.length() {
+      a.push(i)
+    }
+    a
+  } else {
+    f.def_order
+  }
+  for id in chain {
+    let b = f.blks[id]
+    for pi in 0..<b.phi.length() {
+      let p = b.phi[pi]
+      let kept : Array[@types.PhiArg] = []
+      for a in p.args {
+        if a.blk_id >= 0 && a.blk_id < f.blks.length() {
+          let bp = f.blks[a.blk_id]
+          // Only reachable blocks can still be predecessors, and the edge
+          // must still exist (C: bp->id != -1u && (bp->s1 == b || bp->s2 == b)).
+          if bp.rpo_id >= 0 && (bp.jmp.s1 == b.id || bp.jmp.s2 == b.id) {
+            kept.push(a)
+          }
+        }
+      }
+      if kept.length() == 0 {
+        raise @util.QbeError::Ice(
+          "fixphis: phi in bloc @" + b.name + " has no predecessor",
+        )
+      }
+      p.args.clear()
+      for a in kept {
+        p.args.push(a)
+      }
+    }
+  }
+}
+
+///|
+// Rebuild the CFG information after terminators changed (C cfg.c fillcfg):
+// reverse post-order, predecessors, then repair the phi argument lists.
+pub fn fillcfg(f : @types.Fn) -> Unit raise {
+  fillrpo(f)
+  fillpreds(f)
+  fixphis(f)
+}
+
+///|
 // Intersect two blocks in the dominator tree (Cooper-Harvey-Kennedy)
 fn dom_inter(f : @types.Fn, b1 : Int32, b2 : Int32) -> Int32 {
   if b1 < 0 {
@@ -422,12 +474,12 @@ pub fn simpljmp(f : @types.Fn) -> Unit {
     if b.jmp.s2 >= 0 {
       b.jmp.s2 = uf_find(f, b.jmp.s2, uf)
     }
-    let c = b.jmp.kind.index() - @types.Jjfieq.index()
-    if b.jmp.s1 >= 0 && c >= 0 && c <= 18 {
-      if b.jmp.s1 == b.jmp.s2 {
-        b.jmp.kind = @types.Jjmp
-        b.jmp.s2 = -1
-      }
+    // C cfg.c simpljmp: any two-successor jump whose successors collapsed to
+    // the same block becomes a plain jump (this includes jnz and the float
+    // conditional jumps, not just the integer comparisons).
+    if b.jmp.s1 >= 0 && b.jmp.s2 >= 0 && b.jmp.s1 == b.jmp.s2 {
+      b.jmp.kind = @types.Jjmp
+      b.jmp.s2 = -1
     }
   }
   // C: *p = ret -- append the shared return block at the end.

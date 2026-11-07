@@ -247,3 +247,113 @@ differentials stay 4908/4908 (amd64, arm64, rv64) and 409/409 (arm64 asm).
   produces for the QBE C sources — can still expose latent backend differences;
   the `260d556` / `9203880` pair was exactly such a case, so treat the
   self-host build as an integration test.
+
+## Port audit (vendor/qbe 661ceb22)
+
+See `AUDIT-LEDGER.md` for what has actually been compared. Remaining gaps
+found or confirmed during the audit round:
+
+- **Sub-word ABI ops are missing.** Upstream `ops.h` has `parsb parub parsh
+  paruh argsb argub argsh arguh`; `types/op.mbt` has no constructors for
+  them, so valid upstream IL using sub-word parameters/arguments is rejected
+  with "unknown keyword". This is a feature gap (loud, not a silent
+  miscompile) but it makes the port reject input the reference accepts.
+  `tools/gen_op_pinned.py` lists them as "not implemented in this port".
+- **The wasm backend dropped unsupported instructions silently.** Fixed for
+  `blit` (the pipeline now runs `simpl`), for ordered/unordered float
+  comparisons (now lowered with `f*.eq/.ne` + `i32.and/or`), and for
+  atomics/inline asm (now a `CompileError`). `tools/check_wasm.py` now fails
+  when the reference accepts an input that our wasm backend cannot compile
+  instead of counting it as a skip.
+- **rv64 had no lowering for `cos/cuos/cod/cuod`.** The selector passed them
+  through and the emitter printed `# unknown instruction`, i.e. silently
+  miscompiled; the C `selcmp` `Cfo`/`Cfuo` lowering was transcribed and the
+  four ops are now byte-identical to the reference. `test/ordered.ssa` keeps
+  them under the differential and validity gates.
+- **rv64/la64 emitters used to emit `# unknown instruction: <op>` and carry
+  on.** Both now raise an ICE, like amd64/arm64, so a selector gap can no
+  longer produce plausible-looking assembly with an operation missing.
+- **Inline assembly was not in the generated `pinned` table.** GVN could
+  value-number identical asm instructions and GCM could move them; both are
+  fixed and covered by white-box tests.
+- **The CLI always exited 0, even after a parse error or ICE.** Upstream exits
+  1 on the first error; `cmd/main` now records failures and exits 1. Success
+  paths are unchanged.
+- **The missing ops are now implemented.** \`neg\` is folded/evaluated and
+  selected by every backend (amd64/arm64/rv64 assembly is byte-identical to the
+  reference; wasm uses \`f32.neg\`/\`f64.neg\` and \`0 - x\`; la64 uses
+  \`sub.w/d\`/\`fneg\`). \`stoui\`/\`dtoui\`/\`uwtof\`/\`ultof\` follow the
+  reference amd64 isel sequences, the arm64/rv64 emit tables, and wasm's
+  unsigned conversion opcodes; la64 (no upstream counterpart) lowers them in
+  \`pipeline_la64_lower.mbt\` with portable bit tricks because clang's
+  assembler has no scalar unsigned conversion mnemonics. The eight sub-word
+  ABI variants and four sub-word return jumps are parsed (this revision spells
+  the jump simply \`ret\`; the class comes from the function signature, exactly
+  like upstream \`parse.c\`) and eliminated by \`ssa/elimsb.mbt\` at abi0,
+  matching every upstream target. Corpora: \`test/neg.ssa\`,
+  \`test/unsigned.ssa\`, \`test/subword.ssa\`.
+- \`ret\` is now the only return keyword, as in this revision's lexer; the port
+  no longer accepts \`ret0\`/\`retw\`/... (the reference printer emits \`retw\`,
+  but the reference lexer cannot read it back either).
+- Option, GVN-flag and optab metadata were compared programmatically against
+  `vendor/qbe/ops.h`: 0 drifts over the 144 implemented ops, and
+  `types/types_wbtest.mbt` now pins the index-family relations used by the
+  base+offset rewrites.
+- **`mem/coalesce` had three divergences from `mem.c`** (slot liveness mask,
+  killing only one half of a blit pair, fused-slot blit direction). All three
+  are fixed, verified against the reference `-dM` output, and their inputs are
+  in `test/coalesce_*.ssa`.
+- **Phi assignments must be parallel copies.** wasm emitted sequential
+  `local.set`s (a swapping loop back-edge miscompiled) and the SSA interpreter
+  did the same. Both now evaluate all sources before writing any destination;
+  `tools/check_wasm_runtime.py` executes the swap case on the interpreter and
+  on wasm and requires equal results. `test/phi_swap.ssa` is in the corpus.
+- **The dead `ssa/copy.mbt` pass was removed.** It was a pre-GVN copy
+  propagation pass with no counterpart in the vendored `copy.c` and no
+  production caller (the call was dropped in `f3f4373` when aligning the pass
+  order); thirteen test-helper pipelines still ran it, so unit tests did not
+  mirror `main.c`. The file and those calls are gone, and `ssa/pkg.generated
+  .mbti` no longer exports `copy`.
+- **amd64 `amatch` is a re-derived matcher** (C uses generated
+  `refn`/`opn`/`match`/`matcher` tables). It folds `add $sym, 0` into a
+  memory operand where the reference keeps `addr`+`add`, so a `blit` between
+  two global symbols is semantically right but not byte-identical. Porting
+  the generated matcher is the remaining isel fidelity task.
+- **Quoted global symbols** are lexed/parsed/emitted (the quotes are part of
+  the symbol name; emitters skip the symbol prefix for them). `thread`/
+  `common`/`section`/`extern` linkage and `Sym.type` remain part of the TLS
+  gap.
+- **Lexer/parser float literals were incomplete.** Signed exponents,
+  hexadecimal floats and `inf`/`nan` were split into several tokens and
+  rejected; `$` was not allowed inside identifiers. The lexer and the float
+  conversion now match C (exact IEEE rounding, glibc NaN payloads), with
+  `test/hexfloat.ssa` under the differential.
+- **Float data items were emitted as zeros.** Text emitters print `Dat.num`,
+  but the parser stored floats only in `fltd`/`flts`; `.int 0`/`.quad 0` was
+  produced for every float data item (the object emitters' workaround also
+  lost `-0.0`). The parser now stores the bit pattern in `num`.
+- **`fmt_fixed` saturated above 2^63.** Debug dumps and emitter comments
+  printed FLT_MAX as `9223372036854.775807`; the formatter is now exact
+  `%f` for any magnitude and handles `inf`/`nan`/`-0.0`.
+- **regalloc review found three defects.** A leftover `DBG` `println` in
+  `ralloctry`, `rcopy` aliasing the register bitmap instead of copying it
+  (C `bscopy`), and a missing `rtype(p->to) == RTmp` guard in rega phase 3.
+  All fixed; `rcopy` has a regression test. `live.c`/`spill.c`/`rega.c` were
+  also read function by function and otherwise match.
+- **`fixphis`/`fillcfg` were missing.** C's `fillcfg` is rpo + preds +
+  `fixphis`; the port never pruned phi arguments for edges removed by GVN,
+  simpljmp or if-conversion, which polluted the staged dumps and gave GCM/GVN
+  stale phi predecessors. `cfg.fixphis`/`cfg.fillcfg` are now ported and used
+  at every `fillcfg` site in all target pipelines and in `gvn.rebuildcfg`.
+- **Repeated `export` lines were rejected.** `parse.c parselnk` loops over
+  linkage keywords; `parser/parse.mbt` now does too, with the reference's
+  diagnostic, and `test/dup_export.ssa` covers it.
+- `tools/fuzz_il.py` now also diffs the deterministic `-dPMNCAGK` dumps for
+  mutants the reference accepts (one known false positive on invalid
+  duplicate-definition SSA, recorded in `AUDIT-LEDGER.md`), and `--asm`
+  compares the final amd64 assembly too.
+- **Large-function performance gap.** On a 9079-line fuzz mutant the port needs
+  6.3s where the reference needs 0.15s for assembly (about 42x); staged dumps
+  take 6.3s vs 2.6s. This is the same kind of gap as the `_bfmandel` note
+  above but worse; it caused a fuzz timeout under gate load. Worth profiling
+  before large inputs.

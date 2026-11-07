@@ -9,6 +9,7 @@
 
 ///|
 // Wasm control flow instruction
+#derive(Debug)
 pub enum WasmCtrl {
   WBlock(String)
   WLoop(String)
@@ -20,7 +21,7 @@ pub enum WasmCtrl {
   WReturn
   WCall(Int32)
   WUnreachable
-} derive(Debug)
+}
 
 ///|
 // Control flow conversion state
@@ -143,8 +144,15 @@ fn gen_jump_ctrl(st : CtrlState, blk : @types.Blk) -> Array[WasmCtrl] {
         }
       }
     }
-    @types.Jretw | @types.Jretl | @types.Jrets | @types.Jretd | @types.Jretc =>
-      ctrl.push(WReturn)
+    @types.Jretw
+    | @types.Jretl
+    | @types.Jrets
+    | @types.Jretd
+    | @types.Jretsb
+    | @types.Jretub
+    | @types.Jretsh
+    | @types.Jretuh
+    | @types.Jretc => ctrl.push(WReturn)
     _ => ()
   }
 

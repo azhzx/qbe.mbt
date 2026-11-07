@@ -29,7 +29,6 @@ fn wat_parse_pipeline(
   let _ = @ssa.loadopt(f, false, interner, typs)
   @ssa.filluse(f)
   @ssa.ssacheck(f)
-  let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
   let _ = @abi_wasm.abi_wasm(f, typs, false, interner, typs)
@@ -185,4 +184,38 @@ test "emit_wat_module: data segment and global address resolve" {
   let wat = sb.to_string()
   assert_true(wat.contains("(data (i32.const 1024)"))
   assert_true(wat.contains("i32.const 1024"))
+}
+
+///|
+// Ordered/unordered float comparisons need a multi-instruction lowering; the
+// generic path used to emit `nop`, which made the module fail validation.
+test "emit_fn: ordered and unordered float comparisons lower correctly" {
+  let ordered =
+    #|function w $f(d %a, d %b) {
+    #|@start
+    #|  %c =w cod %a, %b
+    #|  ret %c
+    #|}
+    #|
+  let (f1, i1, _) = wat_parse_pipeline(ordered)
+  let sb1 = StringBuilder::StringBuilder()
+  emit_fn(f1, i1, sb1)
+  let w1 = sb1.to_string()
+  assert_true(w1.contains("f64.eq"))
+  assert_true(w1.contains("i32.and"))
+  assert_true(!w1.contains("nop"))
+  let unordered =
+    #|function w $f(s %a, s %b) {
+    #|@start
+    #|  %c =w cuos %a, %b
+    #|  ret %c
+    #|}
+    #|
+  let (f2, i2, _) = wat_parse_pipeline(unordered)
+  let sb2 = StringBuilder::StringBuilder()
+  emit_fn(f2, i2, sb2)
+  let w2 = sb2.to_string()
+  assert_true(w2.contains("f32.ne"))
+  assert_true(w2.contains("i32.or"))
+  assert_true(!w2.contains("nop"))
 }

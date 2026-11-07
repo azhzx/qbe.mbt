@@ -1,0 +1,13 @@
+# Quoted global symbols: the quotes are part of the symbol name.
+export function w $"f oo"() {
+@start
+  ret 0
+}
+
+export data $"g lo" = { l 1 }
+
+export function w $caller() {
+@start
+  %r =w call $"f oo"()
+  ret %r
+}

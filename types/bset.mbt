@@ -1,9 +1,10 @@
 ///|
 // Bit set - corresponds to struct BSet in QBE
+#derive(Debug)
 pub(all) struct BSet {
   nt : Int32 // Number of elements (total bits)
   bits : Array[UInt64] // Bit storage (mutable array)
-} derive(Debug)
+}
 
 ///|
 // Bits per UInt64 word

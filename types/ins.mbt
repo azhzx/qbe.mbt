@@ -1,6 +1,7 @@
 ///|
 // Instruction - corresponds to struct Ins in QBE
 // In C: struct Ins { uint op:30; Ref to; Ref arg[2]; uint cls:2; }
+#derive(Debug, Eq)
 pub(all) struct Ins {
   mut op : Op
   mut cls : Class
@@ -12,7 +13,7 @@ pub(all) struct Ins {
   // `arg1` and `arg2`. Keeping the inputs in the regular argument slots means
   // liveness, spilling and register allocation already see them as uses.
   mut asm_text : String
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Ins::new(op : Op, cls : Class, to : Ref, arg1 : Ref, arg2 : Ref) -> Ins {
@@ -41,18 +42,20 @@ pub fn Ins::new_asm(
 
 ///|
 // Phi node argument: value + source block id
+#derive(Debug, Eq)
 pub(all) struct PhiArg {
   mut value : Ref
   mut blk_id : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 // Phi instruction - corresponds to struct Phi in QBE
+#derive(Debug, Eq)
 pub(all) struct Phi {
   mut cls : Class
   mut to : Ref
   args : Array[PhiArg]
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Phi::new(to : Ref, cls : Class) -> Phi {

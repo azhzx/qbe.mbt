@@ -27,6 +27,7 @@ priv struct Arm64Class {
   mut hfa_base : @types.Class
   mut hfa_size : Int32
   mut size : Int32
+  mut align : Int32
   mut typ : @types.Typ?
   reg : Array[Int32] // 4 slots
   cls : Array[@types.Class] // 4 slots
@@ -43,6 +44,7 @@ fn Arm64Class::new() -> Arm64Class {
     hfa_base: @types.Kx,
     hfa_size: 0,
     size: 0,
+    align: 0,
     typ: None,
     reg: [0, 0, 0, 0],
     cls: [@types.Kx, @types.Kx, @types.Kx, @types.Kx],
@@ -199,8 +201,9 @@ fn arm64_typclass(
   c.class_ = 0
   c.ngp = 0
   c.nfp = 0
-  if t.align > 4 {
-    raise @util.QbeError::Ice("alignments larger than 16 are not supported")
+  c.align = 8
+  if t.align > 3 {
+    raise @util.QbeError::Ice("alignments larger than 8 are not supported")
   }
   if t.dark != 0 || sz > 16 || sz == 0 {
     // large structs are replaced by a pointer to some
@@ -387,6 +390,10 @@ fn arm64_selret(st : Arm64AbiState, bid : Int32) -> Unit raise {
   } else {
     let k = match j {
       @types.Jretw => @types.Kw
+      @types.Jretsb => @types.Kw
+      @types.Jretub => @types.Kw
+      @types.Jretsh => @types.Kw
+      @types.Jretuh => @types.Kw
       @types.Jretl => @types.Kl
       @types.Jrets => @types.Ks
       @types.Jretd => @types.Kd
@@ -441,20 +448,19 @@ fn arm64_argsclass(
       @types.Par | @types.Arg => {
         c.cls[0] = ins.cls
         c.size = 8
-        // Mach-O clang gives every stack argument an 8-byte slot (AAPCS64
-        // rounds NSAA to 8), and so must we: a narrow argument packed into 4
-        // bytes shifted every following stack argument, which broke calls with
-        // mixed int/long parameters against both clang and ourselves
-        // (brotli's WriteMetaBlockInternal, 19 mixed parameters, read a
-        // pointer from its neighbour's slot).
+        c.align = c.size
+        // C arm64/abi.c: Mach-O uses four-byte stack slots for non-wide
+        // scalar arguments. Keep this byte-for-byte ABI rule from upstream.
         if st.apple && ins.cls.wide() == 0 {
-          c.size = 8
+          c.size = 4
+          c.align = c.size
         }
         if va {
           // C: arguments after the ellipsis always go on the stack in 8-byte
           // slots.
           c.class_ = c.class_ | Arm64Cstk
           c.size = 8
+          c.align = 8
         } else if ins.cls.base() == 0 && ngp > 0 {
           ngp = ngp - 1
           c.reg[0] = arm64_gpreg[gpi]
@@ -556,6 +562,7 @@ fn arm64_selcall(
       i.op = @types.Arg
     }
     if (c.class_ & Arm64Cstk) != 0 {
+      stk = (stk + c.align - 1) & -c.align
       stk = stk + c.size
     }
   }
@@ -674,6 +681,7 @@ fn arm64_selcall(
     if (c.class_ & Arm64Cstk) == 0 {
       continue
     }
+    off = (off + c.align - 1) & -c.align
     if i.op != @types.Argc {
       let r = arm64_newtmp(st, @types.Kl)
       // C arm64/abi.c: storeb/storeh for sizes 1/2, else store[class].
@@ -807,6 +815,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
     let c = ca[a]
     if i.op == @types.Parc && (c.class_ & Arm64Cptr) == 0 {
       if (c.class_ & Arm64Cstk) != 0 {
+        off = (off + c.align - 1) & -c.align
         st.fn_.tmps[i.to.tmp_val()].slot = -(off + 2)
         off = off + c.size
       } else {
@@ -823,6 +832,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
         }
       }
     } else if (c.class_ & Arm64Cstk) != 0 {
+      off = (off + c.align - 1) & -c.align
       arm64_emit(
         st,
         @types.Load,

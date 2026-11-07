@@ -1,0 +1,34 @@
+# Sub-word ABI operations (C abi.c elimsb): parameter, argument and return
+# variants for signed/unsigned bytes and shorts. This QBE revision spells the
+# return jump simply "ret"; its class comes from the function signature.
+export function sb $fsb(sb %a) {
+@start
+  ret %a
+}
+
+export function ub $fub(ub %a) {
+@start
+  ret %a
+}
+
+export function sh $fsh(sh %a) {
+@start
+  ret %a
+}
+
+export function uh $fuh(uh %a) {
+@start
+  ret %a
+}
+
+export function w $caller(w %x) {
+@start
+  %a =w call $fsb(sb %x)
+  %b =w call $fub(ub %x)
+  %c =w call $fsh(sh %x)
+  %d =w call $fuh(uh %x)
+  %s =w add %a, %b
+  %t =w add %c, %d
+  %r =w add %s, %t
+  ret %r
+}

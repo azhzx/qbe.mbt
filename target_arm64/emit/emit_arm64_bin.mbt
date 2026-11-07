@@ -579,6 +579,10 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         )
         return
       }
+      @types.Neg => {
+        arm64_bin_emit(st, @object.enc_fneg_s(rd, arm64_bin_r(st, i.arg1)))
+        return
+      }
       @types.Afcmp => {
         arm64_bin_emit(
           st,
@@ -590,6 +594,16 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     }
   }
   match i.op {
+    @types.Neg =>
+      if is_d {
+        arm64_bin_emit(st, @object.enc_fneg_d(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        // NEG is SUB rd, XZR, rm.
+        arm64_bin_emit(
+          st,
+          @object.enc_sub_reg_sf(sf, rd, 31, arm64_bin_r(st, i.arg1)),
+        )
+      }
     @types.InlineAsm =>
       raise @util.QbeError::Ice(
         "arm64 bin: inline assembly needs the text emitter (--emit asm); the self-contained object writer cannot encode raw assembly",
@@ -871,6 +885,30 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
         arm64_bin_emit(st, @object.enc_scvtf_d_x(rd, arm64_bin_r(st, i.arg1)))
       } else {
         arm64_bin_emit(st, @object.enc_scvtf_s_x(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Stoui =>
+      if sf {
+        arm64_bin_emit(st, @object.enc_fcvtzu_x_s(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_fcvtzu_w_s(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Dtoui =>
+      if sf {
+        arm64_bin_emit(st, @object.enc_fcvtzu_x_d(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_fcvtzu_w_d(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Uwtof =>
+      if is_d {
+        arm64_bin_emit(st, @object.enc_ucvtf_d_w(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_ucvtf_s_w(rd, arm64_bin_r(st, i.arg1)))
+      }
+    @types.Ultowf =>
+      if is_d {
+        arm64_bin_emit(st, @object.enc_ucvtf_d_x(rd, arm64_bin_r(st, i.arg1)))
+      } else {
+        arm64_bin_emit(st, @object.enc_ucvtf_s_x(rd, arm64_bin_r(st, i.arg1)))
       }
     @types.Cast =>
       match i.cls {

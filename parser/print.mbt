@@ -23,6 +23,10 @@ fn jtoa(j : @types.JumpKind) -> String {
     @types.Jretl => "retl"
     @types.Jrets => "rets"
     @types.Jretd => "retd"
+    @types.Jretsb => "retsb"
+    @types.Jretub => "retub"
+    @types.Jretsh => "retsh"
+    @types.Jretuh => "retuh"
     @types.Jretc => "retc"
     @types.Jjmp => "jmp"
     @types.Jjnz => "jnz"
@@ -315,6 +319,10 @@ pub fn printfn(
       | @types.Jretl
       | @types.Jrets
       | @types.Jretd
+      | @types.Jretsb
+      | @types.Jretub
+      | @types.Jretsh
+      | @types.Jretuh
       | @types.Jretc => {
         sb.write_string("\t\{jtoa(b.jmp.kind)}")
         if !(b.jmp.kind == @types.Jret0 && b.jmp.arg.is_none()) {

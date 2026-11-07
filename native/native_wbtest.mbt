@@ -28,3 +28,8 @@ test "run-asm: dlsym resolves a libc symbol" {
   let p = mbt_native_sym(b"malloc")
   assert_true(p != 0L)
 }
+
+///|
+test "native: run command returns child exit status" {
+  assert_eq(run_command("exit 7"), 7)
+}

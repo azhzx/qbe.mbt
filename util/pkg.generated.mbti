@@ -30,12 +30,15 @@ pub fn rpad(Int32, Int32) -> String
 
 pub fn set_debug_info(Bool) -> Unit
 
+pub fn sym_prefix(String, String) -> String
+
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror QbeError {
   ParseError(String, Int32, String)
   CompileError(String)
   Ice(String)
-} derive(@debug.Debug)
+}
 
 // Types and methods
 pub struct Interner {

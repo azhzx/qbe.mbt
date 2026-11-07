@@ -1,0 +1,48 @@
+# Unsigned conversions (C ops.h stoui/dtoui/uwtof/ultof).
+export function w $stoui_w(s %a) {
+@start
+  %r =w stoui %a
+  ret %r
+}
+
+export function l $stoui_l(s %a) {
+@start
+  %r =l stoui %a
+  ret %r
+}
+
+export function w $dtoui_w(d %a) {
+@start
+  %r =w dtoui %a
+  ret %r
+}
+
+export function l $dtoui_l(d %a) {
+@start
+  %r =l dtoui %a
+  ret %r
+}
+
+export function s $uwtof_s(w %a) {
+@start
+  %r =s uwtof %a
+  ret %r
+}
+
+export function d $uwtof_d(w %a) {
+@start
+  %r =d uwtof %a
+  ret %r
+}
+
+export function s $ultof_s(l %a) {
+@start
+  %r =s ultof %a
+  ret %r
+}
+
+export function d $ultof_d(l %a) {
+@start
+  %r =d ultof %a
+  ret %r
+}

@@ -610,3 +610,35 @@ test "float: double-precision division" {
     Err(m) => fail("err: \{m}")
   }
 }
+
+///|
+test "float: Sltof preserves values above 32 bits" {
+  let src =
+    #|export function d $main(l %i) {
+    #|@start
+    #|  %f =d sltof %i
+    #|  ret %f
+    #|}
+    #|
+  match float_test_run(src, args=[VInt(4294967296L)]) {
+    Ok(VDouble(v)) => assert_eq(v, 4294967296.0)
+    Ok(_) => fail("wrong kind")
+    Err(m) => fail("err: \{m}")
+  }
+}
+
+///|
+test "float: Dtosi long preserves values above 32 bits" {
+  let src =
+    #|export function l $main(d %f) {
+    #|@start
+    #|  %i =l dtosi %f
+    #|  ret %i
+    #|}
+    #|
+  match float_test_run(src, args=[VDouble(4294967296.0)]) {
+    Ok(VInt(v)) => assert_eq(v, 4294967296L)
+    Ok(_) => fail("wrong kind")
+    Err(m) => fail("err: \{m}")
+  }
+}

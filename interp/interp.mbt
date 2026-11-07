@@ -8,12 +8,13 @@
 // A public argument/return value. Word and long arguments take `VInt` (the
 // low 32 bits are used for `w` parameters), singles take `VFloat` and
 // doubles take `VDouble`. Functions returning nothing produce `VVoid`.
+#derive(Debug, Eq)
 pub(all) enum InterpValue {
   VVoid
   VInt(Int64)
   VFloat(Float)
   VDouble(Double)
-} derive(Debug, Eq)
+}
 
 ///|
 // Extract the raw 64-bit word of an argument value (bitcast for floats).
@@ -293,7 +294,11 @@ fn Interp::enter_block(
     }
     let f = frame.fn_
     let b = f.blks[bid]
-    // phi nodes
+    // Phi nodes are a parallel copy: evaluate every incoming value before
+    // storing any of them. Storing one by one would clobber a source that is
+    // another phi's destination (valid SSA on a loop back-edge, e.g.
+    // %a = phi @head %b, %b = phi @head %a swaps the two values).
+    let phi_vals : Array[Int64] = []
     for phi in b.phi {
       if phi.to.is_tmp() {
         let mut v : Int64 = 0L
@@ -310,7 +315,14 @@ fn Interp::enter_block(
             "interpreter: phi in \{b.name} has no value for predecessor \{from_id}",
           )
         }
-        frame.locals[phi.to.tmp_val()] = v
+        phi_vals.push(v)
+      }
+    }
+    let mut pi = 0
+    for phi in b.phi {
+      if phi.to.is_tmp() {
+        frame.locals[phi.to.tmp_val()] = phi_vals[pi]
+        pi = pi + 1
       }
     }
     // instructions
@@ -386,8 +398,21 @@ fn Interp::enter_block(
     let jmp = b.jmp
     let result : InterpValue = match jmp.kind {
       @types.Jret0 => VVoid
-      @types.Jretw | @types.Jretl => {
-        let k = if jmp.kind == @types.Jretw { @types.Kw } else { @types.Kl }
+      @types.Jretw
+      | @types.Jretl
+      | @types.Jretsb
+      | @types.Jretub
+      | @types.Jretsh
+      | @types.Jretuh => {
+        let k = if jmp.kind == @types.Jretw ||
+          jmp.kind == @types.Jretsb ||
+          jmp.kind == @types.Jretub ||
+          jmp.kind == @types.Jretsh ||
+          jmp.kind == @types.Jretuh {
+          @types.Kw
+        } else {
+          @types.Kl
+        }
         let v = self.eval_ref(frame, jmp.arg)
         if k == @types.Kw {
           VInt(sext32(v))

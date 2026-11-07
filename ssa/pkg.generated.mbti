@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn copy(@types.Fn, Bool, @util.Interner, Array[@types.Typ]) -> String
+pub fn elimsb(@types.Fn) -> Unit
 
 pub fn filluse(@types.Fn) -> Unit raise
 

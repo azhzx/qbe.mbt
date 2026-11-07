@@ -7,11 +7,12 @@
 // applied (sorted) at the end.
 
 ///|
+#derive(Eq)
 priv enum LocType {
   LRoot // right above the original load
   LLoad // inserting a load is allowed
   LNoLoad // only scalar operations allowed
-} derive(Eq)
+}
 
 ///|
 priv struct Loc {

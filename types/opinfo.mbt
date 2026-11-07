@@ -2,6 +2,7 @@
 // Operation metadata - corresponds to struct Op and the optab in QBE
 // (all.h + parse.c + ops.h)
 // Class codes match QBE: Ke=-2 (erroneous), Kx=-1 (top), Kw=0, Kl=1, Ks=2, Kd=3
+#derive(Debug)
 pub(all) struct OpInfo {
   name : String
   // arg class for each result class: [Kw, Kl, Ks, Kd]
@@ -11,7 +12,7 @@ pub(all) struct OpInfo {
   nmem : Int32 // number of memory arguments
   zf : Int32 // sets zero flag
   lf : Int32 // leaves flags
-} derive(Debug)
+}
 
 ///|
 fn mk(
@@ -1116,6 +1117,97 @@ let optab : Array[OpInfo] = [
     false,
     (0, 0, 0),
   ),
+  mk(
+    "neg",
+    cls(["w", "l", "s", "d"]),
+    cls(["x", "x", "x", "x"]),
+    true,
+    (1, 1, 0),
+  ),
+  mk(
+    "stoui",
+    cls(["s", "s", "e", "e"]),
+    cls(["x", "x", "e", "e"]),
+    true,
+    (0, 0, 1),
+  ),
+  mk(
+    "dtoui",
+    cls(["d", "d", "e", "e"]),
+    cls(["x", "x", "e", "e"]),
+    true,
+    (0, 0, 1),
+  ),
+  mk(
+    "uwtof",
+    cls(["e", "e", "w", "w"]),
+    cls(["e", "e", "x", "x"]),
+    true,
+    (0, 0, 1),
+  ),
+  mk(
+    "ultof",
+    cls(["e", "e", "l", "l"]),
+    cls(["e", "e", "x", "x"]),
+    true,
+    (0, 0, 1),
+  ),
+  mk(
+    "parsb",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "parub",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "parsh",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "paruh",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "argsb",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "argub",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "argsh",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
+  mk(
+    "arguh",
+    cls(["w", "e", "e", "e"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
 ]
 
 ///|
@@ -1287,6 +1379,20 @@ pub fn Op::from_index(i : Int32) -> Op {
     146 => AtomicLoad
     147 => AtomicStore
     148 => Fence
+    149 => InlineAsm
+    150 => Neg
+    151 => Stoui
+    152 => Dtoui
+    153 => Uwtof
+    154 => Ultowf
+    155 => Parsb
+    156 => Parub
+    157 => Parsh
+    158 => Paruh
+    159 => Argsb
+    160 => Argub
+    161 => Argsh
+    162 => Arguh
     _ => Oxxx
   }
 }
@@ -1445,6 +1551,19 @@ pub fn Op::index(self : Op) -> Int32 {
     AtomicStore => 147
     Fence => 148
     InlineAsm => 149
+    Neg => 150
+    Stoui => 151
+    Dtoui => 152
+    Uwtof => 153
+    Ultowf => 154
+    Parsb => 155
+    Parub => 156
+    Parsh => 157
+    Paruh => 158
+    Argsb => 159
+    Argub => 160
+    Argsh => 161
+    Arguh => 162
   }
 }
 

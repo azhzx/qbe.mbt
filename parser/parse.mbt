@@ -6,21 +6,26 @@ pub fn Parser::parse(self : Self) -> Unit raise {
     let t = self.next_nl()
     match t {
       TEof => break
-      TExport => {
-        // export function or data
-        let t2 = self.next_nl()
-        match t2 {
-          TFunc => {
-            self.order.push("f")
-            self.parsefn(true)
+      TExport =>
+        // C parse.c parselnk: linkage keywords may repeat ("export export
+        // function" is accepted) and only data/function may follow them.
+        while true {
+          let t2 = self.next_nl()
+          match t2 {
+            TExport => continue
+            TFunc => {
+              self.order.push("f")
+              self.parsefn(true)
+              break
+            }
+            TData => {
+              self.order.push("d")
+              self.parsedat(true)
+              break
+            }
+            _ => raise self.error("only data and function have linkage")
           }
-          TData => {
-            self.order.push("d")
-            self.parsedat(true)
-          }
-          _ => raise self.error("export can only qualify data and function")
         }
-      }
       TFunc => {
         self.order.push("f")
         self.parsefn(false)

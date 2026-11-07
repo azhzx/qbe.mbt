@@ -4,12 +4,13 @@ pub type BlkId = Int32
 
 ///|
 // Jump at end of basic block
+#derive(Debug)
 pub(all) struct Jump {
   mut kind : JumpKind
   mut arg : Ref // Argument for jnz/comparison (Ref::none() if none)
   mut s1 : Int32 // First successor block id (-1 if none)
   mut s2 : Int32 // Second successor block id (-1 if none)
-} derive(Debug)
+}
 
 ///|
 pub fn Jump::new(kind : JumpKind) -> Jump {
@@ -23,6 +24,7 @@ pub fn Jump::full(kind : JumpKind, arg : Ref, s1 : Int32, s2 : Int32) -> Jump {
 
 ///|
 // Basic block - corresponds to struct Blk in QBE
+#derive(Debug)
 pub(all) struct Blk {
   id : Int32 // Block id
   name : String // Block label name
@@ -49,7 +51,7 @@ pub(all) struct Blk {
   mut link : Int32 // Next block in link list (-1 if none)
   // Visit flag
   mut visit : Int32
-} derive(Debug)
+}
 
 ///|
 pub fn Blk::new(id : Int32, name : String) -> Blk {

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 #include <dlfcn.h>
 #if defined(__APPLE__)
 #include <libkern/OSCacheControl.h>
@@ -194,7 +195,10 @@ moonbit_bytes_t mbt_native_capture(moonbit_bytes_t cmd) {
 MOONBIT_FFI_EXPORT
 int32_t mbt_native_run(moonbit_bytes_t cmd) {
   int rc = system((const char *)cmd);
-  return rc;
+  if (rc == -1) return -1;
+  if (WIFEXITED(rc)) return (int32_t)WEXITSTATUS(rc);
+  if (WIFSIGNALED(rc)) return (int32_t)(128 + WTERMSIG(rc));
+  return -1;
 }
 
 /* Terminate the process with `code`, so a driver can forward the exit status

@@ -1,0 +1,24 @@
+# Unary negation (C ops.h Oneg) for all four classes.
+export function w $iw(w %a) {
+@start
+  %n =w neg %a
+  ret %n
+}
+
+export function l $il(l %a) {
+@start
+  %n =l neg %a
+  ret %n
+}
+
+export function s $fs(s %a) {
+@start
+  %n =s neg %a
+  ret %n
+}
+
+export function d $fd(d %a) {
+@start
+  %n =d neg %a
+  ret %n
+}

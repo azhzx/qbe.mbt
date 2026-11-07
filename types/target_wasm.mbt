@@ -69,13 +69,14 @@ pub const WASM_DATA_BASE : Int32 = 1024
 
 ///|
 // Wasm local variable classes (maps QBE Class to wasm type)
+#derive(Debug, Eq)
 pub enum WasmType {
   Wi32
   Wi64
   Wf32
   Wf64
   WVoid
-} derive(Debug, Eq)
+}
 
 ///|
 // Map QBE Class to WasmType

@@ -146,35 +146,6 @@ test "phiins inserts a phi at a merge point of two definitions" {
 }
 
 ///|
-test "copy propagates through uses and removes the copy" {
-  let src =
-    #|function w $f(w %a, w %b) {
-    #|@start
-    #|  %x =w add %a, %b
-    #|  %y =w copy %x
-    #|  ret %y
-    #|}
-    #|
-  let (f, interner, typs) = ssa_parse_setup(src)
-  let _ = typs
-  filluse(f)
-  let _ = copy(f, false, interner, [])
-  // the return now reads %x directly; the copy is gone
-  let start = f.blks[f.start_id]
-  let mut copies = 0
-  for ins in start.ins {
-    if ins.op == @types.Copy {
-      copies = copies + 1
-    }
-  }
-  assert_eq(copies, 0)
-  // `ret %y` is carried by the block jump, which now reads %x directly
-  let start_jmp = f.blks[f.start_id].jmp
-  assert_true(start_jmp.kind == @types.Jretw)
-  assert_true(start_jmp.arg.is_tmp())
-}
-
-///|
 test "memopt forwards stores to loads of a fresh allocation" {
   let src =
     #|export function w $f() {

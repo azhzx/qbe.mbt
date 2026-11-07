@@ -470,6 +470,7 @@ fn c_foldint(
     match op {
       @types.Add => l + r
       @types.Sub => l - r
+      @types.Neg => (0UL - l.reinterpret_as_uint64()).reinterpret_as_int64()
       @types.Div => if w { l / r } else { sext32(l) / sext32(r) }
       @types.Rem => if w { l % r } else { sext32(l) % sext32(r) }
       @types.Udiv =>
@@ -517,6 +518,18 @@ fn c_foldint(
         } else {
           sext32(con_double(cl).to_int().to_int64())
         }
+      @types.Stoui =>
+        if w {
+          con_single(cl).to_double().to_uint64().reinterpret_as_int64()
+        } else {
+          (con_single(cl).to_double().to_uint64() & 0xFFFFFFFFUL).reinterpret_as_int64()
+        }
+      @types.Dtoui =>
+        if w {
+          con_double(cl).to_uint64().reinterpret_as_int64()
+        } else {
+          (con_double(cl).to_uint64() & 0xFFFFFFFFUL).reinterpret_as_int64()
+        }
       @types.Cast => {
         if cl.kind == @types.CAddr {
           typ = @types.CAddr
@@ -554,10 +567,13 @@ fn c_foldflt(
     let xd = match op {
       @types.Add => ld + rd
       @types.Sub => ld - rd
+      @types.Neg => -ld
       @types.Div => ld / rd
       @types.Mul => ld * rd
       @types.Swtof => sext32(cl.bits.i).to_double()
+      @types.Uwtof => low32u(cl.bits.i).to_double()
       @types.Sltof => cl.bits.i.to_double()
+      @types.Ultowf => cl.bits.i.reinterpret_as_uint64().to_double()
       @types.Exts => con_single(cl).to_double()
       @types.Cast => ld
       _ => return None
@@ -575,10 +591,14 @@ fn c_foldflt(
     let xs = match op {
       @types.Add => ls + rs
       @types.Sub => ls - rs
+      @types.Neg => -ls
       @types.Div => ls / rs
       @types.Mul => ls * rs
       @types.Swtof => Float::from_double(sext32(cl.bits.i).to_double())
+      @types.Uwtof => Float::from_double(low32u(cl.bits.i).to_double())
       @types.Sltof => Float::from_double(cl.bits.i.to_double())
+      @types.Ultowf =>
+        Float::from_double(cl.bits.i.reinterpret_as_uint64().to_double())
       @types.Truncd => Float::from_double(con_double(cl))
       @types.Cast => ls
       _ => return None
@@ -1630,14 +1650,13 @@ fn narrowpars(st : GState) -> Unit {
 // ---------------------------------------------------------------------------
 
 ///|
-fn rebuildcfg(st : GState) -> Unit {
+fn rebuildcfg(st : GState) -> Unit raise {
   let fn_ = st.fn_
   let old_rpo : Array[Int32] = []
   for x in fn_.rpo {
     old_rpo.push(x)
   }
-  @cfg.fillrpo(fn_)
-  @cfg.fillpreds(fn_)
+  @cfg.fillcfg(fn_)
   let s_id = fn_.start_id
   for b_id in old_rpo {
     let b = fn_.blks[b_id]

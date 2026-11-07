@@ -15,6 +15,8 @@ pub fn escapes(@types.Ref, @types.Fn) -> Bool
 
 pub fn fillalias(@types.Fn) -> Unit
 
+pub fn fillcfg(@types.Fn) -> Unit raise
+
 pub fn filldom(@types.Fn) -> Unit
 
 pub fn fillfron(@types.Fn) -> Unit
@@ -24,6 +26,8 @@ pub fn fillloop(@types.Fn) -> Unit
 pub fn fillpreds(@types.Fn) -> Unit
 
 pub fn fillrpo(@types.Fn) -> Unit
+
+pub fn fixphis(@types.Fn) -> Unit raise
 
 pub fn getalias(@types.Ref, @types.Fn) -> @types.AliasInfo
 

@@ -170,17 +170,17 @@ fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
   let r0 = r
   if r0.is_tmp() {
     let av = @types.Addr::new()
-    amatch(st, av, r0, true)
-    if av.offset.kind == @types.CAddr {
-      if !av.base.is_none() {
-        // apple asm fix
-        if !av.index.is_none() {
-          return r0
-        } else {
-          av.index = av.base
-          av.scale = 1
-          av.base = @types.Ref::none()
-        }
+    if !amatch(st, av, r0) {
+      return r0
+    }
+    if !av.base.is_none() && av.offset.kind == @types.CAddr {
+      // apple asm fix
+      if !av.index.is_none() {
+        return r0
+      } else {
+        av.index = av.base
+        av.scale = 1
+        av.base = @types.Ref::none()
       }
     }
     chuse(st, r0, -1)

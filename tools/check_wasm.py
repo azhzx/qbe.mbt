@@ -3,8 +3,10 @@
 
 An independent validity gate for the wasm32 backend: each test/**/*.ssa
 (skipping files starting with _) is compiled with -t wasm and the resulting
-WAT is passed to moon-wasm-opt (wat2wasm + the wasm validator). Files that
-produce no output (unsupported by the reference snapshot) are skipped.
+WAT is passed to moon-wasm-opt (wat2wasm + the wasm validator). A file is
+skipped only when the vendored reference QBE also rejects it; if the reference
+accepts the input but our wasm backend produces no output, that is a gap and
+the gate fails (it used to be counted as a skip).
 
 Usage:
     python tools/check_wasm.py
@@ -24,6 +26,14 @@ MINE = os.path.join(
     ROOT, "_build", "native", "debug", "build", "cmd", "main", "main.exe"
 )
 MOON = shutil.which("moon") or os.path.expanduser("~/.moon/bin/moon")
+REF = os.path.join(ROOT, "vendor", "qbe", "qbe")
+
+
+def reference_ok(path):
+    if not os.path.exists(REF):
+        return False
+    r = subprocess.run([REF, path], capture_output=True)
+    return r.returncode == 0 and bool(r.stdout)
 
 
 def find_wasm_opt(path):
@@ -59,7 +69,14 @@ def main():
         proc = subprocess.run([MINE, "-t", "wasm", t], capture_output=True)
         wat = proc.stdout
         if not wat:
-            skipped += 1
+            # Only inputs the reference itself rejects are unsupported; a
+            # reference-valid input that we cannot compile is a wasm gap.
+            if reference_ok(t):
+                fail += 1
+                print(f"COMPILE-FAIL {os.path.relpath(t, ROOT)}")
+                print(proc.stderr.decode(errors="replace"))
+            else:
+                skipped += 1
             continue
         total += 1
         with tempfile.TemporaryDirectory() as td:
@@ -72,7 +89,10 @@ def main():
                 fail += 1
                 print(f"WAT-FAIL {os.path.relpath(t, ROOT)}")
                 print(r.stderr.decode(errors="replace"))
-    print(f"\n{total - fail}/{total} valid ({skipped} skipped: compile-failed)")
+    print(
+        f"\n{total - fail}/{total} valid "
+        f"({skipped} skipped: reference-unsupported, {fail} compile failures)"
+    )
     sys.exit(1 if fail else 0)
 
 

@@ -153,6 +153,10 @@ fn Parser::typecheck(self : Self, fn_ : @types.Fn) -> Unit raise {
       let k = match j {
         @types.Jretc => @types.Kl
         @types.Jretw => @types.Kw
+        @types.Jretsb => @types.Kw
+        @types.Jretub => @types.Kw
+        @types.Jretsh => @types.Kw
+        @types.Jretuh => @types.Kw
         @types.Jretl => @types.Kl
         @types.Jrets => @types.Ks
         @types.Jretd => @types.Kd

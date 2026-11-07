@@ -168,20 +168,19 @@ test "foldint address arithmetic keeps label" {
   assert_true(r.1.kind == @types.CAddr)
   assert_true(r.1.label == 3)
   assert_true(r.1.bits.i == 4)
-  // addr - addr with different labels is an ICE.
-  try
-    foldint(@types.Sub, true, @types.Con::addr(1), @types.Con::addr(2))
-  catch {
-    @util.QbeError::Ice(_) => ()
-    _ => fail("expected ICE for addr1 - addr2")
-  } noraise {
-    _ => fail("expected ICE for addr1 - addr2")
-  }
+  // addr - addr with different labels is not foldable.
+  let (bot, _) = foldint(
+    @types.Sub,
+    true,
+    @types.Con::addr(1),
+    @types.Con::addr(2),
+  )
+  assert_true(bot)
 }
 
 ///|
-test "null divisor raises an ICE during folding" {
-  // folding `div 1, 0` must surface an error, not trap the compiler
+test "null divisor remains unfolded" {
+  // QBE fold.c treats `div 1, 0` as not foldable.
   let src =
     #|function w $f() {
     #|@start
@@ -196,12 +195,9 @@ test "null divisor raises an ICE during folding" {
   @cfg.fillrpo(f)
   @cfg.fillpreds(f)
   @ssa.filluse(f)
-  try fold(f, false, parser.interner_ref(), []) catch {
-    @util.QbeError::Ice(_) => ()
-    _ => fail("expected ICE for a null divisor")
-  } noraise {
-    _ => fail("expected ICE for a null divisor")
-  }
+  let _ = fold(f, false, parser.interner_ref(), [])
+  let i = f.blks[f.start_id].ins[0]
+  assert_true(i.op == @types.Div)
 }
 
 ///|
@@ -226,13 +222,9 @@ test "foldint address arithmetic produces CAddr labels" {
   assert_true(!r.0)
   assert_true(r.1.kind == @types.CAddr)
   assert_true(r.1.label == 7)
-  // addr + addr is a compile-time error
-  try foldint(@types.Add, false, a, a) catch {
-    @util.QbeError::Ice(_) => ()
-    _ => fail("expected ICE for addr + addr")
-  } noraise {
-    _ => fail("expected ICE for addr + addr")
-  }
+  // addr + addr is not foldable.
+  let (bot, _) = foldint(@types.Add, false, a, a)
+  assert_true(bot)
 }
 
 ///|
@@ -266,4 +258,48 @@ test "sext32 sign-extends the low word" {
   assert_eq(sext32(0xFFFFFFFFL), -1L)
   assert_eq(sext32(5L), 5L)
   assert_eq(sext32(0x80000000L), -2147483648L)
+}
+
+///|
+test "foldint word operations use 32-bit semantics" {
+  check_int(
+    foldint(@types.Div, false, @types.Con::int(0xFFFFFFFFL), @types.Con::int(2)),
+    0,
+  )
+  check_int(
+    foldint(
+      @types.Udiv,
+      false,
+      @types.Con::int(0x1_0000_0000L),
+      @types.Con::int(2),
+    ),
+    0,
+  )
+  check_int(
+    foldint(
+      @types.Sar,
+      false,
+      @types.Con::int(0x80000000L),
+      @types.Con::int(32),
+    ),
+    -2147483648L,
+  )
+}
+
+///|
+test "foldint invalid division is not foldable" {
+  let (zero, _) = foldint(
+    @types.Div,
+    false,
+    @types.Con::int(1),
+    @types.Con::int(0),
+  )
+  assert_true(zero)
+  let (overflow, _) = foldint(
+    @types.Div,
+    false,
+    @types.Con::int(0x80000000L),
+    @types.Con::int(-1),
+  )
+  assert_true(overflow)
 }

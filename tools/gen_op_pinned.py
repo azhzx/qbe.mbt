@@ -25,7 +25,7 @@ for m in re.finditer(r'^O\(\s*([a-z0-9_]+),\s*T\([^)]*\),\s*F\(([^)]*)\)', ops, 
         missing.append(name)
 
 # ops this port has that upstream does not; they also have memory side effects
-extras = ['Vacall', 'AtomicLoad', 'AtomicStore', 'Fence']
+extras = ['Vacall', 'AtomicLoad', 'AtomicStore', 'Fence', 'InlineAsm']
 names = pinned + extras
 arms = ['    | @types.' + v for v in names]
 arms[0] = '    @types.' + names[0]

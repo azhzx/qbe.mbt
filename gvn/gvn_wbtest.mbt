@@ -28,7 +28,6 @@ fn gvn_pipeline(
   let _ = @ssa.loadopt(f, false, interner, typs)
   @ssa.filluse(f)
   @ssa.ssacheck(f)
-  let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
   (f, interner, typs)
@@ -285,4 +284,53 @@ test "branch gvn snapshot" {
       #|
     ),
   )
+}
+
+///|
+// Inline assembly is opaque and may have side effects, so it is pinned: GVN
+// must not merge two identical asm instructions (e.g. two counter reads).
+test "gvn does not deduplicate inline assembly" {
+  let (f, interner, typs) = gvn_pipeline(
+    (
+      #|function l $f(l %p) {
+      #|@start
+      #|  %a =l asm "ldxr %0, [%1]" (%p)
+      #|  %b =l asm "ldxr %0, [%1]" (%p)
+      #|  %c =l add %a, %b
+      #|  ret %c
+      #|}
+      #|
+    ),
+  )
+  let _ = gvn(f, false, interner, typs)
+  assert_eq(count_op(f, @types.InlineAsm), 2)
+}
+
+///|
+// Pinned instructions stay in their defining block: GCM must not sink the asm
+// to its use (that would change when the side effect happens).
+test "gcm does not move inline assembly" {
+  let (f, interner, typs) = gvn_pipeline(
+    (
+      #|function l $f(l %p) {
+      #|@start
+      #|  %o =l asm "ldxr %0, [%1]" (%p)
+      #|  jmp @done
+      #|@done
+      #|  ret %o
+      #|}
+      #|
+    ),
+  )
+  let _ = gvn(f, false, interner, typs)
+  let _ = gcm(f, false, interner, typs)
+  assert_eq(count_op(f, @types.InlineAsm), 1)
+  let start = f.blks[f.start_id]
+  let mut in_start = 0
+  for ins in start.ins {
+    if ins.op == @types.InlineAsm {
+      in_start = in_start + 1
+    }
+  }
+  assert_eq(in_start, 1)
 }

@@ -1,12 +1,13 @@
 ///|
 /// Class - corresponds to enum Class in all.h
+#derive(Eq, Debug)
 pub(all) enum Class {
   Kx // -1, "top" class
   Kw
   Kl
   Ks
   Kd
-} derive(Eq, Debug)
+}
 
 ///|
 /// Return 1 if wide (l/d), 0 otherwise (corresponds to C KWIDE()).

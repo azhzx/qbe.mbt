@@ -1,12 +1,14 @@
 ///|
 // QBE operations - corresponds to enum O in QBE
 // Public operations first, then internal operations
+#derive(Eq, Debug)
 pub(all) enum Op {
   Oxxx // Placeholder
 
   // === Arithmetic and Bits ===
   Add
   Sub
+  Neg
   Div
   Rem
   Udiv
@@ -90,9 +92,13 @@ pub(all) enum Op {
   Exts
   Truncd
   Stosi
+  Stoui
   Dtosi
+  Dtoui
   Swtof
+  Uwtof
   Sltof
+  Ultowf
   Cast
 
   // === Stack Allocation ===
@@ -133,9 +139,17 @@ pub(all) enum Op {
 
   // === Arguments, Parameters, and Calls ===
   Par
+  Parsb
+  Parub
+  Parsh
+  Paruh
   Parc
   Pare
   Arg
+  Argsb
+  Argub
+  Argsh
+  Arguh
   Argc
   Arge
   Call
@@ -194,7 +208,7 @@ pub(all) enum Op {
   // the %0..%9 placeholders. Kept last so every transcribed op index and the
   // generated pinned table stay valid.
   InlineAsm
-} derive(Eq, Debug)
+}
 
 ///|
 // Check if op is a store
@@ -254,13 +268,26 @@ pub fn Op::ext_width_idx(self : Op) -> Int32 {
 ///|
 // Check if op is a parameter
 pub fn Op::is_par(self : Op) -> Bool {
-  self == Par || self == Parc || self == Pare
+  self == Par ||
+  self == Parsb ||
+  self == Parub ||
+  self == Parsh ||
+  self == Paruh ||
+  self == Parc ||
+  self == Pare
 }
 
 ///|
 // Check if op is an argument
 pub fn Op::is_arg(self : Op) -> Bool {
-  self == Arg || self == Argc || self == Arge || self == Argv
+  self == Arg ||
+  self == Argsb ||
+  self == Argub ||
+  self == Argsh ||
+  self == Arguh ||
+  self == Argc ||
+  self == Arge ||
+  self == Argv
 }
 
 ///|
@@ -269,6 +296,7 @@ pub fn Op::from_string(s : String) -> Op {
   match s {
     "add" => Add
     "sub" => Sub
+    "neg" => Neg
     "div" => Div
     "rem" => Rem
     "udiv" => Udiv
@@ -343,9 +371,13 @@ pub fn Op::from_string(s : String) -> Op {
     "exts" => Exts
     "truncd" => Truncd
     "stosi" => Stosi
+    "stoui" => Stoui
     "dtosi" => Dtosi
+    "dtoui" => Dtoui
     "swtof" => Swtof
+    "uwtof" => Uwtof
     "sltof" => Sltof
+    "ultof" => Ultowf
     "cast" => Cast
     "alloc4" => Alloc4
     "alloc8" => Alloc8
@@ -362,4 +394,18 @@ pub fn Op::from_string(s : String) -> Op {
     "asm" => InlineAsm
     _ => Oxxx
   }
+}
+
+///|
+// C isparbh: sub-word parameter variants.
+pub fn Op::is_par_bh(self : Op) -> Bool {
+  let i = self.index()
+  i >= Parsb.index() && i <= Paruh.index()
+}
+
+///|
+// C isargbh: sub-word argument variants.
+pub fn Op::is_arg_bh(self : Op) -> Bool {
+  let i = self.index()
+  i >= Argsb.index() && i <= Arguh.index()
 }

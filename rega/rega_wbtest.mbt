@@ -29,7 +29,6 @@ fn rega_parse_pipeline(
   let _ = @ssa.loadopt(f, false, interner, typs)
   @ssa.filluse(f)
   @ssa.ssacheck(f)
-  let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
   let _ = @abi_amd64.abi(f, typs, false, interner, typs)
@@ -143,4 +142,18 @@ test "rega: loop body function allocates correctly" {
       }
     }
   }
+}
+
+///|
+// rcopy must copy the register bitmap, not share it: step 3 of rega mutates
+// beg's bitmap after end was copied from the same cur map.
+test "rcopy copies the register bitmap" {
+  let a = rmap_new(200)
+  let b = rmap_new(200)
+  b.n = 0
+  b.b.set(5)
+  rcopy(a, b)
+  b.b.set(6)
+  assert_true(a.b.has(5))
+  assert_true(!a.b.has(6))
 }

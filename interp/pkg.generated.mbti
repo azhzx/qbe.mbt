@@ -13,12 +13,13 @@ pub fn run_module(Array[@types.Fn], Array[@types.Dat], @util.Interner, String, A
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum InterpValue {
   VVoid
   VInt(Int64)
   VFloat(Float)
   VDouble(Double)
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

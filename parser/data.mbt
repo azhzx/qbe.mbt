@@ -57,21 +57,18 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
             TFlt => {
               let raw = self.tokens[self.pos - 1].raw
               let is_single = raw.length() > 0 && raw[0] == 's'
-              let num_str = raw[2:].to_owned()
-              let (fval, err_msg) = try @string.parse_double(num_str) catch {
-                _ => (0.0, "Invalid floating-point literal")
-              } noraise {
-                n => (n, "")
-              }
+              let (fval, fval_s, err_msg) = parse_float_literal(raw)
               if !err_msg.is_empty() {
                 raise self.error(err_msg)
               }
               if is_single {
                 @types.Dat::{
                   kind: dk,
-                  num: 0,
+                  // C stores the parsed value in a union: emitters print
+                  // u.num, so carry the float's bit pattern here too.
+                  num: fval_s.reinterpret_as_uint().to_int64(),
                   fltd: 0.0,
-                  flts: Float::from_double(fval),
+                  flts: fval_s,
                   str: "",
                   ref_name: "",
                   ref_offset: 0,
@@ -82,7 +79,7 @@ fn Parser::parsedat(self : Self, is_export : Bool) -> Unit raise {
               } else {
                 @types.Dat::{
                   kind: dk,
-                  num: 0,
+                  num: fval.reinterpret_as_int64(),
                   fltd: fval,
                   flts: 0.0,
                   str: "",

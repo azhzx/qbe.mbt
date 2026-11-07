@@ -288,15 +288,20 @@ fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
     | @types.Copy
     | @types.Add
     | @types.Sub
+    | @types.Neg
     | @types.Mul
     | @types.And
     | @types.Or
     | @types.Xor
     | @types.Xtest
     | @types.Stosi
+    | @types.Stoui
     | @types.Dtosi
+    | @types.Dtoui
     | @types.Swtof
+    | @types.Uwtof
     | @types.Sltof
+    | @types.Ultowf
     | @types.Exts
     | @types.Truncd
     | @types.Cast => sel_emit(st, i)

@@ -76,3 +76,9 @@ test "parse_run_spec: empty arguments are rejected" {
     Ok(_) => fail("expected empty argument to be rejected")
   }
 }
+
+///|
+test "input_files: no positional arguments select stdin" {
+  assert_eq(input_files([]), ["-"])
+  assert_eq(input_files(["a.ssa", "-"]), ["a.ssa", "-"])
+}

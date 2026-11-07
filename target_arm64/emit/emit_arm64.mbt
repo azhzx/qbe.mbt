@@ -183,6 +183,8 @@ let arm64_omap : Array[(Int32, Int32, String)] = [
   (@types.Add.index(), ARM64_KA, "fadd %=, %0, %1"),
   (@types.Sub.index(), ARM64_KI, "sub %=, %0, %1"),
   (@types.Sub.index(), ARM64_KA, "fsub %=, %0, %1"),
+  (@types.Neg.index(), ARM64_KI, "neg %=, %0"),
+  (@types.Neg.index(), ARM64_KA, "fneg %=, %0"),
   (@types.And.index(), ARM64_KI, "and %=, %0, %1"),
   (@types.Or.index(), ARM64_KI, "orr %=, %0, %1"),
   (@types.Xor.index(), ARM64_KI, "eor %=, %0, %1"),
@@ -230,6 +232,10 @@ let arm64_omap : Array[(Int32, Int32, String)] = [
   (@types.Dtosi.index(), ARM64_KA, "fcvtzs %=, %D0"),
   (@types.Swtof.index(), ARM64_KA, "scvtf %=, %W0"),
   (@types.Sltof.index(), ARM64_KA, "scvtf %=, %L0"),
+  (@types.Stoui.index(), ARM64_KA, "fcvtzu %=, %S0"),
+  (@types.Dtoui.index(), ARM64_KA, "fcvtzu %=, %D0"),
+  (@types.Uwtof.index(), ARM64_KA, "ucvtf %=, %W0"),
+  (@types.Ultowf.index(), ARM64_KA, "ucvtf %=, %L0"),
   (@types.Call.index(), @types.Kw.code(), "blr %L0"),
   (@types.Acmp.index(), ARM64_KI, "cmp %0, %1"),
   (@types.Acmn.index(), ARM64_KI, "cmn %0, %1"),
@@ -259,8 +265,12 @@ fn arm64_loadcon(
     // Local (fp-constant) symbols use the flavor's local prefix and are
     // printed quoted, e.g. ".Lfp0" (ELF) or "Lfp0" (Mach-O); globals use the
     // symbol prefix, e.g. "glo1" (ELF) or "_glo1" (Mach-O).
-    let p = if con.is_local { st.gasloc } else { st.gassym }
     let l = st.interner.get(con.label)
+    let p = if con.is_local {
+      st.gasloc
+    } else {
+      @util.sym_prefix(st.gassym, l)
+    }
     let mut off = ""
     if con.bits.i != 0L {
       off = "+" + con.bits.i.to_string()
@@ -617,9 +627,10 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       if i.arg1.is_con() {
         let c = st.fn_.cons[i.arg1.con_val()]
         if c.kind == @types.CAddr && c.bits.i == 0L && !c.is_local {
+          let nm = st.interner.get(c.label)
           sb.write_string("\tbl\t")
-          sb.write_string(st.gassym)
-          sb.write_string(st.interner.get(c.label))
+          sb.write_string(@util.sym_prefix(st.gassym, nm))
+          sb.write_string(nm)
           sb.write_char('\n')
         } else {
           arm64_emit_table(st, i)
@@ -673,11 +684,11 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   }
   if fn_.is_export {
     sb.write_string(".globl ")
-    sb.write_string(st.gassym)
+    sb.write_string(@util.sym_prefix(st.gassym, fn_.name))
     sb.write_string(fn_.name)
     sb.write_char('\n')
   }
-  sb.write_string(st.gassym)
+  sb.write_string(@util.sym_prefix(st.gassym, fn_.name))
   sb.write_string(fn_.name)
   sb.write_string(":\n")
   // DWARF CFI is opt-in (-g): the default output stays byte-identical to the

@@ -27,6 +27,7 @@ pub fn wasm_mem_offset(@types.Con) -> Int64
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub enum WasmCtrl {
   WBlock(String)
   WLoop(String)
@@ -38,7 +39,7 @@ pub enum WasmCtrl {
   WReturn
   WCall(Int32)
   WUnreachable
-} derive(@debug.Debug)
+}
 
 // Type aliases
 

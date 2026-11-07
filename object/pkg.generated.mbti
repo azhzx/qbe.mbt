@@ -106,6 +106,14 @@ pub fn enc_fcvtzs_x_d(Int32, Int32) -> Int32
 
 pub fn enc_fcvtzs_x_s(Int32, Int32) -> Int32
 
+pub fn enc_fcvtzu_w_d(Int32, Int32) -> Int32
+
+pub fn enc_fcvtzu_w_s(Int32, Int32) -> Int32
+
+pub fn enc_fcvtzu_x_d(Int32, Int32) -> Int32
+
+pub fn enc_fcvtzu_x_s(Int32, Int32) -> Int32
+
 pub fn enc_fdiv_d(Int32, Int32, Int32) -> Int32
 
 pub fn enc_fdiv_s(Int32, Int32, Int32) -> Int32
@@ -125,6 +133,10 @@ pub fn enc_fmov_x_d(Int32, Int32) -> Int32
 pub fn enc_fmul_d(Int32, Int32, Int32) -> Int32
 
 pub fn enc_fmul_s(Int32, Int32, Int32) -> Int32
+
+pub fn enc_fneg_d(Int32, Int32) -> Int32
+
+pub fn enc_fneg_s(Int32, Int32) -> Int32
 
 pub fn enc_fsub_d(Int32, Int32, Int32) -> Int32
 
@@ -245,6 +257,14 @@ pub fn enc_sxth(Int32, Int32) -> Int32
 pub fn enc_sxth_sf(Bool, Int32, Int32) -> Int32
 
 pub fn enc_sxtw(Int32, Int32) -> Int32
+
+pub fn enc_ucvtf_d_w(Int32, Int32) -> Int32
+
+pub fn enc_ucvtf_d_x(Int32, Int32) -> Int32
+
+pub fn enc_ucvtf_s_w(Int32, Int32) -> Int32
+
+pub fn enc_ucvtf_s_x(Int32, Int32) -> Int32
 
 pub fn enc_udiv(Int32, Int32, Int32) -> Int32
 

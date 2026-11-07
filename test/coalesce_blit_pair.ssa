@@ -1,0 +1,10 @@
+# Killing the dead source of a blit must nop both halves of the pair.
+type :t = align 8 { l 1 }
+function :t $f() {
+@start
+  %p =l alloc8 8
+  %q =l alloc8 8
+  storel 1, %q
+  blit %p, %q, 8
+  ret %q
+}

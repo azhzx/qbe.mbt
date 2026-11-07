@@ -137,7 +137,9 @@ fn ifgraph(fn_ : @types.Fn, ifb : Int32) -> (Bool, Int32, Int32, Int32) {
   // The reference swaps both the blocks and the output pointers; swapped
   // records the pointer swap so the then/else results are assigned correctly.
   let mut swapped = false
-  if fn_.blks[s1].id > fn_.blks[s2].id {
+  // C compares Blk.id, which fillrpo assigns as the RPO index; the port keeps
+  // block ids as definition order and exposes the RPO index as rpo_id.
+  if fn_.blks[s1].rpo_id > fn_.blks[s2].rpo_id {
     let t = s1
     s1 = s2
     s2 = t
@@ -303,6 +305,10 @@ fn jump_name(j : @types.JumpKind) -> String {
     @types.Jretl => "retl"
     @types.Jrets => "rets"
     @types.Jretd => "retd"
+    @types.Jretsb => "retsb"
+    @types.Jretub => "retub"
+    @types.Jretsh => "retsh"
+    @types.Jretuh => "retuh"
     @types.Jretc => "retc"
     @types.Jjmp => "jmp"
     @types.Jjnz => "jnz"
@@ -421,6 +427,10 @@ fn dump_fn(
       | @types.Jretl
       | @types.Jrets
       | @types.Jretd
+      | @types.Jretsb
+      | @types.Jretub
+      | @types.Jretsh
+      | @types.Jretuh
       | @types.Jretc => {
         sb.write_string("\t\{jump_name(b.jmp.kind)}")
         if !(b.jmp.kind == @types.Jret0 && b.jmp.arg.is_none()) {

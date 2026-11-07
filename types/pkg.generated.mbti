@@ -619,14 +619,16 @@ pub fn wasm_type_name(Class) -> String
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct Addr {
   mut offset : Con
   mut base : Ref
   mut index : Ref
   mut scale : Int32
-} derive(@debug.Debug)
+}
 pub fn Addr::new() -> Self
 
+#derive(@debug.Debug)
 pub(all) struct AliasInfo {
   mut kind : AliasType
   mut base : Ref
@@ -635,9 +637,10 @@ pub(all) struct AliasInfo {
   mut slot : Int32
   mut sz : Int32
   mut m : UInt64
-} derive(@debug.Debug)
+}
 pub fn AliasInfo::default() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum AliasType {
   ABot
   ALoc
@@ -645,13 +648,14 @@ pub(all) enum AliasType {
   AEsc
   ASym
   AUnk
-} derive(Eq, @debug.Debug)
+}
 pub fn AliasType::astack(Self) -> Bool
 
+#derive(@debug.Debug)
 pub(all) struct BSet {
   nt : Int32
   bits : Array[UInt64]
-} derive(@debug.Debug)
+}
 pub fn BSet::clr(Self, Int32) -> Unit
 pub fn BSet::copy_from(Self, Self) -> Unit
 pub fn BSet::count(Self) -> Int32
@@ -667,6 +671,7 @@ pub fn BSet::set(Self, Int32) -> Unit
 pub fn BSet::union(Self, Self) -> Bool
 pub fn BSet::zero(Self) -> Unit
 
+#derive(@debug.Debug)
 pub(all) struct Blk {
   id : Int32
   name : String
@@ -688,28 +693,30 @@ pub(all) struct Blk {
   mut gen_set : BSet?
   mut link : Int32
   mut visit : Int32
-} derive(@debug.Debug)
+}
 pub fn Blk::new(Int32, String) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Class {
   Kx
   Kw
   Kl
   Ks
   Kd
-} derive(Eq, @debug.Debug)
+}
 pub fn Class::base(Self) -> Int32
 pub fn Class::code(Self) -> Int32
 pub fn Class::from_code(Int32) -> Self
 pub fn Class::wide(Self) -> Int32
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Con {
   kind : ConType
   label : Int32
   bits : ConBits
   flt : Int32
   is_local : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn Con::add(Self, Self) -> Self
 pub fn Con::addr(Int32) -> Self
 pub fn Con::double(Double) -> Self
@@ -719,18 +726,21 @@ pub fn Con::new() -> Self
 pub fn Con::raw_bits(Self) -> Int64
 pub fn Con::single(Float) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ConBits {
   i : Int64
   d : Double
   s : Float
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ConType {
   CUndef
   CBits
   CAddr
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct Dat {
   mut kind : DatKind
   num : Int64
@@ -742,7 +752,7 @@ pub(all) struct Dat {
   is_ref : Bool
   is_str : Bool
   mut is_export : Bool
-} derive(@debug.Debug)
+}
 pub fn Dat::align(Int64) -> Self
 pub fn Dat::byte(Int64) -> Self
 pub fn Dat::end() -> Self
@@ -752,6 +762,7 @@ pub fn Dat::start() -> Self
 pub fn Dat::string(String) -> Self
 pub fn Dat::zero(Int64) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DatKind {
   DStart
   DEnd
@@ -762,8 +773,9 @@ pub(all) enum DatKind {
   DW
   DL
   DZ
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DbgType {
   DbgW
   DbgL
@@ -771,21 +783,24 @@ pub(all) enum DbgType {
   DbgD
   DbgPtr
   DbgAgg(String, Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct DbgVar {
   name : String
   ty : DbgType
   tmp : Int32
-} derive(@debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Field {
   kind : FieldType
   len : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn Field::end() -> Self
 pub fn Field::new(FieldType, Int32) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum FieldType {
   FEnd
   Fb
@@ -796,8 +811,9 @@ pub(all) enum FieldType {
   Fd
   FPad
   FTyp
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct Fn {
   name : String
   mut start_id : Int32
@@ -820,7 +836,7 @@ pub(all) struct Fn {
   mut dbg_name : String
   mut dbg_dir : String
   mut dbg_vars : Array[DbgVar]
-} derive(@debug.Debug)
+}
 pub fn Fn::add_blk(Self, String) -> Int32
 pub fn Fn::add_con(Self, Con) -> Int32
 pub fn Fn::add_tmp(Self, String, Class) -> Int32
@@ -845,6 +861,7 @@ pub struct FpBits {
   size : Int32
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Ins {
   mut op : Op
   mut cls : Class
@@ -852,20 +869,22 @@ pub(all) struct Ins {
   mut arg1 : Ref
   mut arg2 : Ref
   mut asm_text : String
-} derive(Eq, @debug.Debug)
+}
 pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
 pub fn Ins::new_asm(Class, Ref, Ref, Ref, String) -> Self
 pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
 
+#derive(@debug.Debug)
 pub(all) struct Jump {
   mut kind : JumpKind
   mut arg : Ref
   mut s1 : Int32
   mut s2 : Int32
-} derive(@debug.Debug)
+}
 pub fn Jump::full(JumpKind, Ref, Int32, Int32) -> Self
 pub fn Jump::new(JumpKind) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum JumpKind {
   Jxxx
   Jret0
@@ -873,6 +892,10 @@ pub(all) enum JumpKind {
   Jretl
   Jrets
   Jretd
+  Jretsb
+  Jretub
+  Jretsh
+  Jretuh
   Jretc
   Jjmp
   Jjnz
@@ -895,15 +918,18 @@ pub(all) enum JumpKind {
   Jjffo
   Jjffuo
   Jhlt
-} derive(Eq, @debug.Debug)
+}
 pub fn JumpKind::from_index(Int32) -> Self
 pub fn JumpKind::index(Self) -> Int32
 pub fn JumpKind::is_ret(Self) -> Bool
+pub fn JumpKind::is_ret_bh(Self) -> Bool
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Op {
   Oxxx
   Add
   Sub
+  Neg
   Div
   Rem
   Udiv
@@ -973,9 +999,13 @@ pub(all) enum Op {
   Exts
   Truncd
   Stosi
+  Stoui
   Dtosi
+  Dtoui
   Swtof
+  Uwtof
   Sltof
+  Ultowf
   Cast
   Alloc4
   Alloc8
@@ -1004,9 +1034,17 @@ pub(all) enum Op {
   Reqz
   Rnez
   Par
+  Parsb
+  Parub
+  Parsh
+  Paruh
   Parc
   Pare
   Arg
+  Argsb
+  Argub
+  Argsh
+  Arguh
   Argc
   Arge
   Call
@@ -1051,19 +1089,22 @@ pub(all) enum Op {
   Xselfuo
   Argv
   InlineAsm
-} derive(Eq, @debug.Debug)
+}
 pub fn Op::ext_width_idx(Self) -> Int32
 pub fn Op::from_index(Int32) -> Self
 pub fn Op::from_string(String) -> Self
 pub fn Op::index(Self) -> Int32
 pub fn Op::is_arg(Self) -> Bool
+pub fn Op::is_arg_bh(Self) -> Bool
 pub fn Op::is_ext(Self) -> Bool
 pub fn Op::is_load(Self) -> Bool
 pub fn Op::is_par(Self) -> Bool
+pub fn Op::is_par_bh(Self) -> Bool
 pub fn Op::is_store(Self) -> Bool
 pub fn Op::load_width_idx(Self) -> Int32
 pub fn Op::name(Self) -> String
 
+#derive(@debug.Debug)
 pub(all) struct OpInfo {
   name : String
   a0 : Array[Int32]
@@ -1072,20 +1113,23 @@ pub(all) struct OpInfo {
   nmem : Int32
   zf : Int32
   lf : Int32
-} derive(@debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Phi {
   mut cls : Class
   mut to : Ref
   args : Array[PhiArg]
-} derive(Eq, @debug.Debug)
+}
 pub fn Phi::new(Ref, Class) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct PhiArg {
   mut value : Ref
   mut blk_id : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Ref {
   RNone
   RTmp(Int32)
@@ -1095,7 +1139,7 @@ pub(all) enum Ref {
   RSlot(Int32)
   RCall(Int32)
   RMem(Int32)
-} derive(Eq, @debug.Debug)
+}
 pub fn Ref::argregs(Self) -> (UInt64, Int32, Int32)
 pub fn Ref::arm64_argregs(Self) -> (UInt64, Int32, Int32)
 pub fn Ref::arm64_retregs(Self) -> (UInt64, Int32, Int32)
@@ -1128,11 +1172,12 @@ pub fn Ref::tmp_val(Self) -> Int32
 pub fn Ref::typ(Int32) -> Self
 pub fn Ref::typ_val(Self) -> Int32
 
+#derive(@debug.Debug)
 pub(all) struct RegHint {
   mut r : Int32
   mut w : Int32
   mut m : UInt64
-} derive(@debug.Debug)
+}
 pub fn RegHint::default() -> Self
 
 pub struct TargetCfg {
@@ -1150,6 +1195,7 @@ pub struct TargetCfg {
   mut argregs : (Ref) -> (UInt64, Int32, Int32)
 }
 
+#derive(@debug.Debug)
 pub(all) struct Tmp {
   name : String
   uses : Array[Use]
@@ -1165,9 +1211,10 @@ pub(all) struct Tmp {
   mut alias_info : AliasInfo
   mut width : TmpWidth
   mut visit : Int32
-} derive(@debug.Debug)
+}
 pub fn Tmp::new(String, Class) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TmpWidth {
   WFull
   Wsb
@@ -1176,10 +1223,11 @@ pub(all) enum TmpWidth {
   Wuh
   Wsw
   Wuw
-} derive(Eq, @debug.Debug)
+}
 pub fn TmpWidth::code(Self) -> Int32
 pub fn TmpWidth::from_code(Int32) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Typ {
   mut name : String
   mut dark : Int32
@@ -1187,31 +1235,34 @@ pub(all) struct Typ {
   mut size : Int64
   mut nunion : Int32
   fields : Array[Field]
-} derive(Eq, @debug.Debug)
+}
 pub fn Typ::compute_layout(Self, Array[Self]) -> Unit
 pub fn Typ::new(String) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Use {
   kind : UseKind
   blk_id : Int32
   mut ins_idx : Int32
   arg_num : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum UseKind {
   UXXX
   UPhi
   UIns
   UJmp
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub enum WasmType {
   Wi32
   Wi64
   Wf32
   Wf64
   WVoid
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 pub type BlkId = Int32

@@ -1,11 +1,12 @@
 ///|
 // Parser state for block/instruction parsing (internal)
+#derive(Eq)
 enum PState {
   PLbl // Expecting a label
   PPhi // Parsing phi nodes
   PIns // Parsing instructions
   PEnd // End of function body
-} derive(Eq)
+}
 
 ///|
 // Parse a function definition
@@ -15,17 +16,23 @@ fn Parser::parsefn(self : Self, is_export : Bool) -> Unit raise {
   // Parse return class and function name
   // If next token is not TGlo, parse the return class first
   let mut ret_ty = -1
-  self.rcls = 5 // default: void return
+  self.rcls = 9 // K0: void return
   if self.peek_kind() != TGlo {
-    let (cls, ty) = self.parsecls()
+    let (cls, ty, bh) = self.parsecls()
     ret_ty = ty
-    // Map class to return class index
-    self.rcls = match cls {
-      @types.Kw => 0
-      @types.Kl => 1
-      @types.Ks => 2
-      @types.Kd => 3
-      @types.Kx => 4
+    // C parse.c keeps the class code: Kw..Kd = 0..3, Ksb..Kuh = 4..7,
+    // Kc = 8 (aggregate), K0 = 9 (void).  Jretw + rcls then selects the
+    // matching sub-word return jump.
+    self.rcls = if bh >= 0 {
+      4 + bh
+    } else {
+      match cls {
+        @types.Kw => 0
+        @types.Kl => 1
+        @types.Ks => 2
+        @types.Kd => 3
+        @types.Kx => 8
+      }
     }
   }
   // Expect function name ($name)
@@ -125,9 +132,9 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
     }
     // Parse environment or class
     let env = pk == TId && self.peek().raw == "env"
-    let (k, ty) : (@types.Class, Int32) = if env {
+    let (k, ty, bh) : (@types.Class, Int32, Int32) = if env {
       let _ = self.next() // consume 'env'
-      (@types.Kl, -1)
+      (@types.Kl, -1, -1)
     } else {
       self.parsecls()
     }
@@ -175,6 +182,30 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
         @types.Ins::new(
           @types.Pare,
           k,
+          r,
+          @types.Ref::none(),
+          @types.Ref::none(),
+        )
+      }
+    } else if bh >= 0 {
+      // Sub-word ABI operand (C parse.c Oargsb/Oparsb + (k - Ksb)).
+      let op = if arg {
+        @types.Op::from_index(@types.Argsb.index() + bh)
+      } else {
+        @types.Op::from_index(@types.Parsb.index() + bh)
+      }
+      if arg {
+        @types.Ins::new(
+          op,
+          @types.Kw,
+          @types.Ref::none(),
+          r,
+          @types.Ref::none(),
+        )
+      } else {
+        @types.Ins::new(
+          op,
+          @types.Kw,
           r,
           @types.Ref::none(),
           @types.Ref::none(),
@@ -245,29 +276,32 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       return PPhi
     }
     TRet => {
-      // Return instruction
+      // Return instruction (C parse.c): the jump class comes from the
+      // function's declared return class; a missing value means ret0.
       let curb = fn_.blks[self.curblk]
-      curb.jmp.kind = match self.rcls {
+      // rcls codes: Kw..Kd = 0..3, Ksb..Kuh = 4..7, Kc = 8, K0 = 9.
+      let mut kind = match self.rcls {
         0 => @types.Jretw
         1 => @types.Jretl
         2 => @types.Jrets
         3 => @types.Jretd
-        4 => @types.Jretc
+        4 => @types.Jretsb
+        5 => @types.Jretub
+        6 => @types.Jretsh
+        7 => @types.Jretuh
+        8 => @types.Jretc
         _ => @types.Jret0
       }
-      // Check if there's a return value
       if self.peek_kind() == TNl {
-        if self.rcls < 5 && self.tokens[self.pos - 1].raw == "ret" {
-          raise self.error("return value expected")
-        }
-        curb.jmp.kind = @types.Jret0
-      } else if self.rcls < 5 {
+        kind = @types.Jret0
+      } else if self.rcls != 9 {
         let r = self.parseref()
         if r.is_none() {
           raise self.error("invalid return value")
         }
         curb.jmp.arg = r
       }
+      curb.jmp.kind = kind
       self.expect(TNl)
       return PLbl
     }
@@ -312,7 +346,10 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       // Instruction with result: %tmp = class op args...
       let to = self.tmpref(self.tokens[self.pos - 1].raw)
       self.expect(TEq) // =
-      let (cls, ty) = self.parsecls()
+      let (cls, ty, bh) = self.parsecls()
+      if bh >= 0 {
+        raise self.error("invalid class specifier")
+      }
       let op_tok = self.next()
       // Check for phi
       if op_tok.kind == TPhi {

@@ -531,8 +531,17 @@ pub fn enc_ldst(
   } else {
     0
   }
-  let scaled = off >> shift
-  if scaled < 0 || scaled > 0xFFF {
+  let scale = 1 << shift
+  if off < 0 || off % scale != 0 {
+    abort(
+      "arm64 enc: load/store offset " +
+      off.to_string() +
+      " is not a non-negative multiple of " +
+      scale.to_string(),
+    )
+  }
+  let scaled = off / scale
+  if scaled > 0xFFF {
     abort(
       "arm64 enc: load/store offset " +
       off.to_string() +
@@ -619,6 +628,16 @@ pub fn enc_ldp_stp(
   pre : Bool,
   post : Bool,
 ) -> Int32 {
+  if pre && post {
+    abort("arm64 enc: pair load/store cannot be both pre- and post-indexed")
+  }
+  if off % 8 != 0 {
+    abort("arm64 enc: pair load/store offset must be a multiple of 8")
+  }
+  let scaled = off / 8
+  if scaled < -64 || scaled > 63 {
+    abort("arm64 enc: pair load/store offset does not fit signed imm7")
+  }
   let base = if pre {
     0xA9800000
   } else if post {
@@ -630,7 +649,7 @@ pub fn enc_ldp_stp(
   let _ = is_store
   base |
   load_bit |
-  (((off >> 3) & 0x7F) << 15) |
+  ((scaled & 0x7F) << 15) |
   (r5(rt2) << 10) |
   (r5(rn) << 5) |
   r5(rt)
@@ -733,7 +752,21 @@ pub fn enc_nop() -> Int32 {
 }
 
 ///|
+
+///|
+// Scalar FNEG (FP unary): S: 0x1e214000, D: 0x1e614000.
+pub fn enc_fneg_s(rd : Int32, rn : Int32) -> Int32 {
+  0x1E214000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fneg_d(rd : Int32, rn : Int32) -> Int32 {
+  0x1E614000 | (r5(rn) << 5) | r5(rd)
+}
+
 // Floating point (double unless noted). Bases are the fixed opcode fields.
+
+///|
 pub fn enc_fadd_d(rd : Int32, rn : Int32, rm : Int32) -> Int32 {
   0x1E602800 | (r5(rm) << 16) | (r5(rn) << 5) | r5(rd)
 }
@@ -843,6 +876,48 @@ pub fn enc_scvtf_s_w(rd : Int32, rn : Int32) -> Int32 {
 ///|
 pub fn enc_scvtf_s_x(rd : Int32, rn : Int32) -> Int32 {
   0x9E220000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+// Unsigned conversion variants (FCVTZU / UCVTF): same encoding as the signed
+// forms with the type bit set.
+pub fn enc_fcvtzu_w_s(rd : Int32, rn : Int32) -> Int32 {
+  0x1E390000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvtzu_x_s(rd : Int32, rn : Int32) -> Int32 {
+  0x9E390000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvtzu_w_d(rd : Int32, rn : Int32) -> Int32 {
+  0x1E790000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_fcvtzu_x_d(rd : Int32, rn : Int32) -> Int32 {
+  0x9E790000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_ucvtf_s_w(rd : Int32, rn : Int32) -> Int32 {
+  0x1E230000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_ucvtf_s_x(rd : Int32, rn : Int32) -> Int32 {
+  0x9E230000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_ucvtf_d_w(rd : Int32, rn : Int32) -> Int32 {
+  0x1E630000 | (r5(rn) << 5) | r5(rd)
+}
+
+///|
+pub fn enc_ucvtf_d_x(rd : Int32, rn : Int32) -> Int32 {
+  0x9E630000 | (r5(rn) << 5) | r5(rd)
 }
 
 ///|

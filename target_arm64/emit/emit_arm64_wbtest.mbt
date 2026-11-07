@@ -29,7 +29,6 @@ fn arm64_emit_parse_pipeline(
   let _ = @ssa.loadopt(f, false, interner, typs)
   @ssa.filluse(f)
   @ssa.ssacheck(f)
-  let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
   let _ = @abi_arm64.abi_arm64(f, typs, false, interner, false, typs)

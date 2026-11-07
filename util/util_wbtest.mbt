@@ -39,11 +39,27 @@ test "rpad right-justifies integers" {
 }
 
 ///|
+// The formatter must handle values above 2^63 (it used to saturate through
+// Int64, printing FLT_MAX as 9223372036854.775807) and C's special values.
+test "fmt_fixed handles large, special and signed-zero values" {
+  assert_true(
+    fmt_fixed(3.4028234663852886e38, 6) ==
+    "340282346638528859811704183484516925440.000000",
+  )
+  assert_true(fmt_fixed(1.0 / 0.0, 6) == "inf")
+  assert_true(fmt_fixed(-1.0 / 0.0, 6) == "-inf")
+  assert_true(fmt_fixed(0.0 / 0.0, 6) == "nan")
+  assert_true(fmt_fixed(-0.0, 6) == "-0.000000")
+  assert_true(fmt_fixed(5.0e-324, 6) == "0.000000")
+}
+
+///|
 test "fmt_fixed formats with round half to even" {
   assert_true(fmt_fixed(3.14, 2) == "3.14")
   assert_true(fmt_fixed(3.14159, 2) == "3.14")
-  assert_true(fmt_fixed(2.5, 0) == "2.0")
-  assert_true(fmt_fixed(3.5, 0) == "4.0")
+  // C printf("%.0f") prints no decimal point.
+  assert_true(fmt_fixed(2.5, 0) == "2")
+  assert_true(fmt_fixed(3.5, 0) == "4")
   assert_true(fmt_fixed(0.125, 3) == "0.125")
   assert_true(fmt_fixed(1.0, 4) == "1.0000")
   assert_true(fmt_fixed(-1.5, 1) == "-1.5")

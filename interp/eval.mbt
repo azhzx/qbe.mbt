@@ -156,7 +156,15 @@ fn Interp::eval_op(
       return if is_word { sext32(v) } else { v }
     }
     @types.Dtosi => {
-      let v = bits_to_double(a).to_int().to_int64()
+      let v = bits_to_double(a).to_int64()
+      return if is_word { sext32(v) } else { v }
+    }
+    @types.Stoui => {
+      let v = bits_to_single(a).to_double().to_uint64().reinterpret_as_int64()
+      return if is_word { sext32(v) } else { v }
+    }
+    @types.Dtoui => {
+      let v = bits_to_double(a).to_uint64().reinterpret_as_int64()
       return if is_word { sext32(v) } else { v }
     }
     @types.Exts => return bits_to_single(a).to_double().reinterpret_as_int64()
@@ -201,6 +209,14 @@ fn Interp::eval_op(
     }
     @types.Sub => {
       let v = l - r
+      if is_word {
+        sext32(v)
+      } else {
+        v
+      }
+    }
+    @types.Neg => {
+      let v = 0L - l
       if is_word {
         sext32(v)
       } else {
@@ -368,9 +384,27 @@ fn Interp::eval_float_op(
     }
     @types.Sltof => {
       let v = if single {
-        Float::from_int(a.to_int()).reinterpret_as_uint().to_int64()
+        Float::from_double(a.to_double()).reinterpret_as_uint().to_int64()
       } else {
-        a.to_int().to_double().reinterpret_as_int64()
+        a.to_double().reinterpret_as_int64()
+      }
+      return v
+    }
+    @types.Uwtof => {
+      let u = a.reinterpret_as_uint64() & 0xFFFFFFFFUL
+      let v = if single {
+        Float::from_double(u.to_double()).reinterpret_as_uint().to_int64()
+      } else {
+        u.to_double().reinterpret_as_int64()
+      }
+      return v
+    }
+    @types.Ultowf => {
+      let u = a.reinterpret_as_uint64()
+      let v = if single {
+        Float::from_double(u.to_double()).reinterpret_as_uint().to_int64()
+      } else {
+        u.to_double().reinterpret_as_int64()
       }
       return v
     }
@@ -382,6 +416,7 @@ fn Interp::eval_float_op(
     match op {
       @types.Add => (x + y).reinterpret_as_uint().to_int64()
       @types.Sub => (x - y).reinterpret_as_uint().to_int64()
+      @types.Neg => (-x).reinterpret_as_uint().to_int64()
       @types.Mul => (x * y).reinterpret_as_uint().to_int64()
       @types.Div => (x / y).reinterpret_as_uint().to_int64()
       @types.Ceqs => if x == y { 1L } else { 0L }
@@ -403,6 +438,7 @@ fn Interp::eval_float_op(
     match op {
       @types.Add => (x + y).reinterpret_as_int64()
       @types.Sub => (x - y).reinterpret_as_int64()
+      @types.Neg => (-x).reinterpret_as_int64()
       @types.Mul => (x * y).reinterpret_as_int64()
       @types.Div => (x / y).reinterpret_as_int64()
       @types.Ceqd => if x == y { 1L } else { 0L }

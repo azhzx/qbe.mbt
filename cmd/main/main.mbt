@@ -1,4 +1,16 @@
 ///|
+// CLI failure state: upstream qbe exits 1 on the first error (parse.c err()
+// and main.c exit(1)); the port used to print the message and still exit 0,
+// which breaks any build system that checks the status.
+let cli_failed : Array[Bool] = [false]
+
+///|
+async fn cli_fail(msg : String) -> Unit {
+  @util.eprint(msg)
+  cli_failed[0] = true
+}
+
+///|
 // QBE compiler backend - MoonBit implementation
 // Entry point for the CLI. A thin wrapper over the `@qbe` library API: it
 // handles argument parsing and file I/O, and delegates the pipeline to the
@@ -43,7 +55,8 @@ let cmd : @argparse.Command = @argparse.Command(
   positionals=[
     @argparse.PositionArg("file", num_args=@argparse.ValueRange(lower=0)),
   ],
-  arg_required_else_help=true,
+  // QBE treats a missing file operand as stdin rather than showing help.
+  arg_required_else_help=false,
 )
 
 ///|
@@ -148,6 +161,16 @@ fn ensure_dir(dir : String) -> Unit raise {
 }
 
 ///|
+// Match upstream qbe: with no positional argument, compile stdin once.
+fn input_files(files : Array[String]) -> Array[String] {
+  if files.length() == 0 {
+    ["-"]
+  } else {
+    files
+  }
+}
+
+///|
 // Read one input file ("-" means stdin).
 async fn read_source(file : String) -> String {
   if file == "-" {
@@ -168,7 +191,7 @@ async fn process_file(
 ) -> String {
   let source = read_source(file) catch {
     e => {
-      @util.eprint("error: \{e}\n")
+      cli_fail("error: \{e}\n")
       return ""
     }
   }
@@ -186,7 +209,7 @@ async fn process_file(
         ""
       }
       Err(e) => {
-        @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+        cli_fail(format_qbe_error(e, src_file=file) + "\n")
         ""
       }
     }
@@ -194,7 +217,7 @@ async fn process_file(
     match @qbe.compile_target(source, backend, gas~) {
       Ok(assembly) => assembly
       Err(e) => {
-        @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+        cli_fail(format_qbe_error(e, src_file=file) + "\n")
         ""
       }
     }
@@ -212,27 +235,25 @@ async fn run_jit(
   // calls are routed through 64-bit veneers.
   let (binmod, fixups) = @qbe.compile_arm64_bin_module_ex(source) catch {
     e => {
-      @util.eprint("jit error: \{Repr(e)}\n")
+      cli_fail("jit error: \{Repr(e)}\n")
       return
     }
   }
   let jm = @jit.JitModule::from_bin_module_ex(binmod, fixups) catch {
     e => {
-      @util.eprint("jit error: \{Repr(e)}\n")
+      cli_fail("jit error: \{Repr(e)}\n")
       return
     }
   }
   let (pcodes, rcode) = @qbe.arm64_function_signature(source, entry) catch {
     e => {
-      @util.eprint("jit error: \{Repr(e)}\n")
+      cli_fail("jit error: \{Repr(e)}\n")
       jm.close()
       return
     }
   }
   if pcodes.length() != args.length() {
-    @util.eprint(
-      "jit error: '\{entry}' expects \{pcodes.length()} argument(s)\n",
-    )
+    cli_fail("jit error: '\{entry}' expects \{pcodes.length()} argument(s)\n")
     jm.close()
     return
   }
@@ -259,7 +280,7 @@ async fn run_jit(
   if all_int && ints.length() == args.length() {
     let r = jm.call_i64(entry, ints) catch {
       e => {
-        @util.eprint("jit error: \{Repr(e)}\n")
+        cli_fail("jit error: \{Repr(e)}\n")
         jm.close()
         return
       }
@@ -268,14 +289,14 @@ async fn run_jit(
   } else if all_float && floats.length() == args.length() {
     let r = jm.call_f64(entry, floats) catch {
       e => {
-        @util.eprint("jit error: \{Repr(e)}\n")
+        cli_fail("jit error: \{Repr(e)}\n")
         jm.close()
         return
       }
     }
     @util.iprint("\{r}\n")
   } else {
-    @util.eprint(
+    cli_fail(
       "jit error: unsupported signature for '\{entry}' (all-integer or all-float only)\n",
     )
   }
@@ -294,27 +315,27 @@ async fn run_asm(
     Ok(asm) => {
       let m = @run_asm.RunAsmModule::load_shared(asm) catch {
         e => {
-          @util.eprint("run-asm error: \{Repr(e)}\n")
+          cli_fail("run-asm error: \{Repr(e)}\n")
           return
         }
       }
       let r = m.call1(entry, a0) catch {
         e => {
-          @util.eprint("run-asm error: \{Repr(e)}\n")
+          cli_fail("run-asm error: \{Repr(e)}\n")
           return
         }
       }
       @util.iprint("\{r}\n")
     }
-    Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+    Err(e) => cli_fail(format_qbe_error(e, src_file=file) + "\n")
   }
 }
 
 ///|
-async fn main {
+async fn run_cli() -> Unit {
   let parsed = cmd.parse() catch {
     e => {
-      @util.eprint("\{e}\n")
+      cli_fail("\{e}\n")
       return
     }
   }
@@ -352,7 +373,7 @@ async fn main {
       match arr[0] {
         "amd64_sysv" | "wasm" | "rv64" | "la64" | "arm64" => target = arr[0]
         t => {
-          @util.eprint("unknown target '\{t}'\n")
+          cli_fail("unknown target '\{t}'\n")
           return
         }
       }
@@ -364,28 +385,26 @@ async fn main {
     Some(true) => false
     _ => true
   }
-  let files = match parsed.values.get("file") {
-    Some(arr) => arr
-    None => []
-  }
-  if files.length() == 0 {
-    @util.eprint("qbe: no input files\n")
-    return
-  }
+  let files = input_files(
+    match parsed.values.get("file") {
+      Some(arr) => arr
+      None => []
+    },
+  )
   // --run mode: interpret the SSA directly instead of emitting assembly
   match parsed.values.get("run") {
     Some(runs) if runs.length() > 0 => {
       let (entry, run_args) = match parse_run_spec(runs[0]) {
         Ok(spec) => spec
         Err(msg) => {
-          @util.eprint("error: \{msg}\n")
+          cli_fail("error: \{msg}\n")
           return
         }
       }
       for file in files {
         let source = read_source(file) catch {
           e => {
-            @util.eprint("error: \{e}\n")
+            cli_fail("error: \{e}\n")
             continue
           }
         }
@@ -401,7 +420,7 @@ async fn main {
               @interp.VDouble(d) => @util.iprint("\{d}\n")
             }
           }
-          Err(e) => @util.eprint(format_qbe_error(e) + "\n")
+          Err(e) => cli_fail(format_qbe_error(e) + "\n")
         }
       }
       return
@@ -414,7 +433,7 @@ async fn main {
       let (entry, wasm_args) = match parse_run_spec(specs[0]) {
         Ok(spec) => spec
         Err(msg) => {
-          @util.eprint("error: \{msg}\n")
+          cli_fail("error: \{msg}\n")
           return
         }
       }
@@ -425,7 +444,7 @@ async fn main {
           @interp.VDouble(d) => args.push(d.to_string())
           @interp.VFloat(f) => args.push(f.to_double().to_string())
           _ => {
-            @util.eprint("error: --run-wasm takes numeric arguments\n")
+            cli_fail("error: --run-wasm takes numeric arguments\n")
             return
           }
         }
@@ -433,7 +452,7 @@ async fn main {
       for file in files {
         let source = read_source(file) catch {
           e => {
-            @util.eprint("error: \{e}\n")
+            cli_fail("error: \{e}\n")
             continue
           }
         }
@@ -441,13 +460,13 @@ async fn main {
           Ok(wat) => {
             let out = @run_asm.run_wasm(wat, entry, args) catch {
               e => {
-                @util.eprint("run-wasm error: \{Repr(e)}\n")
+                cli_fail("run-wasm error: \{Repr(e)}\n")
                 continue
               }
             }
             @util.iprint(out + "\n")
           }
-          Err(e) => @util.eprint(format_qbe_error(e, src_file=file) + "\n")
+          Err(e) => cli_fail(format_qbe_error(e, src_file=file) + "\n")
         }
       }
       return
@@ -460,14 +479,14 @@ async fn main {
       let (entry, jit_args) = match parse_run_spec(specs[0]) {
         Ok(spec) => spec
         Err(msg) => {
-          @util.eprint("error: \{msg}\n")
+          cli_fail("error: \{msg}\n")
           return
         }
       }
       for file in files {
         let source = read_source(file) catch {
           e => {
-            @util.eprint("error: \{e}\n")
+            cli_fail("error: \{e}\n")
             continue
           }
         }
@@ -484,7 +503,7 @@ async fn main {
       let (entry, asm_args) = match parse_run_spec(specs[0]) {
         Ok(spec) => spec
         Err(msg) => {
-          @util.eprint("error: \{msg}\n")
+          cli_fail("error: \{msg}\n")
           return
         }
       }
@@ -494,18 +513,18 @@ async fn main {
         match asm_args[0] {
           @interp.VInt(v) => v
           _ => {
-            @util.eprint("error: --run-asm takes a single integer argument\n")
+            cli_fail("error: --run-asm takes a single integer argument\n")
             return
           }
         }
       } else {
-        @util.eprint("error: --run-asm takes at most one argument\n")
+        cli_fail("error: --run-asm takes at most one argument\n")
         return
       }
       for file in files {
         let source = read_source(file) catch {
           e => {
-            @util.eprint("error: \{e}\n")
+            cli_fail("error: \{e}\n")
             continue
           }
         }
@@ -522,13 +541,13 @@ async fn main {
         let obj = if self_contained {
           let source = read_source(file) catch {
             e => {
-              @util.eprint("error: \{e}\n")
+              cli_fail("error: \{e}\n")
               continue
             }
           }
           @qbe.compile_arm64_object(source) catch {
             e => {
-              @util.eprint("run-asm error: \{Repr(e)}\n")
+              cli_fail("run-asm error: \{Repr(e)}\n")
               continue
             }
           }
@@ -539,7 +558,7 @@ async fn main {
           }
           @run_asm.assemble_object(asm) catch {
             e => {
-              @util.eprint("run-asm error: \{Repr(e)}\n")
+              cli_fail("run-asm error: \{Repr(e)}\n")
               continue
             }
           }
@@ -552,7 +571,7 @@ async fn main {
           let dir = if out_dir != "" { out_dir } else { ".qbe_build" }
           ensure_dir(dir) catch {
             e => {
-              @util.eprint("run-asm error: \{e}\n")
+              cli_fail("run-asm error: \{e}\n")
               continue
             }
           }
@@ -560,7 +579,7 @@ async fn main {
         }
         @native.write_file(path, obj) catch {
           e => {
-            @util.eprint("run-asm error: \{Repr(e)}\n")
+            cli_fail("run-asm error: \{Repr(e)}\n")
             continue
           }
         }
@@ -584,5 +603,13 @@ async fn main {
     } else {
       @util.iprint(out.to_string())
     }
+  }
+}
+
+///|
+async fn main {
+  run_cli()
+  if cli_failed[0] {
+    @native.mbt_native_exit(1)
   }
 }

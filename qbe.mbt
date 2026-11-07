@@ -598,7 +598,11 @@ pub fn arm64_function_signature(
       let mut ret = -1
       for id in fn_.def_order {
         match fn_.blks[id].jmp.kind {
-          @types.Jretw => {
+          @types.Jretw
+          | @types.Jretsb
+          | @types.Jretub
+          | @types.Jretsh
+          | @types.Jretuh => {
             ret = 0
             break
           }

@@ -1,0 +1,22 @@
+# C99 hexadecimal float literals and exponents with an explicit sign
+# (C parse.c lex uses fscanf("%f")/fscanf("%lf")). Includes subnormals,
+# round-to-nearest-even on the single-precision path, inf/nan and data items.
+export function w $f() {
+@start
+  %a =d copy d_0x1p3
+  %b =d copy d_0x1.8p1
+  %c =d copy d_-0x1p-2
+  %d =d copy d_1e+3
+  %e =s copy s_0x1p-1
+  %g =s copy s_0x1.fffffe091ff3dp+127
+  %h =s copy s_0x1p-149
+  %i =s copy s_0x1.000001p0
+  %j =s copy s_0x1.000003p0
+  %k =d copy d_0x1p-1074
+  %l =d copy d_inf
+  %m =d copy d_nan
+  %n =d copy d_-inf
+  ret 0
+}
+
+export data $c = { d d_0x1.8p1, d d_1e+3, s s_0x1p-1, s s_0x1p-149, s s_-0.0, d d_nan }

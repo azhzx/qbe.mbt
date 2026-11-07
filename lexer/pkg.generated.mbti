@@ -19,15 +19,17 @@ pub struct Lexer {
 pub fn Lexer::new(String, String) -> Self
 pub fn Lexer::tokenize(Self) -> Array[Token]
 
+#derive(@debug.Debug)
 pub(all) struct Token {
   kind : TokenKind
   line : Int32
   col : Int32
   raw : String
-} derive(@debug.Debug)
+}
 pub fn Token::kind_str(Self) -> String
 pub fn Token::new(TokenKind, Int32, Int32, String) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TokenKind {
   TEof
   TNl
@@ -59,7 +61,7 @@ pub(all) enum TokenKind {
   TPlus
   TId
   TErr
-} derive(Eq, @debug.Debug)
+}
 pub fn TokenKind::to_string(Self) -> String
 pub impl Show for TokenKind
 

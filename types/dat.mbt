@@ -1,5 +1,6 @@
 ///|
 // Data item type
+#derive(Eq, Debug)
 pub(all) enum DatKind {
   DStart
   DEnd
@@ -10,10 +11,11 @@ pub(all) enum DatKind {
   DW // Word data
   DL // Long data
   DZ // Zero fill
-} derive(Eq, Debug)
+}
 
 ///|
 // Data section item - corresponds to struct Dat in QBE
+#derive(Debug)
 pub(all) struct Dat {
   mut kind : DatKind
   num : Int64
@@ -25,7 +27,7 @@ pub(all) struct Dat {
   is_ref : Bool
   is_str : Bool
   mut is_export : Bool
-} derive(Debug)
+}
 
 ///|
 pub fn Dat::start() -> Dat {

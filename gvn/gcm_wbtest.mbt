@@ -236,6 +236,35 @@ test "gcm orders a nested loop" {
 }
 
 ///|
+
+///|
+test "gcm keeps blit pseudo instructions grouped" {
+  let (f, _, _, _) = gcmw_run(
+    (
+      #|function l $f() {
+      #|@start
+      #|  %dst =l alloc4 4
+      #|  %src =l alloc4 4
+      #|  blit %dst, %src, 4
+      #|  ret 0
+      #|}
+      #|
+    ),
+  )
+  let mut found = false
+  for id in f.def_order {
+    let ins = f.blks[id].ins
+    for i in 0..<(ins.length() - 1) {
+      if ins[i].op == @types.Blit0 {
+        assert_eq(ins[i + 1].op, @types.Blit1)
+        found = true
+      }
+    }
+  }
+  assert_true(found)
+}
+
+///|
 test "gcm handles an unreachable block" {
   let (f, interner, typs, bad) = gcmw_run(
     (

@@ -1,5 +1,6 @@
 ///|
 // Token kinds for QBE SSA IR
+#derive(Eq, Debug)
 pub(all) enum TokenKind {
   TEof // End of file
   TNl // Newline
@@ -48,16 +49,17 @@ pub(all) enum TokenKind {
 
   // Error
   TErr // Error token
-} derive(Eq, Debug)
+}
 
 ///|
 // Token struct with position info
+#derive(Debug)
 pub(all) struct Token {
   kind : TokenKind
   line : Int32
   col : Int32
   raw : String // Raw text of the token
-} derive(Debug)
+}
 
 ///|
 pub fn Token::new(

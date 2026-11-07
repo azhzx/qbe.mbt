@@ -255,3 +255,22 @@ test "simpljmp - removes empty chained jumps" {
   assert_true(f.blks[0].jmp.s1 == 2 || f.blks[0].jmp.kind == @types.Jjmp)
   assert_true(f.blks[1].jmp.s1 == f.blks.length() - 1)
 }
+
+///|
+// fixphis: a phi argument is kept only while its block still jumps here.
+// Passes rewrite terminators without editing phi lists; fillcfg repairs them.
+test "fillcfg - fixphis drops an argument of a removed edge" {
+  // b0 -jnz-> b1, b2 ; b1 -> b3 ; b2 -> b1 (no longer b3) ; b3 ret
+  let f = make_test_fn("test", 4)
+  f.blks[0].jmp = @types.Jump::full(@types.Jjnz, @types.Ref::none(), 1, 2)
+  f.blks[1].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 3, -1)
+  f.blks[2].jmp = @types.Jump::full(@types.Jjmp, @types.Ref::none(), 1, -1)
+  f.blks[3].jmp = @types.Jump::full(@types.Jret0, @types.Ref::none(), -1, -1)
+  let phi = @types.Phi::new(@types.Ref::none(), @types.Kw)
+  phi.args.push(@types.PhiArg::{ value: @types.Ref::none(), blk_id: 1, })
+  phi.args.push(@types.PhiArg::{ value: @types.Ref::none(), blk_id: 2, })
+  f.blks[3].phi.push(phi)
+  fillcfg(f)
+  assert_eq(f.blks[3].phi[0].args.length(), 1)
+  assert_eq(f.blks[3].phi[0].args[0].blk_id, 1)
+}

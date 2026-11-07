@@ -1,5 +1,6 @@
 ///|
 // Width for partial-write temporaries
+#derive(Eq, Debug)
 pub(all) enum TmpWidth {
   WFull
   Wsb
@@ -8,7 +9,7 @@ pub(all) enum TmpWidth {
   Wuh
   Wsw
   Wuw
-} derive(Eq, Debug)
+}
 
 ///|
 // Width index as int (C: WFull=0, Wsb=1, ... Wuw=6)
@@ -40,15 +41,17 @@ pub fn TmpWidth::from_code(c : Int32) -> TmpWidth {
 
 ///|
 // Use type
+#derive(Eq, Debug)
 pub(all) enum UseKind {
   UXXX
   UPhi
   UIns
   UJmp
-} derive(Eq, Debug)
+}
 
 ///|
 // Use record
+#derive(Debug, Eq)
 pub(all) struct Use {
   kind : UseKind
   blk_id : Int32
@@ -57,15 +60,16 @@ pub(all) struct Use {
   // port keeps an index and has to re-address it.
   mut ins_idx : Int32
   arg_num : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 // Register allocation hint
+#derive(Debug)
 pub(all) struct RegHint {
   mut r : Int32 // Preferred register, -1 if unset
   mut w : Int32 // Weight
   mut m : UInt64 // Bitmask of registers to avoid
-} derive(Debug)
+}
 
 ///|
 pub fn RegHint::default() -> RegHint {
@@ -74,6 +78,7 @@ pub fn RegHint::default() -> RegHint {
 
 ///|
 // Alias type
+#derive(Eq, Debug)
 pub(all) enum AliasType {
   ABot
   ALoc
@@ -81,7 +86,7 @@ pub(all) enum AliasType {
   AEsc
   ASym
   AUnk
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn AliasType::astack(self : AliasType) -> Bool {
@@ -93,6 +98,7 @@ pub fn AliasType::astack(self : AliasType) -> Bool {
 
 ///|
 // Alias information
+#derive(Debug)
 pub(all) struct AliasInfo {
   mut kind : AliasType
   mut base : Ref
@@ -105,7 +111,7 @@ pub(all) struct AliasInfo {
   // bytes something has stored through the slot. fillalias fills both.
   mut sz : Int32
   mut m : UInt64
-} derive(Debug)
+}
 
 ///|
 pub fn AliasInfo::default() -> AliasInfo {
@@ -122,6 +128,7 @@ pub fn AliasInfo::default() -> AliasInfo {
 
 ///|
 // Temporary variable - corresponds to struct Tmp in QBE
+#derive(Debug)
 pub(all) struct Tmp {
   name : String
   uses : Array[Use]
@@ -137,7 +144,7 @@ pub(all) struct Tmp {
   mut alias_info : AliasInfo
   mut width : TmpWidth
   mut visit : Int32
-} derive(Debug)
+}
 
 ///|
 pub fn Tmp::new(name : String, cls : Class) -> Tmp {

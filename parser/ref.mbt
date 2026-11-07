@@ -2,20 +2,26 @@
 // Parse a class specifier: w, l, s, d, or :type
 // Returns (Class, type_index) where type_index is -1 if not a type class
 // and Class::Kx with type_index set if it's a :type reference
-fn Parser::parsecls(self : Self) -> (@types.Class, Int32) raise {
+// Returns (Class, type_index, subword_index): subword_index is -1 for the
+// ordinary classes and 0..3 for sb/ub/sh/uh (C parsecls returns Ksb..Kuh).
+fn Parser::parsecls(self : Self) -> (@types.Class, Int32, Int32) raise {
   let t = self.next()
   match t.kind {
     TTyp => {
       // :type reference - find the type
       let ty = self.findtyp(t.raw)
-      (@types.Kx, ty)
+      (@types.Kx, ty, -1)
     }
     TId =>
       match t.raw {
-        "w" => (@types.Kw, -1)
-        "l" => (@types.Kl, -1)
-        "s" => (@types.Ks, -1)
-        "d" => (@types.Kd, -1)
+        "w" => (@types.Kw, -1, -1)
+        "l" => (@types.Kl, -1, -1)
+        "s" => (@types.Ks, -1, -1)
+        "d" => (@types.Kd, -1, -1)
+        "sb" => (@types.Kw, -1, 0)
+        "ub" => (@types.Kw, -1, 1)
+        "sh" => (@types.Kw, -1, 2)
+        "uh" => (@types.Kw, -1, 3)
         _ => raise self.error("invalid class specifier \{t.raw}")
       }
     _ => raise self.error("invalid class specifier")
@@ -65,20 +71,15 @@ fn Parser::parseref(self : Self) -> @types.Ref raise {
       @types.Ref::con(self.curfn().get_con(val))
     }
     TFlt => {
-      // Float literal (s_ or d_ prefix)
+      // Float literal (s_ or d_ prefix), including C99 hexadecimal floats.
       let raw = t.raw
       let is_single = raw.length() > 0 && raw[0] == 's'
-      let num_str = raw[2:].to_owned()
-      let (fval, err_msg) = try @string.parse_double(num_str) catch {
-        _ => (0.0, "Invalid floating-point literal")
-      } noraise {
-        n => (n, "")
-      }
+      let (fval, fval_s, err_msg) = parse_float_literal(raw)
       if !err_msg.is_empty() {
         raise self.error(err_msg)
       }
       if is_single {
-        let con = @types.Con::single(Float::from_double(fval))
+        let con = @types.Con::single(fval_s)
         @types.Ref::con(self.curfn().get_con_by(con))
       } else {
         let con = @types.Con::double(fval)

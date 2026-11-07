@@ -391,3 +391,31 @@ test "interp: step limit terminates infinite loops" {
     _ => fail("expected an error")
   }
 }
+
+///|
+// Phi values are a parallel copy: on a loop back-edge two phis may swap
+// their values, so every source must be read before any destination is
+// written. (Sequential assignment returns 2 here instead of 1.)
+test "interp: phi swap on a loop back-edge is parallel" {
+  let src =
+    #|export function w $main(w %a, w %b) {
+    #|@start
+    #|  jmp @loop
+    #|@loop
+    #|  %x =w phi @start %a, @body %y
+    #|  %y =w phi @start %b, @body %x
+    #|  %c =w csltw %x, %y
+    #|  jnz %c, @body, @done
+    #|@body
+    #|  jmp @loop
+    #|@done
+    #|  ret %y
+    #|}
+    #|
+  let r = float_test_run(src, args=[VInt(1L), VInt(2L)])
+  match r {
+    Ok(VInt(v)) => assert_eq(v, 1L)
+    Ok(_) => fail("expected an int result")
+    Err(m) => fail("interpret failed: " + m)
+  }
+}

@@ -192,3 +192,120 @@ test "coalesce: loop back-edge keeps the slot live" {
   assert_true(start.ins[3].op == @types.Nop)
   assert_true(f.blks[f.find_blk("body")].phi.length() > 0)
 }
+
+///|
+// C mem.c load(): the position is added to a slot's range only when the
+// loaded bits survive the slot's write mask (s->l stays non-zero). A slot
+// whose only read falls outside the bytes ever written through it is dead.
+// The reference prints "kill [ %p ]" and replaces the load with copy UNDEF.
+test "coalesce: a slot only read outside its write mask is dead" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  %p =l alloc8 16
+    #|  storew 1, %p
+    #|  %q =l add %p, 8
+    #|  %v =w loadw %q
+    #|  ret %v
+    #|}
+    #|
+  let (f, interner, typs) = parse_mem_fn(src)
+  run_before_coalesce(f, interner, typs)
+  let dbg = coalesce(f, true, interner, typs)
+  assert_eq(
+    dbg,
+    "\n> Slot coalescing:\n" +
+    "\tkill [ %p ]\n" +
+    "\tsums 16/0/16 (killed/fused/total)\n" +
+    "\n" +
+    "function $f() {\n" +
+    "@start\n" +
+    "\tnop\n" +
+    "\tnop\n" +
+    "\tnop\n" +
+    "\t%v =w copy UNDEF\n" +
+    "\tretw %v\n" +
+    "}\n",
+  )
+}
+
+///|
+// C mem.c's fixup loop compares the slots their addresses were *fused* into
+// (s->s == s0->s), not the slot entries themselves. When a blit's source and
+// destination coalesce into one slot with source before destination, the
+// reference flips the direction by negating the blit1 size.
+test "coalesce: blit direction flips when both addresses fuse into one slot" {
+  let src =
+    #|type :t = align 8 { l 1, l 1 }
+    #|function :t $f() {
+    #|@start
+    #|  %p =l alloc8 16
+    #|  %q =l alloc8 16
+    #|  storel 1, %p
+    #|  %s =l add %q, 8
+    #|  blit %p, %s, 8
+    #|  storel 2, %q
+    #|  ret %q
+    #|}
+    #|
+  let (f, interner, typs) = parse_mem_fn(src)
+  run_before_coalesce(f, interner, typs)
+  let dbg = coalesce(f, true, interner, typs)
+  assert_eq(
+    dbg,
+    "\n> Slot coalescing:\n" +
+    "\tfuse ( 16b) [ %p[1,2) %q[2,4) ]\n" +
+    "\tsums 0/16/32 (killed/fused/total)\n" +
+    "\n" +
+    "function $f() {\n" +
+    "@start\n" +
+    "\t%p =l alloc8 16\n" +
+    "\tnop\n" +
+    "\tstorel 1, %p\n" +
+    "\t%s =l add %p, 8\n" +
+    "\tblit0 %p, %s\n" +
+    "\tblit1 -8\n" +
+    "\tstorel 2, %p\n" +
+    "\tretc %p, :t\n" +
+    "}\n",
+  )
+}
+
+///|
+// A dead slot can be the *source* of a blit whose destination stays live.
+// C mem.c nops both halves of the pair when it kills such a use; noping only
+// the blit0 leaves a lone blit1, which the port later rejects as an unknown
+// instruction (the reference compiles this input).
+test "coalesce: killing a dead blit source removes both halves" {
+  let src =
+    #|type :t = align 8 { l 1 }
+    #|function :t $f() {
+    #|@start
+    #|  %p =l alloc8 8
+    #|  %q =l alloc8 8
+    #|  storel 1, %q
+    #|  blit %p, %q, 8
+    #|  ret %q
+    #|}
+    #|
+  let (f, interner, typs) = parse_mem_fn(src)
+  run_before_coalesce(f, interner, typs)
+  let dbg = coalesce(f, true, interner, typs)
+  assert_eq(
+    dbg,
+    "\n> Slot coalescing:\n" +
+    "\tkill [ %p ]\n" +
+    "\tfuse (  8b) [ %q[2,3) ]\n" +
+    "\tsums 8/0/16 (killed/fused/total)\n" +
+    "\n" +
+    "function $f() {\n" +
+    "@start\n" +
+    "\tnop\n" +
+    "\t%q =l alloc8 8\n" +
+    "\tnop\n" +
+    "\tnop\n" +
+    "\tnop\n" +
+    "\tretc %q, :t\n" +
+    "}\n",
+  )
+}

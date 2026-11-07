@@ -30,7 +30,6 @@ fn arm64_abi_parse_frontend(
   let _ = @ssa.loadopt(f, false, interner, typs)
   @ssa.filluse(f)
   @ssa.ssacheck(f)
-  let _ = @ssa.copy(f, false, interner, typs)
   @ssa.filluse(f)
   let _ = @fold.fold(f, false, interner, typs)
   (f, interner, typs)
@@ -207,4 +206,39 @@ test "arm64 abi: vararg functions keep the shared register pool" {
   // one Slotaddr for the save area, two Storew for the gr/vr offsets
   assert_eq(addr_ops, 1)
   assert_eq(storew_zero_base, 2)
+}
+
+///|
+test "arm64 abi: Apple narrow stack arguments use four-byte slots" {
+  let src =
+    #|export function $main() {
+    #|@start
+    #|  call $g(l 1, l 2, l 3, l 4, l 5, l 6, l 7, l 8, w 9, l 10)
+    #|  ret
+    #|}
+    #|
+  let (f, interner, typs) = arm64_abi_parse_frontend(src)
+  let _ = abi_arm64(f, typs, false, interner, true, typs)
+  let start = f.blks[f.start_id]
+  let mut saw_stack_16 = false
+  let mut saw_off_8 = false
+  for ins in start.ins {
+    if ins.op == @types.Add &&
+      ins.to.is_tmp() &&
+      ins.to.tmp_val() == @types.ARM64_SP &&
+      ins.arg2.is_con() {
+      let v = f.cons[ins.arg2.con_val()].bits.i
+      if v == 16L {
+        saw_stack_16 = true
+      }
+    }
+    if ins.op == @types.Add && ins.arg2.is_con() {
+      let v = f.cons[ins.arg2.con_val()].bits.i
+      if v == 8L {
+        saw_off_8 = true
+      }
+    }
+  }
+  assert_true(saw_stack_16)
+  assert_true(saw_off_8)
 }

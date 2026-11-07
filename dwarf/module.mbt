@@ -10,12 +10,13 @@
 
 ///|
 // A resolved variable location.
+#derive(Debug)
 pub(all) struct DbgLoc {
   name : String
   ty : @types.DbgType
   kind : Int32 // 0 = register, 1 = frame-base relative (fbreg)
   value : Int32 // DWARF register number, or frame-base offset
-} derive(Debug)
+}
 
 ///|
 // Entry
@@ -102,6 +103,33 @@ fn loc_expr(loc : DbgLoc) -> Array[Int32] {
 }
 
 ///|
+fn gas_string(s : String) -> String {
+  let out = StringBuilder::StringBuilder()
+  for b in @utf8.encode(s) {
+    match b.to_int() {
+      0x22 => out.write_string("\\\"")
+      0x5C => out.write_string("\\\\")
+      0x0A => out.write_string("\\n")
+      0x0D => out.write_string("\\r")
+      0x09 => out.write_string("\\t")
+      c =>
+        if c >= 0x20 && c <= 0x7E {
+          out.write_char(c.unsafe_to_char())
+        } else {
+          let d2 = c & 7
+          let d1 = (c >> 3) & 7
+          let d0 = (c >> 6) & 7
+          out.write_char('\\')
+          out.write_char((0x30 + d0).unsafe_to_char())
+          out.write_char((0x30 + d1).unsafe_to_char())
+          out.write_char((0x30 + d2).unsafe_to_char())
+        }
+    }
+  }
+  out.to_string()
+}
+
+///|
 fn emit_bytes(sb : StringBuilder, bs : Array[Int32]) -> Unit {
   for b in bs {
     sb.write_string("\t.byte ")
@@ -182,7 +210,7 @@ pub fn emit_debug_info(
   }
   for n in aggs {
     tmap["agg:" + n] = off
-    off = off + 1 + n.length() + 1 + 1
+    off = off + 1 + n.length() + 1 + 4
   }
   let sub_off : Array[Int32] = []
   for f in fns {
@@ -203,7 +231,7 @@ pub fn emit_debug_info(
       loc_offs.push(lo)
       let e = loc_expr(l)
       // DWARF4 .debug_loc entries use a 2-byte expression length.
-      lo = lo + 8 + 8 + 2 + e.length()
+      lo = lo + 8 + 8 + 2 + e.length() + 8 + 8
     }
   }
   // ---- .text end label ----
@@ -226,7 +254,7 @@ pub fn emit_debug_info(
   emit_bytes(sb, [3, 0x34, 0, 0x03, 0x08, 0x49, 0x13, 0x02, 0x17, 0, 0])
   emit_bytes(sb, [4, 0x24, 0, 0x03, 0x08, 0x0b, 0x0b, 0x3e, 0x0b, 0, 0])
   emit_bytes(sb, [5, 0x0f, 0, 0, 0])
-  emit_bytes(sb, [6, 0x13, 0, 0x03, 0x08, 0x0b, 0x0b, 0, 0])
+  emit_bytes(sb, [6, 0x13, 0, 0x03, 0x08, 0x0b, 0x06, 0, 0])
   emit_bytes(sb, [0])
   // ---- .debug_info ----
   if apple {
@@ -237,17 +265,17 @@ pub fn emit_debug_info(
   sb.write_string("\t.long " + unit_len.to_string() + "\n")
   sb.write_string("\t.short 4\n\t.long 0\n\t.byte 8\n")
   sb.write_string("\t.byte 0x01\n")
-  sb.write_string("\t.asciz \"" + producer + "\"\n")
+  sb.write_string("\t.asciz \"" + gas_string(producer) + "\"\n")
   sb.write_string("\t.short 12\n")
-  sb.write_string("\t.asciz \"" + cu_name + "\"\n")
-  sb.write_string("\t.asciz \"" + comp_dir + "\"\n")
+  sb.write_string("\t.asciz \"" + gas_string(cu_name) + "\"\n")
+  sb.write_string("\t.asciz \"" + gas_string(comp_dir) + "\"\n")
   sb.write_string("\t.quad " + cu_low + "\n")
   sb.write_string("\t.quad " + text_label + "\n")
   sb.write_string("\t.long 0\n")
   // base types
   for i in 0..<4 {
     sb.write_string("\t.byte 4\n")
-    sb.write_string("\t.asciz \"" + base_names[i] + "\"\n")
+    sb.write_string("\t.asciz \"" + gas_string(base_names[i]) + "\"\n")
     sb.write_string("\t.byte " + base_sizes[i].to_string() + "\n")
     sb.write_string("\t.byte " + base_enc[i].to_string() + "\n")
   }
@@ -265,20 +293,20 @@ pub fn emit_debug_info(
       }
     }
     sb.write_string("\t.byte 6\n")
-    sb.write_string("\t.asciz \"" + n + "\"\n")
-    sb.write_string("\t.byte " + size.to_string() + "\n")
+    sb.write_string("\t.asciz \"" + gas_string(n) + "\"\n")
+    sb.write_string("\t.long " + size.to_string() + "\n")
   }
   // subprograms + variables
   let mut loc_i = 0
   for f in fns {
     sb.write_string("\t.byte 2\n")
-    sb.write_string("\t.asciz \"" + f.name + "\"\n")
+    sb.write_string("\t.asciz \"" + gas_string(f.name) + "\"\n")
     sb.write_string("\t.quad " + f.start_label + "\n")
     sb.write_string("\t.quad " + f.end_label + "\n")
     sb.write_string("\t.byte 1\n\t.byte 0x9c\n") // DW_OP_call_frame_cfa
     for l in f.locs {
       sb.write_string("\t.byte 3\n")
-      sb.write_string("\t.asciz \"" + l.name + "\"\n")
+      sb.write_string("\t.asciz \"" + gas_string(l.name) + "\"\n")
       sb.write_string("\t.long " + type_off_for(tmap, l.ty).to_string() + "\n")
       sb.write_string("\t.long " + loc_offs[loc_i].to_string() + "\n")
       loc_i = loc_i + 1
@@ -299,7 +327,7 @@ pub fn emit_debug_info(
       let e = loc_expr(l)
       sb.write_string("\t.short " + e.length().to_string() + "\n")
       emit_bytes(sb, e)
+      sb.write_string("\t.quad 0\n\t.quad 0\n")
     }
   }
-  sb.write_string("\t.quad 0\n\t.quad 0\n")
 }

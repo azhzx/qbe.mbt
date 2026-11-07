@@ -1,0 +1,15 @@
+# Phi values are assigned as a parallel copy on each edge. A loop back-edge
+# that swaps two phis exercises it: the result must be 1, not 2.
+export function w $f(w %a, w %b) {
+@start
+  jmp @loop
+@loop
+  %x =w phi @start %a, @body %y
+  %y =w phi @start %b, @body %x
+  %c =w csltw %x, %y
+  jnz %c, @body, @done
+@body
+  jmp @loop
+@done
+  ret %y
+}

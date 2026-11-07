@@ -110,6 +110,10 @@ fn return_class(st : WatEmitState) -> @types.Class? {
   for bid in st.fn_.def_order {
     match st.fn_.blks[bid].jmp.kind {
       @types.Jretw => return Some(@types.Kw)
+      @types.Jretsb => return Some(@types.Kw)
+      @types.Jretub => return Some(@types.Kw)
+      @types.Jretsh => return Some(@types.Kw)
+      @types.Jretuh => return Some(@types.Kw)
       @types.Jretl => return Some(@types.Kl)
       @types.Jrets => return Some(@types.Ks)
       @types.Jretd => return Some(@types.Kd)
@@ -399,13 +403,57 @@ fn emit_store(st : WatEmitState, ins : @types.Ins) -> Unit {
   emit_addr32(st, ins.arg2)
   let k = store_class(ins.op)
   emit_ref(st, ins.arg1, k)
-  wat_writeln(st, @types.wasm_store_op(k))
+  let op = match ins.op {
+    @types.Storeb => "i32.store8"
+    @types.Storeh => "i32.store16"
+    _ => @types.wasm_store_op(k)
+  }
+  wat_writeln(st, op)
 }
 
 ///|
 fn emit_load(st : WatEmitState, ins : @types.Ins) -> Unit {
   emit_addr32(st, ins.arg1)
-  wat_writeln(st, @types.wasm_load_op(ins.cls))
+  let op = match ins.op {
+    @types.Loadsb =>
+      if ins.cls == @types.Kl {
+        "i64.load8_s"
+      } else {
+        "i32.load8_s"
+      }
+    @types.Loadub =>
+      if ins.cls == @types.Kl {
+        "i64.load8_u"
+      } else {
+        "i32.load8_u"
+      }
+    @types.Loadsh =>
+      if ins.cls == @types.Kl {
+        "i64.load16_s"
+      } else {
+        "i32.load16_s"
+      }
+    @types.Loaduh =>
+      if ins.cls == @types.Kl {
+        "i64.load16_u"
+      } else {
+        "i32.load16_u"
+      }
+    @types.Loadsw =>
+      if ins.cls == @types.Kl {
+        "i64.load32_s"
+      } else {
+        "i32.load"
+      }
+    @types.Loaduw =>
+      if ins.cls == @types.Kl {
+        "i64.load32_u"
+      } else {
+        "i32.load"
+      }
+    _ => @types.wasm_load_op(ins.cls)
+  }
+  wat_writeln(st, op)
 }
 
 ///|
@@ -717,6 +765,54 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       )
       set_dest(st, ins)
     }
+    @types.Stoui => {
+      emit_ref(st, ins.arg1, @types.Ks)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kl {
+          "i64.trunc_f32_u"
+        } else {
+          "i32.trunc_f32_u"
+        },
+      )
+      set_dest(st, ins)
+    }
+    @types.Dtoui => {
+      emit_ref(st, ins.arg1, @types.Kd)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kl {
+          "i64.trunc_f64_u"
+        } else {
+          "i32.trunc_f64_u"
+        },
+      )
+      set_dest(st, ins)
+    }
+    @types.Uwtof => {
+      emit_ref(st, ins.arg1, @types.Kw)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kd {
+          "f64.convert_i32_u"
+        } else {
+          "f32.convert_i32_u"
+        },
+      )
+      set_dest(st, ins)
+    }
+    @types.Ultowf => {
+      emit_ref(st, ins.arg1, @types.Kl)
+      wat_writeln(
+        st,
+        if ins.cls == @types.Kd {
+          "f64.convert_i64_u"
+        } else {
+          "f32.convert_i64_u"
+        },
+      )
+      set_dest(st, ins)
+    }
     @types.Cast => {
       // Bitcast between same-width integer and float representations.
       let arg_k = match ins.cls {
@@ -737,6 +833,53 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       if op != "nop" {
         wat_writeln(st, op)
       }
+      set_dest(st, ins)
+    }
+    // Negation: floats have a native neg opcode; integers are 0 - x.
+    @types.Neg => {
+      match ins.cls {
+        @types.Ks => {
+          emit_operand(st, ins.arg1, @types.Ks)
+          wat_writeln(st, "f32.neg")
+        }
+        @types.Kd => {
+          emit_operand(st, ins.arg1, @types.Kd)
+          wat_writeln(st, "f64.neg")
+        }
+        @types.Kl => {
+          wat_writeln(st, "i64.const 0")
+          emit_operand(st, ins.arg1, @types.Kl)
+          wat_writeln(st, "i64.sub")
+        }
+        _ => {
+          wat_writeln(st, "i32.const 0")
+          emit_operand(st, ins.arg1, @types.Kw)
+          wat_writeln(st, "i32.sub")
+        }
+      }
+      set_dest(st, ins)
+    }
+
+    // Ordered/unordered float comparisons.  wasm has no single opcode for
+    // them, so they are built from the IEEE comparisons: cos/cod are
+    // !(a is NaN || b is NaN) = (a == a) & (b == b), cuos/cuod are
+    // (a is NaN || b is NaN) = (a != a) | (b != b).  Falling through to the
+    // generic path used to emit `nop` and then `local.set`, which the wasm
+    // validator rejects.
+    @types.Cos | @types.Cuos | @types.Cod | @types.Cuod => {
+      let ordered = ins.op == @types.Cos || ins.op == @types.Cod
+      let (k, cmp) = if ins.op == @types.Cos || ins.op == @types.Cuos {
+        (@types.Ks, if ordered { "f32.eq" } else { "f32.ne" })
+      } else {
+        (@types.Kd, if ordered { "f64.eq" } else { "f64.ne" })
+      }
+      emit_operand(st, ins.arg1, k)
+      emit_operand(st, ins.arg1, k)
+      wat_writeln(st, cmp)
+      emit_operand(st, ins.arg2, k)
+      emit_operand(st, ins.arg2, k)
+      wat_writeln(st, cmp)
+      wat_writeln(st, if ordered { "i32.and" } else { "i32.or" })
       set_dest(st, ins)
     }
     _ => {
@@ -892,20 +1035,44 @@ fn emit_body(st : WatEmitState) -> Unit {
 
 ///|
 // Copy succ's phi arguments that come from pred into the phi locals.
+//
+// This is a *parallel* copy: every source is evaluated onto the wasm operand
+// stack before any destination is written, then the destinations are popped
+// in reverse order. Writing them one by one would clobber a source that is
+// another phi's destination, which is valid SSA on a loop back-edge
+// (%a = phi @head %b, %b = phi @head %a swaps the two values per iteration).
 fn emit_phi_copies(
   st : WatEmitState,
   succ_bid : Int32,
   pred_bid : Int32,
 ) -> Unit {
+  let dsts : Array[Int32] = []
+  let clss : Array[@types.Class] = []
+  let srcs : Array[@types.Ref] = []
   for p in st.fn_.blks[succ_bid].phi {
     for a in p.args {
-      if a.blk_id == pred_bid {
-        emit_ref(st, a.value, p.cls)
-        if p.to.is_tmp() {
-          wat_writeln(st, "local.set $t" + p.to.tmp_val().to_string())
+      if a.blk_id == pred_bid && p.to.is_tmp() {
+        let dst = p.to.tmp_val()
+        // A self-copy is a no-op.
+        if a.value.is_tmp() && a.value.tmp_val() == dst {
+          continue
         }
+        dsts.push(dst)
+        clss.push(p.cls)
+        srcs.push(a.value)
       }
     }
+  }
+  if dsts.length() == 0 {
+    return
+  }
+  for i in 0..<srcs.length() {
+    emit_ref(st, srcs[i], clss[i])
+  }
+  let mut k = dsts.length() - 1
+  while k >= 0 {
+    wat_writeln(st, "local.set $t" + dsts[k].to_string())
+    k = k - 1
   }
 }
 
@@ -955,7 +1122,15 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
       wat_writeln(st, "end")
       wat_writeln(st, "br $dispatch")
     }
-    @types.Jretw | @types.Jretl | @types.Jrets | @types.Jretd | @types.Jretc => {
+    @types.Jretw
+    | @types.Jretl
+    | @types.Jrets
+    | @types.Jretd
+    | @types.Jretsb
+    | @types.Jretub
+    | @types.Jretsh
+    | @types.Jretuh
+    | @types.Jretc => {
       let k = match blk.jmp.kind {
         @types.Jretl => @types.Kl
         @types.Jrets => @types.Ks
@@ -967,6 +1142,7 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
       wat_writeln(st, "return")
     }
     @types.Jret0 => wat_writeln(st, "return")
+    @types.Jhlt => wat_writeln(st, "unreachable")
     _ => ()
   }
 }
@@ -1268,6 +1444,10 @@ pub fn emit_wat_module(
         | @types.Jretl
         | @types.Jrets
         | @types.Jretd
+        | @types.Jretsb
+        | @types.Jretub
+        | @types.Jretsh
+        | @types.Jretuh
         | @types.Jretc => has_ret = true
         _ => ()
       }
@@ -1313,7 +1493,10 @@ pub fn emit_wat_module(
   sb.write_string("  ;; Exports\n")
   for fn_ in funcs {
     if fn_.is_export {
-      sb.write_string("  (export \"\{fn_.name}\" (func $\{fn_.name}))\n")
+      // Quoted symbols already include their double quotes.
+      let quoted = fn_.name.length() > 0 && fn_.name[0] == '"'
+      let shown = if quoted { fn_.name } else { "\"" + fn_.name + "\"" }
+      sb.write_string("  (export \{shown} (func $\{fn_.name}))\n")
     }
   }
   sb.write_string(")\n")

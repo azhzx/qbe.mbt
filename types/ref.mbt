@@ -2,6 +2,7 @@
 
 ///|
 /// ADT replacing C bit-field (uint type:3; uint val:29)
+#derive(Eq, Debug)
 pub(all) enum Ref {
   RNone
   RTmp(Int32)
@@ -11,7 +12,7 @@ pub(all) enum Ref {
   RSlot(Int32)
   RCall(Int32)
   RMem(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// R - empty reference (corresponds to C macro R)

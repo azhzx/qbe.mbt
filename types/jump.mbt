@@ -1,5 +1,6 @@
 ///|
 // Jump kinds - corresponds to enum J in QBE
+#derive(Eq, Debug)
 pub(all) enum JumpKind {
   Jxxx // Invalid/unset
 
@@ -9,6 +10,10 @@ pub(all) enum JumpKind {
   Jretl // Return long
   Jrets // Return single
   Jretd // Return double
+  Jretsb // Return signed byte
+  Jretub // Return unsigned byte
+  Jretsh // Return signed short
+  Jretuh // Return unsigned short
   Jretc // Return aggregate
 
   // Unconditional jump
@@ -41,13 +46,22 @@ pub(all) enum JumpKind {
 
   // Halt (C Jhlt): the block ends in a trap, it has no successors
   Jhlt
-} derive(Eq, Debug)
+}
 
 ///|
 // Check if jump is a return
 pub fn JumpKind::is_ret(self : JumpKind) -> Bool {
   match self {
-    Jret0 | Jretw | Jretl | Jrets | Jretd | Jretc => true
+    Jret0
+    | Jretw
+    | Jretl
+    | Jrets
+    | Jretd
+    | Jretsb
+    | Jretub
+    | Jretsh
+    | Jretuh
+    | Jretc => true
     _ => false
   }
 }
@@ -84,6 +98,10 @@ pub fn JumpKind::index(self : JumpKind) -> Int32 {
     Jjffo => 25
     Jjffuo => 26
     Jhlt => 27
+    Jretsb => 28
+    Jretub => 29
+    Jretsh => 30
+    Jretuh => 31
   }
 }
 
@@ -119,6 +137,16 @@ pub fn JumpKind::from_index(i : Int32) -> JumpKind {
     25 => Jjffo
     26 => Jjffuo
     27 => Jhlt
+    28 => Jretsb
+    29 => Jretub
+    30 => Jretsh
+    31 => Jretuh
     _ => abort("invalid jump index")
   }
+}
+
+///|
+// C isretbh: sub-word return variants.
+pub fn JumpKind::is_ret_bh(self : JumpKind) -> Bool {
+  self == Jretsb || self == Jretub || self == Jretsh || self == Jretuh
 }

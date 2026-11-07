@@ -93,9 +93,10 @@ test "parse type definition" {
 }
 
 ///|
-test "printfn round-trip is idempotent" {
-  // printfn drops the return class, so a value-carrying `ret` cannot be
-  // round-tripped; a void return parses back to an identical dump.
+test "printfn spells the return jump with its class" {
+  // The reference printer emits retw/ret0 (printfn in parse.c), and its lexer
+  // only accepts the bare "ret" keyword, so printed output is not meant to be
+  // parsed back; check the spelling instead.
   let src =
     #|export function w $one() {
     #|@start
@@ -107,36 +108,30 @@ test "printfn round-trip is idempotent" {
   let printed = printfn(funcs[0], interner, [])
   assert_true(printed.contains("$one"))
   assert_true(printed.contains("add 1, 2"))
+  assert_true(printed.contains("retw"))
   let void_src =
     #|export function w $f() {
     #|@start
-    #|  ret0
+    #|  ret
     #|}
     #|
   let (funcs2, _, _, interner2) = parse_all(void_src)
   let printed2 = printfn(funcs2[0], interner2, [])
-  let (funcs3, _, _, interner3) = parse_all(printed2)
-  let printed3 = printfn(funcs3[0], interner3, [])
-  assert_true(printed2 == printed3)
+  assert_true(printed2.contains("ret0"))
 }
 
 ///|
-test "non-void bare ret is rejected" {
+test "bare ret in a non-void function becomes ret0" {
+  // C parse.c: a Tret followed by a newline sets Jret0 regardless of the
+  // declared function return class.
   let src =
     #|function w $f() {
     #|@start
     #|  ret
     #|}
     #|
-  let tokens = @lexer.Lexer::new(src, "test").tokenize()
-  let p = Parser::new(tokens, "test")
-  try p.parse() catch {
-    @util.QbeError::ParseError(_, _, msg) =>
-      assert_true(msg.contains("return value"))
-    _ => fail("expected a parse error")
-  } noraise {
-    _ => fail("expected a parse error")
-  }
+  let (funcs, _, _, _) = parse_all(src)
+  assert_true(funcs[0].blks[0].jmp.kind == @types.Jret0)
 }
 
 ///|
@@ -319,4 +314,57 @@ test "printfn prints dbgloc" {
   let printed = printfn(funcs[0], interner, [])
   assert_true(printed.contains("\tdbgloc 7, 0\n"))
   assert_true(printed.contains("\tdbgloc 9, 3\n"))
+}
+
+///|
+// C parselnk accepts repeated linkage keywords before a definition.
+test "repeated export is accepted" {
+  let src =
+    #|export
+    #|export
+    #|function w $f() {
+    #|@start
+    #|  ret 0
+    #|}
+    #|
+  let (funcs, _, _, _) = parse_all(src)
+  assert_eq(funcs.length(), 1)
+  assert_true(funcs[0].is_export)
+}
+
+///|
+test "export before a non-definition is rejected" {
+  let src =
+    #|export
+    #|type :t = { w 4 }
+    #|
+  let tokens = @lexer.Lexer::new(src, "test").tokenize()
+  let p = Parser::new(tokens, "test")
+  try p.parse() catch {
+    @util.QbeError::ParseError(_, _, msg) =>
+      assert_true(msg.contains("only data and function have linkage"))
+    _ => fail("expected a parse error")
+  } noraise {
+    _ => fail("expected a parse error")
+  }
+}
+
+///|
+// C keeps a data item's value in a union; the emitters print u.num, so float
+// items must carry their bit pattern there (this used to emit .int 0 / .quad 0).
+test "data: float items carry their bit pattern" {
+  let src =
+    #|data $c = { d d_0x1.8p1, s s_0x1p-1, s s_-0.0 }
+    #|
+  let (_, datas, _, _) = parse_all(src)
+  let nums : Array[Int64] = []
+  for d in datas {
+    if !d.is_ref && !d.is_str && (d.kind == @types.DL || d.kind == @types.DW) {
+      nums.push(d.num)
+    }
+  }
+  assert_eq(nums.length(), 3)
+  assert_eq(nums[0], 3.0.reinterpret_as_int64())
+  assert_eq(nums[1], Float::from_double(0.5).reinterpret_as_uint().to_int64())
+  assert_eq(nums[2], Float::from_double(-0.0).reinterpret_as_uint().to_int64())
 }

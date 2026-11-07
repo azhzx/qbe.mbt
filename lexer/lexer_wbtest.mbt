@@ -25,15 +25,20 @@ test "tokenize a function header" {
 
 ///|
 test "tokenize numbers" {
+  // C's lexer reads integers only: a bare decimal is an int followed by an
+  // identifier-like ".14" token (which the parser then rejects). Floats must
+  // be written s_.../d_....
   let src = "1 123 -42 3.14 -2.5\n"
   let tokens = Lexer::new(src, "test").tokenize()
   assert_true(tokens[0].kind == TInt && tokens[0].raw == "1")
   assert_true(tokens[1].kind == TInt && tokens[1].raw == "123")
   assert_true(tokens[2].kind == TInt && tokens[2].raw == "-42")
-  assert_true(tokens[3].kind == TFlt && tokens[3].raw == "3.14")
-  assert_true(tokens[4].kind == TFlt && tokens[4].raw == "-2.5")
-  assert_true(tokens[5].kind == TNl)
-  assert_true(tokens[6].kind == TEof)
+  assert_true(tokens[3].kind == TInt && tokens[3].raw == "3")
+  assert_true(tokens[4].kind == TId && tokens[4].raw == ".14")
+  assert_true(tokens[5].kind == TInt && tokens[5].raw == "-2")
+  assert_true(tokens[6].kind == TId && tokens[6].raw == ".5")
+  assert_true(tokens[7].kind == TNl)
+  assert_true(tokens[8].kind == TEof)
 }
 
 ///|
@@ -111,4 +116,46 @@ test "Token::kind_str and to_string" {
   assert_true(t.kind == TTemp)
   assert_true(t.line == 1)
   assert_true(t.raw == "%x")
+}
+
+///|
+// The lexer must accept the same float text C's fscanf("%f") accepts:
+// signed exponents, hexadecimal floats, inf/nan and a leading sign.
+test "lexer: C-style floating literal text" {
+  let src = "s_1e+3 d_0x1.8p1 s_inf d_nan d_-0x1p-1074 s_+1.5 d_1E-10"
+  let toks = Lexer::new(src, "<test>").tokenize()
+  let raws : Array[String] = []
+  for t in toks {
+    if t.kind == TFlt {
+      raws.push(t.raw)
+    }
+  }
+  assert_eq(raws, [
+    "s_1e+3", "d_0x1.8p1", "s_inf", "d_nan", "d_-0x1p-1074", "s_+1.5", "d_1E-10",
+  ])
+}
+
+///|
+// '$' is an identifier character in C's lexer (isalpha || '$' || '.' || '_').
+test "lexer: dollar sign is allowed inside identifiers" {
+  let toks = Lexer::new("%a$b @c$d $e$f :t$u", "<test>").tokenize()
+  assert_eq(toks[0].kind, TTemp)
+  assert_eq(toks[0].raw, "a$b")
+  assert_eq(toks[1].kind, TLoc)
+  assert_eq(toks[1].raw, "c$d")
+  assert_eq(toks[2].kind, TGlo)
+  assert_eq(toks[2].raw, "e$f")
+  assert_eq(toks[3].kind, TTyp)
+  assert_eq(toks[3].raw, "t$u")
+}
+
+///|
+// C lexes $"name" as a global whose quotes are part of the symbol name.
+test "quoted global symbols keep their quotes" {
+  let src = "$\"g lo\" $plain"
+  let toks = Lexer::new(src, "<test>").tokenize()
+  assert_true(toks[0].kind == TGlo)
+  assert_true(toks[0].raw == "\"g lo\"")
+  assert_true(toks[1].kind == TGlo)
+  assert_true(toks[1].raw == "plain")
 }

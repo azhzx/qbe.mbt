@@ -1,12 +1,11 @@
 ///|
 // Instruction simplification - corresponds to simpl.c in QBE.
 //
-// simpl() lowers udiv/urem by a power-of-two constant into a shift or a mask.
-// The C reference also expands blit pairs (Oblit0/Oblit1), but those
-// instructions cannot be represented in this port: @types.Op has neither
-// constructor, @types.Ref has no RInt variant for the encoded size, and the
-// parser never produces them.  The expansion itself is provided (unused by
-// simpl) as the blit helper so the translation is complete.
+// simpl() lowers udiv/urem by a power-of-two constant into a shift or a mask
+// and expands the blit0/blit1 pseudo pair into load/store/add chunks
+// (C simpl.c blit).  Both Op constructors and Ref::rint exist in this port and
+// the parser emits the pair, so this is the same pass the reference runs for
+// every target; each backend calls it after its ABI pass.
 
 ///|
 // The 64-entry de Bruijn table used by ulog2 (C simpl.c ulog2_tab64).
@@ -111,8 +110,8 @@ pub fn blit(
 
 ///|
 // Simplify a single instruction (C simpl.c ins).  The caller writes the result
-// back into the block.  The blit case of the reference is unreachable here (see
-// the file header), so only the udiv/urem lowering is performed.
+// back into the block.  The blit pair is expanded by simpl() itself, so this
+// helper performs only the udiv/urem lowering.
 fn simpl_ins(fn_ : @types.Fn, ins : @types.Ins) -> @types.Ins {
   let out = ins
   match out.op {
