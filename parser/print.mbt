@@ -234,6 +234,39 @@ pub fn printfn(
         printref(ins.to, fn_, interner, sb, all_typs)
         sb.write_string(" =\{ktoc(ins.cls)} ")
       }
+      if ins.op == @types.InlineAsm {
+        // Port extension: asm "text" (%in1, %in2)
+        sb.write_string("asm ")
+        sb.write_char('"')
+        for c in ins.asm_text.to_array() {
+          if c == '"' {
+            sb.write_string("\\\"")
+          } else if c == '\n' {
+            sb.write_string("\\n")
+          } else {
+            sb.write_char(c)
+          }
+        }
+        sb.write_char('"')
+        let mut first = true
+        for rr in [ins.arg1, ins.arg2] {
+          if rr.is_none() {
+            continue
+          }
+          if first {
+            sb.write_string(" (")
+            first = false
+          } else {
+            sb.write_string(", ")
+          }
+          printref(rr, fn_, interner, sb, all_typs)
+        }
+        if !first {
+          sb.write_char(')')
+        }
+        sb.write_string("\n")
+        continue
+      }
       sb.write_string(ins.op.name())
       if ins.to.is_none() {
         // Class suffix for void-result ops (arg, swap, xcmp, ...)

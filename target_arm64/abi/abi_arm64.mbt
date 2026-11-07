@@ -441,10 +441,14 @@ fn arm64_argsclass(
       @types.Par | @types.Arg => {
         c.cls[0] = ins.cls
         c.size = 8
-        // Mach-O passes non-wide scalar stack arguments in 4 bytes
-        // (C arm64/abi.c: if (T.apple && !KWIDE(i->cls)) c->size = 4).
+        // Mach-O clang gives every stack argument an 8-byte slot (AAPCS64
+        // rounds NSAA to 8), and so must we: a narrow argument packed into 4
+        // bytes shifted every following stack argument, which broke calls with
+        // mixed int/long parameters against both clang and ourselves
+        // (brotli's WriteMetaBlockInternal, 19 mixed parameters, read a
+        // pointer from its neighbour's slot).
         if st.apple && ins.cls.wide() == 0 {
-          c.size = 4
+          c.size = 8
         }
         if va {
           // C: arguments after the ellipsis always go on the stack in 8-byte

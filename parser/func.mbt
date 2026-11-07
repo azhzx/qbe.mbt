@@ -337,6 +337,13 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       if op == @types.Oxxx {
         raise self.error("unknown keyword \{op_tok.raw}")
       }
+      // Inline assembly: %r =l asm "text" (%in1, %in2)
+      if op == @types.InlineAsm {
+        let ins = self.parse_asm_ins(cls, to)
+        fn_.blks[self.curblk].ins.push(ins)
+        self.expect(TNl)
+        return PIns
+      }
       // Parse arguments
       let (arg1, arg2) = self.parse_ins_args()
       let ins = @types.Ins::new(op, cls, to, arg1, arg2)
@@ -369,6 +376,13 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
           @types.Ref::rint(line.to_int()),
           @types.Ref::rint(col.to_int()),
         )
+        fn_.blks[self.curblk].ins.push(ins)
+        self.expect(TNl)
+        return PIns
+      }
+      if name == "asm" {
+        // Inline assembly with no output: asm "text" (%in1, %in2)
+        let ins = self.parse_asm_ins(@types.Kw, @types.Ref::none())
         fn_.blks[self.curblk].ins.push(ins)
         self.expect(TNl)
         return PIns
@@ -516,6 +530,48 @@ fn Parser::parse_call(
 ///|
 // Parse instruction arguments (0, 1, or 2 refs)
 // Returns (arg1, arg2) where unused args are ref_none()
+// Parse the body of an inline-assembly instruction (port extension):
+//
+//   asm "dmb ish"
+//   asm "msr daifset, #2" (%x)
+//   %r =l asm "rbit %0, %1" (%x)
+//
+// %0 is the output, %1 and %2 the inputs, in that order. The text is a QBE
+// string literal, so its escapes (\n) are decoded by the lexer.
+fn Parser::parse_asm_ins(
+  self : Self,
+  cls : @types.Class,
+  to : @types.Ref,
+) -> @types.Ins raise {
+  if self.peek_kind() != TStr {
+    raise self.error("string literal expected after asm")
+  }
+  let tok = self.next()
+  let text = tok.raw
+  if text.length() == 0 {
+    raise self.error("DBG empty asm text, kind=\{tok.kind_str()}")
+  }
+  let mut arg1 = @types.Ref::none()
+  let mut arg2 = @types.Ref::none()
+  if self.peek_kind() == TLpa {
+    let _ = self.next()
+    arg1 = self.parseref()
+    if arg1.is_none() {
+      raise self.error("invalid asm operand")
+    }
+    if self.peek_kind() == TCom {
+      let _ = self.next()
+      arg2 = self.parseref()
+      if arg2.is_none() {
+        raise self.error("invalid asm operand")
+      }
+    }
+    self.expect(TRpa)
+  }
+  @types.Ins::new_asm(cls, to, arg1, arg2, text)
+}
+
+///|
 fn Parser::parse_ins_args(self : Self) -> (@types.Ref, @types.Ref) raise {
   let mut arg1 = @types.Ref::none()
   let mut arg2 = @types.Ref::none()

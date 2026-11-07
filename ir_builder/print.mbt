@@ -115,6 +115,39 @@ fn Builder::il_ins(
     sb.write_string(ktoc(ins.cls))
     sb.write_char(' ')
   }
+  if ins.op == @types.InlineAsm {
+    // asm "text" (%in1, %in2): the text has to survive the round trip, because
+    // emit_il output is fed back to the textual parser.
+    sb.write_string("asm ")
+    sb.write_char('"')
+    for c in ins.asm_text.to_array() {
+      if c == '"' {
+        sb.write_string("\\\"")
+      } else if c == '\n' {
+        sb.write_string("\\n")
+      } else {
+        sb.write_char(c)
+      }
+    }
+    sb.write_char('"')
+    let mut first = true
+    for r in [ins.arg1, ins.arg2] {
+      if !r.is_none() {
+        if first {
+          sb.write_string(" (")
+          first = false
+        } else {
+          sb.write_string(", ")
+        }
+        self.il_ref(f, r, sb)
+      }
+    }
+    if !first {
+      sb.write_char(')')
+    }
+    sb.write_char('\n')
+    return
+  }
   sb.write_string(ins.op.name())
   if !ins.arg1.is_none() {
     sb.write_char(' ')

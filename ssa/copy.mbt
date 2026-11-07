@@ -182,10 +182,11 @@ pub fn copy(
         )
         continue
       }
-      // Substitute args
-      let a1 = copyof(i.arg1, cp)
-      let a2 = copyof(i.arg2, cp)
-      b.ins[ii] = @types.Ins::new(i.op, i.cls, i.to, a1, a2)
+      // Substitute args in place: the C pass mutates i->arg, it does not
+      // rebuild the instruction. Rebuilding dropped out-of-band payloads such
+      // as an inline-asm text (op Asm).
+      b.ins[ii].arg1 = copyof(i.arg1, cp)
+      b.ins[ii].arg2 = copyof(i.arg2, cp)
     }
     // Jump argument
     let ja = copyof(b.jmp.arg, cp)

@@ -277,6 +277,35 @@ test "dbgloc parses line and column" {
 }
 
 ///|
+test "inline asm parses, prints and round-trips" {
+  let src =
+    #|export function l $f(l %a) {
+    #|@start
+    #|  %o =l asm "rbit %0, %1" (%a)
+    #|  asm "dmb ish"
+    #|  ret %o
+    #|}
+    #|
+  let (funcs, _, _, interner) = parse_all(src)
+  let f = funcs[0]
+  let ins = f.blks[0].ins
+  // Par, the asm with a result, the asm without one.
+  assert_eq(ins.length(), 3)
+  assert_eq(ins[1].op, @types.InlineAsm)
+  assert_eq(ins[1].asm_text, "rbit %0, %1")
+  assert_eq(ins[1].cls, @types.Kl)
+  assert_true(ins[1].to.is_tmp())
+  assert_true(ins[1].arg1.is_tmp())
+  assert_eq(ins[2].op, @types.InlineAsm)
+  assert_eq(ins[2].asm_text, "dmb ish")
+  assert_true(ins[2].to.is_none())
+  // The printer keeps the text and the operands.
+  let printed = printfn(f, interner, [])
+  assert_true(printed.contains("asm \"rbit %0, %1\" ("))
+  assert_true(printed.contains("asm \"dmb ish\"\n"))
+}
+
+///|
 test "printfn prints dbgloc" {
   let src =
     #|function w $f() {

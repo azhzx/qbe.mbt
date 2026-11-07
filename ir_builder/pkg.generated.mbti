@@ -36,6 +36,7 @@ pub fn Builder::add_type(Self, String, Int32, Array[(@types.FieldType, Int32)], 
 pub fn Builder::add_union_type(Self, String, Int32, Array[Array[(@types.FieldType, Int32)]]) -> Int32
 pub fn Builder::arg_vararg(Self, Int32) -> Unit
 pub fn Builder::arith(Self, Int32, @types.Op, @types.Class, Int32, Int32) -> Int32
+pub fn Builder::asm_ins(Self, Int32, @types.Class, @types.Class, Int32, Int32, String) -> Int32
 pub fn Builder::atomic_load(Self, Int32, @types.Class, Int32) -> Int32
 pub fn Builder::atomic_store(Self, Int32, @types.Class, Int32, Int32) -> Unit
 pub fn Builder::block_param(Self, Int32, Int32, @types.Class) -> Int32
@@ -69,6 +70,7 @@ pub fn Builder::fence(Self, Int32) -> Unit
 pub fn Builder::func_params(Self, Int32) -> Array[Int32]
 pub fn Builder::functions(Self) -> Array[@types.Fn]
 pub fn Builder::global(Self, Int32, String) -> Int32
+pub fn Builder::has_inline_asm(Self) -> Bool
 pub fn Builder::iconst(Self, Int32, Int64) -> Int32
 pub fn Builder::interner_ref(Self) -> @util.Interner
 pub fn Builder::jmp(Self, Int32, Int32, Array[Int32]) -> Unit

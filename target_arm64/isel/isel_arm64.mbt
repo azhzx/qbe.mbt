@@ -297,6 +297,19 @@ fn arm64_callable(r : @types.Ref, fn_ : @types.Fn) -> Bool {
 
 ///|
 // Select one instruction (C sel in arm64/isel.c).
+
+///|
+// Class of an inline-assembly operand: the temporary's own class, which is how
+// the emitter picks x/w/s/d names for it.
+fn arm64_asm_argcls(st : Arm64IselState, r : @types.Ref) -> @types.Class {
+  if r.is_tmp() {
+    st.fn_.tmps[r.tmp_val()].cls
+  } else {
+    @types.Kl
+  }
+}
+
+///|
 fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
   let (is_cmp, ck, cc) = arm64_iscmp(i.op)
   if is_cmp {
@@ -350,6 +363,22 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     arm64_isel_emit(st, @types.Ins::new(@types.Add, @types.Kl, r1, i.arg1, c15))
     let aidx = st.buf.length() - 1
     st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
+    return
+  }
+  if i.op == @types.InlineAsm {
+    // Inline assembly is opaque: pass it through and make sure its operands
+    // are registers (the emitter substitutes register names into the text).
+    arm64_isel_emit(st, i)
+    let idx = st.buf.length() - 1
+    let buf = st.buf
+    if !buf[idx].arg1.is_none() {
+      let k = arm64_asm_argcls(st, buf[idx].arg1)
+      buf[idx].arg1 = arm64_fixarg(st, buf[idx].arg1, k, false)
+    }
+    if !buf[idx].arg2.is_none() {
+      let k = arm64_asm_argcls(st, buf[idx].arg2)
+      buf[idx].arg2 = arm64_fixarg(st, buf[idx].arg2, k, false)
+    }
     return
   }
   if i.op == @types.Call && arm64_callable(i.arg1, st.fn_) {

@@ -590,6 +590,10 @@ fn arm64_bin_table(st : Arm64BinState, i : @types.Ins) -> Unit raise {
     }
   }
   match i.op {
+    @types.InlineAsm =>
+      raise @util.QbeError::Ice(
+        "arm64 bin: inline assembly needs the text emitter (--emit asm); the self-contained object writer cannot encode raw assembly",
+      )
     @types.Add =>
       if is_d {
         arm64_bin_emit(

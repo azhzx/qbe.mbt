@@ -187,6 +187,13 @@ pub(all) enum Op {
 
   // === Variadic argument marker (C Oargv) ===
   Argv
+
+  // === Inline assembly (a port extension: upstream QBE has no asm) ===
+  // The instruction carries the raw text in Ins.asm_text and its input
+  // temporaries in Ins.asm_ins; the target emitters substitute registers for
+  // the %0..%9 placeholders. Kept last so every transcribed op index and the
+  // generated pinned table stay valid.
+  InlineAsm
 } derive(Eq, Debug)
 
 ///|
@@ -352,6 +359,7 @@ pub fn Op::from_string(s : String) -> Op {
     "dbgloc" => Dbgloc
     "call" => Call
     "argv" => Argv
+    "asm" => InlineAsm
     _ => Oxxx
   }
 }

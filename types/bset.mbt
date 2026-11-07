@@ -143,10 +143,19 @@ pub fn BSet::iter(self : Self, start : Int32) -> Int32 {
 
 ///|
 // Call f for every set bit, in increasing order.
+//
+// The scan is per 64-bit word and skips zero words, so a sparse set costs
+// popcount + words instead of one test per element. Liveness calls this once per
+// block per iteration, and a big function (quickjs's JS_CallInternal has 142k
+// instructions) has hundreds of thousands of temporaries, where testing every
+// bit made the pass take minutes.
 pub fn BSet::each(self : Self, f : (Int32) -> Unit) -> Unit {
-  for i in 0..<(self.bits.length() * nbit) {
-    if self.has(i) {
-      f(i)
+  for w in 0..<self.bits.length() {
+    let mut word = self.bits[w]
+    while word != 0UL {
+      let bit = word.ctz()
+      f(w * nbit + bit)
+      word = word & (word - 1UL)
     }
   }
 }
@@ -154,9 +163,24 @@ pub fn BSet::each(self : Self, f : (Int32) -> Unit) -> Unit {
 ///|
 // Call f for every set bit with index >= start, in increasing order.
 pub fn BSet::each_from(self : Self, start : Int32, f : (Int32) -> Unit) -> Unit {
-  for i in start.max(0)..<(self.bits.length() * nbit) {
-    if self.has(i) {
-      f(i)
+  let from = if start < 0 { 0 } else { start }
+  let mut w = from / nbit
+  if w >= self.bits.length() {
+    return
+  }
+  let mut off = from % nbit
+  let mut word = if off == 0 { self.bits[w] } else { self.bits[w] >> off }
+  while true {
+    while word != 0UL {
+      let bit = word.ctz()
+      f(w * nbit + off + bit)
+      word = word & (word - 1UL)
     }
+    w = w + 1
+    if w >= self.bits.length() {
+      break
+    }
+    word = self.bits[w]
+    off = 0
   }
 }

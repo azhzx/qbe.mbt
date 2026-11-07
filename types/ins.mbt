@@ -7,17 +7,36 @@ pub(all) struct Ins {
   mut to : Ref // Destination, Ref::none() if none
   mut arg1 : Ref
   mut arg2 : Ref
+  // Inline assembly payload (port extension, op == InlineAsm). The text keeps its
+  // %0..%2 placeholders: %0 is the output (`to`), %1 and %2 are the inputs in
+  // `arg1` and `arg2`. Keeping the inputs in the regular argument slots means
+  // liveness, spilling and register allocation already see them as uses.
+  mut asm_text : String
 } derive(Debug, Eq)
 
 ///|
 pub fn Ins::new(op : Op, cls : Class, to : Ref, arg1 : Ref, arg2 : Ref) -> Ins {
-  Ins::{ op, cls, to, arg1, arg2, }
+  Ins::{ op, cls, to, arg1, arg2, asm_text: "", }
 }
 
 ///|
 // Create an instruction with no destination
 pub fn Ins::new_void(op : Op, cls : Class, arg1 : Ref, arg2 : Ref) -> Ins {
-  Ins::{ op, cls, to: Ref::none(), arg1, arg2, }
+  Ins::{ op, cls, to: Ref::none(), arg1, arg2, asm_text: "", }
+}
+
+///|
+// Create an inline-assembly instruction. `to` is the output operand (or
+// Ref::none()), `ins` are the input temporaries, `text` is the raw assembly
+// with %0..%9 placeholders numbered outputs first, then inputs.
+pub fn Ins::new_asm(
+  cls : Class,
+  to : Ref,
+  arg1 : Ref,
+  arg2 : Ref,
+  text : String,
+) -> Ins {
+  Ins::{ op: InlineAsm, cls, to, arg1, arg2, asm_text: text, }
 }
 
 ///|

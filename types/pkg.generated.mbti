@@ -851,8 +851,10 @@ pub(all) struct Ins {
   mut to : Ref
   mut arg1 : Ref
   mut arg2 : Ref
+  mut asm_text : String
 } derive(Eq, @debug.Debug)
 pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
+pub fn Ins::new_asm(Class, Ref, Ref, Ref, String) -> Self
 pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
 
 pub(all) struct Jump {
@@ -1048,6 +1050,7 @@ pub(all) enum Op {
   Xselfo
   Xselfuo
   Argv
+  InlineAsm
 } derive(Eq, @debug.Debug)
 pub fn Op::ext_width_idx(Self) -> Int32
 pub fn Op::from_index(Int32) -> Self

@@ -114,6 +114,12 @@ fn Parser::typecheck(self : Self, fn_ : @types.Fn) -> Unit raise {
       }
     }
     for i in b.ins {
+      // Inline assembly: the operands are optional (0, 1 or 2 of them) and
+      // each keeps its own temporary's class, so there is nothing to check
+      // against the op table.
+      if i.op == @types.InlineAsm {
+        continue
+      }
       for n2 in 0..<2 {
         let k = tc_argcls(i.op, i.cls, n2)
         let r = if n2 == 0 { i.arg1 } else { i.arg2 }

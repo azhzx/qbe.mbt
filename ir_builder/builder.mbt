@@ -754,6 +754,55 @@ pub fn Builder::fence(self : Builder, fid : Int32) -> Unit {
 }
 
 ///|
+// Emit an inline-assembly instruction (port extension, no upstream
+// counterpart). `text` is raw target assembly with %0 for `to`, %1 for
+// `arg1` and %2 for `arg2`; a zero value means "no operand". Only the text
+// emitter can produce it, so a module that contains asm must be compiled with
+// Builder::emit_asm and assembled afterwards.
+pub fn Builder::asm_ins(
+  self : Builder,
+  fid : Int32,
+  cls : @types.Class,
+  res : @types.Class,
+  a1 : Int32,
+  a2 : Int32,
+  text : String,
+) -> Int32 {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  let to = if res == @types.Kx {
+    @types.Ref::none()
+  } else {
+    @types.Ref::tmp(f.new_tmp("t", res))
+  }
+  f.blks[bid].ins.push(
+    @types.Ins::new_asm(cls, to, self.val_ref(a1), self.val_ref(a2), text),
+  )
+  if res == @types.Kx {
+    -1
+  } else {
+    self.push_ref(to)
+  }
+}
+
+///|
+// Does any function in this module contain inline assembly? The object writer
+// is self-contained and cannot encode raw assembly, so the driver has to take
+// the text-assembly route when this is true.
+pub fn Builder::has_inline_asm(self : Builder) -> Bool {
+  for f in self.funcs {
+    for bid in 0..<f.blks.length() {
+      for ins in f.blks[bid].ins {
+        if ins.op == @types.InlineAsm {
+          return true
+        }
+      }
+    }
+  }
+  false
+}
+
+///|
 // Mark the start of the variadic arguments in the following call.
 pub fn Builder::arg_vararg(self : Builder, fid : Int32) -> Unit {
   let f = self.funcs[fid]

@@ -246,8 +246,17 @@ fn sdom(f : @types.Fn, b1 : Int32, b2 : Int32) -> Bool {
   if b1 == b2 {
     return false
   }
+  // `f.blks[i]` copies the whole block record (every reference field is
+  // incremented), so the bound and the current idom are read once instead of
+  // once per step: this walk is the inner loop of dominance-frontier
+  // construction and it shows up on any large function.
+  let lim = f.blks[b1].rpo_id
   let mut b2 = b2
-  while b2 >= 0 && f.blks[b2].rpo_id > f.blks[b1].rpo_id {
+  while b2 >= 0 {
+    let blk = f.blks[b2]
+    if blk.rpo_id <= lim {
+      break
+    }
     b2 = f.blks[b2].idom
   }
   b1 == b2
@@ -256,12 +265,15 @@ fn sdom(f : @types.Fn, b1 : Int32, b2 : Int32) -> Bool {
 ///|
 // Add block b to dominance frontier of block a
 fn add_frontier(a : Int32, b : Int32, f : @types.Fn) -> Unit {
-  for i in 0..<f.blks[a].fron.length() {
-    if f.blks[a].fron[i] == b {
+  // One block copy for the whole call: the frontier array is a reference, so
+  // pushing through the local still updates the block.
+  let fr = f.blks[a].fron
+  for i in 0..<fr.length() {
+    if fr[i] == b {
       return
     }
   }
-  f.blks[a].fron.push(b)
+  fr.push(b)
 }
 
 ///|

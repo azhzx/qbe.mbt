@@ -56,6 +56,12 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
     b.out_set = Some(@types.BSet::new(nt))
     b.gen_set = Some(@types.BSet::new(nt))
   }
+  // Two scratch sets, reused across every block and every iteration. Allocating
+  // them inside the loop cost two nt-bit zeroed arrays per block per pass: on
+  // quickjs's JS_CallInternal (142k instructions, ~68k temporaries) the liveness
+  // pass allocated hundreds of megabytes per iteration and never finished.
+  let old = @types.BSet::new(nt)
+  let v = @types.BSet::new(nt)
   let mut chg = true
   while chg {
     chg = false
@@ -63,15 +69,12 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
       let bid = fn_.rpo[n]
       let b = fn_.blks[bid]
       let out = b.out_set.unwrap()
-      let old = @types.BSet::new(nt)
       old.copy_from(out)
       if b.jmp.s1 >= 0 {
-        let v = @types.BSet::new(nt)
         liveon(v, bid, fn_.blks[b.jmp.s1], fn_)
         ignore(out.union(v))
       }
       if b.jmp.s2 >= 0 && b.jmp.s2 != b.jmp.s1 {
-        let v = @types.BSet::new(nt)
         liveon(v, bid, fn_.blks[b.jmp.s2], fn_)
         ignore(out.union(v))
       }

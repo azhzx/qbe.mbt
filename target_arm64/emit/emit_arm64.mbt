@@ -488,6 +488,73 @@ fn arm64_emit_table(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
+// Substitute the registers of an inline-assembly instruction into its text and
+// print it. %0 is the output (`to`), %1 and %2 are the inputs; %% is a literal
+// percent sign. This is the one place where the port emits text it did not
+// generate, so the operands must be in registers by now: the register
+// allocator has run, and a spilled operand is an error rather than silently
+// wrong code.
+fn arm64_emit_asm(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
+  let ops : Array[String] = []
+  if !i.to.is_none() {
+    if !i.to.is_tmp() {
+      raise @util.QbeError::Ice("asm: output operand is not in a register")
+    }
+    ops.push(arm64_rname(i.to.tmp_val(), i.cls))
+  }
+  for r in [i.arg1, i.arg2] {
+    if r.is_none() {
+      continue
+    }
+    if !r.is_tmp() {
+      raise @util.QbeError::Ice("asm: input operand is not in a register")
+    }
+    let k = st.fn_.tmps[r.tmp_val()].cls
+    ops.push(arm64_rname(r.tmp_val(), k))
+  }
+  let text = i.asm_text
+  let chars = text.to_array()
+  let sb = st.sb
+  // Indent like every other instruction; lines the author already indented are
+  // left alone so a multi-line asm block keeps its own layout.
+  sb.write_char('\t')
+  let mut j = 0
+  while j < chars.length() {
+    let c = chars[j]
+    if c == '%' && j + 1 < chars.length() {
+      let n = chars[j + 1]
+      if n == '%' {
+        sb.write_char('%')
+        j = j + 2
+        continue
+      }
+      if n >= '0' && n <= '9' {
+        let idx = n.to_int() - '0'.to_int()
+        if idx >= ops.length() {
+          raise @util.QbeError::Ice(
+            "asm: operand %{idx} is not bound (only the output and two inputs exist)",
+          )
+        }
+        sb.write_string(ops[idx])
+        j = j + 2
+        continue
+      }
+    }
+    if c == '\n' {
+      sb.write_char('\n')
+      // A following line that is not already indented gets the same tab.
+      if j + 1 < chars.length() && chars[j + 1] != '\t' {
+        sb.write_char('\t')
+      }
+    } else {
+      sb.write_char(c)
+    }
+    j = j + 1
+  }
+  sb.write_char('\n')
+}
+
+///|
 // Emit a single instruction (C emitins in arm64/emit.c).
 fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
   let sb = st.sb
@@ -498,6 +565,7 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
     return
   }
   match i.op {
+    @types.InlineAsm => arm64_emit_asm(st, i)
     @types.Nop => ()
     @types.Dbgloc =>
       @util.emit_dbgloc(i.arg1.rint_val(), i.arg2.rint_val(), st.sb)

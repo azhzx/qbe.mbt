@@ -178,17 +178,22 @@ fn foldint(
       @types.Extuh => l & 0xFFFF
       @types.Extsw => l << 32 >> 32
       @types.Extuw => l & 0xFFFFFFFF
+      // `w` is true for a long instruction (see the comment on foldint), but
+      // these two arms used to read it as "word", so a `=l dtosi` folded
+      // through the 32-bit saturating `to_int` and clamped to 2147483647.
+      // The reference (fold.c) converts to int64 for a long result and to
+      // int32 for a word result.
       @types.Stosi =>
         if w {
-          sext32(con_single(cl).to_double().to_int().to_int64())
-        } else {
           con_single(cl).to_double().to_int64()
+        } else {
+          sext32(con_single(cl).to_double().to_int().to_int64())
         }
       @types.Dtosi =>
         if w {
-          sext32(con_double(cl).to_int().to_int64())
-        } else {
           con_double(cl).to_int64()
+        } else {
+          sext32(con_double(cl).to_int().to_int64())
         }
       @types.Cast => {
         if cl.kind == @types.CAddr {

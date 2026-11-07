@@ -1106,6 +1106,16 @@ let optab : Array[OpInfo] = [
     false,
     (0, 0, 1),
   ),
+  // Port extension: inline assembly. The output class comes from the
+  // instruction, each input keeps its own temporary's class, and nothing about
+  // the text is known to the optimiser (no folding, no reordering).
+  mk(
+    "asm",
+    cls(["x", "x", "x", "x"]),
+    cls(["x", "x", "x", "x"]),
+    false,
+    (0, 0, 0),
+  ),
 ]
 
 ///|
@@ -1434,6 +1444,7 @@ pub fn Op::index(self : Op) -> Int32 {
     AtomicLoad => 146
     AtomicStore => 147
     Fence => 148
+    InlineAsm => 149
   }
 }
 

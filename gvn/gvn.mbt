@@ -43,9 +43,12 @@ fn rval_of(r : @types.Ref) -> Int32 {
 }
 
 ///|
-// Instruction copy (C shallow struct copy).
+// Instruction copy (C shallow struct copy: every field is carried over, which
+// includes the inline-asm text).
 fn ins_copy(i : @types.Ins) -> @types.Ins {
-  @types.Ins::new(i.op, i.cls, i.to, i.arg1, i.arg2)
+  let c = @types.Ins::new(i.op, i.cls, i.to, i.arg1, i.arg2)
+  c.asm_text = i.asm_text
+  c
 }
 
 ///|
@@ -499,17 +502,20 @@ fn c_foldint(
       @types.Extuh => l & 0xFFFF
       @types.Extsw => l << 32 >> 32
       @types.Extuw => l & 0xFFFFFFFF
+      // `w` means "long" here (the same convention as fold/opfold.mbt, and
+      // the opposite of the C fold.c this was transcribed from): a long
+      // conversion must go through int64, a word conversion through int32.
       @types.Stosi =>
         if w {
-          sext32(con_single(cl).to_double().to_int().to_int64())
-        } else {
           con_single(cl).to_double().to_int64()
+        } else {
+          sext32(con_single(cl).to_double().to_int().to_int64())
         }
       @types.Dtosi =>
         if w {
-          sext32(con_double(cl).to_int().to_int64())
-        } else {
           con_double(cl).to_int64()
+        } else {
+          sext32(con_double(cl).to_int().to_int64())
         }
       @types.Cast => {
         if cl.kind == @types.CAddr {
