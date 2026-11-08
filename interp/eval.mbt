@@ -193,6 +193,12 @@ fn Interp::eval_op(
     | @types.Cuod => return self.eval_float_op(op, @types.Kd, a, b)
     _ => ()
   }
+  // cast is a bit reinterpretation: its destination class can be a float
+  // class while the source value is an integer (and vice versa), so it must
+  // not be dispatched to the floating-point evaluator.
+  if op == @types.Cast {
+    return a
+  }
   if k.base() == 1 {
     return self.eval_float_op(op, k, a, b)
   }

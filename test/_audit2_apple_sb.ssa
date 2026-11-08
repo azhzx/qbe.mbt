@@ -1,0 +1,36 @@
+function sb $rsb(w %a) {
+@start
+ ret %a
+}
+function ub $rub(w %a) {
+@start
+ ret %a
+}
+function sh $rsh(w %a) {
+@start
+ ret %a
+}
+function uh $ruh(w %a) {
+@start
+ ret %a
+}
+export function w $caller(w %a) {
+@start
+ %x =sb call $rsb(w %a)
+ %y =ub call $rub(w %a)
+ %z =sh call $rsh(w %a)
+ %q =uh call $ruh(w %a)
+ %xx =w extsb %x
+ %yy =w extub %y
+ %zz =w extsh %z
+ %qq =w extuh %q
+ %s0 =w add %xx, %yy
+ %s1 =w add %zz, %qq
+ %s =w add %s0, %s1
+ ret %s
+}
+function w $args(w %a) {
+@start
+ %x =w call $take(sb %a, ub %a, sh %a, uh %a)
+ ret %x
+}

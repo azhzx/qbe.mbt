@@ -380,6 +380,7 @@ fn emit_addr32(st : WatEmitState, r : @types.Ref) -> Unit {
 fn emit_operand(st : WatEmitState, r : @types.Ref, k : @types.Class) -> Unit {
   if r.is_tmp() &&
     st.fn_.tmps[r.tmp_val()].cls.wide() == 1 &&
+    !temp_is_word_local(st.fn_, r.tmp_val()) &&
     k != @types.Kl &&
     k != @types.Kd {
     wat_writeln(st, "local.get $t\{r.tmp_val()}")
@@ -412,7 +413,7 @@ fn store_class(op : @types.Op) -> @types.Class {
 fn emit_store(st : WatEmitState, ins : @types.Ins) -> Unit {
   emit_addr32(st, ins.arg2)
   let k = store_class(ins.op)
-  emit_ref(st, ins.arg1, k)
+  emit_operand(st, ins.arg1, k)
   let op = match ins.op {
     @types.Storeb => "i32.store8"
     @types.Storeh => "i32.store16"
@@ -537,7 +538,7 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       wat_writeln(st, "i64.store")
     }
     @types.Copy => {
-      emit_ref(st, ins.arg1, ins.cls)
+      emit_operand(st, ins.arg1, ins.cls)
       if ins.to.is_tmp() {
         wat_writeln(st, "local.set $t\{ins.to.tmp_val()}")
       }
@@ -712,31 +713,31 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       // l-class result produces i32 where i64 is expected and the wasm
       // validator rejects the module.
       if ins.cls == @types.Kl {
-        emit_ref(st, ins.arg1, @types.Kl)
+        emit_operand(st, ins.arg1, @types.Kl)
         wat_writeln(st, "i64.extend8_s")
       } else {
-        emit_ref(st, ins.arg1, @types.Kw)
+        emit_operand(st, ins.arg1, @types.Kw)
         wat_writeln(st, "i32.extend8_s")
       }
       set_dest(st, ins)
     }
     @types.Extsh => {
       if ins.cls == @types.Kl {
-        emit_ref(st, ins.arg1, @types.Kl)
+        emit_operand(st, ins.arg1, @types.Kl)
         wat_writeln(st, "i64.extend16_s")
       } else {
-        emit_ref(st, ins.arg1, @types.Kw)
+        emit_operand(st, ins.arg1, @types.Kw)
         wat_writeln(st, "i32.extend16_s")
       }
       set_dest(st, ins)
     }
     @types.Extub => {
       if ins.cls == @types.Kl {
-        emit_ref(st, ins.arg1, @types.Kl)
+        emit_operand(st, ins.arg1, @types.Kl)
         wat_writeln(st, "i64.const 255")
         wat_writeln(st, "i64.and")
       } else {
-        emit_ref(st, ins.arg1, @types.Kw)
+        emit_operand(st, ins.arg1, @types.Kw)
         wat_writeln(st, "i32.const 255")
         wat_writeln(st, "i32.and")
       }
@@ -744,23 +745,23 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
     }
     @types.Extuh => {
       if ins.cls == @types.Kl {
-        emit_ref(st, ins.arg1, @types.Kl)
+        emit_operand(st, ins.arg1, @types.Kl)
         wat_writeln(st, "i64.const 65535")
         wat_writeln(st, "i64.and")
       } else {
-        emit_ref(st, ins.arg1, @types.Kw)
+        emit_operand(st, ins.arg1, @types.Kw)
         wat_writeln(st, "i32.const 65535")
         wat_writeln(st, "i32.and")
       }
       set_dest(st, ins)
     }
     @types.Extsw => {
-      emit_ref(st, ins.arg1, @types.Kw)
+      emit_operand(st, ins.arg1, @types.Kw)
       wat_writeln(st, "i64.extend_i32_s")
       set_dest(st, ins)
     }
     @types.Extuw => {
-      emit_ref(st, ins.arg1, @types.Kw)
+      emit_operand(st, ins.arg1, @types.Kw)
       wat_writeln(st, "i64.extend_i32_u")
       set_dest(st, ins)
     }
@@ -775,7 +776,7 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       set_dest(st, ins)
     }
     @types.Swtof => {
-      emit_ref(st, ins.arg1, @types.Kw)
+      emit_operand(st, ins.arg1, @types.Kw)
       wat_writeln(
         st,
         if ins.cls == @types.Kd {
@@ -847,7 +848,7 @@ fn emit_ins(st : WatEmitState, ins : @types.Ins) -> Unit {
       set_dest(st, ins)
     }
     @types.Uwtof => {
-      emit_ref(st, ins.arg1, @types.Kw)
+      emit_operand(st, ins.arg1, @types.Kw)
       wat_writeln(
         st,
         if ins.cls == @types.Kd {
@@ -1124,7 +1125,7 @@ fn emit_phi_copies(
     return
   }
   for i in 0..<srcs.length() {
-    emit_ref(st, srcs[i], clss[i])
+    emit_operand(st, srcs[i], clss[i])
   }
   let mut k = dsts.length() - 1
   while k >= 0 {
@@ -1153,7 +1154,7 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
         emit_goto(st, blk.jmp.s1)
       }
     @types.Jjnz => {
-      emit_ref(st, blk.jmp.arg, @types.Kw)
+      emit_operand(st, blk.jmp.arg, @types.Kw)
       wat_writeln(st, "if")
       st.indent = st.indent + 1
       if blk.jmp.s1 >= 0 {
@@ -1195,7 +1196,7 @@ fn emit_block_body(st : WatEmitState, blk : @types.Blk) -> Unit {
         @types.Jretc => @types.Kl
         _ => @types.Kw
       }
-      emit_ref(st, blk.jmp.arg, k)
+      emit_operand(st, blk.jmp.arg, k)
       wat_writeln(st, "return")
     }
     @types.Jret0 => wat_writeln(st, "return")
@@ -1586,4 +1587,19 @@ pub fn wasm_data_end(datas : Array[@types.Dat]) -> Int32 {
     }
   }
   off
+}
+
+///|
+// Comparison instructions define a word-valued temporary even when their
+// instruction class is Kl (their locals are declared i32 by emit_locals), so
+// a Kl tmp.cls alone does not mean the wasm local is i64.
+fn temp_is_word_local(fn_ : @types.Fn, tid : Int32) -> Bool {
+  for bid in fn_.def_order {
+    for ins in fn_.blks[bid].ins {
+      if ins.to.is_tmp() && ins.to.tmp_val() == tid {
+        return is_cmp_op(ins.op)
+      }
+    }
+  }
+  false
 }

@@ -603,3 +603,55 @@ A fix is listed only after a failing test or oracle probe was observed.
 - Invalid internal IR can still differ in diagnostic text/abort versus the
   reference's `err()`; valid-input behaviour is what the differential gates
   cover.
+
+## 2026-11-08 second independent audit round
+
+Re-read the upstream-mapped files against \`vendor/qbe\` and deliberately probed
+the port-only surfaces (wasm, la64, JIT/object, interpreter, run-wasm driver).
+The differential corpora and gates were extended rather than replaced.
+
+### Fixed defects
+
+- **Interpreter \`cast\`**: a cast whose destination class is float (\`Ks\`/\`Kd\`)
+  was routed to the floating evaluator and failed with "unsupported single
+  operation cast". Cast is a bit reinterpretation (and may have an integer
+  source), so it is now handled before the class dispatch.
+- **Interpreter \`blit\`**: \`blit0\`/\`blit1\` were unsupported, so \`--run\` could
+  not execute valid IL. It now reproduces QBE's chunked semantics exactly
+  (8/4/2/1-byte load+store chunks; forward chunks low-to-high, backward blits
+  high-to-low), not a byte-wise memmove.
+- **wasm word/long operand mismatch**: QBE lets a \`Kl\` temporary feed a \`Kw\`
+  operand (\`usecheck\` allows it). The wasm emitter used \`local.get\` without
+  \`i32.wrap_i64\` in conversions, \`copy\`, stores, \`jnz\`, returns, phi copies and
+  the extension ops, producing invalid modules for valid input. All these
+  paths now go through the existing \`emit_operand\` helper; comparison results
+  (whose \`tmp.cls\` is \`Kl\` although their wasm local is \`i32\`) are detected so
+  they are not wrapped twice.
+- **\`--run-wasm\` argument marshalling**: the node driver first tried every
+  argument as \`Number\`, then every argument as \`BigInt\`; functions with a mix
+  of i64 and i32 parameters failed with "Cannot convert a BigInt value to a
+  number". The driver now reads the function's parameter types from the WAT
+  header and converts each argument individually.
+- **Regression coverage**: \`tools/check_wasm_runtime.py\` grew from 5 to 9
+  cases (mixed i64/i32 parameters, cast bit patterns, chunked blit, word
+  extensions of long temporaries). New explicit differential corpora:
+  \`test/_audit2_win_abi.ssa\` (structs by value/return, varargs, env, dynamic
+  alloc, stack args), \`test/_audit2_apple_sb.ssa\` (sub-word Apple returns and
+  calls), \`test/_audit2_blit_fwd.ssa\` (forward overlapping blit).
+
+### Verification
+
+- \`moon test\`: **549/549**; \`moon fmt --check\` and \`git diff --check\` clean.
+- Wasm validator **359/359 valid** (14 documented no-linker cases skipped);
+  runtime semantics **9/9**; variadic runtime agrees on interp/wasm (la64 leg
+  skipped when qemu is absent).
+- \`check_all_backends.py\`: amd64 373/373, arm64 373/373, rv64 372/373 (clang
+  quoted-symbol limitation), la64 373/373, wasm 359/373 (documented skips).
+- Win64 stress differential: **16/16** debug flagsets and **1/1** assembly;
+  Apple sub-word stress: **16/16** and **1/1**; ELF assembly differential
+  **444/444**.
+- Route B still reports 12 \`__text\` differences; the inspected ones are the
+  object writer's GOT-based extern-data addressing versus clang's direct
+  PAGE/PAGEOFF form (semantically equivalent), not new defects. The local
+  floating-constant relocation was corrected to PAGE21/PAGEOFF12 earlier.
+

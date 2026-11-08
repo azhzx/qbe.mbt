@@ -1,0 +1,100 @@
+type :s1 = { b 1 }
+type :s4 = { w 1 }
+type :s8 = { l 1 }
+type :big = { l 3 }
+
+function :s1 $ret1(w %x) {
+@start
+ %p =l alloc4 1
+ storeb %x, %p
+ ret %p
+}
+function :s4 $ret4(w %x) {
+@start
+ %p =l alloc4 4
+ storew %x, %p
+ ret %p
+}
+function :s8 $ret8(l %x) {
+@start
+ %p =l alloc8 8
+ storel %x, %p
+ ret %p
+}
+function :big $retbig(l %x) {
+@start
+ %p =l alloc8 24
+ storel %x, %p
+ %q =l add %p, 8
+ storel %x, %q
+ %r =l add %p, 16
+ storel %x, %r
+ ret %p
+}
+
+function l $mix(l %a, d %b, w %c, s %d, l %e, d %f, w %g, s %h, l %i, w %j) {
+@start
+ %t0 =l add %a, %e
+ %t1 =l add %t0, %i
+ %cc =l extsw %c
+ %t2 =l add %t1, %cc
+ %gg =l extsw %g
+ %t3 =l add %t2, %gg
+ %jj =l extsw %j
+ %t4 =l add %t3, %jj
+ ret %t4
+}
+
+function l $calls(l %v, d %d, w %w) {
+@start
+ %a =l call $mix(l %v, d %d, w %w, s s_1.5, l 2, d d_2.5, w 3, s s_3.5, l 4, w 5)
+ %b =l call $ret1(w 7)
+ %c =l call $ret4(w 8)
+ %e =l call $ret8(l 9)
+ %f =l call $retbig(l 10)
+ %g =:s4 call $ret4(w 11)
+ %h =:s8 call $ret8(l 12)
+ %sum =l add %a, %b
+ %sum2 =l add %sum, %c
+ %sum3 =l add %sum2, %e
+ %sum4 =l add %sum3, %f
+ ret %sum4
+}
+
+function l $vsum(l %n, ...) {
+@start
+ %ap =l alloc8 32
+ vastart %ap
+ %x =l vaarg %ap
+ %y =d vaarg %ap
+ %z =w vaarg %ap
+ %zz =l extsw %z
+ %xz =l add %x, %zz
+ ret %xz
+}
+
+function l $vcall(l %n) {
+@start
+ %r =l call $vsum(l %n, l 42, d d_1.5, w 7, l 9, d d_2.5)
+ ret %r
+}
+
+function l $dynalloc(l %n) {
+@start
+ %p =l alloc8 %n
+ storel 42, %p
+ %v =l loadl %p
+ ret %v
+}
+
+function l $envcallee(env %e, l %a) {
+@start
+ %r =l add %e, %a
+ ret %r
+}
+
+function l $envcall(l %a) {
+@start
+ %r =l call $envcallee(env 40, l %a)
+ ret %r
+}

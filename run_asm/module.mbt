@@ -123,6 +123,8 @@ pub fn run_wasm(
       "node " +
       shell_quote(js_path) +
       " " +
+      shell_quote(wat_path) +
+      " " +
       shell_quote(wasm_path) +
       " " +
       shell_quote(func) +
@@ -140,15 +142,30 @@ pub fn run_wasm(
 let driver : String =
   #|const fs = require('fs');
   #|const argv = process.argv;
-  #|const wasmPath = argv[2];
-  #|const func = argv[3];
-  #|const rest = argv.slice(4);
+  #|const watPath = argv[2];
+  #|const wasmPath = argv[3];
+  #|const func = argv[4];
+  #|const rest = argv.slice(5);
+  #|// wasm requires BigInt for i64 parameters and Number for i32/f32/f64.
+  #|// Read the signature from the WAT header instead of guessing per call.
+  #|var types = [];
+  #|try {
+  #|  var lines = fs.readFileSync(watPath, 'utf8').split('\n');
+  #|  for (var i = 0; i < lines.length; i++) {
+  #|    if (lines[i].indexOf('(func $' + func) >= 0) {
+  #|      var re = /\(param\s+\$?\S+\s+(i32|i64|f32|f64)\)/g, m;
+  #|      while ((m = re.exec(lines[i])) !== null) types.push(m[1]);
+  #|      break;
+  #|    }
+  #|  }
+  #|} catch (e) { types = []; }
   #|WebAssembly.instantiate(fs.readFileSync(wasmPath)).then(function(res) {
   #|  var f = res.instance.exports[func];
   #|  if (!f) { console.error('no export ' + func); process.exit(2); }
-  #|  var r;
-  #|  try { r = f.apply(null, rest.map(Number)); }
-  #|  catch (e) { r = f.apply(null, rest.map(BigInt)); }
+  #|  var vals = rest.map(function(v, i) {
+  #|    return types[i] === 'i64' ? BigInt(v) : Number(v);
+  #|  });
+  #|  var r = f.apply(null, vals);
   #|  process.stdout.write(String(r));
   #|}).catch(function(e) { console.error(String(e.message || e)); process.exit(1); });
   #|

@@ -383,6 +383,49 @@ fn Interp::enter_block(
           )
         }
         @types.Nop => ()
+        // blit is a pair: blit0 carries the two addresses, blit1 the signed
+        // size (negative means copy backwards, like C's blit/memmove).
+        @types.Blit0 => ()
+        @types.Blit1 => {
+          if idx == 0 || b.ins[idx - 1].op != @types.Blit0 {
+            raise @util.QbeError::CompileError(
+              "interpreter: blit1 without blit0",
+            )
+          }
+          let b0 = b.ins[idx - 1]
+          let src = self.eval_ref(frame, b0.arg1).reinterpret_as_uint64()
+          let dst = self.eval_ref(frame, b0.arg2).reinterpret_as_uint64()
+          let sz = ins.arg1.rint_val()
+          let n = if sz < 0 { -sz } else { sz }
+          // QBE expands a blit into load/store *chunks* (8/4/2/1 bytes), not a
+          // byte-wise memmove. Forward blits run chunks low-to-high, backward
+          // blits high-to-low; overlapping ranges therefore keep the chunked
+          // semantics of simpl.c (e.g. an 8-byte blit is one 8-byte load+store).
+          let chunks : Array[(Int32, Int32)] = []
+          let mut left = n
+          let mut off = 0
+          for size in [8, 4, 2, 1] {
+            while left >= size {
+              chunks.push((size, off))
+              off = off + size
+              left = left - size
+            }
+          }
+          if sz >= 0 {
+            for c in chunks {
+              let o = c.1.to_int64().reinterpret_as_uint64()
+              let v = self.mem.load_uint(src + o, c.0)
+              self.mem.store_int(dst + o, v.reinterpret_as_int64(), c.0)
+            }
+          } else {
+            for ci in (chunks.length() - 1)>=..0 {
+              let c = chunks[ci]
+              let o = c.1.to_int64().reinterpret_as_uint64()
+              let v = self.mem.load_uint(src + o, c.0)
+              self.mem.store_int(dst + o, v.reinterpret_as_int64(), c.0)
+            }
+          }
+        }
         // Debug info is metadata only.
         @types.Dbgloc => ()
         _ => {

@@ -90,6 +90,65 @@ CASES = [
         "f,42",
         "42",
     ),
+
+    (
+        "i64 parameter used in a word context",
+        """export function w $f(l %a, w %c) {
+@start
+  %b =w add %a, 1
+  %s =w add %b, %c
+  ret %s
+}
+""",
+        "f,41,0",
+        "42",
+    ),
+
+    (
+        "word extensions of a long temporary",
+        """export function w $f(l %a) {
+@start
+  %b =w extsb %a
+  %c =w extsh %a
+  %d =w extub %a
+  %e =w extuh %a
+  %x =w add %b, %c
+  %y =w add %d, %e
+  %z =w add %x, %y
+  ret %z
+}
+""",
+        "f,4294967297",
+        "4",
+    ),
+    (
+        "cast between float and integer bit patterns",
+        """export function w $f(w %a) {
+@start
+  %s =s cast %a
+  %t =s mul %s, s_2.0
+  %u =w cast %t
+  ret %u
+}
+""",
+        "f,7",
+        "14",
+    ),
+    (
+        "forward blit copies chunks",
+        """export function l $f(l %a) {
+@start
+  %p =l alloc8 8
+  %q =l alloc8 8
+  storel %a, %p
+  blit %p, %q, 8
+  %v =l loadl %q
+  ret %v
+}
+""",
+        "f,42",
+        "42",
+    ),
     (
         "long arithmetic and narrow return",
         """export function l $f(l %a, l %b) {

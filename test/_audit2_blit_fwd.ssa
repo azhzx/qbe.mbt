@@ -1,0 +1,12 @@
+export function l $f(l %a) {
+@start
+ %p =l alloc8 16
+ storel %a, %p
+ %q =l add %p, 1
+ %r =l add %p, 8
+ blit %p, %q, 8
+ %v =l loadl %r
+ %w =l loadl %p
+ %x =l xor %v, %w
+ ret %x
+}
