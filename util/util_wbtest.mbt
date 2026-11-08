@@ -48,7 +48,12 @@ test "fmt_fixed handles large, special and signed-zero values" {
   )
   assert_true(fmt_fixed(1.0 / 0.0, 6) == "inf")
   assert_true(fmt_fixed(-1.0 / 0.0, 6) == "-inf")
-  assert_true(fmt_fixed(0.0 / 0.0, 6) == "nan")
+  // IEEE leaves the sign of 0.0/0.0 unspecified: x86 yields -nan while
+  // arm64 yields +nan, so construct both NaNs from bits instead.
+  let qnan = 0x7FF8000000000000UL.reinterpret_as_int64().reinterpret_as_double()
+  assert_true(fmt_fixed(qnan, 6) == "nan")
+  let nnan = 0xFFF8000000000000UL.reinterpret_as_int64().reinterpret_as_double()
+  assert_true(fmt_fixed(nnan, 6) == "-nan")
   assert_true(fmt_fixed(-0.0, 6) == "-0.000000")
   assert_true(fmt_fixed(5.0e-324, 6) == "0.000000")
 }
