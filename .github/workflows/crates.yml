@@ -31,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15-arm64
+          - os: macos-15
             triple: aarch64-apple-darwin
           - os: ubuntu-latest
             triple: x86_64-unknown-linux-gnu
@@ -90,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-15-arm64, ubuntu-latest, ubuntu-24.04-arm ]
+        os: [ macos-15, ubuntu-latest, ubuntu-24.04-arm ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
