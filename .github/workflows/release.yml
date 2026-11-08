@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15-arm64
             asset: qbe-macos-aarch64
           - os: ubuntu-latest
             asset: qbe-linux-x86_64
