@@ -6,7 +6,7 @@
 priv struct AClass {
   mut inmem : Int32
   mut align : Int32
-  mut size : Int32
+  mut size : UInt32
   cls : Array[@types.Class] // 2 slots
   r : Array[@types.Ref] // 2 slots
 }
@@ -133,15 +133,16 @@ fn classify(
 
 ///|
 fn typclass(st : AbiState, a : AClass, t : @types.Typ) -> AClass {
-  let mut sz = t.size
-  let mut al = 1 << t.align
+  // C uses uint locals: truncate size and retain unsigned alignment bits.
+  let mut sz = t.size & 0xffffffffL
+  let mut al = 1U << t.align
   // the ABI requires sizes rounded up to a multiple of 8
   if al < 8 {
     al = 8
   }
   let al64 = al.to_int64()
-  sz = (sz + al64 - 1L) & -al64
-  a.size = sz.to_int()
+  sz = (sz + al64 - 1L) & -al64 & 0xffffffffL
+  a.size = sz.to_int().reinterpret_as_uint()
   a.align = t.align
   if t.dark != 0 || sz > 16 || sz == 0 {
     a.inmem = 1
@@ -160,7 +161,7 @@ fn retr(reg : Array[@types.Ref], aret : AClass) -> Int32 {
   let mut nr1 = 0
   let mut ca = 0
   let mut n = 0
-  while n * 8 < aret.size {
+  while n.reinterpret_as_uint() * 8U < aret.size {
     let k = aret.cls[n].base()
     if k == 0 {
       // int return regs: RAX then RDX
@@ -269,7 +270,9 @@ fn argsclass(
   ac : Array[AClass],
   op : @types.Op,
   aret : AClass?,
-) -> Int32 {
+) -> Int32 raise {
+  let mut varc = false
+  let mut envc = false
   let mut nint = if aret is Some(a) && a.inmem != 0 { 5 } else { 6 }
   let mut nsse = 8
   let par = op == @types.Par
@@ -301,7 +304,7 @@ fn argsclass(
         let mut ni = 0
         let mut ns = 0
         let mut nn = 0
-        while nn * 8 < ac[a].size {
+        while nn.reinterpret_as_uint() * 8U < ac[a].size {
           if ac[a].cls[nn].base() == 0 {
             ni = ni + 1
           } else {
@@ -317,15 +320,23 @@ fn argsclass(
         }
       }
     } else if cur.op == @types.Arge || cur.op == @types.Pare {
+      envc = true
       if par {
         st.env = cur.to
       } else {
         st.env = cur.arg1
       }
+    } else if cur.op == @types.Argv {
+      varc = true
     }
     a = a + 1
   }
-  ((6 - nint) << 4) | ((8 - nsse) << 8)
+  if varc && envc {
+    raise @util.QbeError::Ice("sysv abi does not support variadic env calls")
+  }
+  ((if varc || envc { 1 } else { 0 }) << 12) |
+  ((6 - nint) << 4) |
+  ((8 - nsse) << 8)
 }
 
 ///|

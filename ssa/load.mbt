@@ -165,7 +165,7 @@ fn load(st : LoadState, sl : Slice, msk : UInt64, l : Loc) -> @types.Ref {
           bits: @types.ConBits::{ i: a.offset, d: 0.0, s: 0.0, },
           flt: 0,
           is_local: false,
-          sym_type: 0,
+          sym_type: a.sym_type,
         })
         r = @types.Ref::con(c)
       }
@@ -177,6 +177,25 @@ fn load(st : LoadState, sl : Slice, msk : UInt64, l : Loc) -> @types.Ref {
     r = mask(st, r, cls, msk, l)
   }
   r
+}
+
+///|
+// C load.c rebase: canonicalize small offsets to the underlying alias base.
+fn rebase(st : LoadState, sl : Slice) -> Slice {
+  if sl.r.is_tmp() {
+    let a = st.fn_.tmps[sl.r.tmp_val()].alias_info
+    if a.offset >= -32768L && a.offset <= 32767L {
+      if a.kind == @types.ALoc || a.kind == @types.AEsc || a.kind == @types.AUnk {
+        return Slice::{
+          r: a.base,
+          off: a.offset.to_int(),
+          sz: sl.sz,
+          cls: sl.cls,
+        }
+      }
+    }
+  }
+  sl
 }
 
 ///|
@@ -467,12 +486,8 @@ fn icmp(a : Insert, b : Insert) -> Int32 {
     return a.rpo_id - b.rpo_id
   }
   if a.isphi && b.isphi {
-    // C's icmp returns 0 here (same block, both phis), and the reference runs
-    // on a platform whose qsort leaves equal keys in place, so its phi order
-    // ends up being the insertion order. qsort_c is deliberately unstable, so
-    // keying on `num` - a unique, monotone insertion counter - reproduces that
-    // same order without depending on sort stability.
-    return a.num - b.num
+    // C load.c icmp returns 0 for two phis of the same block.
+    return 0
   }
   if a.isphi {
     return -1
@@ -504,7 +519,7 @@ pub fn loadopt(
         continue
       }
       let sz = loadsz(ins)
-      let sl = Slice::{ r: ins.arg1, off: 0, sz, cls: ins.cls, }
+      let sl = rebase(st, Slice::{ r: ins.arg1, off: 0, sz, cls: ins.cls, })
       let l = Loc::{ kind: LocType::LRoot, off: ii, blk: b_id, }
       fn_.blks[b_id].ins[ii].arg2 = def(st, sl, mask_of(sz), b_id, ii, l)
     }

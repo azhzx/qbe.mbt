@@ -80,8 +80,9 @@ fn sp_slot(st : SpillState, t : Int32) -> @types.Ref {
 
 ///|
 fn tcmp0(st : SpillState, pa : Int32, pb : Int32) -> Int32 {
-  let ca = st.fn_.tmps[pa].cost
-  let cb = st.fn_.tmps[pb].cost
+  // C tcmp0 compares uint costs, including wrapped loop-weight sums.
+  let ca = st.fn_.tmps[pa].cost.reinterpret_as_uint()
+  let cb = st.fn_.tmps[pb].cost.reinterpret_as_uint()
   if cb < ca {
     -1
   } else if cb > ca {

@@ -70,17 +70,21 @@ fn foldint(
         return (true, @types.Con::new())
       }
       lab = cl.label
+      sym_type = cl.sym_type
       typ = @types.CAddr
     } else if cr.kind == @types.CAddr {
       lab = cr.label
+      sym_type = cr.sym_type
       typ = @types.CAddr
     }
   } else if op == @types.Sub {
     if cl.kind == @types.CAddr {
       if cr.kind != @types.CAddr {
         lab = cl.label
+        sym_type = cl.sym_type
         typ = @types.CAddr
-      } else if cl.label != cr.label {
+      } else if cl.label != cr.label || cl.sym_type != cr.sym_type {
+        // C util.c symeq compares both the symbol id and its type bits.
         return (true, @types.Con::new())
       }
     } else if cr.kind == @types.CAddr {
@@ -322,9 +326,8 @@ fn foldflt(
       @types.Mul => ls * rs
       @types.Swtof => Float::from_double(sext32(cl.bits.i).to_double())
       @types.Uwtof => Float::from_double(zx32_fold(cl.bits.i).to_double())
-      @types.Sltof => Float::from_double(cl.bits.i.to_double())
-      @types.Ultowf =>
-        Float::from_double(cl.bits.i.reinterpret_as_uint64().to_double())
+      @types.Sltof => @types.f32_from_int64(cl.bits.i)
+      @types.Ultowf => @types.f32_from_uint64(cl.bits.i.reinterpret_as_uint64())
       @types.Truncd => Float::from_double(con_double(cl))
       @types.Cast => ls
       _ => abort("unreachable")
@@ -361,9 +364,15 @@ fn opfold(
   if is_bot {
     return BOT
   }
+  // C opfold: a non-wide word result is truncated to 32 bits.
+  let x = if cls == @types.Kw || cls == @types.Ks {
+    c.bits.i & 0xFFFFFFFFL
+  } else {
+    c.bits.i
+  }
   if c.kind == @types.CBits {
     if c.flt == 0 {
-      st.fn_.get_con(c.bits.i)
+      st.fn_.get_con(x)
     } else {
       st.fn_.get_con_by(c)
     }

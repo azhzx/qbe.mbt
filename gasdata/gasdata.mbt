@@ -106,10 +106,15 @@ fn emitlnk(
     sb.write_string(pfx + n + sfx + "\n\n")
   }
   if sec[0] != "" {
-    // C parse.c stores the Tstr token (including quotes) in Lnk.sec/secf.
-    sb.write_string(".section \"\{sec[0]}\"")
-    if secf[0] != "" {
-      sb.write_string(",\"\{secf[0]}\"")
+    if apple && is_thread[0] {
+      // emit.c synthesizes raw assembler fields, not quoted Tstr tokens.
+      sb.write_string(".section \{sec[0]},\{secf[0]}")
+    } else {
+      // Source section fields are Tstr tokens whose quotes were stripped.
+      sb.write_string(".section \"\{sec[0]}\"")
+      if secf[0] != "" {
+        sb.write_string(",\"\{secf[0]}\"")
+      }
     }
   } else {
     sb.write_string(sec_of(is_thread[0], s))

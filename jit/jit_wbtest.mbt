@@ -273,3 +273,31 @@ test "run-asm: execute in-memory arm64 code (self-contained)" {
   assert_eq(m.call1(41L), 42L)
   assert_eq(m.call1(0L), 1L)
 }
+
+///|
+// Route B: pointer values inside the data image must be rebased to the mapped
+// address, not left as section-relative offsets.
+test "jit module rebases pointer data in the image" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|data $x = { l 42 }
+    #|data $p = { l $x }
+    #|export
+    #|function l $load_p() {
+    #|@start
+    #|  %a =l loadl $p
+    #|  %v =l loadl %a
+    #|  ret %v
+    #|}
+    #|
+  let m = @qbe.compile_arm64_bin_module(src) catch {
+    e => abort("route B compile failed: {Repr(e)}")
+  }
+  let jm = JitModule::from_bin_module(m) catch {
+    e => abort("jit load failed: {Repr(e)}")
+  }
+  assert_eq(jm.call_i64_1("load_p", 0L), 42L)
+  jm.close()
+}

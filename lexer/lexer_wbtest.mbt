@@ -159,3 +159,16 @@ test "quoted global symbols keep their quotes" {
   assert_true(toks[1].kind == TGlo)
   assert_true(toks[1].raw == "plain")
 }
+
+///|
+test "prefixed names require a valid identifier start" {
+  let temp = Lexer::new("%1", "<test>").tokenize()
+  assert_eq(temp[0].kind, TErr)
+  assert_eq(temp[0].raw, "%")
+  let global = Lexer::new("$1", "<test>").tokenize()
+  assert_eq(global[0].kind, TErr)
+  assert_eq(global[0].raw, "$")
+  let label = Lexer::new("@1", "<test>").tokenize()
+  assert_eq(label[0].kind, TErr)
+  assert_eq(label[0].raw, "@")
+}

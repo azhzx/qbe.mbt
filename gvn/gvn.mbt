@@ -377,7 +377,7 @@ fn c_foldint(
         typ = @types.CAddr
         lab = cl.label
         sym_type = cl.sym_type
-      } else if cl.label != cr.label {
+      } else if cl.label != cr.label || cl.sym_type != cr.sym_type {
         return None
       }
     } else if cr.kind == @types.CAddr {
@@ -603,9 +603,8 @@ fn c_foldflt(
       @types.Mul => ls * rs
       @types.Swtof => Float::from_double(sext32(cl.bits.i).to_double())
       @types.Uwtof => Float::from_double(low32u(cl.bits.i).to_double())
-      @types.Sltof => Float::from_double(cl.bits.i.to_double())
-      @types.Ultowf =>
-        Float::from_double(cl.bits.i.reinterpret_as_uint64().to_double())
+      @types.Sltof => @types.f32_from_int64(cl.bits.i)
+      @types.Ultowf => @types.f32_from_uint64(cl.bits.i.reinterpret_as_uint64())
       @types.Truncd => Float::from_double(con_double(cl))
       @types.Cast => ls
       _ => return None
@@ -856,7 +855,7 @@ fn uwl(st : GState, r : @types.Ref, w : Int32) -> Bool {
     match u.kind {
       @types.UPhi => {
         let p = fn_.blks[u.blk_id].phi[u.ins_idx]
-        if st.phi_visit[p.to.tmp_val()] != 0 || p.to.is_none() {
+        if p.to.is_none() || st.phi_visit[p.to.tmp_val()] != 0 {
           continue
         }
         st.phi_visit[p.to.tmp_val()] = 1
@@ -1239,7 +1238,7 @@ fn gvndup(st : GState, i : @types.Ins, insert : Bool) -> @types.Ins? {
     match st.tbl[idx] {
       None => {
         if insert {
-          st.tbl[idx] = Some(ins_copy(i))
+          st.tbl[idx] = Some(i)
         }
         searching = false
       }
@@ -1676,7 +1675,10 @@ fn rebuildcfg(st : GState) -> Unit raise {
       let i = b.ins[idx]
       if !op_pinned(i) {
         match gvndup(st, i, false) {
-          Some(ii) => if ins_eq(ii, i) { fn_.blks[s_id].ins.push(ins_copy(i)) }
+          Some(ii) =>
+            if physical_equal(ii, i) {
+              fn_.blks[s_id].ins.push(ins_copy(i))
+            }
           None => ()
         }
       }

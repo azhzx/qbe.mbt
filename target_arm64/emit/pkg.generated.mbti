@@ -42,6 +42,7 @@ pub(all) struct Arm64BinModule {
   datas : Array[(String, Int32)]
   exports : Array[String]
   code_bytes : Int32
+  data_refs : Array[(Int32, String, Int32, Int32)]
 }
 pub fn Arm64BinModule::image(Self) -> Bytes
 

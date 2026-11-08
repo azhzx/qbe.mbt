@@ -78,6 +78,7 @@ test "la64 emit: simple add function" {
       #|	ld.d $ra, $fp, 8
       #|	ld.d $fp, $fp, 0
       #|	ret
+      #|	.type add, @function
       #|	.size add, .-add
       #|
     ),
@@ -128,6 +129,7 @@ test "la64 emit: conditional branch and loop labels" {
       #|	ld.d $ra, $fp, 8
       #|	ld.d $fp, $fp, 0
       #|	ret
+      #|	.type count, @function
       #|	.size count, .-count
       #|
     ),

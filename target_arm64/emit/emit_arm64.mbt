@@ -569,6 +569,33 @@ fn arm64_emit_asm(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
+// Materialize an oversized slot offset into a scratch register (C arm64
+// emit.c fixarg). Returns (true, r) when the slot is too large for the
+// instruction's scaled immediate and t < 0 leaves it to the caller.
+fn arm64_fixarg(
+  st : Arm64EmitState,
+  r : @types.Ref,
+  sz : Int32,
+  t : Int32,
+) -> (Bool, @types.Ref) raise {
+  if r.is_slot() {
+    let s = arm64_slot(st, r.slot_val())
+    if s.to_int64() > sz.to_int64() * 4095L {
+      if t < 0 {
+        return (true, r)
+      }
+      let addr = @types.Ref::tmp(t)
+      arm64_emitins(
+        st,
+        @types.Ins::new(@types.Addr, @types.Kl, addr, r, @types.Ref::none()),
+      )
+      return (false, addr)
+    }
+  }
+  (false, r)
+}
+
+///|
 // Emit a single instruction (C emitins in arm64/emit.c).
 fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
   let sb = st.sb
@@ -617,11 +644,42 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       }
     @types.Addr =>
       if i.arg1.is_slot() {
-        sb.write_string("\tadd\t")
-        sb.write_string(arm64_rname(i.to.tmp_val(), @types.Kl))
-        sb.write_string(", x29, #")
-        sb.write_string(arm64_slot(st, i.arg1.slot_val()).to_string())
-        sb.write_char('\n')
+        let rn = arm64_rname(i.to.tmp_val(), @types.Kl)
+        let s = arm64_slot(st, i.arg1.slot_val())
+        if s <= 4095 {
+          sb.write_string("\tadd\t")
+          sb.write_string(rn)
+          sb.write_string(", x29, #")
+          sb.write_string(s.to_string())
+          sb.write_char('\n')
+        } else if s <= 65535 {
+          sb.write_string("\tmov\t")
+          sb.write_string(rn)
+          sb.write_string(", #")
+          sb.write_string(s.to_string())
+          sb.write_char('\n')
+          sb.write_string("\tadd\t")
+          sb.write_string(rn)
+          sb.write_string(", x29, ")
+          sb.write_string(rn)
+          sb.write_char('\n')
+        } else {
+          sb.write_string("\tmov\t")
+          sb.write_string(rn)
+          sb.write_string(", #")
+          sb.write_string((s & 0xFFFF).to_string())
+          sb.write_char('\n')
+          sb.write_string("\tmovk\t")
+          sb.write_string(rn)
+          sb.write_string(", #")
+          sb.write_string((s >> 16).to_string())
+          sb.write_string(", lsl #16\n")
+          sb.write_string("\tadd\t")
+          sb.write_string(rn)
+          sb.write_string(", x29, ")
+          sb.write_string(rn)
+          sb.write_char('\n')
+        }
       } else {
         raise @util.QbeError::Ice("invalid address")
       }
@@ -657,7 +715,55 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
         sb.write_string(", sp\n")
       }
     }
-    _ => arm64_emit_table(st, i)
+    _ => {
+      // C arm64/emit.c: oversized slot offsets are materialized before the
+      // instruction because scaled immediates only cover sz*4095 bytes.
+      let mut handled = false
+      if i.op.is_load() {
+        let (_, r1) = arm64_fixarg(st, i.arg1, i.load_size(), @types.ARM64_IP1)
+        i.arg1 = r1
+      }
+      if i.op.is_store() {
+        let t = if st.apple { -1 } else { @types.ARM64_R18 }
+        let (need, r2) = arm64_fixarg(st, i.arg2, i.store_size(), t)
+        if need {
+          if i.arg1.is_tmp() && i.arg1.tmp_val() == @types.ARM64_IP1 {
+            // The value lives in x17, which fixarg needs for the address.
+            // C moves it to V31 and stores through the double/float alias.
+            sb.write_string("\tfmov\ts31, w17\n")
+            let (_, r3) = arm64_fixarg(
+              st,
+              i.arg2,
+              i.store_size(),
+              @types.ARM64_IP1,
+            )
+            i.arg2 = r3
+            let syn = @types.Ins::new(
+              @types.Stores,
+              @types.Ks,
+              @types.Ref::none(),
+              @types.Ref::none(),
+              i.arg2,
+            )
+            arm64_emitf(st, "str %?, %M1", syn)
+            handled = true
+          } else {
+            let (_, r3) = arm64_fixarg(
+              st,
+              i.arg2,
+              i.store_size(),
+              @types.ARM64_IP1,
+            )
+            i.arg2 = r3
+          }
+        } else {
+          i.arg2 = r2
+        }
+      }
+      if !handled {
+        arm64_emit_table(st, i)
+      }
+    }
   }
 }
 
@@ -680,8 +786,11 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   st.padding = 4 * (f - fn_.slot)
   st.frame = 4 * f + 8 * o
 
-  // C arm64/emit.c forces the function alignment to 4 for the Mach-O flavor.
-  // C emitlnk (shared with the other GAS targets).
+  // C arm64/emit.c forces the function alignment to 4 for the Mach-O flavor
+  // before emitfnlnk reads it.
+  if st.apple {
+    fn_.align = 4
+  }
   @gasdata.emitfnlnk(fn_, st.gassym, sb)
   // DWARF CFI is opt-in (-g): the default output stays byte-identical to the
   // reference, which emits no .cfi directives.
@@ -712,20 +821,35 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
   }
 
-  if st.frame + 16 > 512 {
-    sb.write_string("\tsub\tsp, sp, #")
-    sb.write_string(st.frame.to_string())
-    sb.write_char('\n')
+  if st.frame + 16 <= 512 {
+    sb.write_string("\tstp\tx29, x30, [sp, -")
+    sb.write_string((st.frame + 16).to_string())
+    sb.write_string("]!\n")
+  } else {
+    if st.frame <= 4095 {
+      sb.write_string("\tsub\tsp, sp, #")
+      sb.write_string(st.frame.to_string())
+      sb.write_char('\n')
+    } else if st.frame <= 65535 {
+      sb.write_string("\tmov\tx16, #")
+      sb.write_string(st.frame.to_string())
+      sb.write_char('\n')
+      sb.write_string("\tsub\tsp, sp, x16\n")
+    } else {
+      sb.write_string("\tmov\tx16, #")
+      sb.write_string((st.frame & 0xFFFF).to_string())
+      sb.write_char('\n')
+      sb.write_string("\tmovk\tx16, #")
+      sb.write_string((st.frame >> 16).to_string())
+      sb.write_string(", lsl #16\n")
+      sb.write_string("\tsub\tsp, sp, x16\n")
+    }
     if dbg {
       sb.write_string("\t.cfi_def_cfa_offset ")
       sb.write_string((voff + st.frame).to_string())
       sb.write_char('\n')
     }
     sb.write_string("\tstp\tx29, x30, [sp, -16]!\n")
-  } else {
-    sb.write_string("\tstp\tx29, x30, [sp, -")
-    sb.write_string((st.frame + 16).to_string())
-    sb.write_string("]!\n")
   }
   if dbg {
     sb.write_string("\t.cfi_def_cfa_offset ")
@@ -805,15 +929,30 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
         if fn_.is_vararg && !st.apple {
           oo = oo + 192
         }
-        if oo > 504 {
-          sb.write_string("\tldp\tx29, x30, [sp], 16\n")
-          sb.write_string("\tadd\tsp, sp, #")
-          sb.write_string((oo - 16).to_string())
-          sb.write_char('\n')
-        } else {
+        if oo <= 504 {
           sb.write_string("\tldp\tx29, x30, [sp], ")
           sb.write_string(oo.to_string())
           sb.write_char('\n')
+        } else {
+          sb.write_string("\tldp\tx29, x30, [sp], 16\n")
+          if oo - 16 <= 4095 {
+            sb.write_string("\tadd\tsp, sp, #")
+            sb.write_string((oo - 16).to_string())
+            sb.write_char('\n')
+          } else if oo - 16 <= 65535 {
+            sb.write_string("\tmov\tx16, #")
+            sb.write_string((oo - 16).to_string())
+            sb.write_char('\n')
+            sb.write_string("\tadd\tsp, sp, x16\n")
+          } else {
+            sb.write_string("\tmov\tx16, #")
+            sb.write_string(((oo - 16) & 0xFFFF).to_string())
+            sb.write_char('\n')
+            sb.write_string("\tmovk\tx16, #")
+            sb.write_string(((oo - 16) >> 16).to_string())
+            sb.write_string(", lsl #16\n")
+            sb.write_string("\tadd\tsp, sp, x16\n")
+          }
         }
         if dbg {
           sb.write_string("\t.cfi_def_cfa sp, 0\n")

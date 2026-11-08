@@ -160,7 +160,7 @@ pub const Arm64NGPR : Int32 = 32
 
 pub const Arm64NGPS : Int32 = 20
 
-pub const Arm64NRGLOB : Int32 = 3
+pub const Arm64NRGLOB : Int32 = 4
 
 pub const Arm64Tmp0 : Int32 = 64
 
@@ -376,6 +376,8 @@ pub const La64Tmp0 : Int32 = 64
 
 pub const NCLR : Int32 = 5
 
+pub const NCLR_WIN : Int32 = 7
+
 pub const NFPR : Int32 = 15
 
 pub const NFPS : Int32 = 15
@@ -383,6 +385,8 @@ pub const NFPS : Int32 = 15
 pub const NGPR : Int32 = 16
 
 pub const NGPS : Int32 = 9
+
+pub const NGPS_WIN : Int32 = 7
 
 pub const NRGLOB : Int32 = 2
 
@@ -426,7 +430,7 @@ pub const Rv64KmIsWide : Int32 = 1
 
 pub const Rv64NCLR : Int32 = 23
 
-pub const Rv64NFPR : Int32 = 32
+pub const Rv64NFPR : Int32 = 31
 
 pub const Rv64NFPS : Int32 = 19
 
@@ -556,6 +560,12 @@ pub fn decode_data_string(String) -> Array[Int32]
 
 pub fn dumpts(BSet, Array[Tmp]) -> String
 
+pub fn f32_bits_from_uint64(UInt64, Bool) -> UInt32
+
+pub fn f32_from_int64(Int64) -> Float
+
+pub fn f32_from_uint64(UInt64) -> Float
+
 pub fn fp_stash_at(Int32) -> FpBits
 
 pub fn fp_stash_len() -> Int32
@@ -565,6 +575,8 @@ pub fn fp_stash_reset() -> Unit
 pub fn gasstash(Int64, Int64, Int32) -> Int32
 
 pub fn init_amd64_target() -> Unit
+
+pub fn init_amd64_win_target() -> Unit
 
 pub fn init_arm64_target() -> Unit
 
@@ -590,9 +602,13 @@ pub fn phicls(Int32, Array[Tmp]) -> Int32
 
 pub let rclob : Array[Int32]
 
+pub let rclob_win : Array[Int32]
+
 pub fn rglob_mask() -> UInt64
 
 pub let rsave : Array[Int32]
+
+pub let rsave_win : Array[Int32]
 
 pub let rv64_rclob : Array[Int32]
 
@@ -619,6 +635,10 @@ pub let wasm_rsave : Array[Int32]
 pub fn wasm_store_op(Class) -> String
 
 pub fn wasm_type_name(Class) -> String
+
+pub fn win_argregs(Ref) -> (UInt64, Int32, Int32)
+
+pub fn win_retregs(Ref) -> (UInt64, Int32, Int32)
 
 // Errors
 
@@ -887,9 +907,11 @@ pub(all) struct Ins {
   mut arg2 : Ref
   mut asm_text : String
 }
+pub fn Ins::load_size(Self) -> Int32
 pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
 pub fn Ins::new_asm(Class, Ref, Ref, Ref, String) -> Self
 pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
+pub fn Ins::store_size(Self) -> Int32
 
 #derive(@debug.Debug)
 pub(all) struct Jump {
@@ -1248,6 +1270,7 @@ pub fn TmpWidth::from_code(Int32) -> Self
 pub(all) struct Typ {
   mut name : String
   mut dark : Int32
+  mut isunion : Bool
   mut align : Int32
   mut size : Int64
   mut nunion : Int32

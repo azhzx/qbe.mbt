@@ -234,8 +234,8 @@ pub const Arm64NFPS : Int32 = 23
 pub const Arm64NCLR : Int32 = 18
 
 ///|
-// Number of globally live registers (FP, SP, R18).
-pub const Arm64NRGLOB : Int32 = 3
+// Number of globally live registers (FP, SP, IP1, R18).
+pub const Arm64NRGLOB : Int32 = 4
 
 ///|
 // ARM64 caller-save register list (C arm64_rsave in targ.c).
@@ -348,6 +348,7 @@ pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int32, Int32) {
   let mut ngp = (v >> 5) & 15
   let mut nfp = (v >> 9) & 15
   let x8 = (v >> 13) & 1
+  let x9 = (v >> 14) & 1
   while ngp > 0 {
     ngp = ngp - 1
     b = b | (1UL << (ARM64_R0 + ngp))
@@ -359,7 +360,10 @@ pub fn Ref::arm64_argregs(self : Ref) -> (UInt64, Int32, Int32) {
   if x8 != 0 {
     b = b | (1UL << ARM64_R8)
   }
-  (b, ((v >> 5) & 15) + x8, (v >> 9) & 15)
+  if x9 != 0 {
+    b = b | (1UL << ARM64_R9)
+  }
+  (b, ((v >> 5) & 15) + x8 + x9, (v >> 9) & 15)
 }
 
 ///|

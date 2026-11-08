@@ -779,6 +779,10 @@ fn la64_emitfn(st : La64EmitState) -> Unit raise {
     }
   }
 
+  st.sb.write_string("\t.type ")
+  st.sb.write_string(st.gassym)
+  st.sb.write_string(fn_.name)
+  st.sb.write_string(", @function\n")
   st.sb.write_string("\t.size ")
   st.sb.write_string(st.gassym)
   st.sb.write_string(fn_.name)

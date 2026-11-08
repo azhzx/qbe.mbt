@@ -54,12 +54,25 @@ fn sel_emit(st : IselState, i : @types.Ins) -> Unit {
   emiti(st, i)
   let idx = st.buf.length() - 1
   st.buf[idx].arg1 = fixarg(st, st.buf[idx].arg1, argcls(i, 0), Some(i.op))
-  st.buf[idx].arg2 = fixarg(st, st.buf[idx].arg2, argcls(i, 1), Some(i.op))
+  st.buf[idx].arg2 = fixarg(
+    st,
+    st.buf[idx].arg2,
+    argcls(i, 1),
+    Some(i.op),
+    arg_index=1,
+  )
 }
 
 ///|
 // Select a single instruction (C sel).
 fn sel(st : IselState, i : @types.Ins) -> Unit raise {
+  if i.op == @types.InlineAsm {
+    raise @util.QbeError::CompileError(
+      "amd64: inline assembly is not supported",
+    )
+  }
+  // C sel receives Ins by value; keep source instructions independent.
+  let i = @types.Ins::new(i.op, i.cls, i.to, i.arg1, i.arg2)
   if i.to.is_tmp() {
     if !isreg(i.to) && !isreg(i.arg1) && !isreg(i.arg2) {
       if st.fn_.tmps[i.to.tmp_val()].nuse == 0 {
@@ -90,6 +103,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           r0 = isel_newtmp(st, k)
         } else {
           r0 = i.arg2
+        }
+        if rslot(r0, st.fn_) != -1 {
+          raise @util.QbeError::Ice("unlikely division argument")
         }
         if i.op == @types.Div || i.op == @types.Rem {
           emit(st, @types.Xidiv, k, @types.Ref::none(), r0, @types.Ref::none())
@@ -198,6 +214,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
         sel_emit(st, i)
       } else {
         let r0 = i.arg2
+        if rslot(r0, st.fn_) != -1 {
+          raise @util.QbeError::Ice("unlikely shift argument")
+        }
         let i1 = i
         i1.arg2 = @types.Ref::tmp(@types.RCX)
         emit(
@@ -268,6 +287,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
       st.fn_.has_dynalloc = true
       if i.arg1.is_con() {
         let mut sz = st.fn_.cons[i.arg1.con_val()].bits.i
+        if sz < 0L || sz >= 2147483632L {
+          raise @util.QbeError::Ice("invalid alloc size \{sz}")
+        }
         sz = (sz + 15L) & -16L
         emit(
           st,
@@ -278,6 +300,9 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
           @types.Ref::none(),
         )
       } else {
+        if rslot(i.arg1, st.fn_) != -1 {
+          raise @util.QbeError::Ice("unlikely alloc argument")
+        }
         let r0 = isel_newtmp(st, @types.Kl)
         let r1 = isel_newtmp(st, @types.Kl)
         emit(st, @types.Salloc, @types.Kl, i.to, r0, @types.Ref::none())
@@ -311,7 +336,37 @@ fn sel(st : IselState, i : @types.Ins) -> Unit raise {
       } else {
         let (is_cmp, kc, x) = iscmp(i.op)
         if is_cmp {
-          emit(st, flag_op(x), k, i.to, @types.Ref::none(), @types.Ref::none())
+          let mut to = i.to
+          if x == NCMPI + 0 || x == NCMPI + 5 {
+            let r0 = isel_newtmp(st, @types.Kw)
+            let r1 = isel_newtmp(st, @types.Kw)
+            emit(
+              st,
+              if x == NCMPI + 0 {
+                @types.And
+              } else {
+                @types.Or
+              },
+              @types.Kw,
+              to,
+              r0,
+              r1,
+            )
+            emit(
+              st,
+              if x == NCMPI + 0 {
+                @types.Flagfo
+              } else {
+                @types.Flagfuo
+              },
+              k,
+              r1,
+              @types.Ref::none(),
+              @types.Ref::none(),
+            )
+            to = r0
+          }
+          emit(st, flag_op(x), k, to, @types.Ref::none(), @types.Ref::none())
           let idx = st.buf.length() - 1
           if selcmp(st, i.arg1, i.arg2, kc, x) {
             st.buf[idx].op = flag_op(cmpop(x))
@@ -467,13 +522,11 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
     b.jmp.kind = jjf_op(1)
   } else {
     let (is_cmp, k, c) = iscmp(b.ins[fi].op)
-    if is_cmp {
+    if is_cmp && c != NCMPI + 0 && c != NCMPI + 5 {
+      let swap = cmpswap(b.ins[fi].arg1, c)
+      let c1 = if swap { cmpop(c) } else { c }
       if t >= 0 && st.fn_.tmps[t].nuse == 1 {
-        let c1 = if selcmp(st, b.ins[fi].arg1, b.ins[fi].arg2, k, c) {
-          cmpop(c)
-        } else {
-          c
-        }
+        selcmp_swap(st, b.ins[fi].arg1, b.ins[fi].arg2, k, swap)
         b.ins[fi] = @types.Ins::new(
           @types.Nop,
           @types.Kx,
@@ -483,7 +536,7 @@ fn seljmp(st : IselState, b : @types.Blk) -> Unit {
         )
         b.jmp.kind = jjf_op(c1)
       } else {
-        b.jmp.kind = jjf_op(c)
+        b.jmp.kind = jjf_op(c1)
       }
     } else if b.ins[fi].op == @types.And &&
       t >= 0 &&
@@ -522,8 +575,9 @@ pub fn isel(
   interner : @util.Interner,
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
+  apple~ : Bool = false,
 ) -> String raise {
-  let st = IselState::{ fn_, buf: [], an: [], cur_ins: [], interner, }
+  let st = IselState::{ fn_, buf: [], an: [], cur_ins: [], interner, apple, }
 
   // assign slots to fast allocs in the start block
   let start = fn_.blks[fn_.start_id]
@@ -538,8 +592,14 @@ pub fn isel(
           break
         }
         let mut sz = fn_.cons[i.arg1.con_val()].bits.i
+        if sz < 0L || sz >= 2147483632L {
+          raise @util.QbeError::Ice("invalid alloc size \{sz}")
+        }
         sz = (sz + n.to_int64() - 1L) & -n.to_int64()
         sz = sz / 4L
+        if sz > 2147483647L - fn_.slot.to_int64() {
+          raise @util.QbeError::Ice("alloc too large")
+        }
         fn_.tmps[i.to.tmp_val()].slot = fn_.slot
         fn_.slot = fn_.slot + sz.to_int()
         // C amd64/isel.c: salign = 2 + al - Oalloc.

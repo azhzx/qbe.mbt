@@ -20,8 +20,9 @@ test "e2e la64: return constant word" {
       inspect(
         assembly,
         content=(
-          #|	.globl one
-          #|	.type one, @function
+          #|.text
+          #|.balign 16
+          #|.globl one
           #|one:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -32,6 +33,7 @@ test "e2e la64: return constant word" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type one, @function
           #|	.size one, .-one
           #|/* end function one */
           #|
@@ -58,8 +60,9 @@ test "e2e la64: word arithmetic" {
       inspect(
         assembly,
         content=(
-          #|	.globl arith
-          #|	.type arith, @function
+          #|.text
+          #|.balign 16
+          #|.globl arith
           #|arith:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -72,6 +75,7 @@ test "e2e la64: word arithmetic" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type arith, @function
           #|	.size arith, .-arith
           #|/* end function arith */
           #|
@@ -105,8 +109,9 @@ test "e2e la64: call and branch" {
       inspect(
         assembly,
         content=(
-          #|	.globl rec
-          #|	.type rec, @function
+          #|.text
+          #|.balign 16
+          #|.globl rec
           #|rec:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -129,6 +134,7 @@ test "e2e la64: call and branch" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type rec, @function
           #|	.size rec, .-rec
           #|/* end function rec */
           #|
@@ -162,8 +168,9 @@ test "e2e la64: loop with phi" {
       inspect(
         assembly,
         content=(
-          #|	.globl sum
-          #|	.type sum, @function
+          #|.text
+          #|.balign 16
+          #|.globl sum
           #|sum:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -185,6 +192,7 @@ test "e2e la64: loop with phi" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type sum, @function
           #|	.size sum, .-sum
           #|/* end function sum */
           #|
@@ -212,8 +220,9 @@ test "e2e la64: memory and alloc" {
       inspect(
         assembly,
         content=(
-          #|	.globl mem
-          #|	.type mem, @function
+          #|.text
+          #|.balign 16
+          #|.globl mem
           #|mem:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -223,6 +232,7 @@ test "e2e la64: memory and alloc" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type mem, @function
           #|	.size mem, .-mem
           #|/* end function mem */
           #|
@@ -248,8 +258,9 @@ test "e2e la64: double arithmetic" {
       inspect(
         assembly,
         content=(
-          #|	.globl dmul
-          #|	.type dmul, @function
+          #|.text
+          #|.balign 16
+          #|.globl dmul
           #|dmul:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -260,6 +271,7 @@ test "e2e la64: double arithmetic" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type dmul, @function
           #|	.size dmul, .-dmul
           #|/* end function dmul */
           #|
@@ -285,8 +297,9 @@ test "e2e la64: float constant stash" {
       inspect(
         assembly,
         content=(
-          #|	.globl dadd
-          #|	.type dadd, @function
+          #|.text
+          #|.balign 16
+          #|.globl dadd
           #|dadd:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -299,6 +312,7 @@ test "e2e la64: float constant stash" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type dadd, @function
           #|	.size dadd, .-dadd
           #|/* end function dadd */
           #|
@@ -340,8 +354,9 @@ test "e2e la64: data section" {
           #|	.fill 1,1,0
           #|/* end data */
           #|
-          #|	.globl first
-          #|	.type first, @function
+          #|.text
+          #|.balign 16
+          #|.globl first
           #|first:
           #|	st.d $fp, $sp, -16
           #|	st.d $ra, $sp, -8
@@ -353,6 +368,7 @@ test "e2e la64: data section" {
           #|	ld.d $ra, $fp, 8
           #|	ld.d $fp, $fp, 0
           #|	ret
+          #|	.type first, @function
           #|	.size first, .-first
           #|/* end function first */
           #|

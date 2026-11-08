@@ -27,9 +27,17 @@ fn op_pinned_generated(i : @types.Ins) -> Bool {
     | @types.Sel0
     | @types.Sel1
     | @types.Par
+    | @types.Parsb
+    | @types.Parub
+    | @types.Parsh
+    | @types.Paruh
     | @types.Parc
     | @types.Pare
     | @types.Arg
+    | @types.Argsb
+    | @types.Argub
+    | @types.Argsh
+    | @types.Arguh
     | @types.Argc
     | @types.Arge
     | @types.Argv

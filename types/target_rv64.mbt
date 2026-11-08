@@ -210,7 +210,7 @@ pub const Rv64NGPR : Int32 = 30
 
 ///|
 // Number of float registers (FT0-FS11)
-pub const Rv64NFPR : Int32 = 32
+pub const Rv64NFPR : Int32 = FS11 - FT0 + 1
 
 ///|
 // Number of caller-save GPRs (T0-A7)
@@ -334,7 +334,7 @@ pub fn Ref::rv64_argregs(self : Ref) -> (UInt64, Int32, Int32) {
   let nf = (v >> 8) & 15
   let t5 = (v >> 12) & 1
   for j in 0..<ni {
-    b = b | (1UL << rv64_rsave[j])
+    b = b | (1UL << (A0 + j))
   }
   for j in 0..<nf {
     b = b | (1UL << (FA0 + j))
@@ -424,43 +424,13 @@ pub const Rv64KmIsWide : Int32 = 1
 ///|
 // RISC-V call return registers (C rv64 retregs): A0/A1 and FA0/FA1.
 fn rv64_target_retregs(r : Ref) -> (UInt64, Int32, Int32) {
-  let mut b : UInt64 = 0
-  let v = r.call_val()
-  let ni = v & 3
-  let nf = (v >> 2) & 3
-  if ni >= 1 {
-    b = b | (1UL << A0)
-  }
-  if ni >= 2 {
-    b = b | (1UL << A1)
-  }
-  if nf >= 1 {
-    b = b | (1UL << FA0)
-  }
-  if nf >= 2 {
-    b = b | (1UL << FA1)
-  }
-  (b, ni, nf)
+  r.rv64_retregs()
 }
 
 ///|
-// RISC-V call argument registers (C rv64 argregs): A0.. and FA0...
+// RISC-V call argument registers (C rv64 argregs), including T5 for env.
 fn rv64_target_argregs(r : Ref) -> (UInt64, Int32, Int32) {
-  let mut b : UInt64 = 0
-  let v = r.call_val()
-  let ni = (v >> 4) & 15
-  let nf = (v >> 8) & 15
-  let ra = (v >> 12) & 1
-  for j in 0..<ni {
-    b = b | (1UL << (A0 + j))
-  }
-  for j in 0..<nf {
-    b = b | (1UL << (FA0 + j))
-  }
-  if ra != 0 {
-    b = b | (1UL << A0)
-  }
-  (b, ni + ra, nf)
+  r.rv64_argregs()
 }
 
 ///|
@@ -474,7 +444,8 @@ pub fn init_rv64_target() -> Unit {
   target_cfg.post_call_gpr = Rv64NGPS
   target_cfg.post_call_fpr = Rv64NFPS
   target_cfg.rglob_mask = rv64_rglob_mask()
-  target_cfg.memargs = fn(op) { op_info(op).nmem }
+  // C rv64_memargs: all instruction operands must be in registers.
+  target_cfg.memargs = fn(_op) { 0 }
   target_cfg.rsave = rv64_rsave
   target_cfg.retregs = rv64_target_retregs
   target_cfg.argregs = rv64_target_argregs

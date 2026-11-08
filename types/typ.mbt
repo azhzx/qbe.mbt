@@ -36,6 +36,7 @@ pub fn Field::end() -> Field {
 pub(all) struct Typ {
   mut name : String
   mut dark : Int32
+  mut isunion : Bool // Independent of nunion: a union may have one alternative.
   mut align : Int32
   mut size : Int64
   mut nunion : Int32
@@ -44,7 +45,15 @@ pub(all) struct Typ {
 
 ///|
 pub fn Typ::new(name : String) -> Typ {
-  Typ::{ name, dark: 0, align: 0, size: 0, nunion: 1, fields: [], }
+  Typ::{
+    name,
+    dark: 0,
+    isunion: false,
+    align: 0,
+    size: 0,
+    nunion: 1,
+    fields: [],
+  }
 }
 
 ///|
@@ -84,6 +93,7 @@ pub fn Typ::compute_layout(self : Typ, typs : Array[Typ]) -> Unit {
   let mut members = 0
   while members < self.nunion {
     let mut sz = 0L
+    let mut n = 0
     while fi < self.fields.length() && self.fields[fi].kind != FEnd {
       let f = self.fields[fi]
       fi = fi + 1
@@ -95,17 +105,23 @@ pub fn Typ::compute_layout(self : Typ, typs : Array[Typ]) -> Unit {
       let a = sz & mask
       if a != 0L {
         let pad = mask + 1L - a
-        built.push(Field::new(FPad, pad.to_int()))
+        if n < 32 {
+          built.push(Field::new(FPad, pad.to_int()))
+          n = n + 1
+        }
         sz = sz + pad
       }
-      built.push(f)
+      if n < 32 {
+        built.push(f)
+        n = n + 1
+      }
       sz = sz + fs
     }
-    while fi < self.fields.length() && self.fields[fi].kind == FEnd {
+    if fi < self.fields.length() && self.fields[fi].kind == FEnd {
       fi = fi + 1
     }
     built.push(Field::end())
-    if sz < size {
+    if sz.reinterpret_as_uint64() < size.reinterpret_as_uint64() {
       sz = size
     }
     let a = 1L << al

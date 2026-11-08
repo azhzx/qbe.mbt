@@ -2,5 +2,6 @@ import {
   "azhzx/qbe/types",
   "azhzx/qbe/lexer",
   "azhzx/qbe/util",
+  "moonbitlang/core/bigint",
   "moonbitlang/core/string",
 }

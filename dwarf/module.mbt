@@ -185,12 +185,12 @@ pub fn emit_debug_info(
   off = off +
     (
       1 +
-      producer.length() +
+      @utf8.encode(producer).length() +
       1 +
       2 +
-      cu_name.length() +
+      @utf8.encode(cu_name).length() +
       1 +
-      comp_dir.length() +
+      @utf8.encode(comp_dir).length() +
       1 +
       8 +
       8 +
@@ -210,14 +210,14 @@ pub fn emit_debug_info(
   }
   for n in aggs {
     tmap["agg:" + n] = off
-    off = off + 1 + n.length() + 1 + 4
+    off = off + 1 + @utf8.encode(n).length() + 1 + 4
   }
   let sub_off : Array[Int32] = []
   for f in fns {
     sub_off.push(off)
-    off = off + 1 + (f.name.length() + 1) + 8 + 8 + 2
+    off = off + 1 + (@utf8.encode(f.name).length() + 1) + 8 + 8 + 2
     for l in f.locs {
-      off = off + 1 + (l.name.length() + 1) + 4 + 4
+      off = off + 1 + (@utf8.encode(l.name).length() + 1) + 4 + 4
     }
     off = off + 1
   }

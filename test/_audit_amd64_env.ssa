@@ -1,0 +1,11 @@
+function l $callee(env %e, l %a) {
+@start
+  %r =l add %e, %a
+  ret %r
+}
+export function w $main() {
+@start
+  %r =l call $callee(env 40, l 2)
+  %s =l sub %r, 42
+  ret %s
+}

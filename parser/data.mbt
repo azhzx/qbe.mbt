@@ -159,13 +159,11 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
             _ => raise self.error("constant literal expected")
           }
           // Set the correct data kind for this value
-          if !dat.is_ref && !dat.is_str {
-            dat.kind = dk
-          }
+          dat.kind = dk
           self.datas.push(dat)
           t3 = self.next_nl()
           match t3 {
-            TInt | TFlt => continue
+            TInt | TFlt | TStr | TGlo => continue
             _ => done = true
           }
         }
@@ -208,10 +206,10 @@ fn Parser::parsetyp(self : Self) -> Unit raise {
     let align_val = parse_int64(self.tokens[self.pos - 1].raw)
     // Convert alignment value to log2
     let mut al = 0
-    let mut v = align_val
-    while v > 1L {
-      v = v / 2L
+    let mut v = align_val / 2L
+    while v != 0L {
       al = al + 1
+      v = v / 2L
     }
     ty.align = al
     t = self.next_nl()
@@ -237,6 +235,7 @@ fn Parser::parsetyp(self : Self) -> Unit raise {
   // Parse fields
   let mut nunion = 0
   if t == TLbr {
+    ty.isunion = true
     // Union type: { { fields } { fields } ... }
     while true {
       if t != TLbr {
@@ -270,6 +269,7 @@ fn Parser::parsefields(
   let mut t = t
   let mut sz : Int64 = 0L
   let mut al = ty.align
+  let mut nfield = 0
   while true {
     if t == TRbr {
       break
@@ -306,7 +306,10 @@ fn Parser::parsefields(
     let a = sz & fmask
     if a != 0L {
       let pad = fmask + 1L - a
-      ty.fields.push(@types.Field::new(@types.FPad, pad.to_int()))
+      if nfield < 32 {
+        ty.fields.push(@types.Field::new(@types.FPad, pad.to_int()))
+        nfield += 1
+      }
       sz = sz + pad
     }
     // Parse count (default 1)
@@ -326,18 +329,24 @@ fn Parser::parsefields(
     } else {
       fs.to_int()
     }
-    for _ in 0..<c {
+    // C stores only NField descriptors, while retaining the complete size.
+    for j = 0; j < c && nfield < 32; j = j + 1 {
       ty.fields.push(@types.Field::new(ftype, field_len))
+      nfield += 1
     }
     if t != TCom {
       break
     }
     t = self.next_nl()
   }
+  // C parsefields rejects a missing comma/closing brace before finalizing.
+  if t != TRbr {
+    raise self.error(", or } expected")
+  }
   // Finalize type
   ty.fields.push(@types.Field::end())
   let a = 1 << al
-  if sz < ty.size {
+  if sz.reinterpret_as_uint64() < ty.size.reinterpret_as_uint64() {
     sz = ty.size
   }
   ty.size = (sz + (a - 1).to_int64()) & (0 - a).to_int64()

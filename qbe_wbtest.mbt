@@ -131,3 +131,45 @@ test "wasm: inline assembly is rejected" {
     Err(_) => fail("unexpected error kind")
   }
 }
+
+///|
+test "inline asm decodes string escapes before emission" {
+  let src = "export function l $f(l %a) {\n@start\n %o =l asm \"nop\\n\\tnop\" (%a)\n ret %o\n}\n"
+  let text = match compile_target(src, Target::Arm64) {
+    Ok(t) => t
+    Err(_) => abort("compile failed")
+  }
+  assert_true(text.contains("\tnop\n\tnop\n"))
+}
+
+///|
+test "inline asm is rejected loudly on backends without a lowering" {
+  let src = "export function l $f(l %a) {\n@start\n %o =l asm \"nop\" (%a)\n ret %o\n}\n"
+  for t in [Target::Amd64Sysv, Target::Amd64Win, Target::Rv64, Target::La64] {
+    let msg = match compile_target(src, t) {
+      Ok(_) => "no error"
+      Err(e) => Repr(e).to_string()
+    }
+    assert_true(msg.contains("inline assembly is not supported"))
+  }
+}
+
+///|
+test "wasm rejects data pointers to undefined symbols" {
+  let src = "data $p = { l $ext }\nexport function l $f() {\n@start\n %v =l loadl $p\n ret %v\n}\n"
+  let ok = match compile_target(src, Target::Wasm32) {
+    Ok(_) => false
+    Err(e) => Repr(e).to_string().contains("undefined symbol")
+  }
+  assert_true(ok)
+}
+
+///|
+test "wasm rejects static data overlapping the stack" {
+  let src = "data $big = { z 70000 }\nexport function w $f() {\n@start\n ret 0\n}\n"
+  let ok = match compile_target(src, Target::Wasm32) {
+    Ok(_) => false
+    Err(e) => Repr(e).to_string().contains("overlaps the stack")
+  }
+  assert_true(ok)
+}

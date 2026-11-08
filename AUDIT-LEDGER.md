@@ -445,3 +445,161 @@ read those arguments).
   data and thread/extern operand modifiers are treated as plain globals.
   This is a documented port-only backend choice (there is no reference wasm
   target).
+
+## 2026-11-08 second audit round (lead-integrated)
+
+Baseline for this round: port 938fc19 plus the pre-existing lexer/parser edits;
+upstream `vendor/qbe` 661ceb22. Every domain was read declaration by
+declaration next to its C counterpart; the per-domain inventories and residual
+gaps live in `doc/audit-2026-11-08-{frontend,core,registers,types,amd64,arm64,rv64,driver}.md`.
+A fix is listed only after a failing test or oracle probe was observed.
+
+### Front-end (lexer/parser, lead)
+
+- Data lists: adjacent strings/globals in one width run are now accepted; the
+  width of each item is kept (the parser used to overwrite every followed item
+  with the last specifier). `parser/upstream_parity_wbtest`.
+- Missing `}` in a type now raises (it used to panic on the token array).
+  NField is capped at 32 while the size stays complete; size comparisons and
+  the `align` division use C unsigned arithmetic.
+- 29-bit reference bounds restored for `dbgloc` and `blit`; extra operands are
+  still parsed and NPred is enforced; aggregate/sub-word classes are accepted
+  for `call` only; a phi in the start block is rejected; several invalid
+  constructs no longer panic.
+- `extern`/`thread` are only accepted on globals.
+- Floating literals are parsed with one exact round-to-nearest-even step:
+  decimal single, hexadecimal single/double subnormals, and C's overflow to
+  ±inf / underflow to ±0. Fixtures `test/audit_core_float_round.ssa`,
+  `test/audit_regs_float_{rounding,overflow}.ssa`; reference bits match.
+- `printcon`/`printref` now follow C's reserved constant identity (con[0] is
+  UNDEF, ordinary literals with the same bits are not hidden; an absent ref
+  prints `R`).
+
+### Types / shared representation
+
+- `Con` interning and `Fn::get_con`/`undef` reserve con[0] as UNDEF and con[1]
+  as the zero constant, like `parsefn`/`newcon`.
+- `Typ.isunion` distinguishes a one-alternative union from a struct; layout
+  caps field records at 32, uses unsigned size maxima and consumes one FEnd per
+  alternative.
+- arm64/rv64 target constants and arg masks corrected (env x9/bit14, T5 for
+  rv64 env, NFPR 31, NRGLOB 4); duplicated rv64 argreg helpers now delegate to
+  one implementation.
+- Exact `int64/uint64 -> f32` conversion helpers (`f32_*`) added and used by
+  GVN and the legacy folder, removing double rounding.
+- BSet set/clr validate against the rounded backing capacity.
+
+### Core optimisation
+
+- alias: `getalias` keeps `sym.type`; `fillalias` resets every temporary to
+  ABot before recomputing (C alias.c), so deleted definitions cannot keep stale
+  alias data.
+- load: symbol bits preserved when rebuilding a constant; the missing
+  `rebase` is transcribed; the insertion comparator returns 0 for equal-block
+  phis like C.
+- GVN/GCM: full symbol identity for address subtraction; `cmp` result width
+  Wub; `neg` is cheap for sinking; eliminated-phi guard; generated pinned table
+  regenerated from ops.h (including InlineAsm); blit pair grouping; the GVN
+  table keeps instruction identity instead of a copy.
+- ifopt uses the shared generated `pinned` predicate instead of a drifted
+  handwritten copy.
+- legacy fold: CON_Z looked up instead of hardcoded 0; word results masked to
+  32 bits; symbol qualifiers preserved; exact int→single conversions.
+- promote: a slot read but never stored now raises the reference error
+  `slot %x is read but never stored to` (the opt-in C-frontend skip remains).
+
+### Register allocation
+
+- spill cost comparison is unsigned (C UINT_MAX sentinel); no allocation
+  algorithm was replaced. Remaining C asserts are diagnostic-only and documented.
+
+### Backends (amd64 / arm64 / rv64)
+
+- amd64: env argument/parameter register handling and incoming mask, parity
+  flag synthesis for float eq/ne, swapped/multi-use comparison jumps, numeric
+  call materialisation, fast-alloc guards, slot-base bailout, by-value `sel`,
+  Apple TLS resolver/@tlvp and @plt suppression, absolute/index-only memory
+  addressing, large constant/slot splits, module reset hook.
+- amd64_win: `winabi.c` transcribed into `target_amd64/abi/abi_win.mbt`
+  (classification, shared int/float counter, shadow space, varargs register
+  dump/duplication, struct copy/return, stack slots, env), Win64 frame sizes and
+  prologue/epilogue/varargs saves in the shared emitter, PE finalizer without
+  the GNU-stack note, `L` assembler-local labels, windows-aware slot formula
+  and jump inversion, plus the Win64 register tables in `types/target.mbt`.
+- arm64: HFA-first classification, Cptr register/class bookkeeping, env x9 and
+  call bit14, incoming register mask, GOT/TLS offset split (Apple resolver),
+  upstream float comparison swap table, large address/load/store fixarg,
+  >4095/65535 prologue/epilogue materialisation, Apple function alignment, and
+  the Apple `apple_extsb` pre-ABI pass (narrow call arguments and returns).
+- rv64: env register mask, HFA/union classification, nested fpstruct offsets,
+  parameter temp buffer, Cnes/Cned, halt, copy spill load/store, dynamic alloc
+  guard, rejected external/TLS call operands.
+- Both extra GAS targets still emit one finalizer and share gasdata.
+
+### Driver / CLI
+
+- `compile_sources` parses each input file independently (own types/interner)
+  but emits through one output session: one finalizer, continuous local labels
+  and `.file` numbering; multi-file output is byte-identical to the reference.
+- Debug mode writes `.file N "path"` to stdout (or `-o`) exactly like
+  `main.c`, while pass dumps stay on stderr; non-alphabetic -d flags no longer
+  enable debug; output-write failures exit non-zero; `fillloop` runs after
+  instruction selection in every native pipeline; the DWARF byte offsets count
+  UTF-8 bytes. Debug compiles now take the gas flavour, so the Apple selector
+  (-dI) and the arm64 "After Apple pre-ABI" (-dA) dumps use `T.asloc` like the
+  reference; the Apple flag is also threaded into the amd64 selector.
+
+### Verification in this round
+
+- `moon test`: **513/513** native (host `run_asm` tests require the system
+  Apple clang; the miniconda clang cannot link libLTO).
+- `compare.py` differential dumps: **7120/7120** on amd64, arm64 and rv64;
+  `--asm`: **445/445** on each. Two amd64-specific corpora now live under
+  `test/_audit_amd64_*.ssa` (underscore = excluded from the cross-backend
+  sweep) and are also run explicitly: **32/32** debug and **2/2** assembly on
+  all three reference targets.
+- Backend gates with a cross-capable clang: `check_all_backends.py` PASS on
+  amd64_sysv 374/374, arm64 374/374, rv64 373/374 (one documented clang quoted
+  symbol limitation), la64 374/374, wasm 374/374; standalone la64 and arm64
+  assembler gates 374/374, rv64 373/373 after adding the same documented
+  toolchain skip, wasm validator 374/374 valid with 0 compile failures.
+  `check_wasm_runtime` passes 5/5 when Node (present under
+  `~/.local/node/bin`) is added to PATH.
+- Apple flavours: after implementing arm64 `apple_extsb`, threading the Apple
+  flag into the amd64 selector and making debug dumps flavour-aware,
+  `compare.py -G m` passes **7120/7120** debug dumps and **445/445** assembly on
+  both `amd64_apple` and `arm64_apple`.
+- Windows: `compare.py --target amd64_win` passes **7072/7072** debug dumps and
+  **442/442** assembly. Three corpora (TLS/thread-symbol arithmetic) are skipped
+  because the reference's own `amd64_win` emitter aborts on them; the port
+  rejects them with a clean error. The skip list lives next to the rv64
+  toolchain skip in `compare.py`.
+- Final test run: **544/544** native tests. Fuzzing (`--asm`, seed 601, 150
+  mutants): 0 rejects/crashes/dump/asm diffs. Gate runs must put a clang with
+  all LLVM targets first in PATH (the miniconda clang here); Apple clang only
+  knows host targets and makes every cross-assembler check fail spuriously.
+- `moon fmt --check`: clean; `moon info` only the expected interface changes
+  (new helpers, `promote` raising, Apple flags, corrected target constants).
+
+### Residual, explicitly not claimed
+
+- Port-only targets/features have no upstream counterpart and are not called
+  transcriptions: wasm32, loongarch64, the JIT, the object writer, the IR
+  builder, the interpreter and the exported C API.
+- All upstream targets (`amd64_sysv`, `amd64_apple`, `amd64_win`, `arm64`,
+  `arm64_apple`, `rv64`) are now implemented and differentially validated. What
+  remains outside upstream parity is the port-only surface: wasm32 and
+  loongarch64, the JIT, object writer, IR builder/bindings and interpreter.
+  amd64_win cannot assemble inline asm/TLS (the reference dies there too) and
+  has no object-writer backend; those paths fail loudly.
+- The vendored reference does accept `-t arm64_apple` / `-t amd64_apple`,
+  so the Apple text flavours are now differential-tested too: after
+  implementing arm64 `apple_extsb` and threading the Apple flag into the amd64
+  selector/debug dumps, `compare.py -G m` passes **7120/7120** debug dumps and
+  **445/445** assembly on both Apple targets.
+- Some C assertions remain diagnostics-only; hand-maintained tables (optab
+  fields outside the generated pinned column, assembler tables) are still
+  transcribed by hand, a policy gap rather than a known behavioural defect.
+- Invalid internal IR can still differ in diagnostic text/abort versus the
+  reference's `err()`; valid-input behaviour is what the differential gates
+  cover.

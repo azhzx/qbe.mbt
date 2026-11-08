@@ -1,0 +1,9 @@
+export function $audit_core_if_blit(w %c, l %src, l %dst) {
+@start
+  jnz %c, @copy, @done
+@copy
+  blit %src, %dst, 8
+  jmp @done
+@done
+  ret
+}

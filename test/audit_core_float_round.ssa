@@ -1,0 +1,6 @@
+export function w $audit_core_float_round() {
+@start
+  %s =s sltof 9007199791611905
+  %v =w cast %s
+  ret %v
+}

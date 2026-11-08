@@ -1,0 +1,5 @@
+export function l $audit_core_sym_sub() {
+@start
+  %d =l sub thread $symbol, $symbol
+  ret %d
+}

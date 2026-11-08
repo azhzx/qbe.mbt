@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn isel_arm64(@types.Fn, @util.Interner, Bool, Array[@types.Typ]) -> String raise
+pub fn isel_arm64(@types.Fn, @util.Interner, Bool, Array[@types.Typ], apple? : Bool) -> String raise
 
 // Errors
 

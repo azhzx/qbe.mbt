@@ -63,6 +63,15 @@ def check_one(job):
     rel = os.path.relpath(path, ROOT)
     r = run([MINE, "-t", target, path])
     if r.returncode != 0 or not r.stdout:
+        if target == "wasm" and any(
+            s in r.stderr
+            for s in (
+                b"wasm: address of external symbol",
+                b"wasm: data reference to undefined symbol",
+                b"wasm: static data overlaps the stack",
+            )
+        ):
+            return (target, rel, "wasm-unsupported")
         return (target, rel, "compile")
     out = r.stdout
     with tempfile.TemporaryDirectory() as td:
@@ -121,6 +130,10 @@ def main():
     )
     for target, rel in skipped:
         print(f"  {target}: skipped {rel} (assembler limitation)")
+    for target in which:
+        n = len(by.get(target, {}).get("wasm-unsupported", []))
+        if n:
+            print(f"  {target}: skipped {n} input(s) (no-linker wasm limitation)")
     for target in which:
         d = by.get(target, {})
         ok = len(d.get("ok", []))

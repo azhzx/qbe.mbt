@@ -26,11 +26,16 @@ priv struct Arm64IselState {
   fn_ : @types.Fn
   buf : Array[@types.Ins]
   interner : @util.Interner
+  apple : Bool
 }
 
 ///|
-fn arm64_isel_new(fn_ : @types.Fn, interner : @util.Interner) -> Arm64IselState {
-  Arm64IselState::{ fn_, buf: [], interner, }
+fn arm64_isel_new(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  apple : Bool,
+) -> Arm64IselState {
+  Arm64IselState::{ fn_, buf: [], interner, apple, }
 }
 
 ///|
@@ -93,25 +98,22 @@ fn arm64_iscmp(op : @types.Op) -> (Bool, @types.Class, Int32) {
 ///|
 // The swap version of a comparison code (C cmpop).
 fn arm64_cmpop(c : Int32) -> Int32 {
-  // CIEQ=0, CINE=1, CISGE=2, CISGT=3, CISLE=4, CISLT=5,
-  // CIUGE=6, CIUGT=7, CIULE=8, CIULT=9; NCmpI(10)+: Cfle, Cflt, Cfgt, Cfge,
-  // Cfne, Cfeq, Cfo, Cfuo
+  // CmpI: Cieq=0..Ciult=9; NCmpI(10)+: Cfeq=10, Cfge=11, Cfgt=12,
+  // Cfle=13, Cflt=14, Cfne=15, Cfo=16, Cfuo=17 (all.h CmpF order).
   match c {
-    8 => 6 // CIULE -> CIUGE
-    9 => 7 // CIULT -> CIUGT
-    7 => 9 // CIUGT -> CIULT
-    6 => 8 // CIUGE -> CIULE
-    4 => 2 // CISLE -> CISGE
-    5 => 3 // CISLT -> CISGT
-    3 => 5 // CISGT -> CISLT
-    2 => 4 // CISGE -> CISLE
-    10 => 13 // Cfle -> Cfge
-    11 => 12 // Cflt -> Cfgt
-    12 => 11 // Cfgt -> Cflt
-    13 => 10 // Cfge -> Cfle
-    16 => 17 // Cfo -> Cfuo
-    17 => 16 // Cfuo -> Cfo
-    _ => c // eq/ne/fne/feq are self-inverse
+    8 => 6 // Ciule -> Ciuge
+    9 => 7 // Ciult -> Ciugt
+    7 => 9 // Ciugt -> Ciult
+    6 => 8 // Ciuge -> Ciule
+    4 => 2 // Cisle -> Cisge
+    5 => 3 // Cislt -> Cisgt
+    3 => 5 // Cisgt -> Cislt
+    2 => 4 // Cisge -> Cisle
+    11 => 13 // Cfge -> Cfle
+    12 => 14 // Cfgt -> Cflt
+    13 => 11 // Cfle -> Cfge
+    14 => 12 // Cflt -> Cfgt
+    _ => c // eq/ne, Cfeq/Cfne/Cfo/Cfuo are self-inverse
   }
 }
 
@@ -168,6 +170,70 @@ fn arm64_fixarg(
   let r0 = r
   if r0.is_con() {
     let c = st.fn_.cons[r0.con_val()]
+    if c.kind == @types.CAddr && (c.is_ext() || (st.apple && c.is_thr())) {
+      // C arm64/isel.c fixarg: GOT/TLS addresses first split the offset into
+      // an add, then (Apple thread symbols) resolve through TLV.
+      let r1 = arm64_isel_newtmp(st, @types.Kl)
+      let mut rr1 = r1
+      if c.bits.i != 0L {
+        let r2 = arm64_isel_newtmp(st, @types.Kl)
+        let r3 = arm64_isel_getcon(st, c.bits.i)
+        arm64_isel_emit(st, @types.Ins::new(@types.Add, @types.Kl, r1, r2, r3))
+        rr1 = r2
+      }
+      if st.apple && c.is_thr() {
+        arm64_isel_emit(
+          st,
+          @types.Ins::new(
+            @types.Copy,
+            @types.Kl,
+            rr1,
+            @types.Ref::tmp(@types.ARM64_R0),
+            @types.Ref::none(),
+          ),
+        )
+        rr1 = arm64_isel_newtmp(st, @types.Kl)
+        let r2 = arm64_isel_newtmp(st, @types.Kl)
+        arm64_isel_emit(
+          st,
+          @types.Ins::new_void(
+            @types.Call,
+            @types.Kw,
+            rr1,
+            @types.Ref::call(33),
+          ),
+        )
+        arm64_isel_emit(
+          st,
+          @types.Ins::new(
+            @types.Copy,
+            @types.Kl,
+            @types.Ref::tmp(@types.ARM64_R0),
+            r2,
+            @types.Ref::none(),
+          ),
+        )
+        arm64_isel_emit(
+          st,
+          @types.Ins::new(@types.Load, @types.Kl, rr1, r2, @types.Ref::none()),
+        )
+        rr1 = r2
+      }
+      let cc = @types.Con::{
+        kind: c.kind,
+        label: c.label,
+        bits: @types.ConBits::{ i: 0L, d: 0.0, s: 0.0, },
+        flt: 0,
+        is_local: c.is_local,
+        sym_type: c.sym_type,
+      }
+      let r3 = @types.Ref::con(st.fn_.get_con_by(cc))
+      arm64_isel_emit(
+        st,
+        @types.Ins::new(@types.Copy, @types.Kl, rr1, r3, @types.Ref::none()),
+      )
+      return r1
+    }
     if k.base() == 0 && phi {
       return r0
     }
@@ -446,8 +512,9 @@ pub fn isel_arm64(
   interner : @util.Interner,
   print_dbg : Bool,
   all_typs : Array[@types.Typ],
+  apple~ : Bool = false,
 ) -> String raise {
-  let st = arm64_isel_new(fn_, interner)
+  let st = arm64_isel_new(fn_, interner, apple)
   let _ = all_typs
   // assign slots to fast allocs in the start block (NAlign == 3)
   let sizes = [4, 8, 16]

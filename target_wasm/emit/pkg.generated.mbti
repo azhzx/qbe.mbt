@@ -11,6 +11,8 @@ pub fn emit_fn(@types.Fn, @util.Interner, StringBuilder, dats? : Array[(String, 
 
 pub fn emit_wat_module(Array[@types.Fn], Array[@types.Dat], Array[String], @util.Interner, StringBuilder) -> Unit
 
+pub fn wasm_data_end(Array[@types.Dat]) -> Int32
+
 // Errors
 
 // Types and methods

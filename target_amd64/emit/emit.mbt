@@ -7,9 +7,11 @@ priv struct EmitState {
   interner : @util.Interner
   gasloc : String
   gassym : String
+  apple : Bool
+  windows : Bool
   sb : StringBuilder
   mut fp : String // frame pointer: "%rbp" or "%rsp" (C E.fp)
-  mut fsz : Int32 // frame size (C E.fsz)
+  mut fsz : Int64 // frame size (C E.fsz, uint64_t; nonnegative)
   mut nclob : Int32 // number of pushed callee-saved registers (C E.nclob)
 }
 
@@ -170,14 +172,18 @@ fn slot(st : EmitState, s : Int32) -> Int32 {
   let x = sign_ext29(s)
   if x < 0 {
     if st.fp == "%rsp" {
-      4 * -x - 8 + st.fsz + st.nclob * 8
+      ((4 * -x - 8).to_int64() + st.fsz + (st.nclob * 8).to_int64()).to_int()
     } else {
       -4 * x
     }
   } else if st.fp == "%rsp" {
     4 * x + st.nclob * 8
   } else if st.fn_.is_vararg {
-    -176 + -4 * (st.fn_.slot - x)
+    if st.windows {
+      -4 * (st.fn_.slot - x)
+    } else {
+      -176 + -4 * (st.fn_.slot - x)
+    }
   } else {
     -4 * (st.fn_.slot - x)
   }
@@ -273,7 +279,9 @@ fn emit_mem(st : EmitState, rf : @types.Ref) -> Unit {
   }
   st.sb.write_char('(')
   if m.base.is_none() {
-    st.sb.write_string("%rip")
+    if m.offset.kind == @types.CAddr {
+      st.sb.write_string("%rip")
+    }
   } else {
     st.sb.write_string("%")
     st.sb.write_string(regtoa(m.base.tmp_val(), SLONG))
@@ -378,7 +386,7 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
         } else if rf.is_con() {
           let c = st.fn_.cons[rf.con_val()]
           emitcon(st, c)
-          if !(c.kind == @types.CAddr && c.sym_type == @types.SYM_THR) {
+          if c.kind == @types.CAddr && c.sym_type != @types.SYM_THR {
             st.sb.write_string("(%rip)")
           }
         } else if rf.is_tmp() {
@@ -468,7 +476,8 @@ fn emit_xsel(st : EmitState, i : @types.Ins) -> Unit raise {
 
 ///|
 fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
-  let ins = i
+  // C emitins receives Ins by value; rewrites must not mutate the caller.
+  let ins = @types.Ins::new(i.op, i.cls, i.to, i.arg1, i.arg2)
   let oi = ins.op.index()
   if oi >= @types.Xselieq.index() && oi <= @types.Xselfuo.index() {
     emit_xsel(st, ins)
@@ -506,7 +515,7 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
       }
     }
     @types.Sub =>
-      if ins.to.eq(ins.arg2) {
+      if ins.to.eq(ins.arg2) && !ins.arg1.eq(ins.to) {
         if ins.cls.base() == 0 {
           emitf(st, "neg%k %=", ins)
         } else {
@@ -530,32 +539,43 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
       }
       emit_omap(st, ins)
     }
-    @types.Copy =>
-      if ins.to.is_none() || ins.arg1.is_none() {
-        ()
-      } else if isreg(ins.to) &&
+    @types.Copy => {
+      if ins.to.is_none() || ins.arg1.is_none() || ins.to.eq(ins.arg1) {
+        return
+      }
+      if ins.cls == @types.Kl &&
         ins.arg1.is_con() &&
-        ins.cls == @types.Kl &&
         st.fn_.cons[ins.arg1.con_val()].kind == @types.CBits {
         let val = st.fn_.cons[ins.arg1.con_val()].raw_bits()
-        if val >= 0L && val <= 4294967295L {
+        if isreg(ins.to) && val >= 0L && val <= 4294967295L {
           emitf(st, "movl %W0, %W=", ins)
-        } else {
-          emitf(st, "mov%k %0, %=", ins)
+          return
         }
-      } else if isreg(ins.to) &&
+        if ins.to.is_slot() && (val < -2147483648L || val > 2147483647L) {
+          emitf(st, "movl %0, %=", ins)
+          emitf(st, "movl %0>>32, 4+%=", ins)
+          return
+        }
+      }
+      if isreg(ins.to) &&
         ins.arg1.is_con() &&
         st.fn_.cons[ins.arg1.con_val()].kind == @types.CAddr {
         emitf(st, "lea%k %M0, %=", ins)
-      } else if !ins.arg1.eq(ins.to) {
+      } else if ins.to.is_slot() && (ins.arg1.is_slot() || ins.arg1.is_mem()) {
+        ins.cls = if ins.cls.wide() == 1 { @types.Kd } else { @types.Ks }
+        ins.arg2 = @types.Ref::tmp(@types.XMM15)
+        emitf(st, "mov%k %0, %1", ins)
+        emitf(st, "mov%k %1, %=", ins)
+      } else {
         emitf(st, "mov%k %0, %=", ins)
       }
+    }
     @types.Call =>
       if ins.arg1.is_con() {
         let c = st.fn_.cons[ins.arg1.con_val()]
         st.sb.write_string("\tcallq ")
         emitcon(st, c)
-        if c.kind == @types.CAddr && c.is_ext() {
+        if c.kind == @types.CAddr && c.is_ext() && !st.apple {
           st.sb.write_string("@plt")
         }
         st.sb.write_string("\n")
@@ -579,6 +599,13 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
         let con = st.fn_.cons[a0.con_val()]
         if con.kind != @types.CAddr {
           emit_omap(st, ins)
+        } else if st.windows && con.sym_type != 0 {
+          raise @util.QbeError::Ice("extern/thread unsupported on amd64_win")
+        } else if st.apple && con.is_thr() {
+          let nm = st.interner.get(con.label)
+          st.sb.write_string(
+            "\tmovq \{@util.sym_prefix(st.gassym, nm)}\{nm}@tlvp(%rip), %\{regtoa(ins.to.tmp_val(), SLONG)}\n",
+          )
         } else if con.sym_type == @types.SYM_THR {
           let to = regtoa(ins.to.tmp_val(), SLONG)
           st.sb.write_string("	movq %fs:0, %")
@@ -640,22 +667,25 @@ fn emitins(st : EmitState, i : @types.Ins) -> Unit raise {
 }
 
 ///|
-fn framesz(st : EmitState) -> Int32 {
+fn framesz(st : EmitState) -> Int64 {
   let mut o = 0
   // C sysv_framesz: only non-leaf functions account for the callee-saved
   // registers they push.
+  let rclob = if st.windows { @types.rclob_win } else { @types.rclob }
   if !st.fn_.leaf {
-    for r in @types.rclob {
+    for r in rclob {
       o = o ^ ((st.fn_.reg >> r) & 1UL).to_int()
     }
   }
-  let mut f = st.fn_.slot
-  f = (f + 3) & -4
+  let mut f = st.fn_.slot.to_int64()
+  f = (f + 3L) & -4L
   // C sysv_framesz: a leaf using %rsp keeps the stack 16-byte aligned.
   if f > 0 && st.fp == "%rsp" && st.fn_.salign == 4 {
     f = f + 2
   }
-  4 * f + 8 * o + (if st.fn_.is_vararg { 176 } else { 0 })
+  4L * f +
+  8L * o.to_int64() +
+  (if st.fn_.is_vararg && !st.windows { 176L } else { 0L })
 }
 
 ///|
@@ -671,12 +701,15 @@ pub fn emitfn(
   gassym : String,
   apple : Bool,
   sb : StringBuilder,
+  windows~ : Bool = false,
 ) -> Unit raise {
   let st = EmitState::{
     fn_,
     interner,
     gasloc,
     gassym,
+    apple,
+    windows,
     sb,
     fp: "%rbp",
     fsz: 0,
@@ -690,8 +723,16 @@ pub fn emitfn(
   if dbg {
     st.sb.write_string("\t.cfi_startproc\n")
   }
-  // CET landing pad (C amd64_sysv_emitfn always emits it).
+  // CET landing pad (C always emits it).
   st.sb.write_string("\tendbr64\n")
+  // Win64 varargs: the four integer argument registers live in the callee's
+  // shadow space (C amd64_winabi_emitfn).
+  if fn_.is_vararg && windows {
+    st.sb.write_string("\tmovq %rcx, 0x8(%rsp)\n")
+    st.sb.write_string("\tmovq %rdx, 0x10(%rsp)\n")
+    st.sb.write_string("\tmovq %r8, 0x18(%rsp)\n")
+    st.sb.write_string("\tmovq %r9, 0x20(%rsp)\n")
+  }
   // Leaf functions without varargs/dynalloc address locals off %rsp (C).
   let use_fp = !fn_.leaf || fn_.is_vararg || fn_.has_dynalloc
   st.fp = if use_fp { "%rbp" } else { "%rsp" }
@@ -713,7 +754,7 @@ pub fn emitfn(
       st.sb.write_string("\t.cfi_def_cfa_offset \{fs + 8}\n")
     }
   }
-  if fn_.is_vararg {
+  if fn_.is_vararg && !windows {
     let mut o = -176
     for r in 0..<6 {
       st.sb.write_string("\tmovq %\{rname[@types.rsave[r]][0]}, \{o}(%rbp)\n")
@@ -724,7 +765,8 @@ pub fn emitfn(
       o = o + 16
     }
   }
-  for r in @types.rclob {
+  let rclob_pro = if windows { @types.rclob_win } else { @types.rclob }
+  for r in rclob_pro {
     if (fn_.reg & (1UL << r)) != 0 {
       let itmp = @types.Ins::new(
         @types.Copy,
@@ -760,7 +802,7 @@ pub fn emitfn(
         }
         p = p + 1
       }
-      if p != b.npred {
+      if p != b.npred && !windows {
         st.sb.write_string(".p2align 4\n")
       }
       st.sb.write_string("\{gasloc}bb\{emit_id0[0] + b.rpo_id}:\n")
@@ -775,19 +817,19 @@ pub fn emitfn(
         if fn_.has_dynalloc {
           st.sb.write_string("\tmovq %rbp, %rsp\n\tsubq $\{fs}, %rsp\n")
         }
-        for ri in (@types.rclob.length() - 1)>=..0 {
-          if (fn_.reg & (1UL << @types.rclob[ri])) != 0 {
+        for ri in (rclob_pro.length() - 1)>=..0 {
+          if (fn_.reg & (1UL << rclob_pro[ri])) != 0 {
             let itmp = @types.Ins::new(
               @types.Copy,
               @types.Kx,
               @types.Ref::none(),
-              @types.Ref::tmp(@types.rclob[ri]),
+              @types.Ref::tmp(rclob_pro[ri]),
               @types.Ref::none(),
             )
             emitf(st, "popq %L0", itmp)
             if dbg {
               st.sb.write_string("\t.cfi_restore %")
-              st.sb.write_string(rname[@types.rclob[ri]][0])
+              st.sb.write_string(rname[rclob_pro[ri]][0])
               st.sb.write_string("\n")
             }
           }
@@ -818,7 +860,10 @@ pub fn emitfn(
         if c >= 0 && c <= 18 {
           let mut s1 = b.jmp.s1
           let mut s2 = b.jmp.s2
-          if next == s2 {
+          // C amd64_winabi_emitfn also swaps (and keeps the positive
+          // condition) for floating-point comparisons, unlike SysV.
+          let swap = next == s2 || (windows && c >= 10)
+          if swap {
             let t = s1
             s1 = s2
             s2 = t
@@ -843,8 +888,8 @@ pub fn emitfn(
   }
   emit_id0[0] = emit_id0[0] + fn_.rpo.length()
   // C elf_emitfnfin emits the function type/size after each function; the
-  // Mach-O flavor emits nothing.
-  if !apple {
+  // Mach-O and Windows flavours emit nothing.
+  if !apple && !windows {
     st.sb.write_string(
       ".type \{@util.sym_prefix(gassym, fn_.name)}\{fn_.name}, @function\n",
     )
@@ -860,6 +905,14 @@ pub fn emitfn(
 ///|
 // Emit a data item (C gasemitdat in gas.c).
 let gasdat_align : Array[Int32] = Array::make(1, 0)
+
+///|
+// Reset the per-module label and data-alignment bases (once per output
+// stream, like the other GAS emitters' *_emit_reset).
+pub fn amd64_emit_reset() -> Unit {
+  emit_id0[0] = 0
+  gasdat_align[0] = 0
+}
 
 ///|
 pub fn gasemitdat(
@@ -940,7 +993,12 @@ fn word_i32(b0 : Int64, b1 : Int64, p : Int32) -> Int32 {
 
 ///|
 // Emit the floating point constants table (C gasemitfin in gas.c).
-pub fn gasemitfin(gasloc : String, apple : Bool, sb : StringBuilder) -> Unit {
+pub fn gasemitfin(
+  gasloc : String,
+  apple : Bool,
+  sb : StringBuilder,
+  windows~ : Bool = false,
+) -> Unit {
   if @types.fp_stash_len() > 0 {
     sb.write_string("/* floating point constants */\n")
     // Sizes are emitted largest first (C emitfin: lg 4,3,2 = 16,8,4 bytes).
@@ -977,9 +1035,9 @@ pub fn gasemitfin(gasloc : String, apple : Bool, sb : StringBuilder) -> Unit {
       }
     }
   }
-  // C elf_emitfin always terminates with the GNU-stack note; the Mach-O
-  // flavor does not.
-  if !apple {
+  // C elf_emitfin always terminates with the GNU-stack note; the Mach-O and
+  // PE flavours do not.
+  if !apple && !windows {
     sb.write_string(".section .note.GNU-stack,\"\",@progbits\n")
   }
 }

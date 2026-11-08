@@ -9,6 +9,8 @@ import {
 // Values
 pub fn abi(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
+pub fn abi_win(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String raise
+
 // Errors
 
 // Types and methods

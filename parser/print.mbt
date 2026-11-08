@@ -63,7 +63,7 @@ fn printcon(
   match c.kind {
     // C parse.c prints the sentinel constant (UNDEF, con[0]) as "UNDEF"; the
     // sentinel is an ordinary CBits holding 0xdeaddead (see Fn::undef).
-    @types.CUndef => sb.write_string("UNDEF")
+    @types.CUndef => ()
     @types.CAddr => {
       // C printcon: extern before thread.
       if c.is_ext() {
@@ -77,7 +77,8 @@ fn printcon(
       // the quoted symbol "\".LfpN\" (amd64/isel.c: sprintf(buf, "\"%sfp%d\"",
       // T.asloc, n)), so print the same quoted form for is_local constants.
       if c.is_local {
-        sb.write_string("\".L")
+        sb.write_string("\"")
+        sb.write_string(@util.asm_loc_name())
         sb.write_string(interner.get(c.label))
         sb.write_string("\"")
       } else {
@@ -92,11 +93,7 @@ fn printcon(
       }
     }
     @types.CBits =>
-      if c.flt == 0 && c.bits.i == 0xdeaddeadL {
-        // C parse.c printcon prints its UNDEF sentinel (con[0] = 0xdeaddead)
-        // as "UNDEF"; Fn::undef reuses that value.
-        sb.write_string("UNDEF")
-      } else if c.flt == 1 {
+      if c.flt == 1 {
         sb.write_string("s_")
         sb.write_string(@util.fmt_fixed(c.bits.s.to_double(), 6))
       } else if c.flt == 2 {
@@ -118,7 +115,7 @@ pub fn printref(
   all_typs : Array[@types.Typ],
 ) -> Unit {
   match r {
-    RNone => ()
+    RNone => sb.write_string("R")
     RTmp(v) =>
       if v < @types.Tmp0 {
         // register
@@ -127,7 +124,12 @@ pub fn printref(
         sb.write_string("%")
         sb.write_string(fn_.tmps[v].name)
       }
-    RCon(v) => printcon(fn_.cons[v], interner, sb)
+    RCon(v) =>
+      if v == 0 {
+        sb.write_string("UNDEF")
+      } else {
+        printcon(fn_.cons[v], interner, sb)
+      }
     RInt(v) => sb.write_string(v.to_string())
     RSlot(v) => {
       sb.write_string("S")
@@ -254,6 +256,10 @@ pub fn printfn(
             sb.write_string("\\\"")
           } else if c == '\n' {
             sb.write_string("\\n")
+          } else if c == '\t' {
+            sb.write_string("\\t")
+          } else if c == '\\' {
+            sb.write_string("\\\\")
           } else {
             sb.write_char(c)
           }

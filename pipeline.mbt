@@ -123,13 +123,23 @@ fn run_frontend_passes(
   cansel : Bool,
   from_c : Bool,
   out : StringBuilder,
+  apple_abi0~ : Bool = false,
 ) -> Unit raise {
   if dbg.p {
     out.write_string("\n> After parsing:\n")
     dbg_function(fn_, interner, typs, out)
   }
-  // C main.c: T.abi0(fn) (all upstream targets use elimsb).
-  @ssa.elimsb(fn_)
+  // C main.c: T.abi0(fn). All upstream targets use elimsb except the Apple
+  // arm64 flavour, whose T.abi0 is apple_extsb.
+  if apple_abi0 {
+    @abi_arm64.apple_extsb(fn_)
+    if dbg.a {
+      out.write_string("\n> After Apple pre-ABI:\n")
+      dbg_function(fn_, interner, typs, out)
+    }
+  } else {
+    @ssa.elimsb(fn_)
+  }
   // C main.c: fillcfg = fillrpo + fillpreds + fixphis.
   @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
@@ -194,6 +204,7 @@ fn run_passes(
   typs : Array[@types.Typ],
   dbg : DbFlags,
   out : StringBuilder,
+  apple~ : Bool = false,
 ) -> Unit raise {
   @types.init_amd64_target()
   run_frontend_passes(fn_, interner, typs, dbg, true, false, out)
@@ -204,17 +215,22 @@ fn run_passes(
   @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // T.isel (amd64/isel.c): -dI.
-  out.write_string(@isel.isel(fn_, interner, dbg.i, typs))
+  @util.set_asm_loc(if apple { "L" } else { ".L" })
+  out.write_string(@isel.isel(fn_, interner, dbg.i, typs, apple~))
   // Post-isel pipeline (main.c): fillcfg, filllive, fillcost, spill, rega.
   @types.init_amd64_target()
   @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
+  @cfg.fillloop(fn_)
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
   @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
   @cfg.fillcfg(fn_)
+  // Bookkeeping only: keep loop depths describing the final CFG for external
+  // consumers (C main.c does not need this because nothing reads them again).
+  @cfg.fillloop(fn_)
 }
 
 ///|
@@ -275,6 +291,22 @@ fn gas_setting(gas : String) -> (String, String, Bool) raise {
 }
 
 ///|
+let debug_fn_id : Array[Int32] = [0]
+
+///|
+// Reset once per output stream, not once per independently parsed input.
+fn reset_output_state() -> Unit {
+  @types.fp_stash_reset()
+  @util.dbg_reset()
+  @dwarf.reset()
+  debug_fn_id[0] = 0
+  @emit_amd64.amd64_emit_reset()
+  @emit_arm64.arm64_emit_reset()
+  @emit_rv64.rv64_emit_reset()
+  @emit_la64.la64_emit_reset()
+}
+
+///|
 // Emit assembly for the whole module in input order (data and functions
 // interleaved as parsed).
 fn emit_module(
@@ -287,10 +319,13 @@ fn emit_module(
   gassym : String,
   apple : Bool,
   sb : StringBuilder,
+  reset~ : Bool = true,
+  finish~ : Bool = true,
+  windows~ : Bool = false,
 ) -> Unit raise {
-  @types.fp_stash_reset()
-  @util.dbg_reset()
-  @dwarf.reset()
+  if reset {
+    reset_output_state()
+  }
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -302,11 +337,16 @@ fn emit_module(
     if item == "f" {
       let fn_ = funcs[fi]
       fi = fi + 1
-      run_passes(fn_, interner, typs, DbFlags::new(), sb)
-      @emit_amd64.emitfn(fn_, interner, gasloc, gassym, apple, sb)
+      if windows {
+        run_passes_win(fn_, interner, typs, DbFlags::new(), sb)
+      } else {
+        run_passes(fn_, interner, typs, DbFlags::new(), sb, apple~)
+      }
+      @emit_amd64.emitfn(fn_, interner, gasloc, gassym, apple, sb, windows~)
       sb.write_string("/* end function \{fn_.name} */\n\n")
       if @util.debug_info() {
-        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        let dbg_lbl = gasloc + "dbgfn" + debug_fn_id[0].to_string()
+        debug_fn_id[0] += 1
         sb.write_string(dbg_lbl + ":\n")
         @dwarf.record_fn(
           fn_.name,
@@ -327,7 +367,7 @@ fn emit_module(
       }
     }
   }
-  if @util.debug_info() && @dwarf.has_info() {
+  if finish && @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
     let cu_name = if funcs[0].dbg_name != "" {
       funcs[0].dbg_name
@@ -341,7 +381,9 @@ fn emit_module(
     }
     @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, apple, sb)
   }
-  @emit_amd64.gasemitfin(gasloc, apple, sb)
+  if finish {
+    @emit_amd64.gasemitfin(gasloc, apple, sb, windows~)
+  }
 }
 
 ///|
@@ -366,6 +408,7 @@ fn run_passes_wasm(
   @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // Wasm instruction selection
+  @util.set_asm_loc(".L")
   out.write_string(@isel_wasm.isel_wasm(fn_, interner, dbg.i, typs))
   // Skip spill/rega — wasm has no physical registers
 }
@@ -380,6 +423,7 @@ fn emit_wasm_module(
   interner : @util.Interner,
   sb : StringBuilder,
 ) -> Unit raise {
+  validate_wasm_module(funcs, datas, interner)
   @types.fp_stash_reset()
   @util.dbg_reset()
   for fn_ in funcs {
@@ -407,17 +451,22 @@ fn run_passes_rv64(
   @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // RISC-V instruction selection
+  @util.set_asm_loc(".L")
   out.write_string(@isel_rv64.isel_rv64(fn_, interner, dbg.i, typs))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_rv64_target()
   @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
+  @cfg.fillloop(fn_)
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
   @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
   @cfg.fillcfg(fn_)
+  // Bookkeeping only: keep loop depths describing the final CFG for external
+  // consumers (C main.c does not need this because nothing reads them again).
+  @cfg.fillloop(fn_)
 }
 
 ///|
@@ -431,11 +480,12 @@ fn emit_rv64_module(
   gasloc : String,
   gassym : String,
   sb : StringBuilder,
+  reset~ : Bool = true,
+  finish~ : Bool = true,
 ) -> Unit raise {
-  @types.fp_stash_reset()
-  @util.dbg_reset()
-  @dwarf.reset()
-  @emit_rv64.rv64_emit_reset()
+  if reset {
+    reset_output_state()
+  }
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -453,7 +503,8 @@ fn emit_rv64_module(
       )
       sb.write_string("/* end function \{fn_.name} */\n\n")
       if @util.debug_info() {
-        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        let dbg_lbl = gasloc + "dbgfn" + debug_fn_id[0].to_string()
+        debug_fn_id[0] += 1
         sb.write_string(dbg_lbl + ":\n")
         @dwarf.record_fn(
           fn_.name,
@@ -474,7 +525,7 @@ fn emit_rv64_module(
       }
     }
   }
-  if @util.debug_info() && @dwarf.has_info() {
+  if finish && @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
     let cu_name = if funcs[0].dbg_name != "" {
       funcs[0].dbg_name
@@ -488,7 +539,9 @@ fn emit_rv64_module(
     }
     @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, false, sb)
   }
-  @emit_rv64.gasemitfin_rv64(gasloc, sb)
+  if finish {
+    @emit_rv64.gasemitfin_rv64(gasloc, sb)
+  }
 }
 
 ///|
@@ -514,17 +567,22 @@ fn run_passes_la64(
   lower_unsigned_la64(fn_)
   @ssa.filluse(fn_)
   // LoongArch instruction selection
+  @util.set_asm_loc(".L")
   out.write_string(@isel_la64.isel_la64(fn_, interner, dbg.i, typs))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_la64_target()
   @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
+  @cfg.fillloop(fn_)
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
   @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
   @cfg.fillcfg(fn_)
+  // Bookkeeping only: keep loop depths describing the final CFG for external
+  // consumers (C main.c does not need this because nothing reads them again).
+  @cfg.fillloop(fn_)
 }
 
 ///|
@@ -539,11 +597,12 @@ fn emit_la64_module(
   gasloc : String,
   gassym : String,
   sb : StringBuilder,
+  reset~ : Bool = true,
+  finish~ : Bool = true,
 ) -> Unit raise {
-  @types.fp_stash_reset()
-  @util.dbg_reset()
-  @dwarf.reset()
-  @emit_la64.la64_emit_reset()
+  if reset {
+    reset_output_state()
+  }
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -559,7 +618,8 @@ fn emit_la64_module(
       sb.write_string(@emit_la64.emit_la64(fn_, interner, gasloc, gassym, typs))
       sb.write_string("/* end function \{fn_.name} */\n\n")
       if @util.debug_info() {
-        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        let dbg_lbl = gasloc + "dbgfn" + debug_fn_id[0].to_string()
+        debug_fn_id[0] += 1
         sb.write_string(dbg_lbl + ":\n")
         @dwarf.record_fn(
           fn_.name,
@@ -580,7 +640,7 @@ fn emit_la64_module(
       }
     }
   }
-  if @util.debug_info() && @dwarf.has_info() {
+  if finish && @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
     let cu_name = if funcs[0].dbg_name != "" {
       funcs[0].dbg_name
@@ -594,7 +654,9 @@ fn emit_la64_module(
     }
     @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, false, sb)
   }
-  @emit_la64.gasemitfin_la64(gasloc, sb)
+  if finish {
+    @emit_la64.gasemitfin_la64(gasloc, sb)
+  }
 }
 
 ///|
@@ -611,7 +673,16 @@ fn run_passes_arm64(
   from_c~ : Bool = false,
 ) -> Unit raise {
   @types.init_arm64_target()
-  run_frontend_passes(fn_, interner, typs, dbg, false, from_c, out)
+  run_frontend_passes(
+    fn_,
+    interner,
+    typs,
+    dbg,
+    false,
+    from_c,
+    out,
+    apple_abi0=apple,
+  )
   // ARM64 ABI lowering
   out.write_string(
     @abi_arm64.abi_arm64(fn_, typs, dbg.a, interner, apple, typs),
@@ -620,17 +691,22 @@ fn run_passes_arm64(
   @cfg.fillcfg(fn_)
   @ssa.filluse(fn_)
   // ARM64 instruction selection
-  out.write_string(@isel_arm64.isel_arm64(fn_, interner, dbg.i, typs))
+  @util.set_asm_loc(if apple { "L" } else { ".L" })
+  out.write_string(@isel_arm64.isel_arm64(fn_, interner, dbg.i, typs, apple~))
   // Post-isel: fillrpo, filllive, fillcost, spill, rega.
   @types.init_arm64_target()
   @cfg.fillcfg(fn_)
   out.write_string(@live.filllive(fn_, dbg.l))
+  @cfg.fillloop(fn_)
   out.write_string(@spill.fillcost(fn_, dbg.s))
   out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
   out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
   @cfg.fillcfg(fn_)
   @cfg.simpljmp(fn_)
   @cfg.fillcfg(fn_)
+  // Bookkeeping only: keep loop depths describing the final CFG for external
+  // consumers (C main.c does not need this because nothing reads them again).
+  @cfg.fillloop(fn_)
 }
 
 ///|
@@ -646,11 +722,14 @@ fn emit_arm64_module(
   gassym : String,
   apple : Bool,
   sb : StringBuilder,
+  reset~ : Bool = true,
+  finish~ : Bool = true,
 ) -> Unit raise {
-  @types.fp_stash_reset()
-  @util.dbg_reset()
-  @dwarf.reset()
-  @emit_arm64.arm64_emit_reset()
+  // The Windows PE flavour is amd64-only; keep the finalizer call uniform.
+  let windows = false
+  if reset {
+    reset_output_state()
+  }
   let mut fi = 0
   let mut di = 0
   for item in order {
@@ -668,7 +747,8 @@ fn emit_arm64_module(
       )
       sb.write_string("/* end function \{fn_.name} */\n\n")
       if @util.debug_info() {
-        let dbg_lbl = gasloc + "dbgfn" + (fi - 1).to_string()
+        let dbg_lbl = gasloc + "dbgfn" + debug_fn_id[0].to_string()
+        debug_fn_id[0] += 1
         sb.write_string(dbg_lbl + ":\n")
         @dwarf.record_fn(
           fn_.name,
@@ -689,7 +769,7 @@ fn emit_arm64_module(
       }
     }
   }
-  if @util.debug_info() && @dwarf.has_info() {
+  if finish && @util.debug_info() && @dwarf.has_info() {
     let (dbg_cu_name, dbg_cu_dir) = dbg_cu_info(order)
     let cu_name = if funcs[0].dbg_name != "" {
       funcs[0].dbg_name
@@ -703,5 +783,96 @@ fn emit_arm64_module(
     }
     @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, apple, sb)
   }
-  @emit_amd64.gasemitfin(gasloc, apple, sb)
+  if finish {
+    @emit_amd64.gasemitfin(gasloc, apple, sb, windows~)
+  }
+}
+
+///|
+// Run the Windows x64 pipeline on a function (C func() with T_amd64_win).
+fn run_passes_win(
+  fn_ : @types.Fn,
+  interner : @util.Interner,
+  typs : Array[@types.Typ],
+  dbg : DbFlags,
+  out : StringBuilder,
+) -> Unit raise {
+  @types.init_amd64_win_target()
+  run_frontend_passes(fn_, interner, typs, dbg, true, false, out)
+  // T.abi1 (winabi.c): -dA.
+  out.write_string(@abi_amd64.abi_win(fn_, typs, dbg.a, interner, typs))
+  // simpl (simpl.c), then refill cfg/use.
+  out.write_string(@ifopt.simpl(fn_, false, interner, typs))
+  @cfg.fillcfg(fn_)
+  @ssa.filluse(fn_)
+  // T.isel (amd64/isel.c): -dI.
+  @util.set_asm_loc("L")
+  out.write_string(@isel.isel(fn_, interner, dbg.i, typs, apple=false))
+  // Post-isel pipeline (main.c): fillcfg, filllive, fillcost, spill, rega.
+  @types.init_amd64_win_target()
+  @cfg.fillcfg(fn_)
+  out.write_string(@live.filllive(fn_, dbg.l))
+  @cfg.fillloop(fn_)
+  out.write_string(@spill.fillcost(fn_, dbg.s))
+  out.write_string(@spill.spill(fn_, dbg.s, interner, typs))
+  out.write_string(@rega.rega(fn_, dbg.r, interner, typs))
+  @cfg.fillcfg(fn_)
+  @cfg.simpljmp(fn_)
+  @cfg.fillcfg(fn_)
+  @cfg.fillloop(fn_)
+}
+
+///|
+fn validate_wasm_module(
+  funcs : Array[@types.Fn],
+  datas : Array[@types.Dat],
+  interner : @util.Interner,
+) -> Unit raise {
+  let data_names : Array[String] = []
+  for d in datas {
+    if d.kind == @types.DName {
+      data_names.push(d.str)
+    }
+  }
+  let fn_names : Array[String] = []
+  for fn_ in funcs {
+    fn_names.push(fn_.name)
+  }
+  for d in datas {
+    if d.is_ref && !data_names.contains(d.ref_name) {
+      raise @util.QbeError::CompileError(
+        "wasm: data reference to undefined symbol '\{d.ref_name}' (wasm has no linker)",
+      )
+    }
+  }
+  if @types.WASM_DATA_BASE + @emit_wasm.wasm_data_end(datas) >
+    @types.WASM_STACK_BASE {
+    raise @util.QbeError::CompileError(
+      "wasm: static data overlaps the stack region",
+    )
+  }
+  // Address constants may only name static data; external addresses have no
+  // representation in a standalone module. A direct call's callee is the one
+  // allowed exception (it becomes an import).
+  for fn_ in funcs {
+    for bid in fn_.def_order {
+      for ins in fn_.blks[bid].ins {
+        let refs = [ins.arg1, ins.arg2]
+        for r in refs {
+          if r.is_con() {
+            let c = fn_.cons[r.con_val()]
+            if c.kind == @types.CAddr && !c.is_local {
+              let nm = interner.get(c.label)
+              if !data_names.contains(nm) &&
+                !(r.eq(ins.arg1) && ins.op == @types.Call) {
+                raise @util.QbeError::CompileError(
+                  "wasm: address of external symbol '\{nm}' is not supported",
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

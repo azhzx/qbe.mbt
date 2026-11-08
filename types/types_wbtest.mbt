@@ -301,7 +301,7 @@ test "Fn basic structure" {
   assert_true(t0 == 0)
   assert_true(f.tmp(0).name == "x" && f.tmp(0).cls == Kw)
   assert_true(f.ntmp() == 1)
-  assert_true(f.ncon() == 0)
+  assert_true(f.ncon() == 2)
   // new_tmp with a prefix gets a unique generated name
   let t1 = f.new_tmp("tmp", Kl)
   assert_true(t1 == 1)

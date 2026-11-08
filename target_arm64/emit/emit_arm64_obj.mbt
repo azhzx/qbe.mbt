@@ -115,6 +115,9 @@ pub fn emit_arm64_object(
   // Floating-point constants live in __TEXT,__const as local LfpN symbols.
   let (fp_map, fp_bytes) = arm64_fp_layout()
   for p in fp_map {
+    // These are defined symbols in this object: address materialisations must
+    // use plain PAGE21/PAGEOFF12, not GOT_LOAD (clang agrees).
+    defined.push(p.0)
     index[p.0] = syms.length()
     syms.push(@object.MachoSym::{
       name: "L" + p.0,

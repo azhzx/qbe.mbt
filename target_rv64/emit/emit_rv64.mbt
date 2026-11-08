@@ -241,6 +241,9 @@ fn rv64_loadaddr(
       st.sb.write_string("\n")
     }
     2 => {
+      if con.bits.i != 0L {
+        raise @util.QbeError::Ice("extern with offset is not supported")
+      }
       st.sb.write_string("\tlga ")
       st.sb.write_string(rn)
       st.sb.write_string(", ")
@@ -633,7 +636,32 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
       if i.to.eq(i.arg1) {
         return
       }
-      if i.arg1.is_con() {
+      if i.to.is_slot() {
+        if !i.arg1.is_tmp() {
+          raise @util.QbeError::Ice("unimplemented")
+        }
+        let op = match i.cls {
+          @types.Kw => @types.Storew
+          @types.Kl => @types.Storel
+          @types.Ks => @types.Stores
+          @types.Kd => @types.Stored
+          _ => abort("invalid copy class")
+        }
+        rv64_emit_store(
+          st,
+          rv64_store_name(op),
+          @types.rv64_reg_name(i.arg1.tmp_val()),
+          i.to,
+        )
+      } else if i.arg1.is_slot() {
+        rv64_emit_load(
+          st,
+          rv64_load_name(@types.Load, i.cls),
+          @types.rv64_reg_name(i.to.tmp_val()),
+          i.arg1,
+          i.cls.base() == 1,
+        )
+      } else if i.arg1.is_con() {
         let con = st.fn_.cons[i.arg1.con_val()]
         match con.kind {
           @types.CAddr =>
@@ -758,6 +786,9 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
         let con = st.fn_.cons[i.arg1.con_val()]
         match con.kind {
           @types.CAddr => {
+            if con.is_thr() || con.bits.i != 0L {
+              raise @util.QbeError::Ice("invalid call argument")
+            }
             st.sb.write_string("\tcall ")
             st.sb.write_string(st.gassym)
             st.sb.write_string(st.interner.get(con.label))
@@ -875,6 +906,7 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit raise {
     lbl = true
 
     match b.jmp.kind {
+      @types.Jhlt => st.sb.write_string("\tebreak\n")
       @types.Jret0 => {
         // C rv64/emit.c: dynamic allocs restore sp from fp first.
         if fn_.has_dynalloc {
@@ -927,7 +959,17 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit raise {
         } else {
           lbl = false
         }
-      @types.Jjnz =>
+      @types.Jjnz => {
+        if b.jmp.arg.is_slot() {
+          let ii = @types.Ins::new_void(
+            @types.Load,
+            @types.Kw,
+            b.jmp.arg,
+            @types.Ref::none(),
+          )
+          rv64_emitf(st, "lw t6, %M0", ii)
+          b.jmp.arg = @types.Ref::tmp(@types.T6)
+        }
         if b.jmp.arg.is_tmp() {
           let rn = @types.rv64_reg_name(b.jmp.arg.tmp_val())
           if b.jmp.s2 >= 0 && b.jmp.s2 == next {
@@ -963,6 +1005,7 @@ fn rv64_emitfn(st : Rv64EmitState) -> Unit raise {
             }
           }
         }
+      }
       _ => ()
     }
   }

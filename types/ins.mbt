@@ -21,6 +21,29 @@ pub fn Ins::new(op : Op, cls : Class, to : Ref, arg1 : Ref, arg2 : Ref) -> Ins {
 }
 
 ///|
+// Load size in bytes (C loadsz).
+pub fn Ins::load_size(self : Ins) -> Int32 {
+  match self.op {
+    Loadsb | Loadub => 1
+    Loadsh | Loaduh => 2
+    Loadsw | Loaduw => 4
+    Load => if self.cls.wide() == 1 { 8 } else { 4 }
+    _ => 0
+  }
+}
+
+///|
+// Store size in bytes (C storesz).
+pub fn Ins::store_size(self : Ins) -> Int32 {
+  match self.op {
+    Storeb => 1
+    Storeh => 2
+    Storew | Stores => 4
+    _ => 8
+  }
+}
+
+///|
 // Create an instruction with no destination
 pub fn Ins::new_void(op : Op, cls : Class, arg1 : Ref, arg2 : Ref) -> Ins {
   Ins::{ op, cls, to: Ref::none(), arg1, arg2, asm_text: "", }

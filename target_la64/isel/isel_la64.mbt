@@ -263,6 +263,9 @@ fn sel_int_cmp(st : La64IselState, i : @types.Ins) -> Unit {
 ///|
 // Select a single instruction (C sel).
 fn sel(st : La64IselState, i : @types.Ins) -> Unit raise {
+  if i.op == @types.InlineAsm {
+    raise @util.QbeError::CompileError("la64: inline assembly is not supported")
+  }
   if i.to.is_tmp() {
     if !isreg(i.to) && !isreg(i.arg1) && !isreg(i.arg2) {
       if st.fn_.tmps[i.to.tmp_val()].nuse == 0 {

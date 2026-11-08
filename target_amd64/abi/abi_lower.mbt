@@ -36,7 +36,7 @@ fn selcall(
     },
   )
   // compute stack size for in-memory arguments
-  let mut stk = 0
+  let mut stk = 0U
   for a in (nargs - 1)>=..0 {
     if ac[a].inmem != 0 {
       if ac[a].align > 4 {
@@ -50,7 +50,7 @@ fn selcall(
   }
   stk = stk + (stk & 15)
   if stk != 0 {
-    let r = getcon(st, (-stk).to_int64())
+    let r = getcon(st, -stk.to_int64())
     emit(
       st,
       @types.Salloc,
@@ -149,16 +149,7 @@ fn selcall(
   }
 
   let envc = !st.env.is_none()
-  let mut varc = false
-  for k in i0..<i1 {
-    if orig[k].op == @types.Argv {
-      varc = true
-    }
-  }
-  if varc && envc {
-    raise @util.QbeError::Ice("sysv abi does not support variadic env calls")
-  }
-  ca = ca | ((if varc || envc { 1 } else { 0 }) << 12)
+  let varc = !envc && ((ca >> 12) & 1) != 0
   emit(
     st,
     @types.Call,
@@ -202,7 +193,7 @@ fn selcall(
   }
   for a in 0..<nargs {
     let i = orig[i0 + a]
-    if i.op == @types.Argv {
+    if i.op == @types.Arge || i.op == @types.Argv {
       continue
     }
     if ac[a].inmem != 0 {
@@ -226,10 +217,10 @@ fn selcall(
     return
   }
   let r = abi_newtmp(st, @types.Kl)
-  let mut off = 0
+  let mut off = 0U
   for a in 0..<nargs {
     let i = orig[i0 + a]
-    if i.op == @types.Argv {
+    if i.op == @types.Arge || i.op == @types.Argv {
       continue
     }
     if ac[a].inmem == 0 {
@@ -302,6 +293,9 @@ fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
     },
   )
 
+  let (argmask, _, _) = call_ref(fa).argregs()
+  st.fn_.reg = argmask
+
   // Allocate register-copied aggregates
   for a in 0..<npar {
     let i = ins[a]
@@ -358,7 +352,7 @@ fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
           s = (s + 3) & -4
         }
         st.fn_.tmps[i.to.tmp_val()].slot = -s
-        s = s + ac[a].size / 4
+        s = s + (ac[a].size / 4U).to_int()
       }
       2 => {
         emit(
@@ -372,6 +366,9 @@ fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
         s = s + 2
       }
       _ => {
+        if i.op == @types.Pare {
+          continue
+        }
         let r = rarg(st, ac[a].cls[0], ni, ns)
         if i.op == @types.Parc {
           emit(

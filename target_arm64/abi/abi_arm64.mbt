@@ -196,7 +196,7 @@ fn arm64_typclass(
   gpi : Int32,
   fpi : Int32,
 ) -> Unit raise {
-  let sz = (t.size.to_int() + 7) & -8
+  let sz = (t.size.reinterpret_as_uint64() + 7UL) & 0xfffffffffffffff8UL
   c.typ = Some(t)
   c.class_ = 0
   c.ngp = 0
@@ -205,19 +205,13 @@ fn arm64_typclass(
   if t.align > 3 {
     raise @util.QbeError::Ice("alignments larger than 8 are not supported")
   }
-  if t.dark != 0 || sz > 16 || sz == 0 {
-    // large structs are replaced by a pointer to some
-    // caller-allocated memory
-    c.class_ = c.class_ | Arm64Cptr
-    c.size = 8
-    return
-  }
-  c.size = sz
+  c.size = sz.to_int()
   let (homog, base) = arm64_isfloatv(st, t, @types.Kx)
   c.hfa_base = base
-  c.ishfa = homog
-  let wide = if base == @types.Kd { 8 } else { 4 }
-  c.hfa_size = t.size.to_int() / wide
+  let wide = if base.wide() != 0 { 8UL } else { 4UL }
+  let hfasz = t.size.reinterpret_as_uint64() / wide
+  c.ishfa = homog && t.dark == 0 && hfasz <= 4UL
+  c.hfa_size = (hfasz & 255UL).to_int()
   if c.ishfa {
     let mut n = 0
     while n < c.hfa_size {
@@ -227,9 +221,15 @@ fn arm64_typclass(
       n = n + 1
     }
     c.nreg = n
+  } else if t.dark != 0 || sz > 16UL || sz == 0UL {
+    c.class_ = c.class_ | Arm64Cptr
+    c.size = 8
+    c.ngp = 1
+    c.reg[0] = arm64_gpreg[gpi]
+    c.cls[0] = @types.Kl
   } else {
     let mut n = 0
-    while n < sz / 8 {
+    while n < (sz / 8UL).to_int() {
       c.reg[n] = arm64_gpreg[gpi + n]
       c.cls[n] = @types.Kl
       c.ngp = c.ngp + 1
@@ -367,6 +367,7 @@ fn arm64_selret(st : Arm64AbiState, bid : Int32) -> Unit raise {
     arm64_typclass(st, cr, st.typs[st.fn_.ret_ty], 0, 0)
     cty = (cr.nfp << 2) | cr.ngp
     if (cr.class_ & Arm64Cptr) != 0 {
+      cty = 0
       let size = cr.typ.unwrap().size.to_int()
       arm64_emit(
         st,
@@ -445,16 +446,23 @@ fn arm64_argsclass(
     let ins = orig[idx]
     let c = carg[a]
     match ins.op {
-      @types.Par | @types.Arg => {
+      @types.Par
+      | @types.Arg
+      | @types.Parsb
+      | @types.Parub
+      | @types.Parsh
+      | @types.Paruh
+      | @types.Argsb
+      | @types.Argub
+      | @types.Argsh
+      | @types.Arguh => {
         c.cls[0] = ins.cls
-        c.size = 8
-        c.align = c.size
-        // C arm64/abi.c: Mach-O uses four-byte stack slots for non-wide
-        // scalar arguments. Keep this byte-for-byte ABI rule from upstream.
-        if st.apple && ins.cls.wide() == 0 {
-          c.size = 4
-          c.align = c.size
+        c.size = match ins.op {
+          @types.Parsb | @types.Parub | @types.Argsb | @types.Argub => 1
+          @types.Parsh | @types.Paruh | @types.Argsh | @types.Arguh => 2
+          _ => if st.apple && ins.cls.wide() == 0 { 4 } else { 8 }
         }
+        c.align = c.size
         if va {
           // C: arguments after the ellipsis always go on the stack in 8-byte
           // slots.
@@ -476,15 +484,7 @@ fn arm64_argsclass(
       @types.Parc | @types.Argc => {
         arm64_typclass(st, c, st.typs[ins.arg1.typ_val()], gpi, fpi)
         let mut stacked = true
-        if (c.class_ & Arm64Cptr) != 0 {
-          if ngp > 0 {
-            ngp = ngp - 1
-            c.reg[0] = arm64_gpreg[gpi]
-            gpi = gpi + 1
-            c.cls[0] = @types.Kl
-            stacked = false
-          }
-        } else if c.ngp <= ngp {
+        if c.ngp <= ngp {
           if c.nfp <= nfp {
             ngp = ngp - c.ngp
             nfp = nfp - c.nfp
@@ -501,14 +501,17 @@ fn arm64_argsclass(
           c.class_ = c.class_ | Arm64Cstk
         }
       }
-      @types.Pare => env = ins.to
-      @types.Arge => env = ins.arg1
+      @types.Pare | @types.Arge => {
+        c.reg[0] = @types.ARM64_R9
+        c.cls[0] = @types.Kl
+        env = if ins.op == @types.Pare { ins.to } else { ins.arg1 }
+      }
       @types.Argv => va = st.apple
       _ => abort("unreachable")
     }
     a = a + 1
   }
-  ((gpi << 5) | (fpi << 9), env)
+  ((gpi << 5) | (fpi << 9) | (if env.is_none() { 0 } else { 1 << 14 }), env)
 }
 
 ///|
@@ -630,9 +633,7 @@ fn arm64_selcall(
     )
     cty = cty | (1 << 2)
   }
-  if !env.is_none() {
-    raise @util.QbeError::Ice("todo (arm abi): env calls")
-  }
+  let _ = env
   arm64_emit(
     st,
     @types.Call,
@@ -659,7 +660,7 @@ fn arm64_selcall(
     if (c.class_ & Arm64Cstk) != 0 {
       continue
     }
-    if i.op == @types.Arg || i.op == @types.Arge {
+    if i.op == @types.Arg || i.op == @types.Arge || i.op.is_arg_bh() {
       arm64_emit(
         st,
         @types.Copy,
@@ -771,6 +772,8 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
   }
   st.buf.clear()
   let (cty, env) = arm64_argsclass(st, ins, 0, npar, ca)
+  let (regs, _, _) = arm64_call_ref(cty).arm64_argregs()
+  st.fn_.reg = regs
   let tmp : Array[@types.Ref] = Array::make(16, @types.Ref::none())
   let mut t = 0
   let il : Array[@types.Ins] = []
@@ -795,6 +798,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
     let cr = Arm64Class::new()
     arm64_typclass(st, cr, st.typs[st.fn_.ret_ty], 0, 0)
     if (cr.class_ & Arm64Cptr) != 0 {
+      st.fn_.reg = st.fn_.reg | (1UL << @types.ARM64_R8)
       st.fn_.retr = arm64_newtmp(st, @types.Kl)
       arm64_emit(
         st,
@@ -835,7 +839,13 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
       off = (off + c.align - 1) & -c.align
       arm64_emit(
         st,
-        @types.Load,
+        if i.op.is_par_bh() {
+          @types.Op::from_index(
+            @types.Loadsb.index() + i.op.index() - @types.Parsb.index(),
+          )
+        } else {
+          @types.Load
+        },
         c.cls[0],
         i.to,
         @types.Ref::slot(-(off + 2)),
@@ -853,9 +863,7 @@ fn arm64_selpar(st : Arm64AbiState, par_end : Int32) -> Unit raise {
       )
     }
   }
-  if !env.is_none() {
-    raise @util.QbeError::Ice("todo (arm abi): env calls")
-  }
+  let _ = env
   st.params.ngp = (cty >> 5) & 15
   st.params.nfp = (cty >> 9) & 15
   // C Params.stk = align(off, 8); this port stores the byte value.
@@ -1212,5 +1220,72 @@ fn arm64_process_block(
   b.ins.clear()
   for x in nb {
     b.ins.push(x)
+  }
+}
+
+///|
+// C arm64/abi.c apple_extsb: the Apple ABI passes sub-word arguments and
+// returns already extended, so narrow them to the declared width before ABI
+// lowering (the ELF flavour uses elimsb instead).
+pub fn apple_extsb(fn_ : @types.Fn) -> Unit raise {
+  for bid in fn_.def_order {
+    let b = fn_.blks[bid]
+    // C emit() writes into a reversed buffer; collect it in that order.
+    let rev : Array[@types.Ins] = []
+    if b.jmp.kind.is_ret_bh() {
+      let r = @types.Ref::tmp(fn_.new_tmp("abi", @types.Kw))
+      let op = @types.Op::from_index(
+        @types.Extsb.index() + (b.jmp.kind.index() - @types.Jretsb.index()),
+      )
+      rev.push(@types.Ins::new(op, @types.Kw, r, b.jmp.arg, @types.Ref::none()))
+      b.jmp.arg = r
+      b.jmp.kind = @types.Jretw
+    }
+    let arr = b.ins
+    let mut idx = arr.length() - 1
+    while idx >= 0 {
+      let ins = arr[idx]
+      rev.push(ins)
+      if ins.op == @types.Call {
+        // Find the run of argument instructions immediately before the call.
+        let mut j = idx - 1
+        while j >= 0 && arr[j].op.is_arg() {
+          j = j - 1
+        }
+        let mut k = idx - 1
+        let ext : Array[@types.Ins] = []
+        while k > j {
+          let a = arr[k]
+          let copy = @types.Ins::new(a.op, a.cls, a.to, a.arg1, a.arg2)
+          copy.asm_text = a.asm_text
+          if a.op.is_arg_bh() {
+            let nt = @types.Ref::tmp(fn_.new_tmp("abi", @types.Kl))
+            copy.arg1 = nt
+            let op = @types.Op::from_index(
+              @types.Extsb.index() + (a.op.index() - @types.Argsb.index()),
+            )
+            ext.push(
+              @types.Ins::new(op, @types.Kw, nt, a.arg1, @types.Ref::none()),
+            )
+          }
+          rev.push(copy)
+          k = k - 1
+        }
+        for e in ext {
+          rev.push(e)
+        }
+        idx = j
+        continue
+      }
+      idx = idx - 1
+    }
+    let out : Array[@types.Ins] = []
+    for k in (rev.length() - 1)>=..0 {
+      out.push(rev[k])
+    }
+    b.ins.clear()
+    for i in out {
+      b.ins.push(i)
+    }
   }
 }

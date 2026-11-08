@@ -185,6 +185,9 @@ fn rv64_fpstruct(
   t : @types.Typ,
   off : Int32,
 ) -> Int32 {
+  if t.isunion {
+    return -1
+  }
   let mut off = off
   let fields = t.fields
   let mut member_start = 0
@@ -231,7 +234,7 @@ fn rv64_fpstruct(
           if result == -1 {
             return -1
           }
-          off = off + nested.size.to_int()
+          // C fpstruct passes off by value and does not advance it here.
         }
         _ => ()
       }
@@ -442,16 +445,9 @@ fn rv64_argsclass(
 // Allocate blob on stack (C stkblob)
 fn rv64_stkblob(st : Rv64AbiState, r : @types.Ref, t : @types.Typ) -> Unit {
   let al = if t.align - 2 >= 0 { t.align - 2 } else { 0 }
-  let sz = (t.size.to_int() + 7) & -8
+  let sz = (t.size + 7L) & -8L
   let op = @types.Op::from_index(@types.Alloc4.index() + al)
-  rv64_emit(
-    st,
-    op,
-    @types.Kl,
-    r,
-    rv64_getcon(st, sz.to_int64()),
-    @types.Ref::none(),
-  )
+  rv64_emit(st, op, @types.Kl, r, rv64_getcon(st, sz), @types.Ref::none())
 }
 
 ///|
@@ -857,7 +853,9 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
 
   // Allocate register-copied aggregates
   let il : Array[@types.Ins] = []
-  let tmp : Array[@types.Ref] = Array::make(npar + 2, @types.Ref::none())
+  // C selpar reserves 17 entries: at most eight GP and eight FP
+  // register components plus one split stack component.
+  let tmp : Array[@types.Ref] = Array::make(17, @types.Ref::none())
   let mut t = 0
   for a in 0..<npar {
     let i = ins[a]

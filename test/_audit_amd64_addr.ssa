@@ -1,0 +1,15 @@
+function l $absolute() {
+@start
+  %v =l load 4096
+  ret %v
+}
+function $store_symbol(l %p) {
+@start
+  storel $value, %p
+  ret
+}
+function l $numeric_call() {
+@start
+  %v =l call 4096()
+  ret %v
+}

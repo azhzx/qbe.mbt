@@ -1,0 +1,11 @@
+thread data $tlsvar = { l 7 }
+function l $tls() {
+@start
+  %v =l load thread $tlsvar
+  ret %v
+}
+function l $ext() {
+@start
+  %v =l call extern $callee()
+  ret %v
+}

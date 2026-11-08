@@ -17,7 +17,7 @@ fn op_pinned(i : @types.Ins) -> Bool {
 }
 
 ///|
-fn pinned(i : @types.Ins) -> Bool {
+pub fn pinned(i : @types.Ins) -> Bool {
   op_pinned(i) || isdivwl(i)
 }
 
@@ -41,7 +41,8 @@ fn cheap(i : @types.Ins) -> Bool {
     return false
   }
   match i.op {
-    @types.Add
+    @types.Neg
+    | @types.Add
     | @types.Sub
     | @types.Mul
     | @types.And
@@ -453,7 +454,11 @@ fn igroup(fn_ : @types.Fn, b : @types.Blk, i_idx : Int32) -> (Int32, Int32) {
   ignore(fn_)
   let ie = b.ins.length()
   let op = b.ins[i_idx].op
-  if op.is_par() {
+  if op == @types.Blit0 {
+    (i_idx, i_idx + 2)
+  } else if op == @types.Blit1 {
+    (i_idx - 1, i_idx + 1)
+  } else if op.is_par() {
     let mut i0 = i_idx
     while i0 > 0 && b.ins[i0 - 1].op.is_par() {
       i0 = i0 - 1

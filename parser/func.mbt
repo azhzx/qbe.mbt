@@ -106,10 +106,18 @@ fn Parser::parserefl(self : Self, arg : Bool) -> Bool raise {
     if pk == TRpa {
       break
     }
+    // C parse.c rejects a signature parameter after `...`; calls intentionally
+    // continue after the Argv marker.
+    if !arg && vararg {
+      raise self.error("no parameters allowed after '...'")
+    }
     // The ellipsis marks where the variadic arguments start. In a signature
     // it sets is_vararg; in a call it emits an Argv marker. Arguments may
     // follow it, so keep parsing after consuming the marker (C parserefl).
     if pk == TDot3 {
+      if vararg {
+        raise self.error("only one '...' allowed")
+      }
       let _ = self.next() // consume ...
       vararg = true
       if arg {
@@ -350,13 +358,15 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
       let to = self.tmpref(self.tokens[self.pos - 1].raw)
       self.expect(TEq) // =
       let (cls, ty, bh) = self.parsecls()
-      if bh >= 0 {
-        raise self.error("invalid class specifier")
-      }
       let op_tok = self.next()
+      // C permits subword/aggregate classes for calls only.
+      if (bh >= 0 || cls == @types.Kx) &&
+        !(op_tok.kind == TId && op_tok.raw == "call") {
+        raise self.error("size class must be w, l, s, or d")
+      }
       // Check for phi
       if op_tok.kind == TPhi {
-        if ps != PPhi {
+        if ps != PPhi || self.curblk == fn_.def_order[0] {
           raise self.error("unexpected phi instruction")
         }
         self.parse_phi(to, cls)
@@ -398,7 +408,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
         // Debug location: dbgloc LINE[, COL] (C parse.c case Odbgloc).
         self.expect(TInt)
         let line = parse_int64(self.tokens[self.pos - 1].raw)
-        if line < -2147483648L || line > 2147483647L {
+        if line < 0L || line > 536870911L {
           raise self.error("line number too big")
         }
         let mut col : Int64 = 0L
@@ -406,7 +416,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
           let _ = self.next()
           self.expect(TInt)
           col = parse_int64(self.tokens[self.pos - 1].raw)
-          if col < -2147483648L || col > 2147483647L {
+          if col < 0L || col > 536870911L {
             raise self.error("column number too big")
           }
         }
@@ -453,7 +463,7 @@ fn Parser::parseline(self : Self, ps : PState) -> PState raise {
           raise self.error("blit size must be constant")
         }
         let c = fn_.cons[sz.con_val()]
-        if c.kind != @types.CBits || c.bits.i < 0L || c.bits.i > 2147483647L {
+        if c.kind != @types.CBits || c.bits.i < 0L || c.bits.i > 268435455L {
           raise self.error("invalid blit size")
         }
         let b = fn_.blks[self.curblk]
@@ -587,7 +597,7 @@ fn Parser::parse_asm_ins(
     raise self.error("string literal expected after asm")
   }
   let tok = self.next()
-  let text = tok.raw
+  let text = decode_asm_escapes(tok.raw)
   if text.length() == 0 {
     raise self.error("DBG empty asm text, kind=\{tok.kind_str()}")
   }
@@ -641,12 +651,50 @@ fn Parser::parse_ins_args(self : Self) -> (@types.Ref, @types.Ref) raise {
   arg2 = r2
   // Skip any additional arguments (shouldn't happen in QBE) and enforce the
   // C parse.c loop's trailing check after every operand.
+  let mut nargs = 2
   while self.peek_kind() == TCom {
     let _ = self.next() // consume ,
-    let _ = self.parseref() // skip extra arg
+    if nargs == 63 {
+      raise self.error("too many arguments")
+    }
+    if self.parseref().is_none() {
+      raise self.error("invalid instruction argument")
+    }
+    nargs += 1
   }
   if self.peek_kind() != TNl {
     raise self.error(", or end of line expected")
   }
   (arg1, arg2)
+}
+
+///|
+// Decode the C-style escapes QBE string literals keep raw (the lexer preserves
+// them so data strings can be emitted verbatim). Inline asm is port-only, so it
+// decodes them itself; \`%%\`/operand substitution happens in the emitter.
+fn decode_asm_escapes(s : String) -> String {
+  let b = StringBuilder::new()
+  let chars = s.to_array()
+  let mut i = 0
+  while i < chars.length() {
+    let c = chars[i]
+    if c == '\\' && i + 1 < chars.length() {
+      match chars[i + 1] {
+        'n' => b.write_char('\n')
+        't' => b.write_char('\t')
+        'r' => b.write_char('\r')
+        '\\' => b.write_char('\\')
+        '"' => b.write_char('"')
+        _ => {
+          b.write_char('\\')
+          b.write_char(chars[i + 1])
+        }
+      }
+      i = i + 2
+    } else {
+      b.write_char(c)
+      i = i + 1
+    }
+  }
+  b.to_string()
 }

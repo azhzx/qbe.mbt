@@ -11,6 +11,7 @@ priv struct IselState {
   an : Array[ANum]
   mut cur_ins : Array[@types.Ins]
   interner : @util.Interner
+  apple : Bool
 }
 
 ///|
@@ -95,12 +96,14 @@ fn fixarg(
   r : @types.Ref,
   k : @types.Class,
   op : @types.Op?,
+  arg_index~ : Int32 = 0,
 ) -> @types.Ref {
   let r0 = r
   let mut r1 = r0
   let s = rslot(r0, st.fn_)
   let cpy = op is None || op == Some(@types.Copy)
-  let mem = op is Some(o) && (o.is_store() || o.is_load() || o == @types.Call)
+  let mem = op is Some(o) &&
+    ((o.is_store() && arg_index == 1) || o.is_load() || o == @types.Call)
   if k.base() == 1 && r0.is_con() {
     // load floating point constants from memory slots
     let n = st.fn_.mems.length()
@@ -118,6 +121,13 @@ fn fixarg(
     }
     st.fn_.mems.push(a)
     r1 = @types.Ref::mem(n)
+  } else if op == Some(@types.Call) &&
+    arg_index == 0 &&
+    r0.is_con() &&
+    st.fn_.cons[r0.con_val()].kind != @types.CAddr {
+    // C fixarg: numeric callees always need an indirect call.
+    r1 = isel_newtmp(st, @types.Kl)
+    emit(st, @types.Copy, @types.Kl, r1, r0, @types.Ref::none())
   } else if !cpy && k == @types.Kl && noimm(r0, st.fn_) != 0 {
     // load constants that do not fit in a 32bit signed integer
     r1 = isel_newtmp(st, @types.Kl)
@@ -143,6 +153,35 @@ fn fixarg(
       let r3 = @types.Ref::con(st.fn_.get_con(c.bits.i))
       emit(st, @types.Add, @types.Kl, r1, r2, r3)
     }
+    if st.apple && c.is_thr() {
+      emit(
+        st,
+        @types.Copy,
+        @types.Kl,
+        r2,
+        @types.Ref::tmp(@types.RAX),
+        @types.Ref::none(),
+      )
+      r2 = isel_newtmp(st, @types.Kl)
+      let r3 = isel_newtmp(st, @types.Kl)
+      emit(
+        st,
+        @types.Call,
+        @types.Kw,
+        @types.Ref::none(),
+        r3,
+        @types.Ref::call(17),
+      )
+      emit(
+        st,
+        @types.Copy,
+        @types.Kl,
+        @types.Ref::tmp(@types.RDI),
+        r2,
+        @types.Ref::none(),
+      )
+      emit(st, @types.Load, @types.Kl, r3, r2, @types.Ref::none())
+    }
     let cc = @types.Con::addr_sym(c.label, c.sym_type)
     let r3 = @types.Ref::con(st.fn_.get_con_by(cc))
     emit(st, @types.Addr, @types.Kl, r2, r3, @types.Ref::none())
@@ -161,7 +200,7 @@ fn fixarg(
   } else if r0.is_mem() {
     // apple asm fix: materialize a memory base when it is empty
     let m = st.fn_.mems[r0.mem_val()]
-    if m.base.is_none() {
+    if m.base.is_none() && m.offset.kind == @types.CAddr {
       let n = st.fn_.cons.length()
       st.fn_.cons.push(m.offset)
       let r0 = isel_newtmp(st, @types.Kl)
@@ -199,10 +238,12 @@ fn fixarg_addr_con(st : IselState, r : @types.Ref) -> @types.Con {
 fn fixarg_has_ext_addr(st : IselState, r : @types.Ref) -> Bool {
   if r.is_con() {
     let c = st.fn_.cons[r.con_val()]
-    c.kind == @types.CAddr && c.is_ext()
+    c.kind == @types.CAddr &&
+    (c.is_ext() || (st.apple && c.sym_type == @types.SYM_THR))
   } else if r.is_mem() {
     let c = st.fn_.mems[r.mem_val()].offset
-    c.kind == @types.CAddr && c.is_ext()
+    c.kind == @types.CAddr &&
+    (c.is_ext() || (st.apple && c.sym_type == @types.SYM_THR))
   } else {
     false
   }
@@ -219,7 +260,7 @@ fn seladdr(st : IselState, r : @types.Ref) -> @types.Ref raise {
     }
     if !av.base.is_none() && av.offset.kind == @types.CAddr {
       // apple asm fix
-      if !av.index.is_none() {
+      if !av.index.is_none() || !av.base.is_tmp() {
         return r0
       } else {
         av.index = av.base

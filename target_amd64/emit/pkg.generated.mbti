@@ -8,13 +8,15 @@ import {
 }
 
 // Values
+pub fn amd64_emit_reset() -> Unit
+
 pub fn debug_locs(@types.Fn, Bool) -> Array[@dwarf.DbgLoc]
 
-pub fn emitfn(@types.Fn, @util.Interner, String, String, Bool, StringBuilder) -> Unit raise
+pub fn emitfn(@types.Fn, @util.Interner, String, String, Bool, StringBuilder, windows? : Bool) -> Unit raise
 
 pub fn gasemitdat(@types.Dat, String, String, StringBuilder) -> Unit
 
-pub fn gasemitfin(String, Bool, StringBuilder) -> Unit
+pub fn gasemitfin(String, Bool, StringBuilder, windows? : Bool) -> Unit
 
 // Errors
 

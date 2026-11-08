@@ -339,3 +339,147 @@ pub fn target_retregs(r : Ref) -> (UInt64, Int32, Int32) {
 pub fn target_argregs(r : Ref) -> (UInt64, Int32, Int32) {
   (target_cfg.argregs)(r)
 }
+
+///|
+// Windows x64 register-count constants (C amd64/all.h NGPS_WIN/NCLR_WIN).
+pub const NGPS_WIN : Int32 = R11 - RAX + 1 - 2
+
+///|
+pub const NCLR_WIN : Int32 = R15 - RBX + 1 + 2
+
+///|
+// Caller-save registers for amd64_win (C amd64_winabi_rsave).
+pub let rsave_win : Array[Int32] = [
+  RCX,
+  RDX,
+  R8,
+  R9,
+  R10,
+  R11,
+  RAX,
+  XMM0,
+  XMM1,
+  XMM2,
+  XMM3,
+  XMM4,
+  XMM5,
+  XMM6,
+  XMM7,
+  XMM8,
+  XMM9,
+  XMM10,
+  XMM11,
+  XMM12,
+  XMM13,
+  XMM14,
+]
+
+///|
+// Callee-save registers for amd64_win (C amd64_winabi_rclob).
+pub let rclob_win : Array[Int32] = [RBX, R12, R13, R14, R15, RSI, RDI]
+
+///|
+// Windows call return registers (C amd64_winabi_retregs). Bit 0 selects an
+// integer (RAX) return, bit 1 a float (XMM0) return.
+pub fn win_retregs(r : Ref) -> (UInt64, Int32, Int32) {
+  let v = r.call_val()
+  // C amd64_winabi_retregs stores the raw bit values: p[0] is 0/1 and p[1]
+  // is 0/2 (it masks with 2, not 1). Transcribe it, since live.c subtracts
+  // these counts when a call is scanned.
+  let ni = v & 1
+  let nf = v & 2
+  let b : UInt64 = if ni == 1 { 1UL << RAX } else { 1UL << XMM0 }
+  (b, ni, nf)
+}
+
+///|
+fn popcnt64(b : UInt64) -> Int32 {
+  let mut x = b
+  x = (x & 0x5555555555555555UL) + ((x >> 1) & 0x5555555555555555UL)
+  x = (x & 0x3333333333333333UL) + ((x >> 2) & 0x3333333333333333UL)
+  x = (x & 0x0f0f0f0f0f0f0f0fUL) + ((x >> 4) & 0x0f0f0f0f0f0f0f0fUL)
+  x = x + (x >> 8)
+  x = x + (x >> 16)
+  x = x + (x >> 32)
+  (x & 0xffUL).to_int()
+}
+
+///|
+// Windows call argument registers (C amd64_winabi_argregs). Unlike SysV the
+// four integer and four float slots are not contiguous, so the RCall value
+// stores bitmasks of the registers actually used.
+pub fn win_argregs(r : Ref) -> (UInt64, Int32, Int32) {
+  let v = r.call_val()
+  let int_passed = (v >> 4) & 15
+  let float_passed = (v >> 8) & 15
+  let env_param = (v >> 12) & 1
+  let mut b : UInt64 = 0
+  if (int_passed & 1) != 0 {
+    b = b | (1UL << RCX)
+  }
+  if (int_passed & 2) != 0 {
+    b = b | (1UL << RDX)
+  }
+  if (int_passed & 4) != 0 {
+    b = b | (1UL << R8)
+  }
+  if (int_passed & 8) != 0 {
+    b = b | (1UL << R9)
+  }
+  if (float_passed & 1) != 0 {
+    b = b | (1UL << XMM0)
+  }
+  if (float_passed & 2) != 0 {
+    b = b | (1UL << XMM1)
+  }
+  if (float_passed & 4) != 0 {
+    b = b | (1UL << XMM2)
+  }
+  if (float_passed & 8) != 0 {
+    b = b | (1UL << XMM3)
+  }
+  if env_param != 0 {
+    b = b | (1UL << RAX)
+  }
+  (
+    b,
+    popcnt64(int_passed.to_int64().reinterpret_as_uint64()),
+    popcnt64(float_passed.to_int64().reinterpret_as_uint64()),
+  )
+}
+
+///|
+fn amd64_win_target_cfg() -> TargetCfg {
+  TargetCfg::{
+    gpr_base: RAX,
+    fpr_base: XMM0,
+    ngpr: NGPR,
+    nfpr: NFPR,
+    fpr_class_base: XMM0,
+    post_call_gpr: NGPS_WIN,
+    post_call_fpr: NFPS,
+    rglob_mask: rglob_mask(),
+    rsave: rsave_win,
+    memargs: fn(op) { op_info(op).nmem },
+    retregs: win_retregs,
+    argregs: win_argregs,
+  }
+}
+
+///|
+// Select the amd64_win target (C init(T_amd64_win)).
+pub fn init_amd64_win_target() -> Unit {
+  let w = amd64_win_target_cfg()
+  target_cfg.gpr_base = w.gpr_base
+  target_cfg.fpr_base = w.fpr_base
+  target_cfg.ngpr = w.ngpr
+  target_cfg.nfpr = w.nfpr
+  target_cfg.fpr_class_base = w.fpr_class_base
+  target_cfg.post_call_gpr = w.post_call_gpr
+  target_cfg.post_call_fpr = w.post_call_fpr
+  target_cfg.rglob_mask = w.rglob_mask
+  target_cfg.rsave = w.rsave
+  target_cfg.memargs = w.memargs
+  target_cfg.retregs = w.retregs
+  target_cfg.argregs = w.argregs
+}

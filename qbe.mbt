@@ -86,8 +86,9 @@ pub fn compile(
 pub fn compile_debug(
   text : String,
   flags : String,
+  apple~ : Bool = false,
 ) -> Result[String, @util.QbeError] {
-  try compile_debug_raise(text, flags) catch {
+  try compile_debug_raise(text, flags, apple~) catch {
     @util.QbeError::ParseError(f, l, m) =>
       Err(@util.QbeError::ParseError(f, l, m))
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
@@ -111,14 +112,18 @@ fn compile_raise(text : String, gas : String) -> String raise {
 
 ///|
 // Debug-dump compile, raising `@util.QbeError` on failure.
-fn compile_debug_raise(text : String, flags : String) -> String raise {
+fn compile_debug_raise(
+  text : String,
+  flags : String,
+  apple~ : Bool = false,
+) -> String raise {
   @types.init_amd64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
-    run_passes(fn_, interner, typs, dbg, out)
+    run_passes(fn_, interner, typs, dbg, out, apple~)
     out.write_string("\n")
   }
   out.to_string()
@@ -427,6 +432,7 @@ pub fn compile_arm64(
 // callers such as the CLI from duplicating the backend dispatch policy.
 pub(all) enum Target {
   Amd64Sysv
+  Amd64Win
   Wasm32
   Rv64
   La64
@@ -443,6 +449,7 @@ pub fn compile_target(
 ) -> Result[String, @util.QbeError] {
   match target {
     Target::Amd64Sysv => compile(text, gas~)
+    Target::Amd64Win => compile_win(text)
     Target::Wasm32 => compile_wasm(text)
     Target::Rv64 => compile_rv64(text, gas~)
     Target::La64 => compile_la64(text, gas~)
@@ -451,18 +458,199 @@ pub fn compile_target(
 }
 
 ///|
+// Compile independently scoped source files to one output stream.
+// Each pair is (file name, source text).
+pub fn compile_sources(
+  sources : Array[(String, String)],
+  target : Target,
+  gas~ : String = "e",
+) -> Result[String, @util.QbeError] {
+  try compile_sources_raise(sources, target, gas) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    s => Ok(s)
+  }
+}
+
+///|
+fn compile_sources_raise(
+  sources : Array[(String, String)],
+  target : Target,
+  gas : String,
+) -> String raise {
+  reset_output_state()
+  let sb = StringBuilder::StringBuilder()
+  let (gasloc, gassym, apple) = match target {
+    Wasm32 => (".L", "", false)
+    // PE has no symbol prefix and uses "L" for assembler-local labels.
+    Amd64Win => ("L", "", false)
+    _ => gas_setting(gas)
+  }
+  let mut cu_name = "<input>"
+  let mut cu_dir = "."
+  let mut have_cu = false
+  try {
+    for (file, text) in sources {
+      match target {
+        Amd64Sysv | Wasm32 => @types.init_amd64_target()
+        Amd64Win => @types.init_amd64_win_target()
+        Arm64 => @types.init_arm64_target()
+        Rv64 => @types.init_rv64_target()
+        La64 => @types.init_la64_target()
+      }
+      let (funcs, datas, order, typs, interner) = parse_module(text, file)
+      if !have_cu && funcs.length() > 0 {
+        let (name, dir) = dbg_cu_info(order)
+        cu_name = if funcs[0].dbg_name != "" { funcs[0].dbg_name } else { name }
+        cu_dir = if funcs[0].dbg_dir != "" { funcs[0].dbg_dir } else { dir }
+        have_cu = true
+      }
+      match target {
+        Amd64Sysv =>
+          emit_module(
+            funcs,
+            datas,
+            order,
+            typs,
+            interner,
+            gasloc,
+            gassym,
+            apple,
+            sb,
+            reset=false,
+            finish=false,
+          )
+        Amd64Win =>
+          emit_module(
+            funcs,
+            datas,
+            order,
+            typs,
+            interner,
+            gasloc,
+            gassym,
+            apple,
+            sb,
+            reset=false,
+            finish=false,
+            windows=true,
+          )
+        Arm64 =>
+          emit_arm64_module(
+            funcs,
+            datas,
+            order,
+            typs,
+            interner,
+            gasloc,
+            gassym,
+            apple,
+            sb,
+            reset=false,
+            finish=false,
+          )
+        Rv64 =>
+          emit_rv64_module(
+            funcs,
+            datas,
+            order,
+            typs,
+            interner,
+            gasloc,
+            gassym,
+            sb,
+            reset=false,
+            finish=false,
+          )
+        La64 =>
+          emit_la64_module(
+            funcs,
+            datas,
+            order,
+            typs,
+            interner,
+            gasloc,
+            gassym,
+            sb,
+            reset=false,
+            finish=false,
+          )
+        Wasm32 => emit_wasm_module(funcs, datas, order, typs, interner, sb)
+      }
+    }
+    if @util.debug_info() && @dwarf.has_info() {
+      @dwarf.emit_debug_info(gasloc, cu_name, cu_dir, apple, sb)
+    }
+    match target {
+      Amd64Sysv | Arm64 => @emit_amd64.gasemitfin(gasloc, apple, sb)
+      Amd64Win => @emit_amd64.gasemitfin(gasloc, apple, sb, windows=true)
+      Rv64 => @emit_rv64.gasemitfin_rv64(gasloc, sb)
+      La64 => @emit_la64.gasemitfin_la64(gasloc, sb)
+      Wasm32 => ()
+    }
+  } catch {
+    e => {
+      reset_output_state()
+      raise e
+    }
+  }
+  reset_output_state()
+  sb.to_string()
+}
+
+///|
 // Compile debug dumps using a selected backend.
 pub fn compile_target_debug(
   text : String,
   target : Target,
   flags : String,
+  apple~ : Bool = false,
 ) -> Result[String, @util.QbeError] {
   match target {
-    Target::Amd64Sysv => compile_debug(text, flags)
+    Target::Amd64Sysv => compile_debug(text, flags, apple~)
+    Target::Amd64Win => compile_win_debug(text, flags)
     Target::Wasm32 => compile_wasm_debug(text, flags)
     Target::Rv64 => compile_rv64_debug(text, flags)
     Target::La64 => compile_la64_debug(text, flags)
-    Target::Arm64 => compile_arm64_debug(text, flags)
+    Target::Arm64 => compile_arm64_debug(text, flags, apple~)
+  }
+}
+
+///|
+// Debug mode still writes the \`.file N "path"\` directives to the output
+// stream (reference main.c dbgfile), while pass dumps go to stderr.
+pub fn compile_target_debug_files(
+  text : String,
+  target : Target,
+  flags : String,
+  apple~ : Bool = false,
+) -> Result[(String, String), @util.QbeError] {
+  let files = try {
+    let (_, _, order, _, _) = parse_module(text, "<input>")
+    let sb = StringBuilder::new()
+    for item in order {
+      if item.has_prefix("dbgfile:") {
+        @util.emit_dbgfile(item[8:].to_owned(), sb)
+      }
+    }
+    sb.to_string()
+  } catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      return Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) =>
+      return Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => return Err(@util.QbeError::Ice(m))
+    e => return Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    s => s
+  }
+  match compile_target_debug(text, target, flags, apple~) {
+    Ok(dump) => Ok((files, dump))
+    Err(e) => Err(e)
   }
 }
 
@@ -483,8 +671,9 @@ pub fn compile_target_debug(
 pub fn compile_arm64_debug(
   text : String,
   flags : String,
+  apple~ : Bool = false,
 ) -> Result[String, @util.QbeError] {
-  try compile_arm64_debug_raise(text, flags) catch {
+  try compile_arm64_debug_raise(text, flags, apple~) catch {
     @util.QbeError::ParseError(f, l, m) =>
       Err(@util.QbeError::ParseError(f, l, m))
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
@@ -510,14 +699,18 @@ fn compile_arm64_raise(text : String, gas : String) -> String raise {
 
 ///|
 // ARM64 debug-dump compile, raising `@util.QbeError` on failure.
-fn compile_arm64_debug_raise(text : String, flags : String) -> String raise {
+fn compile_arm64_debug_raise(
+  text : String,
+  flags : String,
+  apple~ : Bool = false,
+) -> String raise {
   @types.init_arm64_target()
   let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
   let dbg = dbg_from_flags(flags)
   let out = StringBuilder::StringBuilder()
   for fn_ in funcs {
     out.write_string("**** Function \{fn_.name} ****")
-    run_passes_arm64(fn_, interner, typs, dbg, false, out)
+    run_passes_arm64(fn_, interner, typs, dbg, apple, out)
     out.write_string("\n")
   }
   out.to_string()
@@ -889,5 +1082,72 @@ pub fn interpret(
     @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
     @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
     e => Err(@util.QbeError::Ice("\{e}"))
+  }
+}
+
+///|
+// Windows x64 compile, raising `@util.QbeError` on failure.
+fn compile_win_raise(text : String) -> String raise {
+  @types.init_amd64_win_target()
+  let (funcs, datas, order, typs, interner) = parse_module(text, "<input>")
+  let sb = StringBuilder::StringBuilder()
+  emit_module(
+    funcs,
+    datas,
+    order,
+    typs,
+    interner,
+    "L",
+    "",
+    false,
+    sb,
+    windows=true,
+  )
+  sb.to_string()
+}
+
+///|
+// Windows x64 debug-dump compile, raising `@util.QbeError` on failure.
+fn compile_win_debug_raise(text : String, flags : String) -> String raise {
+  @types.init_amd64_win_target()
+  let (funcs, _, _, typs, interner) = parse_module(text, "<input>")
+  let dbg = dbg_from_flags(flags)
+  let out = StringBuilder::StringBuilder()
+  for fn_ in funcs {
+    out.write_string("**** Function \{fn_.name} ****")
+    run_passes_win(fn_, interner, typs, dbg, out)
+    out.write_string("\n")
+  }
+  out.to_string()
+}
+
+///|
+// Compile IL to Windows x64 (PE) assembly text.
+pub fn compile_win(text : String) -> Result[String, @util.QbeError] {
+  try compile_win_raise(text) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
+  }
+}
+
+///|
+// Compile IL to Windows x64 staged debug dumps.
+pub fn compile_win_debug(
+  text : String,
+  flags : String,
+) -> Result[String, @util.QbeError] {
+  try compile_win_debug_raise(text, flags) catch {
+    @util.QbeError::ParseError(f, l, m) =>
+      Err(@util.QbeError::ParseError(f, l, m))
+    @util.QbeError::CompileError(m) => Err(@util.QbeError::CompileError(m))
+    @util.QbeError::Ice(m) => Err(@util.QbeError::Ice(m))
+    e => Err(@util.QbeError::Ice("\{e}"))
+  } noraise {
+    r => Ok(r)
   }
 }

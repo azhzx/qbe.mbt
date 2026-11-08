@@ -1,0 +1,7 @@
+data $a = { b "a" "b" 0 }
+data $b = { l $a, l $a + 1, l $a + 2, l $b + -4 }
+function w $f() {
+@start
+  %x =sb call $g()
+  ret %x
+}

@@ -379,7 +379,7 @@ pub fn Op::from_string(s : String) -> Op {
     "sltof" => Sltof
     "ultof" => Ultowf
     "cast" => Cast
-    "alloc4" => Alloc4
+    "alloc1" | "alloc2" | "alloc4" => Alloc4
     "alloc8" => Alloc8
     "alloc16" => Alloc16
     "atomicload" => AtomicLoad

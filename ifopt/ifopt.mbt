@@ -47,47 +47,9 @@ fn block_order(fn_ : @types.Fn) -> Array[Int32] {
 }
 
 ///|
-// C gcm.c isdivwl: integer division/remainder is pinned.
-fn is_div_wl(i : @types.Ins) -> Bool {
-  match i.op {
-    @types.Div | @types.Rem | @types.Udiv | @types.Urem => i.cls.base() == 0
-    _ => false
-  }
-}
-
-///|
-// C gcm.c pinned().  @types.OpInfo has no pinned field, so the flags are
-// reimplemented here from the pinned column of ops.h.
+// C ifopt.c uses the same gcm.c pinned predicate as GVN/GCM.
 fn pinned(i : @types.Ins) -> Bool {
-  match i.op {
-    @types.Storeb
-    | @types.Storeh
-    | @types.Storew
-    | @types.Storel
-    | @types.Stores
-    | @types.Stored
-    | @types.Loadsb
-    | @types.Loadub
-    | @types.Loadsh
-    | @types.Loaduh
-    | @types.Loadsw
-    | @types.Loaduw
-    | @types.Load
-    | @types.Alloc4
-    | @types.Alloc8
-    | @types.Alloc16
-    | @types.Vaarg
-    | @types.Vastart
-    | @types.Par
-    | @types.Parc
-    | @types.Pare
-    | @types.Arg
-    | @types.Argc
-    | @types.Arge
-    | @types.Call
-    | @types.Vacall => true
-    _ => is_div_wl(i)
-  }
+  @gvn.pinned(i)
 }
 
 ///|

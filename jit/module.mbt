@@ -201,6 +201,36 @@ pub fn JitModule::from_bin_module_ex(
       @object.enc_add_imm(rd, rd, (target & 0xFFF).to_int()).reinterpret_as_uint(),
     )
   }
+  // Data pointers inside the image store section-relative values; rebase them
+  // to this mapping's addresses (internal data/functions), or resolve external
+  // symbols, like the object writer's UNSIGNED relocations.
+  let data_base = base + m.code_bytes.to_int64()
+  for r in m.data_refs {
+    let (off, sym, w, addend) = r
+    let mut target = -1L
+    for p in m.datas {
+      if p.0 == sym {
+        target = data_base + p.1.to_int64()
+      }
+    }
+    if target < 0L {
+      for p in m.fns {
+        if p.0 == sym {
+          target = base + (p.1 * 4).to_int64()
+        }
+      }
+    }
+    if target < 0L {
+      let a = jit_resolve(symbols, sym)
+      if a == 0L {
+        raise @util.QbeError::CompileError(
+          "jit: unresolved data symbol: " + sym,
+        )
+      }
+      target = a
+    }
+    jit_write_le(base, m.code_bytes + off, target + addend.to_int64(), w)
+  }
   exec.protect(m.code_bytes)
   { exec, fns: m.fns, datas: m.datas, code_bytes: m.code_bytes, }
 }
@@ -377,4 +407,14 @@ pub fn JitModule::call_f64(
 // Unmap the code image.
 pub fn JitModule::close(self : JitModule) -> Unit {
   self.exec.close()
+}
+
+///|
+// Little-endian store into the mapped image (used for data relocations).
+fn jit_write_le(addr : Int64, off : Int32, v : Int64, w : Int32) -> Unit {
+  let b : Array[Byte] = []
+  for i in 0..<w {
+    b.push(((v >> (i * 8)) & 0xFFL).to_byte())
+  }
+  @native.mbt_native_write_bytes(addr, off, Bytes::from_array(b[:]))
 }

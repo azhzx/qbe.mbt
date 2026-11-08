@@ -9,6 +9,8 @@ import {
 // Values
 pub fn abi_arm64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Bool, Array[@types.Typ]) -> String raise
 
+pub fn apple_extsb(@types.Fn) -> Unit raise
+
 // Errors
 
 // Types and methods

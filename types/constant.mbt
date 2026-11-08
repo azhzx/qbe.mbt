@@ -169,6 +169,84 @@ pub fn Con::raw_bits(self : Con) -> Int64 {
 }
 
 ///|
+// Bit length of a 64-bit unsigned value.
+fn f32_bitlen(x : UInt64) -> Int32 {
+  let mut v = x
+  let mut n = 0
+  if v >> 32 != 0UL {
+    n = n + 32
+    v = v >> 32
+  }
+  if v >> 16 != 0UL {
+    n = n + 16
+    v = v >> 16
+  }
+  if v >> 8 != 0UL {
+    n = n + 8
+    v = v >> 8
+  }
+  if v >> 4 != 0UL {
+    n = n + 4
+    v = v >> 4
+  }
+  if v >> 2 != 0UL {
+    n = n + 2
+    v = v >> 2
+  }
+  if v >> 1 != 0UL {
+    n = n + 1
+  }
+  n + 1
+}
+
+///|
+// Round an integer magnitude to IEEE-754 single precision with one
+// round-to-nearest-even step, like the C conversion. Converting through
+// Double first would round twice (9007199791611905 is 0x5a000001 in C).
+pub fn f32_bits_from_uint64(mag : UInt64, neg : Bool) -> UInt32 {
+  let sgn : UInt32 = if neg { 0x80000000 } else { 0 }
+  if mag == 0UL {
+    return sgn
+  }
+  let mut bl = f32_bitlen(mag)
+  let mut m = mag
+  if bl > 24 {
+    let sh = bl - 24
+    let rem = m & ((1UL << sh) - 1UL)
+    let half = 1UL << (sh - 1)
+    m = m >> sh
+    if rem > half || (rem == half && (m & 1UL) == 1UL) {
+      m = m + 1UL
+    }
+    if m == 1UL << 24 {
+      m = m >> 1
+      bl = bl + 1
+    }
+  } else {
+    m = m << (24 - bl)
+  }
+  let e = bl - 1
+  let expf : UInt32 = (e + 127).to_uint()
+  let mant : UInt32 = (m & 0x7FFFFFUL).to_uint()
+  sgn | (expf << 23) | mant
+}
+
+///|
+pub fn f32_from_uint64(v : UInt64) -> Float {
+  Float::reinterpret_from_uint(f32_bits_from_uint64(v, false))
+}
+
+///|
+pub fn f32_from_int64(v : Int64) -> Float {
+  let u = v.reinterpret_as_uint64()
+  if v < 0L {
+    Float::reinterpret_from_uint(f32_bits_from_uint64(0UL - u, true))
+  } else {
+    Float::reinterpret_from_uint(f32_bits_from_uint64(u, false))
+  }
+}
+
+///|
 // Interning comparison: type + raw bits + label (ignores flt flag),
 // matching C's `con[i].type == c.type && con[i].bits.i == c.bits.i`
 fn con_eq(c : Con, other : Con) -> Bool {

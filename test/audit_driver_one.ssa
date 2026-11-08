@@ -1,0 +1,7 @@
+dbgfile "one.c"
+type :local = { w }
+export function d $audit_one() {
+@start
+ dbgloc 1
+ ret d_1.5
+}

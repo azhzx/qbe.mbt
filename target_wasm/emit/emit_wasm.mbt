@@ -1569,3 +1569,21 @@ pub fn emit_wat_module(
   }
   sb.write_string(")\n")
 }
+
+///|
+// End offset (relative to WASM_DATA_BASE) of the static data image.
+pub fn wasm_data_end(datas : Array[@types.Dat]) -> Int32 {
+  let mut off = 0
+  let mut align = 8
+  for d in datas {
+    match d.kind {
+      @types.DStart => align = 8
+      @types.DAlign => align = d.num.to_int()
+      @types.DName => off = align_up(off, align)
+      @types.DEnd => ()
+      @types.DZ => off = off + d.num.to_int()
+      _ => off = off + dat_item_size(d)
+    }
+  }
+  off
+}

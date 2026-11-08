@@ -8,7 +8,7 @@ pub fn promote(
   interner : @util.Interner,
   typs : Array[@types.Typ],
   skip_read_before_write~ : Bool = false,
-) -> String {
+) -> String raise {
   let b = fn_.blks[fn_.start_id]
   for ii in 0..<b.ins.length() {
     let i = b.ins[ii]
@@ -92,6 +92,25 @@ pub fn promote(
       continue
     }
     if k == -1 {
+      if skip_read_before_write {
+        continue
+      }
+      // C mem.c removes the alloc and then reports the load that has no
+      // reaching definition ("slot %s is read but never stored to").
+      i.op = @types.Nop
+      i.cls = @types.Kw
+      i.to = @types.Ref::none()
+      i.arg1 = @types.Ref::none()
+      i.arg2 = @types.Ref::none()
+      fn_.tmps[alloc_t].ndef = fn_.tmps[alloc_t].ndef - 1
+      for u in fn_.tmps[alloc_t].uses {
+        let l = fn_.blks[u.blk_id].ins[u.ins_idx]
+        if !l.op.is_store() {
+          raise @util.QbeError::CompileError(
+            "slot %\{fn_.tmps[l.arg1.tmp_val()].name} is read but never stored to",
+          )
+        }
+      }
       continue
     }
     // Get rid of the alloc and replace its uses.

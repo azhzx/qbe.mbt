@@ -124,7 +124,16 @@ fn match_ci(s : StringView, lit : String) -> StringView? {
 // of the input and whether anything was matched.
 fn scan_float_tail(s : StringView) -> (String, StringView, Bool) {
   let b = StringBuilder::StringBuilder()
-  let mut rest : StringView = s
+  // fscanf conversion skips C whitespace after the underscore.
+  let (_, tail) = take_while(s, fn(c) {
+    c == ' ' ||
+    c == '\t' ||
+    c == '\n' ||
+    c == '\r' ||
+    c.to_int() == 11 ||
+    c.to_int() == 12
+  })
+  let mut rest : StringView = tail
   match rest {
     ['-' | '+' as c, .. r] => {
       b.write_char(c)
@@ -346,6 +355,15 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       // Temporary: %name
       ['%', .. rest] => {
         let (name, r) = read_ident(rest)
+        if name.length() == 0 {
+          tokens.push(Token::new(TErr, line, col, "%"))
+          err_msgs.push(
+            "invalid character after % at \{source_file}:\{line}:\{col}",
+          )
+          col = col + 1
+          idx = idx + 1
+          continue rest
+        }
         tokens.push(Token::new(TTemp, line, col, name))
         col = col + 1 + name.length()
         idx = idx + 1 + name.length()
@@ -375,6 +393,15 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
           }
           _ => {
             let (name, r) = read_ident(rest)
+            if name.length() == 0 {
+              tokens.push(Token::new(TErr, line, col, "$"))
+              err_msgs.push(
+                "invalid character after $ at \{source_file}:\{line}:\{col}",
+              )
+              col = col + 1
+              idx = idx + 1
+              continue rest
+            }
             tokens.push(Token::new(TGlo, line, col, name))
             col = col + 1 + name.length()
             idx = idx + 1 + name.length()
@@ -385,6 +412,15 @@ pub fn Lexer::tokenize(self : Self) -> Array[Token] {
       // Block label: @name
       ['@', .. rest] => {
         let (name, r) = read_ident(rest)
+        if name.length() == 0 {
+          tokens.push(Token::new(TErr, line, col, "@"))
+          err_msgs.push(
+            "invalid character after @ at \{source_file}:\{line}:\{col}",
+          )
+          col = col + 1
+          idx = idx + 1
+          continue rest
+        }
         tokens.push(Token::new(TLoc, line, col, name))
         col = col + 1 + name.length()
         idx = idx + 1 + name.length()

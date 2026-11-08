@@ -79,3 +79,19 @@ pub fn emit_dbgloc(line : Int32, col : Int32, sb : StringBuilder) -> Unit {
   }
   sb.write_char('\n')
 }
+
+///|
+// T.asloc: the assembler-local label prefix (".L" on ELF, "L" on Mach-O).
+// C's isel stashes floating constants under "<asloc>fpN"; the debug printer
+// must spell the same symbol, so the prefix is selected per target.
+let asm_loc : Array[String] = Array::make(1, ".L")
+
+///|
+pub fn set_asm_loc(s : String) -> Unit {
+  asm_loc[0] = s
+}
+
+///|
+pub fn asm_loc_name() -> String {
+  asm_loc[0]
+}

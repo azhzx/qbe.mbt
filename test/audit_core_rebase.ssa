@@ -1,0 +1,23 @@
+export function w $audit_core_rebase(l %p, w %c, w %d) {
+@start
+  %q =l add %p, 4
+  jnz %c, @one, @two
+@one
+  storew 1, %q
+  jmp @join
+@two
+  storew 2, %q
+  jmp @join
+@join
+  jnz %d, @left, @right
+@left
+  %a =w loadw %q
+  jmp @done
+@right
+  %r =l add %p, 4
+  %b =w loadw %r
+  jmp @done
+@done
+  %v =w phi @left %a, @right %b
+  ret %v
+}

@@ -74,6 +74,18 @@ APPLE_TARGET = {
     "arm64": "arm64_apple",
 }
 
+# Inputs the reference amd64_win target itself rejects/aborts on (thread TLS
+# and thread-symbol arithmetic: emit.c dies with "extern/thread unsupported").
+# The port also refuses them, only with a clean QbeError, so there is no
+# meaningful text comparison.
+TARGET_SKIP = {
+    "amd64_win": {
+        "tls.ssa",
+        "tls_link.ssa",
+        "audit_core_sym_sub.ssa",
+    },
+}
+
 
 def target_of(fset):
     """Return the target requested by a flagset, or None for the default."""
@@ -205,7 +217,22 @@ def main():
     else:
         if not flags:
             flags = DEFAULT_FLAGS
-        flagsets = [[fl] for fl in flags]
+        # A gas flavor can accompany debug flags; attach -G to every debug
+        # flagset so the reference maps it to its _apple target.
+        gflavor = None
+        if "-G" in flags:
+            i = flags.index("-G")
+            gflavor = flags[i + 1] if i + 1 < len(flags) else "e"
+            flags = [
+                a
+                for j, a in enumerate(flags)
+                if a != "-G" and (j == 0 or flags[j - 1] != "-G")
+            ]
+        if not flags:
+            flags = DEFAULT_FLAGS
+        flagsets = [
+            [fl] + (["-G", gflavor] if gflavor else []) for fl in flags
+        ]
         if target:
             flagsets = [["-t", target, *fs] for fs in flagsets]
 
@@ -220,7 +247,10 @@ def main():
         if ref_fset is None:
             # e.g. -G m on a target with no Mach-O variant
             continue
+        skip = TARGET_SKIP.get(target, set())
         for t in tests:
+            if os.path.basename(t) in skip:
+                continue
             jobs_list.append((ref_fset, fset, t, QBE_REF, asm_mode))
     total = len(jobs_list)
     fail = 0

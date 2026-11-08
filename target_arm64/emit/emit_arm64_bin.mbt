@@ -1523,6 +1523,11 @@ pub(all) struct Arm64BinModule {
   // Byte length of the executable code region. When the module has data this is
   // page-aligned so the data can stay writable while the code is mprotected RX.
   code_bytes : Int32
+  // Absolute pointer values inside the data image: (byte offset within the
+  // data section, target symbol, byte width, addend). The image stores the
+  // section-relative value; the JIT loader rebases these to the mapped
+  // address, like the object writer's UNSIGNED relocations.
+  data_refs : Array[(Int32, String, Int32, Int32)]
 }
 
 ///|
@@ -1626,7 +1631,7 @@ fn emit_arm64_bin_module_build(
     words[c.0] = @object.enc_bl((vw - c.0) * 4)
     ext_calls.push((vw, c.1))
   }
-  let (datas_map0, data_bytes0, _data_refs) = arm64_bin_layout_data(datas)
+  let (datas_map0, data_bytes0, data_refs) = arm64_bin_layout_data(datas)
   // Append the floating-point constant stash (fpN) after the data section.
   let (fp_map, fp_bytes) = arm64_fp_layout()
   let fp_base = arm64_bin_align_up(data_bytes0.length(), 16)
@@ -1683,6 +1688,7 @@ fn emit_arm64_bin_module_build(
     datas: datas_map,
     exports,
     code_bytes,
+    data_refs,
   }
   (m, Arm64BinFixups::{ ext_calls, ext_addrs, })
 }

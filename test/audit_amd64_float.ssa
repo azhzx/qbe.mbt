@@ -1,0 +1,24 @@
+function w $eq(d %a, d %b) {
+@start
+  %v =w ceqd %a, %b
+  ret %v
+}
+function w $ne(d %a, d %b) {
+@start
+  %v =w cned %a, %b
+  jnz %v, @yes, @no
+@yes
+  ret 1
+@no
+  ret 0
+}
+function w $multi(w %a) {
+@start
+  %v =w csltw 3, %a
+  jnz %v, @yes, @no
+@yes
+  %r =w add %v, %a
+  ret %r
+@no
+  ret %v
+}

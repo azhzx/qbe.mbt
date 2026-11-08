@@ -359,6 +359,9 @@ fn sel_float_ordered(st : Rv64IselState, i : @types.Ins) -> Unit {
 ///|
 // Select a single instruction (C sel).
 fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
+  if i.op == @types.InlineAsm {
+    raise @util.QbeError::CompileError("rv64: inline assembly is not supported")
+  }
   match i.op {
     // RISC-V has native divide/remainder instructions
     @types.Div | @types.Rem | @types.Udiv | @types.Urem => sel_emit(st, i)
@@ -417,6 +420,9 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
       st.fn_.has_dynalloc = true
       if i.arg1.is_con() {
         let mut sz = st.fn_.cons[i.arg1.con_val()].raw_bits()
+        if sz < 0L || sz >= 2147483632L {
+          raise @util.QbeError::Ice("invalid alloc size \{sz}")
+        }
         sz = (sz + 15L) & -16L
         emit(
           st,
@@ -425,6 +431,14 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
           i.to,
           @types.Ref::con(st.fn_.get_con(sz)),
           @types.Ref::none(),
+        )
+        let idx = st.buf.length() - 1
+        st.buf[idx].arg1 = fixarg(
+          st,
+          st.buf[idx].arg1,
+          @types.Kl,
+          Some(@types.Salloc),
+          0,
         )
       } else {
         // final order: r1 = n + 15; r0 = r1 & -16; to = salloc r0 (C salloc)
@@ -468,13 +482,25 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
     | @types.Cgts
     | @types.Cles
     | @types.Clts
-    | @types.Cnes
     | @types.Ceqd
     | @types.Cged
     | @types.Cgtd
     | @types.Cled
-    | @types.Cltd
-    | @types.Cned => sel_emit(st, i)
+    | @types.Cltd => sel_emit(st, i)
+    @types.Cnes | @types.Cned => {
+      // C selcmp Cfne: negate the result, then compare for equality.
+      let r = rv64_isel_newtmp(st, @types.Kw)
+      emit(
+        st,
+        @types.Xor,
+        @types.Kw,
+        i.to,
+        r,
+        @types.Ref::con(st.fn_.get_con(1L)),
+      )
+      let eq = if i.op == @types.Cnes { @types.Ceqs } else { @types.Ceqd }
+      sel_emit(st, @types.Ins::new(eq, i.cls, r, i.arg1, i.arg2))
+    }
     // Load operations
     @types.Load
     | @types.Loadsb
@@ -566,8 +592,14 @@ pub fn isel_rv64(
     for i in 0..<start.ins.length() {
       let ins = start.ins[i]
       if ins.op == op {
+        if !ins.arg1.is_con() {
+          break
+        }
         if ins.arg1.is_con() {
           let mut sz = fn_.cons[ins.arg1.con_val()].raw_bits()
+          if sz < 0L || sz >= 2147483632L {
+            raise @util.QbeError::Ice("invalid alloc size \{sz}")
+          }
           sz = (sz + n.to_int64() - 1L) & (-n).to_int64()
           sz = sz / 4
           if sz > 2147483647L - fn_.slot.to_int64() {

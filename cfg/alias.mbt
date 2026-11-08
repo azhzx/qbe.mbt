@@ -54,7 +54,7 @@ pub fn getalias(r : @types.Ref, fn_ : @types.Fn) -> @types.AliasInfo {
           slot: -1,
           sz: -1,
           m: 0UL,
-          sym_type: 0,
+          sym_type: c.sym_type,
         }
       } else {
         @types.AliasInfo::{
@@ -163,6 +163,12 @@ fn store_mask(r : @types.Ref, sz : Int32, fn_ : @types.Fn) -> Unit {
 ///|
 // Fill alias information for all temporaries (C fillalias).
 pub fn fillalias(fn_ : @types.Fn) -> Unit {
+  // C alias.c resets every temporary's alias to ABot before recomputing; a
+  // temp whose definition was deleted by a pass must not keep stale alias
+  // information from the previous run.
+  for t in 0..<fn_.tmps.length() {
+    fn_.tmps[t].alias_info = @types.AliasInfo::default()
+  }
   for n in 0..<fn_.rpo.length() {
     let b = fn_.blks[fn_.rpo[n]]
     // Phi nodes

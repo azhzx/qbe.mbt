@@ -1,0 +1,3 @@
+data $decimal_single = { s s_1.0000000596046448 }
+data $hex_single_subnormal = { s s_0x1.000001p-150 }
+data $hex_double_subnormal = { d d_0x1.00000000000008p-1075 }

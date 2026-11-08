@@ -105,7 +105,8 @@ fn visitins(st : FoldState, i : @types.Ins) -> Unit raise {
   if @types.op_info(i.op).canfold {
     let l = latval(st, i.arg1)
     let r = if i.arg2.is_none() {
-      0 // CON_Z.val: the zero constant is always con index 0
+      // C uses CON_Z; con[0] is the UNDEF sentinel, so look the zero up.
+      st.fn_.get_con(0L)
     } else {
       latval(st, i.arg2)
     }

@@ -77,6 +77,9 @@ fn Parser::parseref(self : Self) -> @types.Ref raise {
       _ => prefixes = false
     }
   }
+  if sym_type != 0 && t.kind != TGlo {
+    return @types.Ref::none()
+  }
   match t.kind {
     TTemp =>
       // Temporary variable - look up or create

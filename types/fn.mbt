@@ -55,7 +55,8 @@ pub fn Fn::new(name : String) -> Fn {
     blks: [],
     blk_names: Map([], capacity=16),
     tmps: [],
-    cons: [],
+    // C parsefn: con[0] is UNDEF; con[1] is CON_Z. Interning skips con[0].
+    cons: [Con::int(0xdeaddeadL), Con::int(0)],
     mems: [],
     rpo: [],
     def_order: [],
@@ -174,7 +175,7 @@ pub fn Fn::add_con(self : Self, con : Con) -> Int32 {
 // Intern a constant: return existing id if a matching one exists,
 // otherwise add it. Matching is by raw bits (like C's union compare).
 pub fn Fn::get_con_by(self : Self, con : Con) -> Int32 {
-  for i in 0..<self.cons.length() {
+  for i in 1..<self.cons.length() {
     if con_eq(self.cons[i], con) {
       return i
     }
@@ -187,19 +188,18 @@ pub fn Fn::get_con_by(self : Self, con : Con) -> Int32 {
 // zero constant: coalesce turns a load with no reaching store into
 // "copy UNDEF", while CON_Z is the ordinary zero constant.
 pub fn Fn::undef(self : Self) -> Int32 {
-  // C spells this `#define UNDEF (Ref){RCon, 0}` and has parse.c set
-  // con[0].bits.i to 0xdeaddead, so a stray UNDEF reaching the emitter prints a
-  // number there. Materialising it as a CUndef constant instead made emitcon's
-  // "unreachable" fire on input the reference compiles.
-  self.get_con_by(Con::int(0xdeaddeadL))
+  // The sentinel has numeric bits for emission, but its identity is reserved.
+  // An ordinary literal with the same bits must never be interned as UNDEF.
+  ignore(self)
+  0
 }
 
 ///|
 // Get a constant reference for an integer value
 pub fn Fn::get_con(self : Self, val : Int64) -> Int32 {
-  for i in 0..<self.cons.length() {
+  for i in 1..<self.cons.length() {
     let c = self.cons[i]
-    if c.kind == CBits && c.flt == 0 && c.bits.i == val {
+    if c.kind == CBits && c.bits.i == val {
       return i
     }
   }

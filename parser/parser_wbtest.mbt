@@ -350,6 +350,24 @@ test "export before a non-definition is rejected" {
 }
 
 ///|
+test "variadic signatures reject parameters after ellipsis" {
+  let src =
+    #|function w $f(w %x, ..., w %y) {
+    #|@start
+    #|  ret 0
+    #|}
+    #|
+  let p = Parser::new(@lexer.Lexer::new(src, "test").tokenize(), "test")
+  try p.parse() catch {
+    @util.QbeError::ParseError(_, _, msg) =>
+      assert_true(msg.contains("no parameters allowed after"))
+    _ => fail("expected a parse error")
+  } noraise {
+    _ => fail("expected a parse error")
+  }
+}
+
+///|
 // C keeps a data item's value in a union; the emitters print u.num, so float
 // items must carry their bit pattern there (this used to emit .int 0 / .quad 0).
 test "data: float items carry their bit pattern" {

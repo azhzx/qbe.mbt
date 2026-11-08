@@ -14,13 +14,13 @@ async fn cli_fail(msg : String) -> Unit {
 // QBE compiler backend - MoonBit implementation
 // Entry point for the CLI. A thin wrapper over the `@qbe` library API: it
 // handles argument parsing and file I/O, and delegates the pipeline to the
-// selected target backend (amd64_sysv, wasm, rv64, la64, or arm64).
+// selected target backend (amd64_sysv, amd64_win, wasm, rv64, la64, or arm64).
 
 ///|
 // CLI command specification. @argparse auto-generates -h/--help from this.
 let cmd : @argparse.Command = @argparse.Command(
   "qbe",
-  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), wasm, rv64, la64, arm64; --run FUNC[,ARG]... interprets the SSA directly",
+  about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), amd64_win, wasm, rv64, la64, arm64; --run FUNC[,ARG]... interprets the SSA directly",
   options=[
     @argparse.OptionArg("output", short='o'),
     @argparse.OptionArg("target", short='t'),
@@ -181,6 +181,17 @@ async fn read_source(file : String) -> String {
 }
 
 ///|
+// main.c enables debug only for alphabetic flag bytes.
+fn debug_enabled(flags : String) -> Bool {
+  for c in flags {
+    if c.is_ascii_alphabetic() {
+      return true
+    }
+  }
+  false
+}
+
+///|
 // Process one input file. Returns the generated assembly (empty in debug mode,
 // where the debug dump is printed to stderr instead).
 async fn process_file(
@@ -196,17 +207,19 @@ async fn process_file(
     }
   }
   let backend = match target {
+    "amd64_win" => @qbe.Target::Amd64Win
     "wasm" => @qbe.Target::Wasm32
     "rv64" => @qbe.Target::Rv64
     "la64" => @qbe.Target::La64
     "arm64" => @qbe.Target::Arm64
     _ => @qbe.Target::Amd64Sysv
   }
-  if flags != "" {
-    match @qbe.compile_target_debug(source, backend, flags) {
-      Ok(dump) => {
+  if debug_enabled(flags) {
+    match
+      @qbe.compile_target_debug_files(source, backend, flags, apple=gas == "m") {
+      Ok((files_out, dump)) => {
         @util.eprint(dump)
-        ""
+        files_out
       }
       Err(e) => {
         cli_fail(format_qbe_error(e, src_file=file) + "\n")
@@ -371,7 +384,8 @@ async fn run_cli() -> Unit {
   match parsed.values.get("target") {
     Some(arr) if arr.length() > 0 =>
       match arr[0] {
-        "amd64_sysv" | "wasm" | "rv64" | "la64" | "arm64" => target = arr[0]
+        "amd64_sysv" | "amd64_win" | "wasm" | "rv64" | "la64" | "arm64" =>
+          target = arr[0]
         t => {
           cli_fail("unknown target '\{t}'\n")
           return
@@ -589,20 +603,55 @@ async fn run_cli() -> Unit {
     }
     _ => ()
   }
-  // Process each file, accumulating the output.
-  let out = StringBuilder::StringBuilder()
-  for file in files {
-    let s = process_file(file, flags, gas, target)
-    out.write_string(s)
-  }
-  if flags == "" {
+  // Native files share one output session, but retain independent parsers.
+  if debug_enabled(flags) {
+    let out = StringBuilder::new()
+    for file in files {
+      out.write_string(process_file(file, flags, gas, target))
+      if cli_failed[0] {
+        return
+      }
+    }
     if out_file != "" && out_file != "-" {
       @fs.write_string_to_file(out_file, out.to_string()) catch {
-        e => @util.eprint("error: \{Repr(e)}\n")
+        e => cli_fail("error: \{Repr(e)}\n")
       }
     } else {
       @util.iprint(out.to_string())
     }
+    return
+  }
+  let sources : Array[(String, String)] = []
+  for file in files {
+    let source = read_source(file) catch {
+      e => {
+        cli_fail("error: \{e}\n")
+        return
+      }
+    }
+    sources.push((file, source))
+  }
+  let backend = match target {
+    "amd64_win" => @qbe.Target::Amd64Win
+    "wasm" => @qbe.Target::Wasm32
+    "rv64" => @qbe.Target::Rv64
+    "la64" => @qbe.Target::La64
+    "arm64" => @qbe.Target::Arm64
+    _ => @qbe.Target::Amd64Sysv
+  }
+  let output = match @qbe.compile_sources(sources, backend, gas~) {
+    Ok(text) => text
+    Err(e) => {
+      cli_fail(format_qbe_error(e) + "\n")
+      return
+    }
+  }
+  if out_file != "" && out_file != "-" {
+    @fs.write_string_to_file(out_file, output) catch {
+      e => cli_fail("error: \{Repr(e)}\n")
+    }
+  } else {
+    @util.iprint(output)
   }
 }
 

@@ -35,26 +35,15 @@ fn phicls(t : Int32, tmps : Array[@types.Tmp]) -> Int32 {
 }
 
 ///|
-// Load size in bytes (C load.c loadsz: Oload size depends on the class width)
+// Load size in bytes (shared with every backend, C loadsz).
 fn loadsz(i : @types.Ins) -> Int32 {
-  match i.op {
-    @types.Loadsb | @types.Loadub => 1
-    @types.Loadsh | @types.Loaduh => 2
-    @types.Loadsw | @types.Loaduw => 4
-    @types.Load => if i.cls.wide() == 1 { 8 } else { 4 }
-    _ => 0
-  }
+  i.load_size()
 }
 
 ///|
-// Store size in bytes
+// Store size in bytes (shared with every backend, C storesz).
 fn storesz(i : @types.Ins) -> Int32 {
-  match i.op {
-    @types.Storeb => 1
-    @types.Storeh => 2
-    @types.Storew | @types.Stores => 4
-    _ => 8
-  }
+  i.store_size()
 }
 
 ///|
@@ -112,6 +101,11 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
         }
         if ins.op.is_ext() {
           w = @types.TmpWidth::from_code(ins.op.ext_width_idx())
+        }
+        // C ssa.c: every integer/float comparison defines a 0/1 value.
+        if ins.op.index() >= @types.Ceqw.index() &&
+          ins.op.index() <= @types.Cuod.index() {
+          w = @types.Wub
         }
         if (w == @types.Wsw || w == @types.Wuw) && ins.cls == @types.Kw {
           w = @types.WFull
