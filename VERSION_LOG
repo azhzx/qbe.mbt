@@ -468,3 +468,41 @@
     workspace next to this checkout resolves the dependency locally while both
     are developed together. Nothing in the optimizer changed: the differential
     stays at 6720/6720 and the assembly suites at 420/420.
+2026.11.8: v0.44.0
+    The whole tree is audited against the frozen vendor/qbe 661ceb2, file by
+    file and function by function, replacing simplified re-derivations with
+    transcriptions: front end (lexer, parser, typecheck), SSA passes (alias,
+    mem, loadopt, gvn/gcm, ifopt, fold, spill/rega) and every backend.  The
+    audit restored missing operations (neg, stoui/dtoui/uwtof/ultof, sub-word
+    par/arg and return jumps, quoted global symbols), fixed fillalias/TLS
+    bookkeeping, simpljmp, struct-padding and qsort ordering, and records each
+    finding in AUDIT-LEDGER.md and doc/audit-2026-11-08-*.md.  amd64_sysv,
+    amd64_apple, arm64, arm64_apple and rv64 debug dumps and assembly are
+    byte-identical to the reference, including Mach-O -G m.
+
+    New amd64_win target: winabi.c is transcribed (7 integer / 7 SSE argument
+    registers, shadow space, varargs register shadow stores, PE frame
+    layout), the shared emitter learns its Win64 branches (frame size, slot
+    addressing, varargs save area, no .type/GNU-stack, PE finaliser), and the
+    CLI, debug dumps and Win64 target constants are wired through.  Win64
+    debug output and assembly match vendor/qbe -t amd64_win.
+
+    TLS and linkage: Sym.type, thread/common/section/extern globals and a
+    shared gasdata package transcribing emitlnk/emitdat (tdata/tbss/comm,
+    custom sections, alignment); per-target TLS/GOT relocations on amd64,
+    arm64, rv64 and la64.  The arm64 Apple ABI is complete (apple_extsb,
+    4-byte non-wide stack slots, Mach-O literal sections), and inline
+    assembly now works on arm64 text with %0/%1/%2 operands and escaped
+    strings; unsupported targets reject it loudly instead of silently
+    dropping it.
+
+    Port-only surfaces hardened rather than left simplified: the JIT
+    relocates data pointers in its image, the object writer uses
+    PAGE21/PAGEOFF12 for local float constants, wasm rejects external data
+    addresses and data/stack overlap instead of emitting 0, and QBE's
+    word/long operand mixing, interpreter cast/blit, wasm mixed-width
+    lowering and --run-wasm mixed i64/i32 argument marshalling are fixed.
+    The IR builder gains aggregate returns, result types on calls and union
+    types; tools/fuzz_il.py mutation-fuzzes the IL differential.  549 native
+    tests, wasm 359/359 valid and 9/9 runtime, all five backends pass the
+    validity gate, and CI now uses the macos-15 arm64 runner.
