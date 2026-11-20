@@ -53,8 +53,7 @@ def find_qbe_ref():
             return c
     sys.exit(
         "error: reference QBE binary not found.\n"
-        "Build it from the vendored submodule:\n"
-        "    git submodule update --init --recursive\n"
+        "Build it from the vendored source tree:\n"
         "    make -C vendor/qbe\n"
         "or point the QBE_REF environment variable at an existing binary."
     )

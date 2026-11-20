@@ -12,7 +12,7 @@ for the default `amd64_sysv` target.
 1. the `QBE_REF` environment variable;
 2. `vendor/qbe/qbe(.exe)`, built with `make -C vendor/qbe`.
 
-The vendored submodule is the only reference implementation used by this
+The vendored tree is the only reference implementation used by this
 repository. If its output differs from historical snapshots, update the
 expected baseline rather than maintaining a second reference tree.
 

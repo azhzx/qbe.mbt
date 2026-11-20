@@ -156,6 +156,6 @@ Documentation:
 
 qbe.mbt is licensed under the [Apache License 2.0](LICENSE), an OSI-approved
 license. It is a MoonBit reimplementation of [QBE](https://c9x.me/compile/)
-(MIT, (c) Quentin Carbonneaux); the reference is vendored as a git submodule
+(MIT, (c) Quentin Carbonneaux); the reference is vendored in-tree
 under `vendor/qbe`. Third-party notices are collected in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

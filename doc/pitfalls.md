@@ -348,8 +348,8 @@ the callee-save count (10). Semantically verified: oracle 169/169, unit tests
 falls from 232 to 0.
 
 **Why it is not merged**: `compare.py` diffs the debug IL dumps against
-`vendor/qbe`, which is a git submodule and allocates these registers too, so 80
-of 5040 cases diverge by design. Landing it needs that submodule patched the
+`vendor/qbe`, which is vendored in-tree and allocates these registers too, so 80
+of 5040 cases diverge by design. Landing it needs the vendored tree patched the
 same way, or a decision to loosen the debug differential.
 
 ### 4.8 `--emit asm` panics on some inputs (open)
@@ -622,14 +622,13 @@ clang -E -P $INC file.c        # zsh: $INC is one whole argument → "unknown ar
 
 bash is fine, zsh always blows up. **Either use an array or spell the arguments out in full.** (Likewise zsh's `print -r --` does not exist in bash.)
 
-### 7.3 `vendor/qbe` is a submodule
+### 7.3 `vendor/qbe` is vendored in-tree
 
 ```sh
-git checkout -- vendor/qbe/parse.c          # ✗ pathspec did not match
-cd vendor/qbe && git checkout -- parse.c    # ✓
+git checkout -- vendor/qbe/parse.c          # ✓ it is an ordinary tracked file now
 ```
 
-After debugging, **always confirm the submodule is clean**, otherwise temporary debug code gets compiled as source into the next conclusion.
+After debugging, **always confirm the vendored tree is clean**, otherwise temporary debug code gets compiled as source into the next conclusion.
 
 ### 7.4 QBE's test cases are CRLF
 

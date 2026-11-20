@@ -6,7 +6,7 @@ are reproduced as required by their licenses.
 
 ## QBE
 
-`vendor/qbe` (git submodule) and the MoonBit sources ported from it are derived
+`vendor/qbe` (vendored in-tree) and the MoonBit sources ported from it are derived
 from QBE:
 
     © 2015-2026 Quentin Carbonneaux <quentin@c9x.me>

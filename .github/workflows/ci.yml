@@ -5,7 +5,7 @@
 #            and unit tests.
 #   diff   - the core verification: byte-for-byte differential testing of every
 #            debug flag against the reference C QBE built from the vendored
-#            submodule, plus an independent validity gate for all five backends
+#            source tree, plus an independent validity gate for all five backends
 #            (clang assembler for amd64/arm64/rv64/la64, moon-wasm-opt for wasm).
 #
 # The macOS-only jobs (the C ABI builder and the Rust glue) are in macos.yml:
@@ -35,8 +35,6 @@ jobs:
         run: git config --global core.autocrlf false
 
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install MoonBit
         run: |
@@ -115,8 +113,6 @@ jobs:
         run: git config --global core.autocrlf false
 
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install MoonBit
         run: |

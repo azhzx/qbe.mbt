@@ -268,8 +268,7 @@ qbe_bin=$(find_binary)
 ok "built $qbe_bin"
 
 if [ "$with_reference" -eq 1 ]; then
-  info "initializing and building vendor/qbe (reference)"
-  git submodule update --init --recursive vendor/qbe || die "could not init vendor/qbe"
+  info "building vendor/qbe (reference)"
   (cd vendor/qbe && make) || die "vendor/qbe build failed"
   ok "vendor/qbe built"
 fi

@@ -361,14 +361,13 @@ clang -E -P $INC file.c        # zsh: $INC 是一整个参数 → "unknown argum
 
 bash 正常,zsh 必炸。**要么用数组,要么把参数完整写出来。**(同理 zsh 的 `print -r --` 在 bash 里不存在。)
 
-### 7.3 `vendor/qbe` 是 submodule
+### 7.3 `vendor/qbe` 已直接内置在仓库中
 
 ```sh
-git checkout -- vendor/qbe/parse.c          # ✗ pathspec did not match
-cd vendor/qbe && git checkout -- parse.c    # ✓
+git checkout -- vendor/qbe/parse.c          # ✓ 现在是普通跟踪文件
 ```
 
-调完试**一定要确认 submodule 干净**,否则临时调试代码会被当成源码编进下一个结论。
+调完试**一定要确认 vendor 树干净**,否则临时调试代码会被当成源码编进下一个结论。
 
 ### 7.4 QBE 的测试用例是 CRLF
 
