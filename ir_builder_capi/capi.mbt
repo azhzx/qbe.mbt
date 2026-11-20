@@ -513,3 +513,56 @@ pub fn qbe_emit_asm_gas(h : Int64, gas : Bytes) -> Bytes {
   }
   @utf8.encode(s)
 }
+
+///|
+// Format a QbeError for qbe_last_error().
+fn format_compile_error(e : @util.QbeError) -> String {
+  match e {
+    @util.QbeError::ParseError(f, l, m) => "\{f}:\{l}: \{m}"
+    @util.QbeError::CompileError(m) => m
+    @util.QbeError::Ice(m) => "internal error: \{m}"
+  }
+}
+
+///|
+// Compile QBE IL text to arm64 assembly text. `gas` is "m" (Mach-O) or "e"
+// (ELF); the returned bytes are empty on failure and qbe_last_error() holds
+// the message. Serialized by the caller: the MoonBit globals used by the
+// pipeline are not reentrant.
+#export_name("qbe_compile_asm")
+pub fn qbe_compile_asm(il : Bytes, gas : Bytes) -> Bytes {
+  match @qbe.compile_arm64(bytes_to_string(il), gas=bytes_to_string(gas)) {
+    Ok(s) => @utf8.encode(s)
+    Err(e) => {
+      set_error(format_compile_error(e))
+      @utf8.encode("")
+    }
+  }
+}
+
+///|
+// Compile QBE IL text to a self-contained Mach-O arm64 object. Empty bytes on
+// failure; see qbe_last_error().
+#export_name("qbe_compile_object")
+pub fn qbe_compile_object(il : Bytes) -> Bytes {
+  try @qbe.compile_arm64_object(bytes_to_string(il)) catch {
+    @util.QbeError::ParseError(f, l, m) => {
+      set_error("\{f}:\{l}: \{m}")
+      @utf8.encode("")
+    }
+    @util.QbeError::CompileError(m) => {
+      set_error(m)
+      @utf8.encode("")
+    }
+    @util.QbeError::Ice(m) => {
+      set_error("internal error: \{m}")
+      @utf8.encode("")
+    }
+    e => {
+      set_error("\{e}")
+      @utf8.encode("")
+    }
+  } noraise {
+    b => b
+  }
+}

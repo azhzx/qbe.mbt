@@ -18,6 +18,10 @@ pub fn qbe_builder_new() -> Int64
 
 pub fn qbe_call(Int64, Int32, Bytes, Int32) -> Int32
 
+pub fn qbe_compile_asm(Bytes, Bytes) -> Bytes
+
+pub fn qbe_compile_object(Bytes) -> Bytes
+
 pub fn qbe_const_double(Int64, Int32, Double) -> Int32
 
 pub fn qbe_const_int(Int64, Int32, Int64) -> Int32

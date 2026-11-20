@@ -1,6 +1,7 @@
 pkgtype(kind: "foreign_library")
 
 import {
+  "azhzx/qbe",
   "azhzx/qbe/ir_builder",
   "azhzx/qbe/jit",
   "azhzx/qbe/types",

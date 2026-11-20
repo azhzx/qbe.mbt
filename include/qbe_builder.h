@@ -133,6 +133,12 @@ moonbit_bytes_t qbe_emit_asm(qbe_builder_t b);
 /* Self-contained Mach-O arm64 object. */
 moonbit_bytes_t qbe_emit_object(qbe_builder_t b);
 
+/* Compile QBE IL text to arm64 assembly text (gas: "m" Mach-O, "e" ELF).
+ * Empty bytes on failure; qbe_last_error() holds the message. The underlying
+ * pipeline is not reentrant: callers must serialize qbe_compile_* calls. */
+moonbit_bytes_t qbe_compile_asm(moonbit_bytes_t il, moonbit_bytes_t gas);
+/* Compile QBE IL text to a self-contained Mach-O arm64 object. */
+moonbit_bytes_t qbe_compile_object(moonbit_bytes_t il);
 /* UTF-8 arm64 assembly text for a gas flavor ("e" ELF, "m" Mach-O). */
 moonbit_bytes_t qbe_emit_asm_gas(qbe_builder_t b, moonbit_bytes_t gas);
 /* Enable (1) or disable (0) DWARF debug info in qbe_emit_asm output. */
