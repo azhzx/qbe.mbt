@@ -531,6 +531,8 @@ fn format_compile_error(e : @util.QbeError) -> String {
 // pipeline are not reentrant.
 #export_name("qbe_compile_asm")
 pub fn qbe_compile_asm(il : Bytes, gas : Bytes) -> Bytes {
+  // Clear stale diagnostics so an empty result unambiguously means failure.
+  set_error("")
   match @qbe.compile_arm64(bytes_to_string(il), gas=bytes_to_string(gas)) {
     Ok(s) => @utf8.encode(s)
     Err(e) => {
@@ -545,6 +547,8 @@ pub fn qbe_compile_asm(il : Bytes, gas : Bytes) -> Bytes {
 // failure; see qbe_last_error().
 #export_name("qbe_compile_object")
 pub fn qbe_compile_object(il : Bytes) -> Bytes {
+  // Clear stale diagnostics so an empty result unambiguously means failure.
+  set_error("")
   try @qbe.compile_arm64_object(bytes_to_string(il)) catch {
     @util.QbeError::ParseError(f, l, m) => {
       set_error("\{f}:\{l}: \{m}")
