@@ -12,8 +12,6 @@ pub fn debug_locs(@types.Fn, Bool) -> Array[@dwarf.DbgLoc]
 
 pub fn emit_rv64(@types.Fn, @util.Interner, String, String, Bool, Array[@types.Typ]) -> String raise
 
-pub fn gasemitdat_rv64(@types.Dat, String, String, StringBuilder) -> Unit
-
 pub fn gasemitfin_rv64(String, StringBuilder) -> Unit
 
 pub fn rv64_emit_reset() -> Unit

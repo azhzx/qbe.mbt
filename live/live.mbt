@@ -137,6 +137,17 @@ pub fn filllive(fn_ : @types.Fn, print_dbg : Bool) -> String {
             _ => bset(arg, b, nlv, fn_.tmps)
           }
         }
+        // Inline assembly can carry more than two inputs (port extension).
+        for arg in ins.asm_args {
+          match arg {
+            @types.RMem(m) => {
+              let ma = fn_.mems[m]
+              bset(ma.base, b, nlv, fn_.tmps)
+              bset(ma.index, b, nlv, fn_.tmps)
+            }
+            _ => bset(arg, b, nlv, fn_.tmps)
+          }
+        }
         if nlv[0] > b.nlive_w {
           b.nlive_w = nlv[0]
         }

@@ -122,6 +122,14 @@ pub fn filluse(fn_ : @types.Fn) -> Unit raise {
           adduse(fn_, arg.tmp_val(), @types.UIns, id, ii, m)
         }
       }
+      // Extra inline-asm operands are uses too; without them a pass is free to
+      // delete the instruction that defines one.
+      for m in 0..<ins.asm_args.length() {
+        let arg = ins.asm_args[m]
+        if arg.is_tmp() {
+          adduse(fn_, arg.tmp_val(), @types.UIns, id, ii, 2 + m)
+        }
+      }
     }
     // Jump argument
     if b.jmp.arg.is_tmp() {

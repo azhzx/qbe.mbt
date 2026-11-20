@@ -247,44 +247,16 @@ pub struct TargetCfg {
 
 ///|
 // amd64_sysv call return registers (C amd64_sysv retregs).
+// Only one copy: Ref::retregs above is the transcription of the C function,
+// and every target wrapper delegates to its Ref helper (as arm64/rv64 do).
 fn amd64_target_retregs(r : Ref) -> (UInt64, Int32, Int32) {
-  let mut b : UInt64 = 0
-  let v = r.call_val()
-  let ni = v & 3
-  let nf = (v >> 2) & 3
-  if ni >= 1 {
-    b = b | (1UL << RAX)
-  }
-  if ni >= 2 {
-    b = b | (1UL << RDX)
-  }
-  if nf >= 1 {
-    b = b | (1UL << XMM0)
-  }
-  if nf >= 2 {
-    b = b | (1UL << XMM1)
-  }
-  (b, ni, nf)
+  r.retregs()
 }
 
 ///|
 // amd64_sysv call argument registers (C amd64_sysv argregs).
 fn amd64_target_argregs(r : Ref) -> (UInt64, Int32, Int32) {
-  let mut b : UInt64 = 0
-  let v = r.call_val()
-  let ni = (v >> 4) & 15
-  let nf = (v >> 8) & 15
-  let ra = (v >> 12) & 1
-  for j in 0..<ni {
-    b = b | (1UL << rsave[j])
-  }
-  for j in 0..<nf {
-    b = b | (1UL << (XMM0 + j))
-  }
-  if ra != 0 {
-    b = b | (1UL << RAX)
-  }
-  (b, ni + ra, nf)
+  r.argregs()
 }
 
 ///|

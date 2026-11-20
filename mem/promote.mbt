@@ -44,8 +44,8 @@ pub fn promote(
           skip = true
           break
         }
-        if s == -1 || s == loadsz(l) {
-          s = loadsz(l)
+        if s == -1 || s == l.load_size() {
+          s = l.load_size()
           continue
         }
         skip = true
@@ -55,9 +55,9 @@ pub fn promote(
         stored_first = true
         if i.to.eq(l.arg2) &&
           !i.to.eq(l.arg1) &&
-          (s == -1 || s == storesz(l)) &&
+          (s == -1 || s == l.store_size()) &&
           (k == -1 || k == @types.op_info(l.op).a0[0]) {
-          s = storesz(l)
+          s = l.store_size()
           k = @types.op_info(l.op).a0[0]
           continue
         }

@@ -1,0 +1,85 @@
+# ARM64 HFA classification edges: four doubles (32 bytes, registers d0-d3),
+# five floats (not an HFA), mixed s/d fields (not an HFA) and a nested HFA
+# type. These exercise typclass/isfloatv; the ABI must use d0-d3 for :h4d and
+# an indirect pointer elsewhere.
+type :h4d = { d, d, d, d }
+type :h5f = { s, s, s, s, s }
+type :mix = { s, d }
+type :nested = { :h4d, :h4d }
+type :inner3 = { d, d, d }
+type :outer = { :inner3 }
+
+function :h4d $a3h_mk4(d %a, d %b, d %c, d %e) {
+@start
+	%p =l alloc8 32
+	stored %a, %p
+	%p1 =l add %p, 8
+	stored %b, %p1
+	%p2 =l add %p, 16
+	stored %c, %p2
+	%p3 =l add %p, 24
+	stored %e, %p3
+	ret %p
+}
+
+export function d $a3h_use4(:h4d %p) {
+@start
+	%a =d loadd %p
+	%p1 =l add %p, 24
+	%d =d loadd %p1
+	%r =d add %a, %d
+	ret %r
+}
+
+export function d $a3h_call4(d %a, d %b, d %c, d %e) {
+@start
+	%p =l call $a3h_mk4(d %a, d %b, d %c, d %e)
+	%r =d call $a3h_use4(:h4d %p)
+	ret %r
+}
+
+function :h5f $a3h_mk5(s %a, s %b, s %c, s %d, s %e) {
+@start
+	%p =l alloc8 20
+	stores %a, %p
+	%p1 =l add %p, 4
+	stores %b, %p1
+	ret %p
+}
+
+export function s $a3h_use5(:h5f %p) {
+@start
+	%a =s loads %p
+	ret %a
+}
+
+export function s $a3h_call5(s %a, s %b, s %c, s %d, s %e) {
+@start
+	%p =l call $a3h_mk5(s %a, s %b, s %c, s %d, s %e)
+	%r =s call $a3h_use5(:h5f %p)
+	ret %r
+}
+
+function :outer $a3h_mko(d %a, d %b, d %c) {
+@start
+	%p =l alloc8 24
+	stored %a, %p
+	%p1 =l add %p, 8
+	stored %b, %p1
+	%p2 =l add %p, 16
+	stored %c, %p2
+	ret %p
+}
+
+export function d $a3h_useo(:outer %p) {
+@start
+	%a =d loadd %p
+	ret %a
+}
+
+export function d $a3h_callo(d %a, d %b, d %c) {
+@start
+	%p =l call $a3h_mko(d %a, d %b, d %c)
+	%r =d call $a3h_useo(:outer %p)
+	ret %r
+}

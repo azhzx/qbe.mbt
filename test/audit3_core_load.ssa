@@ -1,0 +1,66 @@
+# audit3 core: load elimination shapes (load.c loadopt/def/rebase)
+# loop-carried load phis (two slices in one block), self-referential phi
+# arguments, partial-overlap masks, blit slices with odd sizes, escaping calls.
+
+function w $twophi(w %n) {
+@start
+	%p =l alloc8 16
+	%q =l add %p, 4
+	storew 1, %p
+	storew 2, %q
+	jmp @loop
+@loop
+	%i =w phi @start 0, @body %i1
+	%x =w loadw %p
+	%y =w loadw %q
+	%i1 =w add %i, 1
+	%c =w csltw %i1, %n
+	jnz %c, @body, @exit
+@body
+	jmp @loop
+@exit
+	%z =w add %x, %y
+	ret %z
+}
+
+function w $masks(w %v) {
+@start
+	%p =l alloc8 8
+	%r =l add %p, 2
+	storew %v, %p
+	%a =w loadw %p
+	storeh 7, %r
+	%b =w loadw %p
+	%c =w add %a, %b
+	ret %c
+}
+
+function w $blit3(l %s) {
+@start
+	%p =l alloc8 8
+	%d =l alloc8 8
+	storel %s, %p
+	blit %p, %d, 3
+	%x =w loadub %d
+	%y =w loadw %d
+	%z =w add %x, %y
+	ret %z
+}
+
+function $use_ptr(l %p) {
+@start
+	%x =w loadw %p
+	storew %x, %p
+	ret
+}
+
+function w $escape(w %n) {
+@start
+	%p =l alloc8 8
+	storew 3, %p
+	%a =w loadw %p
+	call $use_ptr(l %p)
+	%b =w loadw %p
+	%c =w add %a, %b
+	ret %c
+}

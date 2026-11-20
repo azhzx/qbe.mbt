@@ -418,6 +418,9 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
       st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
       return
     }
+    // C util.c salloc dynamic path: r0 = (r + 15) & -16, then salloc r0, and
+    // the size temporary may not already have a stack slot (the reference
+    // rejects that with "unlikely alloc argument").
     let r0 = arm64_isel_newtmp(st, @types.Kl)
     let r1 = arm64_isel_newtmp(st, @types.Kl)
     let m16 = arm64_isel_getcon(st, -16L)
@@ -428,8 +431,19 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     )
     arm64_isel_emit(st, @types.Ins::new(@types.And, @types.Kl, r0, r1, m16))
     arm64_isel_emit(st, @types.Ins::new(@types.Add, @types.Kl, r1, i.arg1, c15))
-    let aidx = st.buf.length() - 1
-    st.buf[aidx].arg1 = arm64_fixarg(st, st.buf[aidx].arg1, @types.Kl, false)
+    let rs = i.arg1.tmp_val()
+    if st.fn_.tmps[rs].slot != -1 {
+      raise @util.QbeError::Ice(
+        "unlikely alloc argument %" +
+        st.fn_.tmps[rs].name +
+        " for %" +
+        st.fn_.tmps[i.to.tmp_val()].name,
+      )
+    }
+    // C sel(): i0 = curi - 1 is the Osalloc instruction (the first one emitted
+    // by salloc), and fixarg is applied to its size operand.
+    let sidx = st.buf.length() - 3
+    st.buf[sidx].arg1 = arm64_fixarg(st, st.buf[sidx].arg1, @types.Kl, false)
     return
   }
   if i.op == @types.InlineAsm {
@@ -445,6 +459,10 @@ fn arm64_sel(st : Arm64IselState, i : @types.Ins) -> Unit raise {
     if !buf[idx].arg2.is_none() {
       let k = arm64_asm_argcls(st, buf[idx].arg2)
       buf[idx].arg2 = arm64_fixarg(st, buf[idx].arg2, k, false)
+    }
+    for j in 0..<buf[idx].asm_args.length() {
+      let k = arm64_asm_argcls(st, buf[idx].asm_args[j])
+      buf[idx].asm_args[j] = arm64_fixarg(st, buf[idx].asm_args[j], k, false)
     }
     return
   }

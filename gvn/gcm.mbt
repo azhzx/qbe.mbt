@@ -483,6 +483,29 @@ fn igroup(fn_ : @types.Fn, b : @types.Blk, i_idx : Int32) -> (Int32, Int32) {
       i1 = i1 + 1
     }
     (i0, i1)
+  } else if op == @types.Sel1 {
+    // C util.c igroup case Osel1: walk back over the sel1 run, then assert the
+    // instruction found is the sel0 the run belongs to.  The walk stops at the
+    // first sel1, so the reference only reaches this branch with a malformed
+    // layout, where its assert aborts; keep the same walk and failure.
+    let mut i0 = i_idx
+    while i0 > 0 && b.ins[i0 - 1].op == @types.Sel1 {
+      i0 = i0 - 1
+    }
+    if b.ins[i0].op != @types.Sel0 {
+      abort("igroup: sel1 run does not follow a sel0")
+    }
+    let mut i1 = i0 + 1
+    while i1 < ie && b.ins[i1].op == @types.Sel1 {
+      i1 = i1 + 1
+    }
+    (i0, i1)
+  } else if op == @types.Sel0 {
+    let mut i1 = i_idx + 1
+    while i1 < ie && b.ins[i1].op == @types.Sel1 {
+      i1 = i1 + 1
+    }
+    (i_idx, i1)
   } else {
     (i_idx, i_idx + 1)
   }

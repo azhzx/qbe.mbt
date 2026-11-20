@@ -183,15 +183,10 @@ fn fixarg(
       if memarg {
         r1 = @types.Ref::slot(s)
       } else {
-        r1 = rv64_isel_newtmp(st, @types.Kl)
-        emit(
-          st,
-          @types.Addr,
-          @types.Kl,
-          r1,
-          @types.Ref::slot(s),
-          @types.Ref::none(),
-        )
+        // C fixarg: newtmp("isel", k, fn) + emit(Oaddr, k, r1, SLOT(s), R)
+        // (the address temporary keeps the operand's class).
+        r1 = rv64_isel_newtmp(st, k)
+        emit(st, @types.Addr, k, r1, @types.Ref::slot(s), @types.Ref::none())
       }
     } else if k == @types.Kw && st.fn_.tmps[r0.tmp_val()].cls == @types.Kl {
       r1 = rv64_isel_newtmp(st, k)
@@ -449,6 +444,16 @@ fn sel(st : Rv64IselState, i : @types.Ins) -> Unit raise {
         emit(st, @types.Salloc, @types.Kl, i.to, r0, @types.Ref::none())
         emit(st, @types.And, @types.Kl, r0, r1, m16)
         emit(st, @types.Add, @types.Kl, r1, i.arg1, c15)
+        // C util.c salloc: a dynamic size that already lives in a stack slot
+        // would make salloc use a stack address as the allocation size.
+        if i.arg1.is_tmp() && st.fn_.tmps[i.arg1.tmp_val()].slot != -1 {
+          raise @util.QbeError::Ice(
+            "unlikely alloc argument %" +
+            st.fn_.tmps[i.arg1.tmp_val()].name +
+            " for %" +
+            st.fn_.tmps[i.to.tmp_val()].name,
+          )
+        }
       }
     }
     // Integer comparisons - lowered to slt/sltu sequences

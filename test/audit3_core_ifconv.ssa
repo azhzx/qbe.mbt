@@ -1,0 +1,129 @@
+# audit3 core: if-conversion shapes (ifopt.c ifgraph/okgraph/convert)
+# if-then, if-else, diamond, empty join, rejected graphlets (too many
+# instructions, pinned load, float phi), and a nested diamond.
+
+function w $if_then(w %c, w %v) {
+@start
+	jnz %c, @then, @join
+@then
+	%a =w add %v, 1
+	jmp @join
+@join
+	%p =w phi @start %v, @then %a
+	ret %p
+}
+
+function w $if_else(w %c, w %v) {
+@start
+	jnz %c, @join, @els
+@els
+	%b =w sub %v, 2
+	jmp @join
+@join
+	%q =w phi @start %v, @els %b
+	ret %q
+}
+
+function w $if_empty_join(w %c, w %v) {
+@start
+	jnz %c, @then, @join
+@then
+	%a =w add %v, 3
+	jmp @join
+@join
+	ret %v
+}
+
+function w $diamond(w %c, w %v) {
+@start
+	jnz %c, @l, @r
+@l
+	%a =w add %v, 1
+	%b =w mul %a, 3
+	jmp @j
+@r
+	%x =w sub %v, 1
+	%y =w mul %x, 5
+	jmp @j
+@j
+	%p =w phi @l %b, @r %y
+	%q =w phi @l %a, @r %x
+	%z =w add %p, %q
+	%w1 =w sub %z, 1
+	%w2 =w mul %w1, 2
+	ret %w2
+}
+
+function w $too_many(w %c, w %v, w %u, w %x) {
+@start
+	%a =w add %v, 1
+	%b =w add %u, 2
+	%d =w add %x, 3
+	jnz %c, @then, @join
+@then
+	%s =w add %a, %b
+	%t =w add %s, %d
+	jmp @join
+@join
+	%p =w phi @start %v, @then %t
+	ret %p
+}
+
+function w $two_ok(w %c, w %v, w %u) {
+@start
+	%a =w add %v, 1
+	%b =w add %u, 2
+	jnz %c, @then, @join
+@then
+	%s =w add %a, %b
+	jmp @join
+@join
+	%p =w phi @start %v, @then %s
+	ret %p
+}
+
+function w $pinned_branch(l %c, w %v) {
+@start
+	%t =w loadw %c
+	jnz %t, @then, @join
+@then
+	%a =w loadw %c
+	jmp @join
+@join
+	%p =w phi @start %t, @then %a
+	ret %p
+}
+
+function d $float_phi(w %c, d %v, d %u) {
+@start
+	jnz %c, @l, @r
+@l
+	jmp @j
+@r
+	jmp @j
+@j
+	%p =d phi @l %v, @r %u
+	ret %p
+}
+
+function w $nested(w %c, w %d, w %v) {
+@start
+	jnz %c, @e, @f
+@e
+	jnz %d, @e1, @e2
+@e1
+	%a =w add %v, 1
+	jmp @ej
+@e2
+	%b =w sub %v, 1
+	jmp @ej
+@ej
+	%p =w phi @e1 %a, @e2 %b
+	jmp @join
+@f
+	%q =w mul %v, 9
+	jmp @join
+@join
+	%r =w phi @ej %p, @f %q
+	ret %r
+}

@@ -1,0 +1,18 @@
+# audit3-types: the fp-constant stash (C emit.c stashbits) identifies a
+# constant by its FULL 64-bit word plus size class:
+#   size <= b->size && b->n == n
+# The port used to compare only the first `size` bytes, so a 4-byte constant
+# whose word equals the low half of an 8-byte entry was folded into it: one
+# pool entry and one label short of the reference. The double below has bits
+# 0x3ff000003f800000, whose low word is the single 1.0f (0x3f800000); the
+# isel stashes constants in reverse instruction order, so the 8-byte entry
+# comes first.
+
+export function d $audit3_fpstash(d %a, s %b) {
+@start
+	%y =s add %b, s_1.0
+	%c =d exts %y
+	%x =d add %a, d_0x1.000003f8p0
+	%z =d add %x, %c
+	ret %z
+}

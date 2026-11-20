@@ -93,6 +93,11 @@ pub fn phiins(fn_ : @types.Fn) -> Unit raise {
           if i.arg2.eq(@types.Ref::tmp(t)) {
             b.ins[ii].arg2 = r
           }
+          for j in 0..<b.ins[ii].asm_args.length() {
+            if b.ins[ii].asm_args[j].eq(@types.Ref::tmp(t)) {
+              b.ins[ii].asm_args[j] = r
+            }
+          }
         }
         if !i.to.is_none() && i.to.eq(@types.Ref::tmp(t)) {
           if !b.out_set.unwrap().has(t) {
@@ -190,6 +195,15 @@ fn ren_dfs(
       let t = ins.arg2.tmp_val()
       if fn_.tmps[t].visit != 0 {
         b.ins[ii].arg2 = getstk(t, bid, stk, fn_, pool)
+      }
+    }
+    for j in 0..<b.ins[ii].asm_args.length() {
+      let r = b.ins[ii].asm_args[j]
+      if r.is_tmp() {
+        let t = r.tmp_val()
+        if fn_.tmps[t].visit != 0 {
+          b.ins[ii].asm_args[j] = getstk(t, bid, stk, fn_, pool)
+        }
       }
     }
     // Rename destination

@@ -618,6 +618,8 @@ pub fn rv64_rglob_mask() -> UInt64
 
 pub let rv64_rsave : Array[Int32]
 
+pub fn sign_ext29(Int32) -> Int32
+
 pub fn target_argregs(Ref) -> (UInt64, Int32, Int32)
 
 pub let target_cfg : TargetCfg
@@ -906,10 +908,12 @@ pub(all) struct Ins {
   mut arg1 : Ref
   mut arg2 : Ref
   mut asm_text : String
+  mut asm_args : Array[Ref]
 }
 pub fn Ins::load_size(Self) -> Int32
 pub fn Ins::new(Op, Class, Ref, Ref, Ref) -> Self
 pub fn Ins::new_asm(Class, Ref, Ref, Ref, String) -> Self
+pub fn Ins::new_asm_n(Class, Ref, Array[Ref], String) -> Self
 pub fn Ins::new_void(Op, Class, Ref, Ref) -> Self
 pub fn Ins::store_size(Self) -> Int32
 
@@ -1202,6 +1206,7 @@ pub fn Ref::none() -> Self
 pub fn Ref::retregs(Self) -> (UInt64, Int32, Int32)
 pub fn Ref::rint(Int32) -> Self
 pub fn Ref::rint_val(Self) -> Int32
+pub fn Ref::rsval(Self) -> Int32
 pub fn Ref::rv64_argregs(Self) -> (UInt64, Int32, Int32)
 pub fn Ref::rv64_retregs(Self) -> (UInt64, Int32, Int32)
 pub fn Ref::slot(Int32) -> Self

@@ -423,6 +423,15 @@ pub fn spill(
           _ => ()
         }
       }
+      // Extra asm operands are uses too. Keep them in registers at this
+      // instruction, the same way the two regular operands are kept.
+      for r in ins.asm_args {
+        if r.is_tmp() {
+          let tt = r.tmp_val()
+          v.set(tt)
+          w.set(tt)
+        }
+      }
       let u = @types.BSet::new(st.ntmp)
       u.copy_from(v)
       limit2(st, v, 0, 0, Some(w))
@@ -488,8 +497,10 @@ pub fn spill(
       let b = fn_.blks[id]
       sb.write_string("\t")
       sb.write_string(@util.lpad(b.name, 10))
+      // C spill.c 525: "% 5d" - the space flag keeps a leading space even when
+      // the loop value reaches the width.
       sb.write_string(" (")
-      sb.write_string(@util.rpad(b.loop_depth, 5))
+      sb.write_string(@util.fmt_space(b.loop_depth, 5))
       sb.write_string(") ")
       sb.write_string(@types.dumpts(b.out_set.unwrap(), fn_.tmps))
     }

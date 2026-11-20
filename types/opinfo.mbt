@@ -1569,23 +1569,15 @@ pub fn Op::index(self : Op) -> Int32 {
 
 ///|
 // Size in bytes of a load (C load.c loadsz).
+// C load.c has a single loadsz; keep a single MoonBit body as well and let
+// this entry point delegate to Ins::load_size (the reverse of the other
+// helper pair would be equally fine, but this keeps the Ins method primary).
 pub fn op_loadsz(i : Ins) -> Int32 {
-  match i.op {
-    Loadsb | Loadub => 1
-    Loadsh | Loaduh => 2
-    Loadsw | Loaduw => 4
-    Load => if i.cls.wide() == 1 { 8 } else { 4 }
-    _ => 0
-  }
+  i.load_size()
 }
 
 ///|
 // Size in bytes of a store (C load.c storesz).
 pub fn op_storesz(i : Ins) -> Int32 {
-  match i.op {
-    Storeb => 1
-    Storeh => 2
-    Storew | Stores => 4
-    _ => 8
-  }
+  i.store_size()
 }

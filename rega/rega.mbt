@@ -462,6 +462,8 @@ fn read_slot(st : RState, s : (Int32, Int32, Int32)) -> @types.Ref {
     }
   } else if s.0 == 1 {
     st.fn_.mems[s.1].base
+  } else if s.0 == 3 {
+    st.buf[s.1].asm_args[s.2]
   } else {
     st.fn_.mems[s.1].index
   }
@@ -477,6 +479,8 @@ fn write_slot(st : RState, s : (Int32, Int32, Int32), r : @types.Ref) -> Unit {
     }
   } else if s.0 == 1 {
     st.fn_.mems[s.1].base = r
+  } else if s.0 == 3 {
+    st.buf[s.1].asm_args[s.2] = r
   } else {
     st.fn_.mems[s.1].index = r
   }
@@ -546,7 +550,8 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
       rf = rr
     }
     // collect and prioritize arguments
-    let ra : Array[(Int32, Int32, Int32)] = Array::make(4, (0, 0, 0))
+    // 2 regular operands, two mem slots, and every extra asm operand.
+    let ra : Array[(Int32, Int32, Int32)] = Array::make(16, (0, 0, 0))
     let mut nr = 0
     for x in 0..<2 {
       let arg = if x == 0 { st.buf[last].arg1 } else { st.buf[last].arg2 }
@@ -567,6 +572,12 @@ fn doblk(st : RState, b : @types.Blk, cur : RMap) -> Unit raise {
           nr = nr + 1
         }
         _ => ()
+      }
+    }
+    for x in 0..<st.buf[last].asm_args.length() {
+      if st.buf[last].asm_args[x].is_tmp() {
+        insert(st, (3, last, x), ra, nr)
+        nr = nr + 1
       }
     }
     for z in 0..<nr {

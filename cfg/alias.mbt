@@ -267,9 +267,12 @@ pub fn fillalias(fn_ : @types.Fn) -> Unit {
       esc(b.jmp.arg, fn_)
     }
   }
-  // C alias.c: phi arguments escape.
-  for blk in fn_.blks {
-    for p in blk.phi {
+  // C alias.c: phi arguments escape.  The reference walks the start link
+  // chain, which fillcfg has pruned to the reachable blocks; dead blocks keep
+  // their phis in this port's storage, so use def_order (the live chain) rather
+  // than every stored block.
+  for id in fn_.def_order {
+    for p in fn_.blks[id].phi {
       for a in p.args {
         esc(a.value, fn_)
       }

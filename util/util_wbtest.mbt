@@ -39,6 +39,23 @@ test "rpad right-justifies integers" {
 }
 
 ///|
+// C printf("% <w>d"): space flag for non-negative values, width is a minimum.
+// Expected strings were produced by compiling the same format with cc on the
+// reference host and printing each case.
+test "fmt_space matches C printf space flag" {
+  assert_eq(fmt_space(100, 3), " 100")
+  assert_eq(fmt_space(1, 3), "  1")
+  assert_eq(fmt_space(0, 3), "  0")
+  assert_eq(fmt_space(-3, 3), " -3")
+  assert_eq(fmt_space(-100, 3), "-100")
+  assert_eq(fmt_space(10000, 3), " 10000")
+  assert_eq(fmt_space(10000, 5), " 10000")
+  assert_eq(fmt_space(-3, 5), "   -3")
+  assert_eq(fmt_space(-2147483648, 3), "-2147483648")
+  assert_eq(fmt_space(8, 3) + "b", "  8b")
+}
+
+///|
 // The formatter must handle values above 2^63 (it used to saturate through
 // Int64, printing FLT_MAX as 9223372036854.775807) and C's special values.
 test "fmt_fixed handles large, special and signed-zero values" {
@@ -52,8 +69,11 @@ test "fmt_fixed handles large, special and signed-zero values" {
   // arm64 yields +nan, so construct both NaNs from bits instead.
   let qnan = 0x7FF8000000000000UL.reinterpret_as_int64().reinterpret_as_double()
   assert_true(fmt_fixed(qnan, 6) == "nan")
+  // The reference binary's printf (Apple libc) drops the sign of a NaN: it
+  // prints "nan" for both 0x7ff8... and 0xfff8... (verified with cc on the
+  // reference host, and with `qbe -dP` on "s_-nan"). Only inf keeps its sign.
   let nnan = 0xFFF8000000000000UL.reinterpret_as_int64().reinterpret_as_double()
-  assert_true(fmt_fixed(nnan, 6) == "-nan")
+  assert_true(fmt_fixed(nnan, 6) == "nan")
   assert_true(fmt_fixed(-0.0, 6) == "-0.000000")
   assert_true(fmt_fixed(5.0e-324, 6) == "0.000000")
 }

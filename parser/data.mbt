@@ -1,4 +1,30 @@
 ///|
+// C parse.c lex() stores the first character of every token in tokval.chr and
+// the parsedat diagnostics print it with %c. The parser's Token keeps only the
+// payload text for prefixed tokens, so map the token kind back to its leading
+// character.
+fn token_lead_char(t : @lexer.Token) -> Char {
+  match t.kind {
+    TTemp => '%'
+    TLoc => '@'
+    TGlo => '$'
+    TTyp => ':'
+    TStr => '"'
+    TNl => '\n'
+    TCom => ','
+    TEq => '='
+    TPlus => '+'
+    TLpa => '('
+    TRpa => ')'
+    TLbr => '{'
+    TRbr => '}'
+    TDot3 => '.'
+    TArrow => '-'
+    _ => if t.raw.length() > 0 { t.raw.to_array()[0] } else { '?' }
+  }
+}
+
+///|
 // Parse a data definition
 // export: whether the data is exported
 fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
@@ -12,12 +38,14 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
   d.secf = lnk.secf
   self.datas.push(d)
   // Parse data name: $name =
+  // C parse.c: if (nextnl() != Tglo || nextnl() != Teq)
+  //                err("data name, then = expected");
   if self.next_nl() != TGlo {
-    raise self.error("data name expected")
+    raise self.error("data name, then = expected")
   }
   let name = self.tokens[self.pos - 1].raw
   if self.next_nl() != TEq {
-    raise self.error("= expected after data name")
+    raise self.error("data name, then = expected")
   }
   // Optional: align N (C parsedat validation and default 8).
   let mut align_val = 8L
@@ -64,7 +92,10 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
           "s" => @types.DW // single float treated as word size
           "d" => @types.DL // double float treated as long size
           "z" => @types.DZ
-          _ => raise self.error("invalid size specifier \{spec}")
+          _ =>
+            raise self.error(
+              "invalid size specifier \{token_lead_char(self.tokens[self.pos - 1])} in data",
+            )
         }
         // Parse values for this size
         let mut t3 = self.next_nl()
@@ -143,9 +174,11 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
               let ref_name = self.tokens[self.pos - 1].raw
               let mut ref_offset = 0L
               if self.peek_kind() == TPlus {
+                // C parse.c parsedatref uses next(), not nextnl(): a newline
+                // between '+' and the offset is an error.
                 ignore(self.next())
-                if self.next_nl() != TInt {
-                  raise self.error("integer offset expected after +")
+                if self.next().kind != TInt {
+                  raise self.error("invalid token after offset in ref")
                 }
                 ref_offset = parse_int64(self.tokens[self.pos - 1].raw)
               }
@@ -176,7 +209,10 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
           _ => raise self.error(", or } expected")
         }
       }
-      _ => raise self.error("invalid size specifier in data")
+      _ =>
+        raise self.error(
+          "invalid size specifier \{token_lead_char(self.tokens[self.pos - 1])} in data",
+        )
     }
   }
   // Emit DEnd

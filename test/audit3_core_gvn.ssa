@@ -1,0 +1,110 @@
+# audit3 core: GVN/GCM shapes (gvn.c/copy.c/gcm.c)
+# equal phis, jnz zero inference, killed-block instruction rescue, assoc
+# constant folding, narrow pars, dead subword extensions, hoisting/sinking.
+
+function w $killed(w %c, w %v) {
+@start
+	jnz %c, @a, @b
+@a
+	jnz %c, @x, @y
+@x
+	%q =w add %v, 1
+	jmp @j
+@y
+	%r =w mul %v, 7
+	jmp @j
+@b
+	%s =w sub %v, 2
+	jmp @j
+@j
+	%p =w phi @x %q, @y %r, @b %s
+	ret %p
+}
+
+function w $eqphis(w %c, w %v, w %u) {
+@start
+	jnz %c, @a, @b
+@a
+	%x =w add %v, 1
+	jmp @j
+@b
+	%y =w add %v, 1
+	jmp @j
+@j
+	%p1 =w phi @a %x, @b %y
+	%p2 =w phi @a %x, @b %y
+	%p3 =w phi @a %u, @b %u
+	%r1 =w add %p1, %p2
+	%r2 =w add %r1, %p3
+	ret %r2
+}
+
+function w $assoc(w %a, w %b) {
+@start
+	%x =w add %a, 3
+	%y =w add %x, 4
+	%z =w add %a, 3
+	%w1 =w sub %a, 3
+	%w2 =w add %w1, 4
+	%w3 =w sub %y, 9
+	%r =w add %y, %z
+	%r2 =w add %r, %w2
+	%r3 =w sub %r2, %w3
+	%r4 =w add %r3, %b
+	ret %r4
+}
+
+function w $npar(w %a, w %n) {
+@start
+	jmp @loop
+@loop
+	%i =w phi @start 0, @body %i1
+	%m =w and %a, 255
+	%t =w add %m, %i
+	%i1 =w add %i, 1
+	%c =w csltw %i1, %n
+	jnz %c, @body, @exit
+@body
+	jmp @loop
+@exit
+	ret %t
+}
+
+function w $exts(l %p) {
+@start
+	%l =w loadub %p
+	%e =w extub %l
+	%m =w and %e, 255
+	%q =w loaduh %p
+	%f =w extuh %q
+	%c =w and %f, 1
+	%r =w add %m, %c
+	ret %r
+}
+
+function w $hoist(w %n, w %v) {
+@start
+	jmp @loop
+@loop
+	%i =w phi @start 0, @body %i1
+	%t =w mul %v, 3
+	%u =w add %t, %i
+	%i1 =w add %i, 1
+	%c =w csltw %i1, %n
+	jnz %c, @body, @exit
+@body
+	jmp @loop
+@exit
+	ret %u
+}
+
+function w $sink(w %a) {
+@start
+	%x =w add %a, 1
+	jnz %a, @t, @f
+@t
+	%y =w mul %x, 2
+	ret %y
+@f
+	ret %a
+}

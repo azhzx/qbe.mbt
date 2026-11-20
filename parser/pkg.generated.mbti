@@ -32,6 +32,7 @@ pub struct Parser {
   mut curblk : Int32
   mut rcls : Int32
   par_ins : Array[@types.Ins]
+  mut blk_nins : Int32
 }
 pub fn Parser::get_datas(Self) -> Array[@types.Dat]
 pub fn Parser::get_funcs(Self) -> Array[@types.Fn]

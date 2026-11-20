@@ -1,4 +1,22 @@
 ///|
+// Port extension: upstream arm64/abi.c errors on t->align > 3 (8 bytes), but
+// C11's __int128 and the NEON vectors are 16-byte aligned on AArch64. The
+// classifier must accept align 4, round stack offsets to 16, and still pass a
+// 16-byte composite in two GPRs.
+test "audit arm64: 16-byte-aligned aggregate is classified, not rejected" {
+  let src =
+    #|type :a = align 16 { l, l }
+    #|function l $f(:a %p) {
+    #|@start
+    #| %v =l loadl %p
+    #| ret %v
+    #|}
+  let (f, interner, typs) = arm64_abi_parse_frontend(src)
+  let _ = abi_arm64(f, typs, false, interner, false, typs)
+  assert_true(f.retr.is_none())
+}
+
+///|
 test "audit arm64: three doubles remain HFA before large aggregate rule" {
   let src =
     #|type :h = { d, d, d }

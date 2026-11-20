@@ -1,0 +1,60 @@
+# ARM64 AAPCS64 edge cases: HFA larger than 16 bytes (three doubles must
+# still use d0-d2, not an indirect pointer), an indirect aggregate argument
+# that lands on the stack as the ninth argument, and the environment register
+# x9 for parameters and calls.
+
+type :a3h3d = { d, d, d }
+
+function :a3h3d $a3_arm64_hfa_mk(d %a, d %b, d %c) {
+@start
+	%r =l alloc8 24
+	stored %a, %r
+	%r1 =l add %r, 8
+	stored %b, %r1
+	%r2 =l add %r, 16
+	stored %c, %r2
+	ret %r
+}
+
+export function d $a3_arm64_hfa_use(:a3h3d %p) {
+@start
+	%x =d loadd %p
+	%q =l add %p, 8
+	%y =d loadd %q
+	%z =d add %x, %y
+	ret %z
+}
+
+export function d $a3_arm64_hfa_call(d %a, d %b, d %c) {
+@start
+	%p =l call $a3_arm64_hfa_mk(d %a, d %b, d %c)
+	%z =d call $a3_arm64_hfa_use(:a3h3d %p)
+	ret %z
+}
+
+type :a3big = { l, l, l }
+
+export function l $a3_arm64_cptr_f(l %a0, l %a1, l %a2, l %a3, l %a4, l %a5, l %a6, l %a7, :a3big %b) {
+@start
+	%x =l loadl %b
+	ret %x
+}
+
+export function l $a3_arm64_cptr_g(:a3big %b, l %a0, l %a1, l %a2, l %a3, l %a4, l %a5, l %a6, l %a7) {
+@start
+	%x =l call $a3_arm64_cptr_f(l %a0, l %a1, l %a2, l %a3, l %a4, l %a5, l %a6, l %a7, :a3big %b)
+	ret %x
+}
+
+export function l $a3_arm64_env_get(env %e) {
+@start
+	%x =l loadl %e
+	ret %x
+}
+
+export function l $a3_arm64_env_call(env %e, l %v) {
+@start
+	storel %v, %e
+	%r =l call $a3_arm64_env_get(env %e)
+	ret %r
+}

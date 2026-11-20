@@ -22,10 +22,24 @@ let cmd : @argparse.Command = @argparse.Command(
   "qbe",
   about="QBE compiler backend (MoonBit port) — targets: amd64_sysv (default), amd64_win, wasm, rv64, la64, arm64; --run FUNC[,ARG]... interprets the SSA directly",
   options=[
-    @argparse.OptionArg("output", short='o'),
-    @argparse.OptionArg("target", short='t'),
-    @argparse.OptionArg("gas", short='G'),
-    @argparse.OptionArg("debug", short='d'),
+    // main.c's getopt accepts -o/-t/-d repeatedly; the last -o and -t win and
+    // every -d flag byte accumulates. Append keeps the occurrences in order.
+    @argparse.OptionArg(
+      "output",
+      short='o',
+      action=@argparse.OptionAction::Append,
+    ),
+    @argparse.OptionArg(
+      "target",
+      short='t',
+      action=@argparse.OptionAction::Append,
+    ),
+    @argparse.OptionArg("gas", short='G', action=@argparse.OptionAction::Append),
+    @argparse.OptionArg(
+      "debug",
+      short='d',
+      action=@argparse.OptionAction::Append,
+    ),
     @argparse.OptionArg("run"),
     @argparse.OptionArg("emit"),
     @argparse.OptionArg(
@@ -201,8 +215,9 @@ async fn process_file(
   target : String,
 ) -> String {
   let source = read_source(file) catch {
-    e => {
-      cli_fail("error: \{e}\n")
+    _ => {
+      // main.c: fprintf(stderr, "cannot open '%s'\n", f); exit(1)
+      cli_fail("cannot open '\{file}'\n")
       return ""
     }
   }
@@ -367,13 +382,24 @@ async fn run_cli() -> Unit {
       }
     None => ()
   }
+  // main.c: the last -o wins (it fopen()s each one in getopt order).
   let out_file = match parsed.values.get("output") {
-    Some(arr) if arr.length() > 0 => arr[0]
+    Some(arr) if arr.length() > 0 => arr[arr.length() - 1]
     _ => ""
   }
   let out_dir = match parsed.values.get("out-dir") {
     Some(arr) if arr.length() > 0 => arr[0]
     _ => ""
+  }
+  // main.c opens the output at option-parse time and exits 1 on failure, so a
+  // bad -o path is reported before the input is read.
+  if out_file != "" && out_file != "-" {
+    @fs.write_string_to_file(out_file, "") catch {
+      _ => {
+        cli_fail("cannot open '\{out_file}'\n")
+        return
+      }
+    }
   }
   let mut gas = "e"
   match parsed.values.get("gas") {
@@ -381,17 +407,43 @@ async fn run_cli() -> Unit {
     _ => ()
   }
   let mut target = "amd64_sysv"
+  let mut target_name = "amd64_sysv"
+  let mut target_apple = false
+  // main.c: -t is processed in getopt order, the last one wins, and "-t ?"
+  // prints the target currently selected (the default before any -t).
   match parsed.values.get("target") {
-    Some(arr) if arr.length() > 0 =>
-      match arr[0] {
-        "amd64_sysv" | "amd64_win" | "wasm" | "rv64" | "la64" | "arm64" =>
-          target = arr[0]
-        t => {
-          cli_fail("unknown target '\{t}'\n")
+    Some(arr) =>
+      for t in arr {
+        if t == "?" {
+          @util.iprint(target_name + "\n")
           return
+        }
+        match t {
+          "amd64_sysv" | "amd64_win" | "wasm" | "rv64" | "la64" | "arm64" => {
+            target = t
+            target_name = t
+            target_apple = false
+          }
+          "amd64_apple" => {
+            target = "amd64_sysv"
+            target_name = t
+            target_apple = true
+          }
+          "arm64_apple" => {
+            target = "arm64"
+            target_name = t
+            target_apple = true
+          }
+          _ => {
+            cli_fail("unknown target '\{t}'\n")
+            return
+          }
         }
       }
     _ => ()
+  }
+  if target_apple {
+    gas = "m"
   }
   // --emit obj and --run-asm are self-contained by default; --clang selects
   // the clang-backed backend instead.
@@ -417,8 +469,8 @@ async fn run_cli() -> Unit {
       }
       for file in files {
         let source = read_source(file) catch {
-          e => {
-            cli_fail("error: \{e}\n")
+          _ => {
+            cli_fail("cannot open '\{file}'\n")
             continue
           }
         }
@@ -465,8 +517,8 @@ async fn run_cli() -> Unit {
       }
       for file in files {
         let source = read_source(file) catch {
-          e => {
-            cli_fail("error: \{e}\n")
+          _ => {
+            cli_fail("cannot open '\{file}'\n")
             continue
           }
         }
@@ -499,8 +551,8 @@ async fn run_cli() -> Unit {
       }
       for file in files {
         let source = read_source(file) catch {
-          e => {
-            cli_fail("error: \{e}\n")
+          _ => {
+            cli_fail("cannot open '\{file}'\n")
             continue
           }
         }
@@ -537,8 +589,8 @@ async fn run_cli() -> Unit {
       }
       for file in files {
         let source = read_source(file) catch {
-          e => {
-            cli_fail("error: \{e}\n")
+          _ => {
+            cli_fail("cannot open '\{file}'\n")
             continue
           }
         }
@@ -624,8 +676,8 @@ async fn run_cli() -> Unit {
   let sources : Array[(String, String)] = []
   for file in files {
     let source = read_source(file) catch {
-      e => {
-        cli_fail("error: \{e}\n")
+      _ => {
+        cli_fail("cannot open '\{file}'\n")
         return
       }
     }

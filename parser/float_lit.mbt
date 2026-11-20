@@ -268,8 +268,11 @@ fn pow10_big(n : Int32) -> @bigint.BigInt {
 
 ///|
 // Split a decimal literal into (negative, significant digits, decimal
-// exponent, sticky). The digit string is value / 10^exp10; at most 60 digits
-// are kept and any nonzero dropped digit sets sticky.
+// exponent, sticky). The digit string is value / 10^exp10. The rounding of the
+// reference's fscanf is exact, so every significant digit is kept: a fixed
+// truncation cannot decide a tie (a dyadic midpoint's exact decimal expansion
+// can be longer than the kept prefix, and the sign of the omitted tail decides
+// the rounding).
 fn decimal_digits(text : Array[Char]) -> (Bool, String, Int32, Bool)? {
   let n = text.length()
   let mut i = 0
@@ -338,18 +341,8 @@ fn decimal_digits(text : Array[Char]) -> (Bool, String, Int32, Bool)? {
   if s == t {
     return Some((neg, "", 0, false))
   }
-  let mut ds = digits[s:t].to_owned()
-  let mut sticky = false
-  if ds.length() > 60 {
-    for k in 60..<ds.length() {
-      if ds[k] != '0' {
-        sticky = true
-      }
-    }
-    exp10 = exp10 + (ds.length() - 60)
-    ds = ds[0:60].to_owned()
-  }
-  Some((neg, ds, exp10, sticky))
+  let ds = digits[s:t].to_owned()
+  Some((neg, ds, exp10, false))
 }
 
 ///|
@@ -428,6 +421,53 @@ fn decimal_f32_bits(chars : Array[Char]) -> (UInt64, Bool) {
 }
 
 ///|
+// C99 strtod accepts nan(n-char-seq); Darwin libc interprets an all-digit
+// sequence as the NaN payload: base 0 (0x hex, a leading 0 means octal,
+// decimal otherwise), accumulated modulo 2^64, then truncated to the
+// mantissa's payload field. Any other sequence yields the canonical quiet NaN.
+// The lexer keeps the parentheses inside the token, so chars[at..] is
+// "(seq)".
+fn nan_payload(chars : Array[Char], at : Int32) -> UInt64 {
+  if at + 1 >= chars.length() || chars[at] != '(' {
+    return 0UL
+  }
+  let end = chars.length() - 1
+  if end <= at || chars[end] != ')' {
+    return 0UL
+  }
+  let mut base : UInt64 = 10UL
+  let mut i = at + 1
+  if chars[i] == '0' {
+    if i + 1 < end && chars[i + 1] == 'x' {
+      base = 16UL
+      i = i + 2
+    } else {
+      base = 8UL
+      i = i + 1
+    }
+  }
+  let mut v : UInt64 = 0UL
+  while i < end {
+    let c = chars[i]
+    let d : UInt64 = if c >= '0' && c <= '9' {
+      (c.to_int() - 48).to_uint64()
+    } else if c >= 'a' && c <= 'f' {
+      (c.to_int() - 87).to_uint64()
+    } else if c >= 'A' && c <= 'F' {
+      (c.to_int() - 55).to_uint64()
+    } else {
+      999UL
+    }
+    if d >= base {
+      return 0UL
+    }
+    v = v * base + d
+    i = i + 1
+  }
+  v
+}
+
+///|
 fn parse_float_literal(raw : String) -> (Double, Float, String) {
   if raw.length() < 3 {
     return (0.0, Float::from_double(0.0), "Invalid floating-point literal")
@@ -442,11 +482,16 @@ fn parse_float_literal(raw : String) -> (Double, Float, String) {
   let neg = k == 1 && chars[0] == '-'
   // glibc's strtod/strtof use the canonical quiet-NaN payloads; MoonBit's
   // parser produces a NaN with payload 1, which would not match the
-  // reference's emitted bits.
+  // reference's emitted bits. The n-char-sequence, when present, supplies the
+  // payload bits (C99 nan(n-char-seq)).
   if ci_prefix(chars, k, "nan") {
+    let payload = nan_payload(chars, k + 3)
+    let sign64 : UInt64 = if neg { 0x8000000000000000UL } else { 0UL }
+    let sign32 : UInt64 = if neg { 0x80000000UL } else { 0UL }
     let dbits : UInt64 = 0x7FF8000000000000UL |
-      (if neg { 0x8000000000000000UL } else { 0UL })
-    let fbits : UInt64 = 0x7FC00000UL | (if neg { 0x80000000UL } else { 0UL })
+      sign64 |
+      (payload & 0x0007FFFFFFFFFFFFUL)
+    let fbits : UInt64 = 0x7FC00000UL | sign32 | (payload & 0x3FFFFFUL)
     let d = dbits.reinterpret_as_int64().reinterpret_as_double()
     return (d, float_from_bits(fbits), "")
   }

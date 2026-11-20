@@ -787,6 +787,59 @@ pub fn Builder::asm_ins(
 }
 
 ///|
+// Inline assembly with any number of register inputs. Operand numbers in the
+// text are the output (%0), then this array in order (%1, %2, ...).
+pub fn Builder::asm_ins_n(
+  self : Builder,
+  fid : Int32,
+  cls : @types.Class,
+  res : @types.Class,
+  operands : Array[Int32],
+  text : String,
+) -> Int32 {
+  let f = self.funcs[fid]
+  let bid = self.cur[fid]
+  let to = if res == @types.Kx {
+    @types.Ref::none()
+  } else {
+    @types.Ref::tmp(f.new_tmp("t", res))
+  }
+  let refs : Array[@types.Ref] = []
+  for v in operands {
+    refs.push(self.val_ref(v))
+  }
+  f.blks[bid].ins.push(@types.Ins::new_asm_n(cls, to, refs, text))
+  if res == @types.Kx {
+    -1
+  } else {
+    self.push_ref(to)
+  }
+}
+
+///|
+// Dynamic stack allocation (a C VLA): emit `%p =l alloc16 %bytes`. Upstream
+// QBE already lowers a non-constant alloc size through salloc (util.c), so this
+// is the branch of the existing op, not a new instruction: the arm64 isel
+// rounds the size up to the alloc's alignment, subtracts sp and returns the new
+// sp in `to`. `has_dynalloc` then makes the epilogue restore sp from x29.
+//
+// The size must be a value handle (a temp, not a constant Ref) only when it is
+// genuinely dynamic; a constant is fine and is folded by the isel.
+pub fn Builder::alloc_dyn(
+  self : Builder,
+  fid : Int32,
+  bytes : Int32,
+  align : Int32,
+) -> Int32 {
+  let op = match align {
+    16 => @types.Alloc16
+    4 => @types.Alloc4
+    _ => @types.Alloc8
+  }
+  self.emit_ins(fid, op, @types.Kl, @types.Kl, bytes, -1)
+}
+
+///|
 // Does any function in this module contain inline assembly? The object writer
 // is self-contained and cannot encode raw assembly, so the driver has to take
 // the text-assembly route when this is true.
@@ -1147,6 +1200,12 @@ pub fn Builder::data_align(self : Builder, a : Int64) -> Unit {
 ///|
 pub fn Builder::data_byte(self : Builder, v : Int64) -> Unit {
   self.datas.push(@types.Dat::byte(v))
+}
+
+///|
+// A zero fill of n bytes (QBE's z n), used for BSS-like objects.
+pub fn Builder::data_zero(self : Builder, n : Int64) -> Unit {
+  self.datas.push(@types.Dat::zero(n))
 }
 
 ///|

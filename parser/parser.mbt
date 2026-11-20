@@ -26,6 +26,11 @@ pub struct Parser {
   mut rcls : Int32
   // Parameter instructions (Par/Parc/Pare), to be prepended to start block
   par_ins : Array[@types.Ins]
+  // Instructions currently in the open block, counted the way the reference's
+  // shared insb[] buffer is (C parse.c `curi - insb`). Used for the NIns
+  // "too many instructions" limit. The start block begins with the staged
+  // parameter instructions.
+  mut blk_nins : Int32
 }
 
 ///|
@@ -70,26 +75,37 @@ pub fn Parser::new(
     curblk: -1,
     rcls: 0,
     par_ins: [],
+    blk_nins: 0,
   }
 }
 
 ///|
-// Get current token (without advancing)
+// Get current token (without advancing). The C parser's lex() returns Teof for
+// every read past the end of the input, so reads are clamped to the trailing
+// TEof token instead of running off the token array.
 fn Parser::peek(self : Self) -> @lexer.Token {
-  self.tokens[self.pos]
+  if self.pos >= self.tokens.length() {
+    self.tokens[self.tokens.length() - 1]
+  } else {
+    self.tokens[self.pos]
+  }
 }
 
 ///|
 // Get current token kind
 fn Parser::peek_kind(self : Self) -> @lexer.TokenKind {
-  self.tokens[self.pos].kind
+  self.peek().kind
 }
 
 ///|
-// Get current token and advance
+// Get current token and advance (C parse.c next). The lexer appends one TEof
+// token, and the C lexer keeps returning Teof forever at end of input, so the
+// position stops on the trailing TEof rather than advancing past the array.
 fn Parser::next(self : Self) -> @lexer.Token {
-  let t = self.tokens[self.pos]
-  self.pos = self.pos + 1
+  let t = self.peek()
+  if self.pos < self.tokens.length() {
+    self.pos = self.pos + 1
+  }
   if t.kind == TNl {
     self.line = self.line + 1
   }

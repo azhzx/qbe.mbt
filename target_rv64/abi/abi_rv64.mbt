@@ -184,7 +184,7 @@ fn rv64_fpstruct(
   c : Rv64Class,
   t : @types.Typ,
   off : Int32,
-) -> Int32 {
+) -> Int32 raise {
   if t.isunion {
     return -1
   }
@@ -254,14 +254,15 @@ fn rv64_typclass(
   c : Rv64Class,
   t : @types.Typ,
   fpabi : Bool,
-) -> Rv64Class {
+) -> Rv64Class raise {
   c.typ = Some(t)
   c.class_ = 0
   c.ngp = 0
   c.nfp = 0
 
   if t.align > 4 {
-    abort("alignments larger than 16 are not supported")
+    // C rv64/abi.c typclass uses err(): reject the input, do not panic.
+    raise @util.QbeError::Ice("alignments larger than 16 are not supported")
   }
   if t.dark != 0 || t.size > 16L || t.size == 0L {
     // large/dark structs are replaced by a pointer (C rv64/abi.c)
@@ -350,7 +351,7 @@ fn rv64_argsclass(
   i1 : Int32,
   carg : Array[Rv64Class],
   retptr : Bool,
-) -> Int32 {
+) -> Int32 raise {
   let mut ngp = 8
   let mut nfp = 8
   let mut envc = 0
@@ -452,7 +453,7 @@ fn rv64_stkblob(st : Rv64AbiState, r : @types.Ref, t : @types.Typ) -> Unit {
 
 ///|
 // Select return value handling (C selret)
-fn rv64_selret(st : Rv64AbiState, bid : Int32) -> Unit {
+fn rv64_selret(st : Rv64AbiState, bid : Int32) -> Unit raise {
   let b = st.fn_.blks[bid]
   let j = b.jmp.kind
   if !j.is_ret() || j == @types.Jret0 {
@@ -533,7 +534,7 @@ fn rv64_selcall(
   i0 : Int32,
   i1 : Int32,
   il : Array[@types.Ins],
-) -> Unit {
+) -> Unit raise {
   let nargs = i1 - i0
   let ca : Array[Rv64Class] = []
   for _ in 0..<nargs {
@@ -823,7 +824,7 @@ fn rv64_selcall(
 
 ///|
 // Select parameter handling (C selpar)
-fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
+fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit raise {
   let ins = st.fn_.blks[st.fn_.start_id].ins
   let npar = par_end
   let ca : Array[Rv64Class] = []
@@ -858,6 +859,18 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
   let tmp : Array[@types.Ref] = Array::make(17, @types.Ref::none())
   let mut t = 0
   for a in 0..<npar {
+    // C selpar's first loop: a float argument passed in an integer register
+    // (Cfpint) gets a float-class temporary and an explicit cast, and the
+    // parameter instruction is redirected to that temporary. This happens
+    // per parameter, before the aggregate stores of the same iteration.
+    if (ca[a].class_ & Cfpint) != 0 {
+      let dest = ins[a].to
+      let fk = ca[a].cls[0]
+      ca[a].cls[0] = if fk.wide() != 0 { @types.Kl } else { @types.Kw }
+      let abi = rv64_newtmp(st, fk)
+      ins[a].to = abi
+      rv64_emit(st, @types.Cast, fk, dest, abi, @types.Ref::none())
+    }
     let i = ins[a]
     if i.op != @types.Parc || (ca[a].class_ & Cptr) != 0 {
       continue
@@ -882,19 +895,6 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
   // Emit the collected blobs (C selpar emiti(il)) before the register moves.
   for k in (il.length() - 1)>=..0 {
     rv64_emiti(st, il[k])
-  }
-
-  // Cfpint casts are emitted before the register copies so that, after the
-  // reversed write-back, they appear last (C rv64/abi.c selpar).
-  let cfpint_abi : Array[@types.Ref] = Array::make(npar, @types.Ref::none())
-  for a in 0..<npar {
-    let i = ins[a]
-    if (ca[a].class_ & Cfpint) != 0 {
-      let fk = ca[a].cls[0]
-      let abi = rv64_newtmp(st, fk)
-      cfpint_abi[a] = abi
-      rv64_emit(st, @types.Cast, fk, i.to, abi, @types.Ref::none())
-    }
   }
   let mut s = 2 + (if st.fn_.is_vararg { 8 } else { 0 })
   t = 0
@@ -933,18 +933,10 @@ fn rv64_selpar(st : Rv64AbiState, par_end : Int32) -> Unit {
         @types.Ref::none(),
       )
       s = s + 1
-    } else if (ca[a].class_ & Cfpint) != 0 {
-      let fk = ca[a].cls[0]
-      let ik = if fk.wide() == 1 { @types.Kl } else { @types.Kw }
-      rv64_emit(
-        st,
-        @types.Copy,
-        ik,
-        cfpint_abi[a],
-        @types.Ref::tmp(ca[a].reg[0]),
-        @types.Ref::none(),
-      )
     } else {
+      // Covers Cfpint parameters as well: the first loop replaced their
+      // class with the integer class and their destination with the
+      // float-class temporary.
       rv64_emit(
         st,
         @types.Copy,
@@ -1000,7 +992,7 @@ pub fn abi_rv64(
   print_dbg : Bool,
   interner : @util.Interner,
   all_typs : Array[@types.Typ],
-) -> String {
+) -> String raise {
   let st = rv64_abi_new(fn_, typs)
 
   for id in fn_.def_order {

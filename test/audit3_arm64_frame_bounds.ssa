@@ -1,0 +1,137 @@
+# ARM64 frame-size boundary probes: stp/sub/mov/movk prologue forms,
+# epilogue ldp/add forms, vararg save-area offsets, a dynamic alloc and
+# a global symbol with a byte offset.
+
+function l $a3b_g(l %x) {
+@start
+	ret %x
+}
+
+export function l $a3b_f0(l %n) {
+@start
+	%p =l alloc16 480
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f1(l %n) {
+@start
+	%p =l alloc16 496
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f2(l %n) {
+@start
+	%p =l alloc16 512
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f3(l %n) {
+@start
+	%p =l alloc16 4000
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f4(l %n) {
+@start
+	%p =l alloc16 4080
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f5(l %n) {
+@start
+	%p =l alloc16 4096
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f6(l %n) {
+@start
+	%p =l alloc16 65456
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f7(l %n) {
+@start
+	%p =l alloc16 65536
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_f8(l %n) {
+@start
+	%p =l alloc16 65600
+	storel %n, %p
+	%q =l call $a3b_g(l %n)
+	storel %q, %p
+	%z =l call $a3b_g(l %p)
+	%r =l add %q, %z
+	ret %r
+}
+
+export function l $a3b_va(l %n, ...) {
+@start
+	%ap =l alloc16 70000
+	storel %n, %ap
+	vastart %ap
+	%x =l vaarg %ap
+	%q =l call $a3b_g(l %n)
+	%z =l call $a3b_g(l %ap)
+	storel %q, %ap
+	%r =l add %x, %z
+	ret %r
+}
+
+export function l $a3b_alloc(l %n, l %sz) {
+@start
+	%p =l alloc8 %sz
+	storel %n, %p
+	%q =l call $a3b_g(l %p)
+	ret %q
+}
+
+data $a3b_glob = { l 1, l 2, l 3 }
+
+export function l $a3b_symoff() {
+@start
+	%p =l add $a3b_glob, 8
+	%x =l loadl %p
+	ret %x
+}

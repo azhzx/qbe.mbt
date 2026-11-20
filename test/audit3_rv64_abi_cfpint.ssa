@@ -1,0 +1,16 @@
+# audit3-rv64: a float parameter that is passed in an integer register
+# because the FP argument registers are exhausted (C abi.c Cfpint) is
+# converted with an explicit cast that the ABI emitter must create in the
+# same per-parameter loop as the aggregate stores (C rv64/abi.c selpar).
+# Found by the rv64 "-dA" differential: the cast and the temporaries of the
+# aggregate stores were numbered and ordered differently.
+data $audit3_rv64_gv = { w 7 }
+
+type :audit3_rv64_s2 = { w, w }
+
+function w $audit3_rv64_abi_cfpint(d %a, d %b, d %c, d %d, d %e, d %f, d %g, d %h, d %i, :audit3_rv64_s2 %s) {
+@start
+	%p =w add $audit3_rv64_gv, 0
+	%q =w add %s, 0
+	ret %p
+}

@@ -18,8 +18,11 @@ priv struct Arm64EmitState {
   gasloc : String
   gassym : String
   apple : Bool
-  mut frame : Int32
-  mut padding : Int32
+  // C E.frame / E.padding are uint64/uint: frame sizes above 2^31 bytes are
+  // valid (the reference materializes them with two movk pieces), so the text
+  // emitter keeps them 64-bit like the C.
+  mut frame : Int64
+  mut padding : Int64
 }
 
 ///|
@@ -147,8 +150,34 @@ fn arm64_logimm(x : Int64, k : @types.Class) -> Bool {
 }
 
 ///|
-// Slot offset relative to the frame pointer (C slot in arm64/emit.c). Split from
-// arm64_slot so the binary emitter can share the exact frame math.
+// Slot offset relative to the frame pointer (C slot in arm64/emit.c). C returns
+// uint64, so this is the single 64-bit implementation; the binary emitter calls
+// the Int32 wrapper below to keep its port-only frame arithmetic unchanged.
+fn arm64_slot_off64(
+  frame : Int64,
+  padding : Int64,
+  is_vararg : Bool,
+  apple : Bool,
+  s : Int32,
+) -> Int64 {
+  // C rsval: sign-extend the 29-bit reference value.
+  let s = if (s & (1 << 28)) != 0 { s - (1 << 29) } else { s }
+  let s = s.to_int64()
+  if s == -1L {
+    16L + frame
+  } else if s < 0L {
+    // C arm64/emit.c slot(): negative slots already carry a byte offset.
+    if is_vararg && !apple {
+      16L + frame + 192L - (s + 2L)
+    } else {
+      16L + frame - (s + 2L)
+    }
+  } else {
+    16L + padding + 4L * s
+  }
+}
+
+///|
 fn arm64_slot_off(
   frame : Int32,
   padding : Int32,
@@ -156,24 +185,12 @@ fn arm64_slot_off(
   apple : Bool,
   s : Int32,
 ) -> Int32 {
-  let s = if (s & (1 << 28)) != 0 { s - (1 << 29) } else { s }
-  if s == -1 {
-    16 + frame
-  } else if s < 0 {
-    // C arm64/emit.c slot(): negative slots already carry a byte offset.
-    if is_vararg && !apple {
-      16 + frame + 192 - (s + 2)
-    } else {
-      16 + frame - (s + 2)
-    }
-  } else {
-    16 + padding + 4 * s
-  }
+  arm64_slot_off64(frame.to_int64(), padding.to_int64(), is_vararg, apple, s).to_int()
 }
 
 ///|
-fn arm64_slot(st : Arm64EmitState, s : Int32) -> Int32 {
-  arm64_slot_off(st.frame, st.padding, st.fn_.is_vararg, st.apple, s)
+fn arm64_slot(st : Arm64EmitState, s : Int32) -> Int64 {
+  arm64_slot_off64(st.frame, st.padding, st.fn_.is_vararg, st.apple, s)
 }
 
 ///|
@@ -509,12 +526,23 @@ fn arm64_emit_table(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
 // allocator has run, and a spilled operand is an error rather than silently
 // wrong code.
 fn arm64_emit_asm(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
-  let ops : Array[String] = []
+  // An empty template is how codegen keeps an early-clobber operand live
+  // across the real asm; it has no text to print.
+  if i.asm_text == "" {
+    return
+  }
+  // GCC operand numbering: %0 is the output, %1/%2 the inputs. Keep the
+  // temporary ids as well as the classes: the AArch64 modifiers `%wN` and
+  // `%xN` ask for the 32- or 64-bit view of the same operand, and the bare
+  // `%N` keeps the temporary's own class.
+  let otmps : Array[Int32] = []
+  let ocls : Array[@types.Class] = []
   if !i.to.is_none() {
     if !i.to.is_tmp() {
       raise @util.QbeError::Ice("asm: output operand is not in a register")
     }
-    ops.push(arm64_rname(i.to.tmp_val(), i.cls))
+    otmps.push(i.to.tmp_val())
+    ocls.push(i.cls)
   }
   for r in [i.arg1, i.arg2] {
     if r.is_none() {
@@ -523,8 +551,18 @@ fn arm64_emit_asm(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
     if !r.is_tmp() {
       raise @util.QbeError::Ice("asm: input operand is not in a register")
     }
-    let k = st.fn_.tmps[r.tmp_val()].cls
-    ops.push(arm64_rname(r.tmp_val(), k))
+    otmps.push(r.tmp_val())
+    ocls.push(st.fn_.tmps[r.tmp_val()].cls)
+  }
+  for r in i.asm_args {
+    if r.is_none() {
+      continue
+    }
+    if !r.is_tmp() {
+      raise @util.QbeError::Ice("asm: input operand is not in a register")
+    }
+    otmps.push(r.tmp_val())
+    ocls.push(st.fn_.tmps[r.tmp_val()].cls)
   }
   let text = i.asm_text
   let chars = text.to_array()
@@ -543,15 +581,42 @@ fn arm64_emit_asm(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
         continue
       }
       if n >= '0' && n <= '9' {
-        let idx = n.to_int() - '0'.to_int()
-        if idx >= ops.length() {
+        let mut idx = 0
+        let mut k = j + 1
+        while k < chars.length() && chars[k] >= '0' && chars[k] <= '9' {
+          idx = idx * 10 + (chars[k].to_int() - '0'.to_int())
+          k = k + 1
+        }
+        if idx >= otmps.length() {
           raise @util.QbeError::Ice(
-            "asm: operand %{idx} is not bound (only the output and two inputs exist)",
+            "asm: operand " + idx.to_string() + " is not bound",
           )
         }
-        sb.write_string(ops[idx])
-        j = j + 2
+        sb.write_string(arm64_rname(otmps[idx], ocls[idx]))
+        j = k
         continue
+      }
+      // `%w1` / `%x1`: the AArch64 GCC modifiers. zlib's crc32.c writes
+      // `crc32b %w0, %w0, %w1`, and without them the raw `%` text reached
+      // the assembler.
+      if n == 'w' || n == 'x' {
+        if j + 2 < chars.length() && chars[j + 2] >= '0' && chars[j + 2] <= '9' {
+          let mut idx = 0
+          let mut k = j + 2
+          while k < chars.length() && chars[k] >= '0' && chars[k] <= '9' {
+            idx = idx * 10 + (chars[k].to_int() - '0'.to_int())
+            k = k + 1
+          }
+          if idx >= otmps.length() {
+            raise @util.QbeError::Ice(
+              "asm: operand " + idx.to_string() + " is not bound",
+            )
+          }
+          let kc = if n == 'w' { @types.Kw } else { @types.Kl }
+          sb.write_string(arm64_rname(otmps[idx], kc))
+          j = k
+          continue
+        }
       }
     }
     if c == '\n' {
@@ -579,8 +644,9 @@ fn arm64_fixarg(
   t : Int32,
 ) -> (Bool, @types.Ref) raise {
   if r.is_slot() {
+    // C fixarg compares uint64 s against sz * 4095u.
     let s = arm64_slot(st, r.slot_val())
-    if s.to_int64() > sz.to_int64() * 4095L {
+    if s > sz.to_int64() * 4095L {
       if t < 0 {
         return (true, r)
       }
@@ -646,13 +712,13 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
       if i.arg1.is_slot() {
         let rn = arm64_rname(i.to.tmp_val(), @types.Kl)
         let s = arm64_slot(st, i.arg1.slot_val())
-        if s <= 4095 {
+        if s <= 4095L {
           sb.write_string("\tadd\t")
           sb.write_string(rn)
           sb.write_string(", x29, #")
           sb.write_string(s.to_string())
           sb.write_char('\n')
-        } else if s <= 65535 {
+        } else if s <= 65535L {
           sb.write_string("\tmov\t")
           sb.write_string(rn)
           sb.write_string(", #")
@@ -667,7 +733,7 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
           sb.write_string("\tmov\t")
           sb.write_string(rn)
           sb.write_string(", #")
-          sb.write_string((s & 0xFFFF).to_string())
+          sb.write_string((s & 0xFFFFL).to_string())
           sb.write_char('\n')
           sb.write_string("\tmovk\t")
           sb.write_string(rn)
@@ -684,19 +750,24 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
         raise @util.QbeError::Ice("invalid address")
       }
     @types.Call =>
-      // Direct call to a global symbol (C arm64/emit.c case Ocall): emit
-      // `bl sym` when the target is an offset-zero address constant.
+      // Direct call to a global symbol (C arm64/emit.c case Ocall): a constant
+      // target must be an offset-zero, non-thread address constant, otherwise
+      // the reference dies ("invalid call argument"); the symbol prefix is
+      // skipped for quoted names.
       if i.arg1.is_con() {
         let c = st.fn_.cons[i.arg1.con_val()]
-        if c.kind == @types.CAddr && c.bits.i == 0L && !c.is_local {
-          let nm = st.interner.get(c.label)
-          sb.write_string("\tbl\t")
-          sb.write_string(@util.sym_prefix(st.gassym, nm))
-          sb.write_string(nm)
-          sb.write_char('\n')
-        } else {
-          arm64_emit_table(st, i)
+        if c.kind != @types.CAddr || c.is_thr() || c.bits.i != 0L {
+          raise @util.QbeError::Ice("invalid call argument")
         }
+        let nm = st.interner.get(c.label)
+        // A local (float-stash) label is interned quoted in C; the port keeps
+        // it unquoted and tags it is_local, so rebuild the quoted form here.
+        let p = if c.is_local { "" } else { @util.sym_prefix(st.gassym, nm) }
+        let l = if c.is_local { "\"" + st.gasloc + nm + "\"" } else { nm }
+        sb.write_string("\tbl\t")
+        sb.write_string(p)
+        sb.write_string(l)
+        sb.write_char('\n')
       } else {
         arm64_emit_table(st, i)
       }
@@ -729,23 +800,36 @@ fn arm64_emitins(st : Arm64EmitState, i : @types.Ins) -> Unit raise {
         if need {
           if i.arg1.is_tmp() && i.arg1.tmp_val() == @types.ARM64_IP1 {
             // The value lives in x17, which fixarg needs for the address.
-            // C moves it to V31 and stores through the double/float alias.
-            sb.write_string("\tfmov\ts31, w17\n")
+            // C moves it to V31 and stores through the float/double alias:
+            //   "ds"[i->cls == Kw] / "xw"[i->cls == Kw]
+            // then i->op = Ostores + (i->cls - Kw) and Table picks
+            //   "str %S0" (s31) for Kw, "str %D0" (d31) for Kl.
+            let kw = i.cls == @types.Kw
+            sb.write_string(
+              if kw {
+                "\tfmov\td31, x17\n"
+              } else {
+                "\tfmov\ts31, w17\n"
+              },
+            )
             let (_, r3) = arm64_fixarg(
               st,
               i.arg2,
-              i.store_size(),
+              if kw {
+                4
+              } else {
+                8
+              },
               @types.ARM64_IP1,
             )
             i.arg2 = r3
-            let syn = @types.Ins::new(
-              @types.Stores,
-              @types.Ks,
-              @types.Ref::none(),
-              @types.Ref::none(),
-              i.arg2,
+            sb.write_string(
+              if kw {
+                "\tstr\ts31, [x17]\n"
+              } else {
+                "\tstr\td31, [x17]\n"
+              },
             )
-            arm64_emitf(st, "str %?, %M1", syn)
             handled = true
           } else {
             let (_, r3) = arm64_fixarg(
@@ -773,18 +857,20 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   let sb = st.sb
   let fn_ = st.fn_
 
-  // framelayout (C framelayout)
-  let mut o = 0
+  // framelayout (C framelayout): C's E.frame is uint64 and E.padding uint,
+  // so a frame above 2^31 bytes keeps its exact value here.
+  let mut o : Int64 = 0
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
-      o = o + 1
+      o = o + 1L
     }
   }
-  let mut f = fn_.slot
-  f = (f + 3) & -4
-  o = o + (o & 1)
-  st.padding = 4 * (f - fn_.slot)
-  st.frame = 4 * f + 8 * o
+  let slot = fn_.slot.to_int64()
+  let mut f : Int64 = slot
+  f = (f + 3L) & -4L
+  o = o + (o & 1L)
+  st.padding = 4L * (f - slot)
+  st.frame = 4L * f + 8L * o
 
   // C arm64/emit.c forces the function alignment to 4 for the Mach-O flavor
   // before emitfnlnk reads it.
@@ -796,7 +882,7 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
   // reference, which emits no .cfi directives.
   let dbg = @util.debug_info()
   // Bytes the vararg prologue pushes before the frame (ELF only).
-  let voff = if fn_.is_vararg && !st.apple { 192 } else { 0 }
+  let voff = if fn_.is_vararg && !st.apple { 192L } else { 0L }
   if dbg {
     sb.write_string("\t.cfi_startproc\n")
   }
@@ -821,23 +907,23 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     }
   }
 
-  if st.frame + 16 <= 512 {
+  if st.frame + 16L <= 512L {
     sb.write_string("\tstp\tx29, x30, [sp, -")
-    sb.write_string((st.frame + 16).to_string())
+    sb.write_string((st.frame + 16L).to_string())
     sb.write_string("]!\n")
   } else {
-    if st.frame <= 4095 {
+    if st.frame <= 4095L {
       sb.write_string("\tsub\tsp, sp, #")
       sb.write_string(st.frame.to_string())
       sb.write_char('\n')
-    } else if st.frame <= 65535 {
+    } else if st.frame <= 65535L {
       sb.write_string("\tmov\tx16, #")
       sb.write_string(st.frame.to_string())
       sb.write_char('\n')
       sb.write_string("\tsub\tsp, sp, x16\n")
     } else {
       sb.write_string("\tmov\tx16, #")
-      sb.write_string((st.frame & 0xFFFF).to_string())
+      sb.write_string((st.frame & 0xFFFFL).to_string())
       sb.write_char('\n')
       sb.write_string("\tmovk\tx16, #")
       sb.write_string((st.frame >> 16).to_string())
@@ -866,24 +952,36 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     sb.write_string((voff + st.frame + 8).to_string())
     sb.write_char('\n')
   }
-  o = st.frame + 16
+  // C prologue saves go through emitins: with a frame beyond the scaled
+  // immediate range fixarg materializes the address in x18 (ELF) or x17
+  // (Apple) instead of printing an unencodable offset.
+  let mut s = ((st.frame - st.padding) / 4L).to_int()
   let mut ci = 0
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
-      o = o - 8
+      s = s - 2
       ci = ci + 1
-      sb.write_string("\tstr\t")
-      sb.write_string(arm64_rname(r, @types.Kx))
-      sb.write_string(", [x29, ")
-      sb.write_string(o.to_string())
-      sb.write_string("]\n")
+      arm64_emitins(
+        st,
+        @types.Ins::new(
+          if r >= @types.ARM64_V0 {
+            @types.Stored
+          } else {
+            @types.Storel
+          },
+          @types.Kw,
+          @types.Ref::none(),
+          @types.Ref::tmp(r),
+          @types.Ref::slot(s),
+        ),
+      )
       if dbg {
         // DWARF register numbers: x19.. -> 19.., d8.. -> 72.. (arm64_rname
         // maps the internal tmp id to the ABI register name).
         sb.write_string("\t.cfi_offset ")
         sb.write_string(arm64_rname(r, @types.Kx))
         sb.write_string(", -")
-        sb.write_string((voff + 8 * ci).to_string())
+        sb.write_string((voff + 8L * ci.to_int64()).to_string())
         sb.write_char('\n')
       }
     }
@@ -906,15 +1004,25 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
     match b.jmp.kind {
       @types.Jhlt => sb.write_string("\tbrk\t#1000\n")
       @types.Jret0 => {
-        o = st.frame + 16
+        // C epilogue restores go through emitins for the same reason.
+        let mut s = ((st.frame - st.padding) / 4L).to_int()
         for r in @types.arm64_rclob {
           if (fn_.reg & (1UL << r)) != 0UL {
-            o = o - 8
-            sb.write_string("\tldr\t")
-            sb.write_string(arm64_rname(r, @types.Kx))
-            sb.write_string(", [x29, ")
-            sb.write_string(o.to_string())
-            sb.write_string("]\n")
+            s = s - 2
+            arm64_emitins(
+              st,
+              @types.Ins::new(
+                @types.Load,
+                if r >= @types.ARM64_V0 {
+                  @types.Kd
+                } else {
+                  @types.Kl
+                },
+                @types.Ref::tmp(r),
+                @types.Ref::slot(s),
+                @types.Ref::none(),
+              ),
+            )
             if dbg {
               sb.write_string("\t.cfi_restore ")
               sb.write_string(arm64_rname(r, @types.Kx))
@@ -925,28 +1033,28 @@ fn arm64_emitfn(st : Arm64EmitState) -> Unit raise {
         if fn_.has_dynalloc {
           sb.write_string("\tmov sp, x29\n")
         }
-        let mut oo = st.frame + 16
+        let mut oo = st.frame + 16L
         if fn_.is_vararg && !st.apple {
-          oo = oo + 192
+          oo = oo + 192L
         }
-        if oo <= 504 {
+        if oo <= 504L {
           sb.write_string("\tldp\tx29, x30, [sp], ")
           sb.write_string(oo.to_string())
           sb.write_char('\n')
         } else {
           sb.write_string("\tldp\tx29, x30, [sp], 16\n")
-          if oo - 16 <= 4095 {
+          if oo - 16L <= 4095L {
             sb.write_string("\tadd\tsp, sp, #")
-            sb.write_string((oo - 16).to_string())
+            sb.write_string((oo - 16L).to_string())
             sb.write_char('\n')
-          } else if oo - 16 <= 65535 {
+          } else if oo - 16L <= 65535L {
             sb.write_string("\tmov\tx16, #")
-            sb.write_string((oo - 16).to_string())
+            sb.write_string((oo - 16L).to_string())
             sb.write_char('\n')
             sb.write_string("\tadd\tsp, sp, x16\n")
           } else {
             sb.write_string("\tmov\tx16, #")
-            sb.write_string(((oo - 16) & 0xFFFF).to_string())
+            sb.write_string(((oo - 16L) & 0xFFFFL).to_string())
             sb.write_char('\n')
             sb.write_string("\tmovk\tx16, #")
             sb.write_string(((oo - 16) >> 16).to_string())
@@ -1039,8 +1147,8 @@ pub fn emit_arm64(
     gasloc,
     gassym,
     apple,
-    frame: 0,
-    padding: 0,
+    frame: 0L,
+    padding: 0L,
   }
   arm64_emitfn(st)
   sb.to_string()
@@ -1056,18 +1164,19 @@ pub fn debug_locs(fn_ : @types.Fn, apple : Bool) -> Array[@dwarf.DbgLoc] {
   if fn_.dbg_vars.length() == 0 {
     return out
   }
-  let mut o = 0
+  let mut o : Int64 = 0
   for r in @types.arm64_rclob {
     if (fn_.reg & (1UL << r)) != 0UL {
-      o = o + 1
+      o = o + 1L
     }
   }
-  let mut f = fn_.slot
-  f = (f + 3) & -4
-  o = o + (o & 1)
-  let padding = 4 * (f - fn_.slot)
-  let frame = 4 * f + 8 * o
-  let voff = if fn_.is_vararg && !apple { 192 } else { 0 }
+  let slot = fn_.slot.to_int64()
+  let mut f = slot
+  f = (f + 3L) & -4L
+  o = o + (o & 1L)
+  let padding = 4L * (f - slot)
+  let frame = 4L * f + 8L * o
+  let voff = if fn_.is_vararg && !apple { 192L } else { 0L }
   for v in fn_.dbg_vars {
     let reg = if v.tmp < @types.Tmp0 { v.tmp } else { fn_.tmps[v.tmp].reg }
     if reg != -1 {
@@ -1084,9 +1193,14 @@ pub fn debug_locs(fn_ : @types.Fn, apple : Bool) -> Array[@dwarf.DbgLoc] {
     } else {
       let slot = fn_.tmps[v.tmp].slot
       if slot != -1 {
-        let off = arm64_slot_off(frame, padding, fn_.is_vararg, apple, slot) -
-          (frame + 16 + voff)
-        out.push(@dwarf.DbgLoc::{ name: v.name, ty: v.ty, kind: 1, value: off, })
+        let off = arm64_slot_off64(frame, padding, fn_.is_vararg, apple, slot) -
+          (frame + 16L + voff)
+        out.push(@dwarf.DbgLoc::{
+          name: v.name,
+          ty: v.ty,
+          kind: 1,
+          value: off.to_int(),
+        })
       }
     }
   }

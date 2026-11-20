@@ -186,6 +186,28 @@ pub fn Ref::rint_val(self : Ref) -> Int32 {
 }
 
 ///|
+/// C rsval (all.h): sign-extend the 29-bit reference payload. The IL keeps
+/// integer literals and slots as a 29-bit bitfield, so values with bit 28 set
+/// are negative. The reference uses this when it prints an RInt/RInt-like
+/// operand and when it reads a slot or blit size; printing the raw payload
+/// instead differs on dump lines such as `dbgloc 268435456`.
+pub fn Ref::rsval(self : Ref) -> Int32 {
+  let v = match self {
+    RTmp(x) | RCon(x) | RInt(x) | RType(x) | RSlot(x) | RCall(x) | RMem(x) => x
+    RNone => 0
+  }
+  sign_ext29(v)
+}
+
+///|
+// C rsval on a raw 29-bit payload: the signed bitfield read used by rsval,
+// slot offsets and the emitters. One transcription for every caller.
+pub fn sign_ext29(v : Int32) -> Int32 {
+  let u = v & 0x1fffffff
+  (u ^ 0x10000000) - 0x10000000
+}
+
+///|
 /// typ_val - extract type index, -1 if not a type ref
 pub fn Ref::typ_val(self : Ref) -> Int32 {
   match self {

@@ -58,3 +58,36 @@ test "audit arm64: float comparison swap follows upstream order" {
   assert_eq(arm64_cmpop(16), 16)
   assert_eq(arm64_cmpop(17), 17)
 }
+
+///|
+test "audit arm64: dynamic alloc size may not already live in a slot" {
+  // C util.c salloc: a dynamic size temporary with a stack slot is rejected
+  // ("unlikely alloc argument"), e.g. a stack-passed aggregate parameter.
+  let f = @types.Fn::new("f")
+  f.init_regs()
+  let b = f.add_blk("start")
+  f.def_order.push(b)
+  f.rpo.push(b)
+  f.start_id = b
+  let sz = f.add_tmp("sz", @types.Kl)
+  let p = f.add_tmp("p", @types.Kl)
+  f.tmps[sz].slot = -2
+  f.blks[b].ins.push(
+    @types.Ins::new(
+      @types.Alloc8,
+      @types.Kl,
+      @types.Ref::tmp(p),
+      @types.Ref::tmp(sz),
+      @types.Ref::none(),
+    ),
+  )
+  f.blks[b].jmp = @types.Jump::full(@types.Jretl, @types.Ref::tmp(p), -1, -1)
+  let interner = @util.Interner::new()
+  let rejected = try {
+    ignore(isel_arm64(f, interner, false, []))
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}

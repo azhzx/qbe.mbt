@@ -31,16 +31,6 @@ const KD : Int32 = 3
 let clschr : Array[String] = ["w", "d", "s", "d"]
 
 ///|
-// Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int32) -> Int32 {
-  if (s & (1 << 28)) != 0 {
-    s - (1 << 29)
-  } else {
-    s
-  }
-}
-
-///|
 // Module-global base for block labels (C la64/emit.c static id0); advances by
 // fn->nblk after each function so labels stay unique across the module.
 let la64_id0 : Array[Int32] = [0]
@@ -201,7 +191,7 @@ fn la64_store_name(op : @types.Op, k : @types.Class) -> String {
 ///|
 // Slot offset calculation (C slot in emit.c).
 fn la64_slot(st : La64EmitState, s : Int32) -> Int32 {
-  let x = sign_ext29(s)
+  let x = @types.sign_ext29(s)
   if x < 0 {
     8 * -x
   } else {

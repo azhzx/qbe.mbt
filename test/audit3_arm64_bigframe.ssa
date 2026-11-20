@@ -1,0 +1,19 @@
+# ARM64 large stack frame (> 65535 bytes) and callee-save addressing.
+# The prologue/epilogue saves and the address materializations need fixarg's
+# >4095 / >65535 register forms; the alloc escapes through a call so it is not
+# promoted away.
+
+function l $a3_arm64_big_g(l %x) {
+@start
+	ret %x
+}
+
+export function l $a3_arm64_big_f(l %n) {
+@start
+	%p =l alloc16 70000
+	%x =l add %p, 8
+	storel %n, %x
+	%q =l call $a3_arm64_big_g(l %n)
+	storel %q, %x
+	ret %q
+}

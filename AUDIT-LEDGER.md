@@ -655,3 +655,110 @@ The differential corpora and gates were extended rather than replaced.
   PAGE/PAGEOFF form (semantically equivalent), not new defects. The local
   floating-constant relocation was corrected to PAGE21/PAGEOFF12 earlier.
 
+
+## 2026-11-13 audit round 3 (Lead + seven workers)
+
+Baseline: port main (v0.44.0), upstream `vendor/qbe` 661ceb22. Method: one
+worker per upstream file group (`frontend`, `types`, `core`, `regs`,
+`amd64`, `arm64`, `rv64`), each building a declaration inventory against the
+vendored C and fixing behaviour-affecting divergences only after reproducing
+them against `vendor/qbe/qbe`. Full per-domain reports are in
+`doc/audit3-{frontend,types,core,regs,amd64,arm64,rv64,driver}.md`.
+
+### Defects found and fixed
+
+Front-end (parse.c): resultful blit and extra blit operands accepted (result/
+extra discarded); NPred=63 bound for phis and operands; resultful vastart in a
+non-variadic function; data-ref offset newline handling; section presence
+(`section ""` used to emit `.data` and duplicate empty sections were accepted,
+now C's verbatim token text storage + gasdata); C99 nan(n-char-seq) payload
+bits; exact single-precision rounding for dyadic midpoints (the 60-digit
+truncation could not decide a tie); a parser panic on truncated input; `argv`
+accepted as an op; NIns=1<<20; two diagnostic texts.
+
+Types/util: `fmt_fixed` printed `-nan` where the reference host prints `nan`;
+fp-constant stash deduplicated by byte prefix instead of C `stashbits`'s full
+64-bit word (lost .Lfp pool labels, changed emitted asm); rule-3 consolidations
+(amd64 retregs/argregs, op_loadsz/storesz, mem loadsz/storesz, emit sign_ext29,
+mem fuse width); `Ref::rsval` added and used by the printers and
+`types.sign_ext29`.
+
+Core: fillalias phi-escape loop no longer walks dead blocks; simplcfg now ends
+with `fillcfg` (fixphis); gcm `igroup` gained the sel0/sel1 groups; ifopt's
+~175-line duplicate IL printer removed (uses @parser.printfn).
+
+Registers: `-dS` lost C's printf space flag (`% 3d`, `% 5d`, mem `% 3db`) for
+wide nlive/loop values (visible on test/stress/_bfmandel); all sites now use
+one shared `util.fmt_space`; mem's stale second alias table removed.
+
+amd64: sysv selpar aggregate-chunk temporaries now class Kl with the copy
+carrying the eightbyte class (Tmp.cls feeds liveness/regalloc); `%k` with a Kx
+class now raises instead of panicking. All hand-copied tables were checked
+numerically against C (omap, ctoa/cmov, rname, clstoa, addr Oaddtbl/matcher):
+0 diffs.
+
+arm64: huge-frame callee-save save/restore bypassed fixarg (unencodable
+assembly); frame/padding/slot arithmetic was Int32 where C is uint64 (>2GB
+frames); direct-call validation (thread symbol targets); dynamic-alloc size
+slot guard; Apple large-store V31 scratch text.
+
+rv64: negative symbol offsets printed `g-8` instead of `g+-8`; selpar Cfpint
+cast ordering/temp numbering (float in GPR after 8 FP args, mixed aggregates);
+dynamic-alloc size slot guard; fixarg Oaddr class; Oaddr -2048 boundary;
+typclass align err() was a panic; dead duplicate emitdat removed.
+
+Driver/CLI: `-t ?`; repeated -t/-o/-d/-G (last/accumulate like getopt);
+`-t amd64_apple`/`-t arm64_apple`; `-o` opens at option-parse time with
+`cannot open '<path>'`; input open failures use the same message; section
+presence/quoting in gasdata; RInt/RSlot dumps through rsval.
+
+### Verification (integrated tree)
+
+- `moon test --target native`: **591/591 passed** (all packages, including
+  run_asm with Apple clang on PATH; the default-PATH failure is the pre-existing
+  miniconda-clang/libLTO environment issue, not a port defect).
+- `compare.py`, final corpus (457 inputs): debug dumps **7312/7312** on
+  amd64_sysv, arm64, rv64, amd64_sysv -G m and arm64 -G m; **7264/7264** on
+  amd64_win (48 = 16 flagsets x the 3 reference-side TLS/thread-symbol aborts
+  that both binaries reject). Assembly: **457/457** on amd64_sysv/arm64/rv64,
+  **454/454** on amd64_win.
+- Cross-backend validity gate `tools/check_all_backends.py`: PASS (amd64,
+  arm64, la64 386/386; rv64 385/386 with the documented clang quoted-symbol
+  limitation; wasm 372/386 with documented no-linker/reference skips).
+  `tools/check_la64_asm.py` 386/386 assembled; `tools/check_wasm.py` 372/372
+  valid, 0 compile failures.
+- Excluded/stress corpus (`test/_*.ssa`, `test/stress/*`): 1683 checks, the
+  only real diff was the `-dS` width bug (fixed); `_009_calls_160.ssa` is
+  invalid IL (the reference itself rejects it).
+- Whole-corpus single invocation (255 valid files): byte-identical assembly on
+  amd64_sysv/arm64/rv64 and identical -dPMN dumps (session-state check).
+- Mutation fuzzing (`tools/fuzz_il.py --asm`, several seeds) and the
+  per-domain fuzz runs: no valid-input diff, crash or reject.
+
+### Residual, explicitly not claimed
+
+- The reference streams partial output before a late parse error; the port
+  parses first (valid-input output identical).
+- Test-only duplicated implementations kept (they cannot affect production
+  output): `ssa/memopt.mbt` (a drifted second promote), `fold/fold.mbt` (old
+  SCCP with no vendored counterpart), `fold/opfold.mbt` (second copy of the
+  gvn c_fold* helpers), `types.constant.Con::add` (a simplified addcon used
+  once by amd64 emit with a CBits multiplier-1 operand, where it is
+  equivalent).
+- Rule-4 hand-written tables remain for: gvn optab flag predicates, opinfo,
+  Op::index/JumpKind::index, cmpneg, target register/emit tables, and the
+  amd64 isel matcher bytecode. They were verified numerically equal to C in
+  this round; only `op_pinned_gen.mbt` is generator-backed.
+- Rule-3 `salloc` is still transcribed per backend (C has one util.c salloc).
+- Three new regression inputs are `_`-prefixed because they expose pre-existing
+  port-only backend gaps (out of scope this round, listed for the next):
+  `_audit3_regs_dbg_width.ssa` and `_audit3_arm64_spill_huge.ssa` make the la64
+  emitter print `or , reg, $zero` (Ocopy with an RNone/slot destination is not
+  lowered; C backends turn it into a store or skip it), and
+  `_audit3_types_nan.ssa` makes the wasm emitter print `f64.const NaN`, which is
+  not WAT syntax (needs `nan`/`nan:0x...`). Both reproduce with binaries built
+  before this round, so they are not regressions from it; the files stay out of
+  the cross-backend gates by the repository's `_` convention.
+- Port-only surfaces (wasm, la64, jit, object writer, interpreter, ir_builder,
+  dwarf, native/run_asm, arm64 binary/object emitter) were not audited this
+  round beyond not regressing shared paths.

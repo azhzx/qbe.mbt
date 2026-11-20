@@ -328,8 +328,21 @@ pub fn fold(
       }
       let a1 = renref(st, i.arg1)
       let a2 = renref(st, i.arg2)
-      if !a1.eq(i.arg1) || !a2.eq(i.arg2) {
-        b.ins[ii] = @types.Ins::new(i.op, i.cls, i.to, a1, a2)
+      let mut changed = !a1.eq(i.arg1) || !a2.eq(i.arg2)
+      let extras : Array[@types.Ref] = []
+      for r in i.asm_args {
+        let nr = renref(st, r)
+        if !nr.eq(r) {
+          changed = true
+        }
+        extras.push(nr)
+      }
+      if changed {
+        // Rebuilding with Ins::new would drop the asm payload; keep it.
+        let ni = @types.Ins::new(i.op, i.cls, i.to, a1, a2)
+        ni.asm_text = i.asm_text
+        ni.asm_args = extras
+        b.ins[ii] = ni
       }
     }
     // trim jump argument

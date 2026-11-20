@@ -1,0 +1,17 @@
+# audit3-types: signed NaN literals must print like the reference printf.
+#
+# The reference lexer accepts a sign in front of inf/nan (parse.c feeds the
+# token to fscanf with a %f/%lf conversion). A NaN with the sign bit set must
+# be printed as plain "nan": Apple libc printf drops the NaN sign, while the
+# port used to print "-nan" (util.fmt_fixed). inf keeps its sign. Found by
+# comparing the reference dump (-dP) with the port on this file.
+
+export function d $audit3_nan(d %a) {
+@start
+	%x =d add %a, d_-nan
+	%y =d add %a, d_-inf
+	%z =s add s_-nan, s_1.0
+	%w =s add s_inf, s_-nan
+	%v =s add s_-inf, s_2.0
+	ret %x
+}

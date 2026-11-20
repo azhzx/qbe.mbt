@@ -1,0 +1,16 @@
+# audit3-rv64: a negative offset on a global symbol is printed by C
+# emitaddr as fprintf(f, "+%"PRIi64, offset), so the assembly says
+# "g+-8" and not "g-8".  Found by the rv64 assembly differential; the
+# rv64 emitter used to drop the "+" for negative offsets.
+data $audit3_rv64_g3 = { w 11, w 22, w 33 }
+
+function w $audit3_rv64_negsym(l %i) {
+@start
+	%p =l add $audit3_rv64_g3, -8
+	%q =l add $audit3_rv64_g3, 4
+	%y =w loadw %q
+	storew %i, %p
+	%x =w loadw %p
+	%r =w add %x, %y
+	ret %r
+}

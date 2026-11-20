@@ -5,16 +5,11 @@
 // reverse post-order, predecessor lists and uses; it breaks the cfg's
 // predecessor information and uses, so callers must rebuild them.
 //
-// Missing shared API worked around locally:
-//   * @types.Op has no Sel0/Sel1 constructors and the enum is closed, so the
-//     select pseudo-instructions produced by convert() are stored under the
-//     placeholder ops sel0_op/sel1_op.  dump_fn() renders them back as
-//     "sel0"/"sel1" so the -dK dump still matches the C reference.
-//   * @types.OpInfo has no pinned field; pinned() reimplements the ops.h
-//     F(...) pinned column.
-//   * @types.TargetCfg has no cansel capability flag, so nothing tells a
-//     caller whether the active target supports select (the C reference runs
-//     ifconvert only when T.cansel is set).
+// The select pseudo-instructions are @types.Sel0/@types.Sel1, and the pinned
+// predicate is shared with GVN/GCM (@gvn.pinned).  The debug dump uses
+// @parser.printfn, the single printer for IL, which renders sel0/sel1 from
+// their op names.  Whether the active target supports select is the caller's
+// concern: the reference runs ifconvert only when T.cansel is set.
 
 ///|
 // MaxIns in ifopt.c.
@@ -23,14 +18,6 @@ let max_ins : Int32 = 2
 ///|
 // MaxPhis in ifopt.c.
 let max_phis : Int32 = 2
-
-///|
-// QBE's Osel0 (internal).
-let sel0_op : @types.Op = @types.Sel0
-
-///|
-// QBE's Osel1 (internal).
-let sel1_op : @types.Op = @types.Sel1
 
 ///|
 // Return the block iteration order used by the C reference's block link list.
@@ -212,7 +199,7 @@ fn convert(
   // assert(fn_.blks[joinb].npred == 2)
   if fn_.blks[joinb].phi.length() > 0 {
     let sel = @types.Ins::new_void(
-      sel0_op,
+      @types.Sel0,
       @types.Kw,
       fn_.blks[ifb].jmp.arg,
       @types.Ref::none(),
@@ -221,7 +208,7 @@ fn convert(
   }
   for p in fn_.blks[joinb].phi {
     let sel = @types.Ins::new(
-      sel1_op,
+      @types.Sel1,
       p.cls,
       p.to,
       phiarg(p, thenb),
@@ -244,182 +231,6 @@ fn convert(
   j.pred.clear()
   j.pred.push(ifb)
   j.phi.clear()
-}
-
-///|
-// C parse.c ktoc (also used by parser/print.mbt).
-fn class_char(k : @types.Class) -> Char {
-  match k {
-    @types.Kw => 'w'
-    @types.Kl => 'l'
-    @types.Ks => 's'
-    @types.Kd => 'd'
-    @types.Kx => '?'
-  }
-}
-
-///|
-// C parse.c jtoa.
-fn jump_name(j : @types.JumpKind) -> String {
-  match j {
-    @types.Jret0 => "ret0"
-    @types.Jretw => "retw"
-    @types.Jretl => "retl"
-    @types.Jrets => "rets"
-    @types.Jretd => "retd"
-    @types.Jretsb => "retsb"
-    @types.Jretub => "retub"
-    @types.Jretsh => "retsh"
-    @types.Jretuh => "retuh"
-    @types.Jretc => "retc"
-    @types.Jjmp => "jmp"
-    @types.Jjnz => "jnz"
-    @types.Jjfieq => "jfieq"
-    @types.Jjfine => "jfine"
-    @types.Jjfisge => "jfisge"
-    @types.Jjfisgt => "jfisgt"
-    @types.Jjfisle => "jfisle"
-    @types.Jjfislt => "jfislt"
-    @types.Jjfiuge => "jfiuge"
-    @types.Jjfiugt => "jfiugt"
-    @types.Jjfiule => "jfiule"
-    @types.Jjfiult => "jfiult"
-    @types.Jjffeq => "jffeq"
-    @types.Jjffge => "jffge"
-    @types.Jjffgt => "jffgt"
-    @types.Jjffle => "jffle"
-    @types.Jjfflt => "jfflt"
-    @types.Jjffne => "jffne"
-    @types.Jjffo => "jffo"
-    @types.Jjffuo => "jffuo"
-    @types.Jhlt => "hlt"
-    @types.Jxxx => "???"
-  }
-}
-
-///|
-// A copy of parser.printfn that also renders the sel0/sel1 placeholder ops as
-// the C reference would.  parser.printfn cannot be used directly because the
-// closed @types.Op enum has no Sel0/Sel1 constructors.
-fn dump_fn(
-  fn_ : @types.Fn,
-  interner : @util.Interner,
-  all_typs : Array[@types.Typ],
-) -> String {
-  let sb = StringBuilder::StringBuilder()
-  let order = block_order(fn_)
-  sb.write_string("function $\{fn_.name}() {\n")
-  for id in order {
-    let b = fn_.blks[id]
-    sb.write_string("@\{b.name}\n")
-    // Phi nodes
-    for p in b.phi {
-      sb.write_char('\t')
-      @parser.printref(p.to, fn_, interner, sb, all_typs)
-      sb.write_string(" =\{class_char(p.cls)} phi ")
-      let mut first = true
-      for a in p.args {
-        if !first {
-          sb.write_string(", ")
-        }
-        first = false
-        sb.write_string("@\{fn_.blks[a.blk_id].name} ")
-        @parser.printref(a.value, fn_, interner, sb, all_typs)
-      }
-      sb.write_string("\n")
-    }
-    // Instructions
-    for ins in b.ins {
-      sb.write_char('\t')
-      if !ins.to.is_none() {
-        @parser.printref(ins.to, fn_, interner, sb, all_typs)
-        sb.write_string(" =\{class_char(ins.cls)} ")
-      }
-      if ins.op == sel0_op {
-        sb.write_string("sel0")
-      } else if ins.op == sel1_op {
-        sb.write_string("sel1")
-      } else {
-        sb.write_string(ins.op.name())
-      }
-      if ins.to.is_none() && ins.op != sel0_op && ins.op != sel1_op {
-        // Class suffix for void-result ops (arg, swap, xcmp, ...)
-        match ins.op {
-          @types.Arg
-          | @types.Swap
-          | @types.Xcmp
-          | @types.Acmp
-          | @types.Acmn
-          | @types.Afcmp
-          | @types.Xtest
-          | @types.Xdiv
-          | @types.Xidiv => sb.write_char(class_char(ins.cls))
-          _ => ()
-        }
-      }
-      if !ins.arg1.is_none() {
-        sb.write_char(' ')
-        @parser.printref(ins.arg1, fn_, interner, sb, all_typs)
-      }
-      if !ins.arg2.is_none() {
-        sb.write_string(", ")
-        @parser.printref(ins.arg2, fn_, interner, sb, all_typs)
-      }
-      sb.write_string("\n")
-    }
-    // Jump
-    match b.jmp.kind {
-      @types.Jjmp => {
-        // Omit jmp to the next block in definition order (fall-through)
-        let mut next = -1
-        for i in 0..<order.length() {
-          if order[i] == b.id {
-            if i + 1 < order.length() {
-              next = order[i + 1]
-            }
-            break
-          }
-        }
-        if b.jmp.s1 >= 0 && b.jmp.s1 != next {
-          sb.write_string("\tjmp @\{fn_.blks[b.jmp.s1].name}\n")
-        }
-      }
-      @types.Jret0
-      | @types.Jretw
-      | @types.Jretl
-      | @types.Jrets
-      | @types.Jretd
-      | @types.Jretsb
-      | @types.Jretub
-      | @types.Jretsh
-      | @types.Jretuh
-      | @types.Jretc => {
-        sb.write_string("\t\{jump_name(b.jmp.kind)}")
-        if !(b.jmp.kind == @types.Jret0 && b.jmp.arg.is_none()) {
-          sb.write_char(' ')
-          @parser.printref(b.jmp.arg, fn_, interner, sb, all_typs)
-        }
-        if b.jmp.kind == @types.Jretc {
-          sb.write_string(", :")
-          sb.write_string(all_typs[fn_.ret_ty].name)
-        }
-        sb.write_string("\n")
-      }
-      @types.Jhlt => sb.write_string("\thlt\n")
-      _ => {
-        sb.write_string("\t\{jump_name(b.jmp.kind)} ")
-        if b.jmp.kind == @types.Jjnz {
-          @parser.printref(b.jmp.arg, fn_, interner, sb, all_typs)
-          sb.write_string(", ")
-        }
-        sb.write_string(
-          "@\{fn_.blks[b.jmp.s1].name}, @\{fn_.blks[b.jmp.s2].name}\n",
-        )
-      }
-    }
-  }
-  sb.write_string("}")
-  sb.to_string()
 }
 
 ///|
@@ -448,7 +259,7 @@ pub fn ifconvert(
   }
   if print_dbg {
     sb.write_string("\n> After if-conversion:\n")
-    sb.write_string(dump_fn(fn_, interner, all_typs))
+    sb.write_string(@parser.printfn(fn_, interner, all_typs))
     sb.write_string("\n")
   }
   sb.to_string()

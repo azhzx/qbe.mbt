@@ -20,6 +20,8 @@ pub async fn eprint(String) -> Unit
 
 pub fn fmt_fixed(Double, Int32) -> String
 
+pub fn fmt_space(Int32, Int32) -> String
+
 pub async fn iprint(String) -> Unit
 
 pub fn lpad(String, Int32) -> String

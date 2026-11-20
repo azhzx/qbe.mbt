@@ -117,3 +117,43 @@ test "audit rv64 dynamic alloc stops later fast allocs of same alignment" {
   ignore(isel_rv64(f, @util.Interner::new(), false, []))
   assert_eq(f.tmps[b.tmp_val()].slot, -1)
 }
+
+///|
+// C util.c salloc: a dynamic allocation size that already owns a stack slot
+// would make the allocator use a stack address as its size.
+test "audit rv64 dynamic alloc rejects a size temporary that owns a slot" {
+  @types.init_rv64_target()
+  let f = @types.Fn::new("f")
+  f.init_regs()
+  let st = rv64_isel_new(f, @util.Interner::new())
+  let n = @types.Ref::tmp(f.new_tmp("n", @types.Kl))
+  f.tmps[n.tmp_val()].slot = 0
+  let to = @types.Ref::tmp(f.new_tmp("a", @types.Kl))
+  let rejected = try {
+    sel(
+      st,
+      @types.Ins::new(@types.Alloc8, @types.Kl, to, n, @types.Ref::none()),
+    )
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}
+
+///|
+// C rv64/isel.c fixarg: the Oaddr that materializes a slotted operand keeps
+// the operand class k (it used to be hardcoded Kl).
+test "audit rv64 address materialization keeps the operand class" {
+  @types.init_rv64_target()
+  let f = @types.Fn::new("f")
+  f.init_regs()
+  let st = rv64_isel_new(f, @util.Interner::new())
+  let p = @types.Ref::tmp(f.new_tmp("p", @types.Kl))
+  f.tmps[p.tmp_val()].slot = 0
+  let r = fixarg(st, p, @types.Kw, None, 0)
+  assert_true(r.is_tmp())
+  assert_eq(st.buf.length(), 1)
+  assert_true(st.buf[0].op == @types.Addr)
+  assert_true(st.buf[0].cls == @types.Kw)
+}

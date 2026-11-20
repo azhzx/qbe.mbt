@@ -48,10 +48,12 @@ pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
       if a != b.npred {
         sb.write_string("\t")
         sb.write_string(@util.lpad(b.name, 10))
+        // C spill.c 58-59: " (% 3d " / "% 3d) " - the space flag keeps a
+        // leading space even when the value reaches the width.
         sb.write_string(" (")
-        sb.write_string(@util.rpad(b.nlive_w, 3))
+        sb.write_string(@util.fmt_space(b.nlive_w, 3))
         sb.write_string(" ")
-        sb.write_string(@util.rpad(b.nlive_d, 3))
+        sb.write_string(@util.fmt_space(b.nlive_d, 3))
         sb.write_string(") ")
         sb.write_string(@types.dumpts(b.gen_set.unwrap(), fn_.tmps))
       }
@@ -80,6 +82,9 @@ pub fn fillcost(fn_ : @types.Fn, print_dbg : Bool) -> String {
       tmpuse(fn_, ins.to, 0, n)
       tmpuse(fn_, ins.arg1, 1, n)
       tmpuse(fn_, ins.arg2, 1, n)
+      for r in ins.asm_args {
+        tmpuse(fn_, r, 1, n)
+      }
     }
     tmpuse(fn_, b.jmp.arg, 1, n)
   }

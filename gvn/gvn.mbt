@@ -48,6 +48,11 @@ fn rval_of(r : @types.Ref) -> Int32 {
 fn ins_copy(i : @types.Ins) -> @types.Ins {
   let c = @types.Ins::new(i.op, i.cls, i.to, i.arg1, i.arg2)
   c.asm_text = i.asm_text
+  let extra : Array[@types.Ref] = []
+  for r in i.asm_args {
+    extra.push(r)
+  }
+  c.asm_args = extra
   c
 }
 
@@ -955,6 +960,14 @@ fn replaceuse(
       }
       if i.arg2.eq(r1) {
         i.arg2 = r2
+      }
+      for j in 0..<i.asm_args.length() {
+        if i.asm_args[j].eq(r1) {
+          i.asm_args[j] = r2
+          if is_t2 {
+            gvn_adduse(fn_, r2.tmp_val(), @types.UIns, b.id, u.ins_idx, 2 + j)
+          }
+        }
       }
       if is_t2 {
         gvn_adduse(fn_, r2.tmp_val(), @types.UIns, b.id, u.ins_idx, 0)

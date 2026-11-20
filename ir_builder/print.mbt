@@ -60,10 +60,11 @@ fn Builder::il_ref(
         sb.write_string("%t\{v}")
       }
     @types.RCon(v) => self.il_con(f, f.cons[v], sb)
-    @types.RInt(v) => sb.write_string(v.to_string())
-    @types.RSlot(v) => {
+    // Same 29-bit signed payload rule as the reference printref (C rsval).
+    @types.RInt(_) => sb.write_string(r.rsval().to_string())
+    @types.RSlot(_) => {
       sb.write_char('S')
-      sb.write_string(v.to_string())
+      sb.write_string(r.rsval().to_string())
     }
     @types.RCall(v) => sb.write_string("\{v}")
     @types.RType(v) => {
@@ -132,6 +133,17 @@ fn Builder::il_ins(
     sb.write_char('"')
     let mut first = true
     for r in [ins.arg1, ins.arg2] {
+      if !r.is_none() {
+        if first {
+          sb.write_string(" (")
+          first = false
+        } else {
+          sb.write_string(", ")
+        }
+        self.il_ref(f, r, sb)
+      }
+    }
+    for r in ins.asm_args {
       if !r.is_none() {
         if first {
           sb.write_string(" (")

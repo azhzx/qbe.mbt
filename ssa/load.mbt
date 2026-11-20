@@ -278,6 +278,11 @@ fn def(
       (ins.op == @types.Call && @cfg.escapes(sl.r, st.fn_)) {
       return load_abort(st, sl, msk, il, oldl, oldt)
     }
+    if ins.op == @types.InlineAsm {
+      // The assembly can write any memory its operands address, and the IR
+      // does not model that. Never forward a load across it.
+      return load_abort(st, sl, msk, il, oldl, oldt)
+    }
     let mut ld = false
     let mut sz = 0
     let mut r1 = @types.Ref::none()

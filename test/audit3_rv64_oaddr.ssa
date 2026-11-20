@@ -1,0 +1,10 @@
+# audit3-rv64: C rv64/emit.c emits Oaddr with the one-instruction
+# "add r, fp, off" form when -off < 2048.  A local whose stack offset is
+# exactly -2048 therefore still gets the "li r, -2048 / add r, fp, r"
+# sequence.  Found by the rv64 assembly differential.
+function l $audit3_rv64_oaddr() {
+@start
+	%p =l alloc4 2048
+	%q =l add %p, 0
+	ret %q
+}

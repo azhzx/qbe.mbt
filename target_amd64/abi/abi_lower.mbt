@@ -304,14 +304,14 @@ fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
     }
     if ac[a].size > 8 {
       let r = abi_newtmp(st, @types.Kl)
-      let c1 = if ac[a].cls[1] == @types.Kx { @types.Kl } else { ac[a].cls[1] }
-      let r1 = abi_newtmp(st, c1)
+      // C sysv.c creates both chunk temporaries with class Kl, whatever the
+      // eightbyte class is; the temporary's class is what live/rega use.
+      let r1 = abi_newtmp(st, @types.Kl)
       emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r1, r)
       emit(st, @types.Add, @types.Kl, r, i.to, getcon(st, 8L))
       ac[a].r[1] = r1
     }
-    let c0 = if ac[a].cls[0] == @types.Kx { @types.Kl } else { ac[a].cls[0] }
-    let r0 = abi_newtmp(st, c0)
+    let r0 = abi_newtmp(st, @types.Kl)
     emit(st, @types.Storel, @types.Kw, @types.Ref::none(), r0, i.to)
     ac[a].r[0] = r0
     let al = if ac[a].align >= 2 { ac[a].align - 2 } else { 0 }
@@ -371,20 +371,15 @@ fn selpar(st : AbiState, par_end : Int32) -> Int32 raise {
         }
         let r = rarg(st, ac[a].cls[0], ni, ns)
         if i.op == @types.Parc {
-          emit(
-            st,
-            @types.Copy,
-            st.fn_.tmps[ac[a].r[0].tmp_val()].cls,
-            ac[a].r[0],
-            r,
-            @types.Ref::none(),
-          )
+          // C sysv.c: the copy class is the eightbyte class a->cls[0/1]; the
+          // temporaries above are Kl, so the two are not interchangeable.
+          emit(st, @types.Copy, ac[a].cls[0], ac[a].r[0], r, @types.Ref::none())
           if ac[a].size > 8 {
             let r2 = rarg(st, ac[a].cls[1], ni, ns)
             emit(
               st,
               @types.Copy,
-              st.fn_.tmps[ac[a].r[1].tmp_val()].cls,
+              ac[a].cls[1],
               ac[a].r[1],
               r2,
               @types.Ref::none(),

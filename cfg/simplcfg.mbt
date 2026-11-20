@@ -206,8 +206,10 @@ pub fn simplcfg(
       b.jmp.s2 = js2[id]
     }
   }
-  fillrpo(fn_)
-  fillpreds(fn_)
+  // C cfg.c simplcfg ends with fillcfg: fillrpo + fillpreds + fixphis.  The
+  // final fixphis drops phi arguments whose predecessor edge the rewrites
+  // above removed; without it a stale argument can reach the later passes.
+  fillcfg(fn_)
   if print_dbg {
     sb.write_string("\n> After CFG simplification:\n")
     sb.write_string(@parser.printfn(fn_, interner, typs))

@@ -309,3 +309,55 @@ test "coalesce: killing a dead blit source removes both halves" {
     "}\n",
   )
 }
+
+///|
+// C mem.c promote: a slot that is read but never stored to is an error
+// ("slot %%%s is read but never stored to", mem.c:62-64). The QBE-compatible
+// path must raise instead of silently leaving the slot in memory.
+test "promote: slot read but never stored raises like C" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  %p =l alloc4 4
+    #|  %v =w loadw %p
+    #|  ret %v
+    #|}
+    #|
+  let (f, interner, typs) = parse_mem_fn(src)
+  @cfg.fillrpo(f)
+  @cfg.fillpreds(f)
+  @ssa.filluse(f)
+  let mut raised = false
+  try {
+    let _ = promote(f, false, interner, typs)
+  } catch {
+    @util.QbeError::CompileError(msg) => {
+      raised = true
+      assert_true(msg.contains("slot %p is read but never stored to"))
+    }
+    _ => fail("expected a CompileError")
+  }
+  assert_true(raised)
+}
+
+///|
+// The C-frontend opt-in (skip_read_before_write) leaves such a slot in memory
+// instead of failing; this is the port-only extension used by the binary/JIT
+// routes, and it must not turn the alloc into a nop.
+test "promote: skip_read_before_write leaves a read-only slot in memory" {
+  let src =
+    #|function w $f() {
+    #|@start
+    #|  %p =l alloc4 4
+    #|  %v =w loadw %p
+    #|  ret %v
+    #|}
+    #|
+  let (f, interner, typs) = parse_mem_fn(src)
+  @cfg.fillrpo(f)
+  @cfg.fillpreds(f)
+  @ssa.filluse(f)
+  let dbg = promote(f, false, interner, typs, skip_read_before_write=true)
+  assert_eq(dbg, "")
+  assert_true(f.blks[0].ins[0].op == @types.Alloc4)
+}

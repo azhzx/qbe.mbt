@@ -1,0 +1,142 @@
+# ARM64 spill slots above the scaled immediate range: a > 64KB frame
+# forces the load/store fixarg path (x17/x18 materialization).
+
+function l $a3_arm64_spill_g0() {
+@start
+	ret 1
+}
+
+function l $a3_arm64_spill_g1(l %x) {
+@start
+	ret %x
+}
+
+export function l $a3_arm64_spill_f(l %n) {
+@start
+	%p =l alloc16 70000
+	storel %n, %p
+	%s0 =l add %n, 0
+	%s1 =l add %n, 1
+	%s2 =l add %n, 2
+	%s3 =l add %n, 3
+	%s4 =l add %n, 4
+	%s5 =l add %n, 5
+	%s6 =l add %n, 6
+	%s7 =l add %n, 7
+	%s8 =l add %n, 8
+	%s9 =l add %n, 9
+	%s10 =l add %n, 10
+	%s11 =l add %n, 11
+	%s12 =l add %n, 12
+	%s13 =l add %n, 13
+	%s14 =l add %n, 14
+	%s15 =l add %n, 15
+	%s16 =l add %n, 16
+	%s17 =l add %n, 17
+	%s18 =l add %n, 18
+	%s19 =l add %n, 19
+	%s20 =l add %n, 20
+	%s21 =l add %n, 21
+	%s22 =l add %n, 22
+	%s23 =l add %n, 23
+	%s24 =l add %n, 24
+	%s25 =l add %n, 25
+	%s26 =l add %n, 26
+	%s27 =l add %n, 27
+	%s28 =l add %n, 28
+	%s29 =l add %n, 29
+	%s30 =l add %n, 30
+	%s31 =l add %n, 31
+	%s32 =l add %n, 32
+	%s33 =l add %n, 33
+	%s34 =l add %n, 34
+	%s35 =l add %n, 35
+	%s36 =l add %n, 36
+	%s37 =l add %n, 37
+	%s38 =l add %n, 38
+	%s39 =l add %n, 39
+	%q =l call $a3_arm64_spill_g0()
+	%z =l call $a3_arm64_spill_g1(l %p)
+	%t0 =l add %s0, 1
+	%u0 =l add %t0, %q
+	%t1 =l add %s1, 2
+	%u1 =l add %t1, %u0
+	%t2 =l add %s2, 3
+	%u2 =l add %t2, %u1
+	%t3 =l add %s3, 4
+	%u3 =l add %t3, %u2
+	%t4 =l add %s4, 5
+	%u4 =l add %t4, %u3
+	%t5 =l add %s5, 6
+	%u5 =l add %t5, %u4
+	%t6 =l add %s6, 7
+	%u6 =l add %t6, %u5
+	%t7 =l add %s7, 8
+	%u7 =l add %t7, %u6
+	%t8 =l add %s8, 9
+	%u8 =l add %t8, %u7
+	%t9 =l add %s9, 10
+	%u9 =l add %t9, %u8
+	%t10 =l add %s10, 11
+	%u10 =l add %t10, %u9
+	%t11 =l add %s11, 12
+	%u11 =l add %t11, %u10
+	%t12 =l add %s12, 13
+	%u12 =l add %t12, %u11
+	%t13 =l add %s13, 14
+	%u13 =l add %t13, %u12
+	%t14 =l add %s14, 15
+	%u14 =l add %t14, %u13
+	%t15 =l add %s15, 16
+	%u15 =l add %t15, %u14
+	%t16 =l add %s16, 17
+	%u16 =l add %t16, %u15
+	%t17 =l add %s17, 18
+	%u17 =l add %t17, %u16
+	%t18 =l add %s18, 19
+	%u18 =l add %t18, %u17
+	%t19 =l add %s19, 20
+	%u19 =l add %t19, %u18
+	%t20 =l add %s20, 21
+	%u20 =l add %t20, %u19
+	%t21 =l add %s21, 22
+	%u21 =l add %t21, %u20
+	%t22 =l add %s22, 23
+	%u22 =l add %t22, %u21
+	%t23 =l add %s23, 24
+	%u23 =l add %t23, %u22
+	%t24 =l add %s24, 25
+	%u24 =l add %t24, %u23
+	%t25 =l add %s25, 26
+	%u25 =l add %t25, %u24
+	%t26 =l add %s26, 27
+	%u26 =l add %t26, %u25
+	%t27 =l add %s27, 28
+	%u27 =l add %t27, %u26
+	%t28 =l add %s28, 29
+	%u28 =l add %t28, %u27
+	%t29 =l add %s29, 30
+	%u29 =l add %t29, %u28
+	%t30 =l add %s30, 31
+	%u30 =l add %t30, %u29
+	%t31 =l add %s31, 32
+	%u31 =l add %t31, %u30
+	%t32 =l add %s32, 33
+	%u32 =l add %t32, %u31
+	%t33 =l add %s33, 34
+	%u33 =l add %t33, %u32
+	%t34 =l add %s34, 35
+	%u34 =l add %t34, %u33
+	%t35 =l add %s35, 36
+	%u35 =l add %t35, %u34
+	%t36 =l add %s36, 37
+	%u36 =l add %t36, %u35
+	%t37 =l add %s37, 38
+	%u37 =l add %t37, %u36
+	%t38 =l add %s38, 39
+	%u38 =l add %t38, %u37
+	%t39 =l add %s39, 40
+	%u39 =l add %t39, %u38
+	%r =l add %u39, %z
+	ret %r
+}

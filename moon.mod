@@ -26,6 +26,6 @@ preferred_target = "native"
 description = "QBE reimplemented in MoonBit: the optimizer pipeline plus a programmatic IR builder, an in-memory aarch64 JIT, and LoongArch64/WASM backends"
 
 import {
-  "moonbitlang/x@0.5.5",
-  "moonbitlang/async@0.21.0",
+  "moonbitlang/x@0.5.8",
+  "moonbitlang/async@0.22.10",
 }

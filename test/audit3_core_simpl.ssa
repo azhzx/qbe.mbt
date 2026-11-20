@@ -1,0 +1,54 @@
+# audit3 core: instruction simplification (simpl.c)
+# udiv/urem by powers of two in word and long classes, blit expansion for
+# sizes 1..16 including odd sizes, and a udiv after a blit pair (the shared
+# emit buffer must keep the tail in order).
+
+function w $divs(w %a) {
+@start
+	%d1 =w udiv %a, 8
+	%r1 =w urem %a, 16
+	%d2 =w udiv %a, 1
+	%r2 =w urem %a, 2
+	%d4 =w udiv %a, 3
+	%r4 =w urem %a, 12
+	%s1 =w add %d1, %r1
+	%s2 =w add %d2, %r2
+	%s3 =w add %s1, %s2
+	%s4 =w add %s3, %d4
+	%s5 =w add %s4, %r4
+	ret %s5
+}
+
+function l $divsl(l %b) {
+@start
+	%d3 =l udiv %b, 32
+	%r3 =l urem %b, 64
+	%s6 =l add %d3, %r3
+	ret %s6
+}
+
+function w $blits(l %s, l %d) {
+@start
+	blit %s, %d, 1
+	blit %s, %d, 2
+	blit %s, %d, 3
+	blit %s, %d, 4
+	blit %s, %d, 5
+	blit %s, %d, 7
+	blit %s, %d, 8
+	blit %s, %d, 9
+	blit %s, %d, 15
+	blit %s, %d, 16
+	%x =w loadub %d
+	ret %x
+}
+
+function w $blitdiv(l %s, l %d, w %a) {
+@start
+	blit %s, %d, 3
+	%q =w udiv %a, 4
+	blit %s, %d, 5
+	%r =w urem %a, 8
+	%z =w add %q, %r
+	ret %z
+}

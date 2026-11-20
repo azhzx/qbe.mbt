@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn abi_rv64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String
+pub fn abi_rv64(@types.Fn, Array[@types.Typ], Bool, @util.Interner, Array[@types.Typ]) -> String raise
 
 // Errors
 

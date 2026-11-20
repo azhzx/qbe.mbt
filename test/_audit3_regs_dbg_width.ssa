@@ -1,0 +1,230 @@
+export function w $g() {
+@s
+	ret 1
+}
+
+export function w $f(w %x) {
+@start
+	%a0 =w call $g()
+	%a1 =w call $g()
+	%a2 =w call $g()
+	%a3 =w call $g()
+	%a4 =w call $g()
+	%a5 =w call $g()
+	%a6 =w call $g()
+	%a7 =w call $g()
+	%a8 =w call $g()
+	%a9 =w call $g()
+	%a10 =w call $g()
+	%a11 =w call $g()
+	%a12 =w call $g()
+	%a13 =w call $g()
+	%a14 =w call $g()
+	%a15 =w call $g()
+	%a16 =w call $g()
+	%a17 =w call $g()
+	%a18 =w call $g()
+	%a19 =w call $g()
+	%a20 =w call $g()
+	%a21 =w call $g()
+	%a22 =w call $g()
+	%a23 =w call $g()
+	%a24 =w call $g()
+	%a25 =w call $g()
+	%a26 =w call $g()
+	%a27 =w call $g()
+	%a28 =w call $g()
+	%a29 =w call $g()
+	%a30 =w call $g()
+	%a31 =w call $g()
+	%a32 =w call $g()
+	%a33 =w call $g()
+	%a34 =w call $g()
+	%a35 =w call $g()
+	%a36 =w call $g()
+	%a37 =w call $g()
+	%a38 =w call $g()
+	%a39 =w call $g()
+	%a40 =w call $g()
+	%a41 =w call $g()
+	%a42 =w call $g()
+	%a43 =w call $g()
+	%a44 =w call $g()
+	%a45 =w call $g()
+	%a46 =w call $g()
+	%a47 =w call $g()
+	%a48 =w call $g()
+	%a49 =w call $g()
+	%a50 =w call $g()
+	%a51 =w call $g()
+	%a52 =w call $g()
+	%a53 =w call $g()
+	%a54 =w call $g()
+	%a55 =w call $g()
+	%a56 =w call $g()
+	%a57 =w call $g()
+	%a58 =w call $g()
+	%a59 =w call $g()
+	%a60 =w call $g()
+	%a61 =w call $g()
+	%a62 =w call $g()
+	%a63 =w call $g()
+	%a64 =w call $g()
+	%a65 =w call $g()
+	%a66 =w call $g()
+	%a67 =w call $g()
+	%a68 =w call $g()
+	%a69 =w call $g()
+	%a70 =w call $g()
+	%a71 =w call $g()
+	%a72 =w call $g()
+	%a73 =w call $g()
+	%a74 =w call $g()
+	%a75 =w call $g()
+	%a76 =w call $g()
+	%a77 =w call $g()
+	%a78 =w call $g()
+	%a79 =w call $g()
+	%a80 =w call $g()
+	%a81 =w call $g()
+	%a82 =w call $g()
+	%a83 =w call $g()
+	%a84 =w call $g()
+	%a85 =w call $g()
+	%a86 =w call $g()
+	%a87 =w call $g()
+	%a88 =w call $g()
+	%a89 =w call $g()
+	%a90 =w call $g()
+	%a91 =w call $g()
+	%a92 =w call $g()
+	%a93 =w call $g()
+	%a94 =w call $g()
+	%a95 =w call $g()
+	%a96 =w call $g()
+	%a97 =w call $g()
+	%a98 =w call $g()
+	%a99 =w call $g()
+	jmp @L1h
+@L1h
+	jmp @L2h
+@L2h
+	jmp @L3h
+@L3h
+	jmp @L4h
+@L4h
+	%sum0 =w copy %x
+	%s1 =w add %sum0, %a0
+	%s2 =w add %s1, %a1
+	%s3 =w add %s2, %a2
+	%s4 =w add %s3, %a3
+	%s5 =w add %s4, %a4
+	%s6 =w add %s5, %a5
+	%s7 =w add %s6, %a6
+	%s8 =w add %s7, %a7
+	%s9 =w add %s8, %a8
+	%s10 =w add %s9, %a9
+	%s11 =w add %s10, %a10
+	%s12 =w add %s11, %a11
+	%s13 =w add %s12, %a12
+	%s14 =w add %s13, %a13
+	%s15 =w add %s14, %a14
+	%s16 =w add %s15, %a15
+	%s17 =w add %s16, %a16
+	%s18 =w add %s17, %a17
+	%s19 =w add %s18, %a18
+	%s20 =w add %s19, %a19
+	%s21 =w add %s20, %a20
+	%s22 =w add %s21, %a21
+	%s23 =w add %s22, %a22
+	%s24 =w add %s23, %a23
+	%s25 =w add %s24, %a24
+	%s26 =w add %s25, %a25
+	%s27 =w add %s26, %a26
+	%s28 =w add %s27, %a27
+	%s29 =w add %s28, %a28
+	%s30 =w add %s29, %a29
+	%s31 =w add %s30, %a30
+	%s32 =w add %s31, %a31
+	%s33 =w add %s32, %a32
+	%s34 =w add %s33, %a33
+	%s35 =w add %s34, %a34
+	%s36 =w add %s35, %a35
+	%s37 =w add %s36, %a36
+	%s38 =w add %s37, %a37
+	%s39 =w add %s38, %a38
+	%s40 =w add %s39, %a39
+	%s41 =w add %s40, %a40
+	%s42 =w add %s41, %a41
+	%s43 =w add %s42, %a42
+	%s44 =w add %s43, %a43
+	%s45 =w add %s44, %a44
+	%s46 =w add %s45, %a45
+	%s47 =w add %s46, %a46
+	%s48 =w add %s47, %a47
+	%s49 =w add %s48, %a48
+	%s50 =w add %s49, %a49
+	%s51 =w add %s50, %a50
+	%s52 =w add %s51, %a51
+	%s53 =w add %s52, %a52
+	%s54 =w add %s53, %a53
+	%s55 =w add %s54, %a54
+	%s56 =w add %s55, %a55
+	%s57 =w add %s56, %a56
+	%s58 =w add %s57, %a57
+	%s59 =w add %s58, %a58
+	%s60 =w add %s59, %a59
+	%s61 =w add %s60, %a60
+	%s62 =w add %s61, %a61
+	%s63 =w add %s62, %a62
+	%s64 =w add %s63, %a63
+	%s65 =w add %s64, %a64
+	%s66 =w add %s65, %a65
+	%s67 =w add %s66, %a66
+	%s68 =w add %s67, %a67
+	%s69 =w add %s68, %a68
+	%s70 =w add %s69, %a69
+	%s71 =w add %s70, %a70
+	%s72 =w add %s71, %a71
+	%s73 =w add %s72, %a72
+	%s74 =w add %s73, %a73
+	%s75 =w add %s74, %a74
+	%s76 =w add %s75, %a75
+	%s77 =w add %s76, %a76
+	%s78 =w add %s77, %a77
+	%s79 =w add %s78, %a78
+	%s80 =w add %s79, %a79
+	%s81 =w add %s80, %a80
+	%s82 =w add %s81, %a81
+	%s83 =w add %s82, %a82
+	%s84 =w add %s83, %a83
+	%s85 =w add %s84, %a84
+	%s86 =w add %s85, %a85
+	%s87 =w add %s86, %a86
+	%s88 =w add %s87, %a87
+	%s89 =w add %s88, %a88
+	%s90 =w add %s89, %a89
+	%s91 =w add %s90, %a90
+	%s92 =w add %s91, %a91
+	%s93 =w add %s92, %a92
+	%s94 =w add %s93, %a93
+	%s95 =w add %s94, %a94
+	%s96 =w add %s95, %a95
+	%s97 =w add %s96, %a96
+	%s98 =w add %s97, %a97
+	%s99 =w add %s98, %a98
+	%s100 =w add %s99, %a99
+	%c4 =w csltw %s100, 100
+	jnz %c4, @L4h, @L4e
+@L4e
+	%c3 =w csltw %x, 1
+	jnz %c3, @L3h, @L3e
+@L3e
+	%c2 =w csltw %x, 2
+	jnz %c2, @L2h, @L2e
+@L2e
+	%c1 =w csltw %x, 3
+	jnz %c1, @L1h, @L1e
+@L1e
+	ret %x
+}

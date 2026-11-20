@@ -93,8 +93,13 @@ fn dec_to_fixed(a : Array[Int32], prec : Int32) -> String {
 ///|
 // Format a double like C printf("%.<prec>f"): correct for any finite value
 // (the old implementation converted to Int64 and saturated above 2^63, which
-// printed FLT_MAX as 9223372036854.775807). Rounding is round-half-to-even,
-// matching glibc. inf/nan print as C's %f does.
+// printed FLT_MAX as 9223372036854.775807). Rounding is round-half-to-even.
+//
+// The special values follow the reference host's printf, which is what dumps
+// and emitter comments are compared against: inf keeps its sign, but a NaN is
+// printed as "nan" even when the sign bit is set. 0xfff8000000000000 prints
+// "nan" with cc here, and the reference qbe -dP prints "s_-nan" as "s_nan"
+// (its lexer accepts the sign). Signed zero does keep its sign.
 pub fn fmt_fixed(v : Double, prec : Int32) -> String {
   let bits = v.reinterpret_as_int64()
   let neg = bits < 0L
@@ -104,7 +109,7 @@ pub fn fmt_fixed(v : Double, prec : Int32) -> String {
   let sign = if neg { "-" } else { "" }
   if exp_field == 0x7FF {
     if mant0 != 0UL {
-      return sign + "nan"
+      return "nan"
     }
     return sign + "inf"
   }
@@ -170,6 +175,26 @@ pub fn fmt_fixed(v : Double, prec : Int32) -> String {
     n
   }
   sign + dec_to_fixed(digits, prec)
+}
+
+///|
+// Format an integer exactly like C printf("% <w>d", v): the space flag prints
+// a leading space for non-negative values (a '-' already occupies that slot for
+// negative ones), then the number is right-justified to at least w characters.
+// The width is a minimum: longer output is never truncated.
+//
+// The reference uses this in the -dS/-dM debug text: spill.c fillcost prints
+// " % 3d ", spill.c block info prints "(% 5d)" and mem.c fuse prints
+// "(% 3db)". util.rpad is not equivalent: it has no space flag, so a value
+// that reaches the width loses the distinguishing leading space (reference
+// " ( 10000) " versus rpad " (10000) ").
+pub fn fmt_space(v : Int32, w : Int32) -> String {
+  let body = if v >= 0 { " " + v.to_string() } else { v.to_string() }
+  if body.length() >= w {
+    body
+  } else {
+    " ".repeat(w - body.length()) + body
+  }
 }
 
 ///|

@@ -201,9 +201,20 @@ fn arm64_typclass(
   c.class_ = 0
   c.ngp = 0
   c.nfp = 0
+  // Port extension: upstream QBE's arm64/abi.c rejects t->align > 3 because
+  // nothing in its own IL needs 16, but C11's __int128 and the NEON vector
+  // types are 16-byte aligned on AArch64 (C11 6.2.8). Accepting align 4 and
+  // rounding the stack offset to 16 is what AAPCS64 asks for; the register
+  // classification is unchanged (a 16-byte composite is still two GPRs).
+  //
+  // Register pairing: a 16-byte struct aligned to 16 passed after one int was
+  // checked against Apple clang (`take(int, struct S)`) and both use x1/x2, so
+  // the consecutive-register classification here matches the platform toolchain.
   c.align = 8
-  if t.align > 3 {
-    raise @util.QbeError::Ice("alignments larger than 8 are not supported")
+  if t.align == 4 {
+    c.align = 16
+  } else if t.align > 4 {
+    raise @util.QbeError::Ice("alignments larger than 16 are not supported")
   }
   c.size = sz.to_int()
   let (homog, base) = arm64_isfloatv(st, t, @types.Kx)
@@ -1258,6 +1269,11 @@ pub fn apple_extsb(fn_ : @types.Fn) -> Unit raise {
           let a = arr[k]
           let copy = @types.Ins::new(a.op, a.cls, a.to, a.arg1, a.arg2)
           copy.asm_text = a.asm_text
+          let extra : Array[@types.Ref] = []
+          for r in a.asm_args {
+            extra.push(r)
+          }
+          copy.asm_args = extra
           if a.op.is_arg_bh() {
             let nt = @types.Ref::tmp(fn_.new_tmp("abi", @types.Kl))
             copy.arg1 = nt

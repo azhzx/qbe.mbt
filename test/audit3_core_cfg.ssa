@@ -1,0 +1,83 @@
+# audit3 core: CFG simplification shapes (cfg.c simplcfg)
+# empty-block threading chains, phi argument redirection, identical branch
+# targets, dead self-consistent blocks, nested diamonds.
+
+function w $thread(w %c, w %v, w %d) {
+@start
+	jnz %c, @a, @b
+@a
+	%t =w add %v, 2
+	jmp @x1
+@b
+	%t2 =w add %v, 3
+	jmp @join
+@x1
+	jmp @x2
+@x2
+	%u =w mul %v, 3
+	jmp @join
+@join
+	%p =w phi @x2 %u, @b %t2
+	%q =w add %p, %d
+	ret %q
+}
+
+function w $chain(w %c, w %v) {
+@start
+	jnz %c, @e1, @e2
+@e1
+	jmp @e3
+@e2
+	jmp @e3
+@e3
+	jmp @e4
+@e4
+	jmp @e5
+@e5
+	%r =w add %v, 1
+	ret %r
+}
+
+function w $mergetarget(w %c, w %v) {
+@start
+	jnz %c, @s1, @s2
+@s1
+	jmp @m
+@s2
+	jmp @m
+@m
+	ret %v
+}
+
+function w $diamond(w %c, w %v, w %w) {
+@start
+	jnz %c, @l, @r
+@l
+	%a =w add %v, 1
+	%b =w mul %a, %w
+	jmp @j
+@r
+	%c1 =w sub %v, 1
+	jmp @j
+@j
+	%p =w phi @l %b, @r %c1
+	%q =w phi @l %a, @r %v
+	%z =w add %p, %q
+	ret %z
+}
+
+function w $deadloop(w %c, w %v) {
+@start
+	jnz %c, @live, @live2
+@live
+	ret %v
+@live2
+	%r =w add %v, 1
+	ret %r
+@d1
+	jmp @d2
+@d2
+	%dp =w phi @d1 %v, @d2 %dp2
+	%dp2 =w add %dp, 1
+	jmp @d2
+}

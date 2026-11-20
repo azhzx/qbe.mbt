@@ -130,11 +130,11 @@ pub fn printref(
       } else {
         printcon(fn_.cons[v], interner, sb)
       }
-    RInt(v) => sb.write_string(v.to_string())
-    RSlot(v) => {
+    // C printref prints both through rsval (the 29-bit payload is signed).
+    RInt(_) => sb.write_string(r.rsval().to_string())
+    RSlot(_) => {
       sb.write_string("S")
-      let s = if (v & (1 << 28)) != 0 { v - (1 << 29) } else { v }
-      sb.write_string(s.to_string())
+      sb.write_string(r.rsval().to_string())
     }
     RCall(v) => {
       // %04x
@@ -267,6 +267,18 @@ pub fn printfn(
         sb.write_char('"')
         let mut first = true
         for rr in [ins.arg1, ins.arg2] {
+          if rr.is_none() {
+            continue
+          }
+          if first {
+            sb.write_string(" (")
+            first = false
+          } else {
+            sb.write_string(", ")
+          }
+          printref(rr, fn_, interner, sb, all_typs)
+        }
+        for rr in ins.asm_args {
           if rr.is_none() {
             continue
           }

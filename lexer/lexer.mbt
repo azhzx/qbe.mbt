@@ -118,6 +118,42 @@ fn match_ci(s : StringView, lit : String) -> StringView? {
 }
 
 ///|
+// n-char-sequence of the C99 nan(n-char-seq) form: alphanumeric or '_'.
+fn is_nan_char(c : Char) -> Bool {
+  c.is_ascii_alphabetic() || c.is_ascii_digit() || c == '_'
+}
+
+///|
+// C99 strtod accepts nan(n-char-seq). glibc/Darwin consume the parenthesized
+// sequence only when it is closed; an unterminated '(' is left in the stream
+// so the following tokens are lexed normally.
+fn parse_nan_seq(s : StringView) -> (String, StringView)? {
+  match s {
+    ['(', .. first] => {
+      let b = StringBuilder::StringBuilder()
+      let mut res : (String, StringView)? = None
+      for cur = first {
+        match cur {
+          [c, .. rr] =>
+            if is_nan_char(c) {
+              b.write_char(c)
+              continue rr
+            } else if c == ')' {
+              res = Some((b.to_string(), rr))
+              break
+            } else {
+              break
+            }
+          [] => break
+        }
+      }
+      res
+    }
+    _ => None
+  }
+}
+
+///|
 // Scan the tail of a C floating literal after the s_/d_ prefix (the text
 // fscanf("%f") would accept): optional sign, decimal or hexadecimal mantissa,
 // optional exponent, or inf/infinity/nan. Returns the matched text, the rest
@@ -213,6 +249,17 @@ fn scan_float_tail(s : StringView) -> (String, StringView, Bool) {
           b.write_string("nan")
           rest = r
           matched = true
+          // C99 nan(n-char-seq): keep the payload text in the token; the
+          // float parser derives the payload bits from it like strtod does.
+          match parse_nan_seq(rest) {
+            Some((seq, r2)) => {
+              b.write_char('(')
+              b.write_string(seq)
+              b.write_char(')')
+              rest = r2
+            }
+            None => ()
+          }
         }
         None => ()
       }

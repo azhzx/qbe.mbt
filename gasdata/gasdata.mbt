@@ -105,16 +105,16 @@ fn emitlnk(
     sb.write_string("\t.quad __tlv_bootstrap\n\t.quad 0\n\t.quad ")
     sb.write_string(pfx + n + sfx + "\n\n")
   }
+  // C emitlnk: l->sec and l->secf hold the raw token text (quotes included),
+  // so they are printed verbatim. Only the synthesized Apple TLS fields are
+  // bare assembler text. The parser guarantees the quotes, which also keeps a
+  // present-but-empty section (section "") distinct from an absent one.
   if sec[0] != "" {
-    if apple && is_thread[0] {
-      // emit.c synthesizes raw assembler fields, not quoted Tstr tokens.
-      sb.write_string(".section \{sec[0]},\{secf[0]}")
-    } else {
-      // Source section fields are Tstr tokens whose quotes were stripped.
-      sb.write_string(".section \"\{sec[0]}\"")
-      if secf[0] != "" {
-        sb.write_string(",\"\{secf[0]}\"")
-      }
+    sb.write_string(".section ")
+    sb.write_string(sec[0])
+    if secf[0] != "" {
+      sb.write_string(",")
+      sb.write_string(secf[0])
     }
   } else {
     sb.write_string(sec_of(is_thread[0], s))

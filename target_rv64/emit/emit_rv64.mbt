@@ -49,16 +49,6 @@ let clschr : Array[String] = ["w", "l", "s", "d"]
 let clstosz : Array[Int32] = [SWORD, SLONG, SSHORT, SBYTE]
 
 ///|
-// Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int32) -> Int32 {
-  if (s & (1 << 28)) != 0 {
-    s - (1 << 29)
-  } else {
-    s
-  }
-}
-
-///|
 // Module-global base for block labels (C rv64/emit.c static id0); advances by
 // fn->nblk after each function so labels stay unique across the module.
 let rv64_id0 : Array[Int32] = [0]
@@ -178,7 +168,7 @@ let rv64_omap : Array[(Int32, Int32, String)] = [
 ///|
 // Slot offset calculation (C slot in emit.c).
 fn rv64_slot(st : Rv64EmitState, s : Int32) -> Int32 {
-  let x = sign_ext29(s)
+  let x = @types.sign_ext29(s)
   if x < 0 {
     8 * -x
   } else {
@@ -197,13 +187,11 @@ fn rv64_emitaddr(st : Rv64EmitState, con : @types.Con) -> Unit {
       st.sb.write_string(q)
       st.sb.write_string(p)
       st.sb.write_string(st.interner.get(con.label))
+      // C rv64/emit.c emitaddr: fprintf(f, "+%"PRIi64, c->bits.i), i.e. the
+      // sign is always written ("+4", and "+-8" for a negative offset).
       if con.bits.i != 0L {
-        if con.bits.i > 0L {
-          st.sb.write_string("+")
-          st.sb.write_string(con.bits.i.to_string())
-        } else {
-          st.sb.write_string(con.bits.i.to_string())
-        }
+        st.sb.write_string("+")
+        st.sb.write_string(con.bits.i.to_string())
       }
       st.sb.write_string(q)
     }
@@ -222,15 +210,9 @@ fn rv64_loadaddr(
   let p = if con.is_local { st.gasloc } else { @util.sym_prefix(st.gassym, l) }
   let q = if con.is_local { "\"" } else { "" }
   let sym = q + p + l + q
-  let off = if con.bits.i != 0L {
-    if con.bits.i > 0L {
-      "+" + con.bits.i.to_string()
-    } else {
-      con.bits.i.to_string()
-    }
-  } else {
-    ""
-  }
+  // C loadaddr: sprintf(off, "+%"PRIi64, c->bits.i) for every nonzero
+  // offset, so a negative offset is printed as "+-8".
+  let off = if con.bits.i != 0L { "+" + con.bits.i.to_string() } else { "" }
   match con.sym_type {
     0 => {
       st.sb.write_string("\tlla ")
@@ -702,7 +684,12 @@ fn rv64_emitins(st : Rv64EmitState, i : @types.Ins) -> Unit raise {
       if i.arg1.is_slot() {
         let rn = @types.rv64_reg_name(i.to.tmp_val())
         let s = rv64_slot(st, i.arg1.slot_val())
-        if s >= -2048 && s <= 2047 {
+        // C rv64/emit.c Oaddr: `if (-s < 2048)` emits the one-instruction
+        // form, i.e. for every s > -2048. Only the -2048 boundary differs
+        // from a plain 12-bit range test (C emits li+add there). Above +2047
+        // C prints an out-of-range immediate, which no assembler accepts, so
+        // the two-instruction form is kept for that side.
+        if s > -2048 && s <= 2047 {
           st.sb.write_string("\tadd ")
           st.sb.write_string(rn)
           st.sb.write_string(", fp, ")

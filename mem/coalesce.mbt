@@ -74,11 +74,7 @@ fn shl_bits(x : UInt64, off : Int64) -> UInt64 {
 
 ///|
 // C slot(): resolve a memory ref to a slot index and offset.
-fn slot_of(
-  r : @types.Ref,
-  fn_ : @types.Fn,
-  al : Array[AliasL],
-) -> (Int32, Int64)? {
+fn slot_of(r : @types.Ref, fn_ : @types.Fn) -> (Int32, Int64)? {
   let a = @cfg.getalias(r, fn_)
   if a.kind != @types.ALoc {
     return None
@@ -98,13 +94,12 @@ fn slot_of(
 // C load(): OR the loaded bits into the slot's live mask.
 fn slot_load(
   fn_ : @types.Fn,
-  al : Array[AliasL],
   sl : Array[Slot],
   r : @types.Ref,
   x : UInt64,
   ip : Int32,
 ) -> Unit {
-  match slot_of(r, fn_, al) {
+  match slot_of(r, fn_) {
     Some((idx, off)) => {
       let s = sl[idx]
       // C load(): only a read whose bits survive the slot's write mask makes
@@ -124,7 +119,6 @@ fn slot_load(
 // C store(): either kill live bits or record a dead store candidate.
 fn slot_store(
   fn_ : @types.Fn,
-  al : Array[AliasL],
   sl : Array[Slot],
   r : @types.Ref,
   x : UInt64,
@@ -132,7 +126,7 @@ fn slot_store(
   blk : Int32,
   idx : Int32,
 ) -> Unit {
-  match slot_of(r, fn_, al) {
+  match slot_of(r, fn_) {
     Some((si, off)) => {
       let s = sl[si]
       if s.l != 0UL {
@@ -182,17 +176,6 @@ fn copy_ins_fields(src : @types.Ins, dst : @types.Ins) -> Unit {
 }
 
 ///|
-// C "\tfuse (% 3db) [" size field (space flag, minimum width 3).
-fn fmt_space3(n : Int32) -> String {
-  let body = " " + n.to_string()
-  if body.length() >= 3 {
-    body
-  } else {
-    " ".repeat(3 - body.length()) + body
-  }
-}
-
-///|
 // Minimize stack usage by coalescing slots (C mem.c coalesce).
 pub fn coalesce(
   fn_ : @types.Fn,
@@ -201,12 +184,6 @@ pub fn coalesce(
   typs : Array[@types.Typ],
 ) -> String {
   let sb = StringBuilder::StringBuilder()
-  // Local alias analysis (C fillalias runs right before coalesce).
-  let al : Array[AliasL] = []
-  for _ in 0..<fn_.ntmp() {
-    al.push(alias_default())
-  }
-  load_alias_from_fn(fn_, al)
   // types.Tmp has no def pointer, so record where each tmp is defined.
   let def_blk : Array[Int32] = []
   let def_idx : Array[Int32] = []
@@ -246,7 +223,7 @@ pub fn coalesce(
     fn_.tmps[n].visit = -1
   }
   for n in @types.Tmp0..<fn_.ntmp() {
-    let a = al[n]
+    let a = fn_.tmps[n].alias_info
     if a.kind == @types.ALoc &&
       a.slot == n &&
       def_blk[n] == fn_.start_id &&
@@ -314,7 +291,7 @@ pub fn coalesce(
     }
     if b.jmp.kind == @types.Jretc {
       ip = ip - 1
-      slot_load(fn_, al, sl, b.jmp.arg, 0xFFFFFFFFFFFFFFFFUL, ip)
+      slot_load(fn_, sl, b.jmp.arg, 0xFFFFFFFFFFFFFFFFUL, ip)
     }
     let mut ii = b.ins.length()
     while ii > 0 {
@@ -322,16 +299,30 @@ pub fn coalesce(
       let i = b.ins[ii]
       if i.op == @types.Argc {
         ip = ip - 1
-        slot_load(fn_, al, sl, i.arg2, 0xFFFFFFFFFFFFFFFFUL, ip)
+        slot_load(fn_, sl, i.arg2, 0xFFFFFFFFFFFFFFFFUL, ip)
       }
       if i.op.is_load() {
-        let x = (1UL << loadsz(i)) - 1UL
+        let x = (1UL << i.load_size()) - 1UL
         ip = ip - 1
-        slot_load(fn_, al, sl, i.arg1, x, ip)
+        slot_load(fn_, sl, i.arg1, x, ip)
       }
       if i.op.is_store() {
-        let x = (1UL << storesz(i)) - 1UL
-        slot_store(fn_, al, sl, i.arg2, x, ip, b.id, ii)
+        let x = (1UL << i.store_size()) - 1UL
+        slot_store(fn_, sl, i.arg2, x, ip, b.id, ii)
+        ip = ip - 1
+      }
+      if i.op == @types.InlineAsm {
+        // Inline assembly can write any memory its operands address, but the
+        // IR sees only registers. Treat it as an unknown store to every slot so
+        // a load after it is not forwarded from a store before it. (Upstream
+        // QBE has no asm operands and needs no such barrier.)
+        for si in 0..<nsl {
+          let s = sl[si]
+          if s.l != 0UL {
+            radd(s.r, ip)
+            s.l = 0UL
+          }
+        }
         ip = ip - 1
       }
       if i.op == @types.Blit0 {
@@ -341,9 +332,9 @@ pub fn coalesce(
         let raw = b1.arg1.rint_val()
         let z = if raw < 0 { -raw } else { raw }
         let x = if z >= 64 { 0xFFFFFFFFFFFFFFFFUL } else { (1UL << z) - 1UL }
-        slot_store(fn_, al, sl, i.arg2, x, ip, b.id, ii)
+        slot_store(fn_, sl, i.arg2, x, ip, b.id, ii)
         ip = ip - 1
-        slot_load(fn_, al, sl, i.arg1, x, ip)
+        slot_load(fn_, sl, i.arg1, x, ip)
         bl.push((b.id, ii))
       }
     }
@@ -521,6 +512,11 @@ pub fn coalesce(
       if ui.arg2.eq(@types.Ref::tmp(s.t)) {
         ui.arg2 = @types.Ref::tmp(ts_t)
       }
+      for j in 0..<ui.asm_args.length() {
+        if ui.asm_args[j].eq(@types.Ref::tmp(s.t)) {
+          ui.asm_args[j] = @types.Ref::tmp(ts_t)
+        }
+      }
     }
   }
   // C mem.c: fix newly overlapping blits. When both addresses land in the
@@ -532,9 +528,9 @@ pub fn coalesce(
     if ins0.op != @types.Blit0 {
       continue
     }
-    match slot_of(ins0.arg1, fn_, al) {
+    match slot_of(ins0.arg1, fn_) {
       Some((s_a, off0)) =>
-        match slot_of(ins0.arg2, fn_, al) {
+        match slot_of(ins0.arg2, fn_) {
           Some((s_b, off1)) =>
             // C compares the slots the two addresses were *fused* into
             // (s->s == s0->s), not the slot entries they resolve to: two
@@ -571,8 +567,9 @@ pub fn coalesce(
       if sl[s0].s != s0 {
         continue
       }
+      // C mem.c 467: "\tfuse (% 3db) [" - space flag, minimum width 3.
       sb.write_string("\tfuse (")
-      sb.write_string(fmt_space3(sl[s0].sz))
+      sb.write_string(@util.fmt_space(sl[s0].sz, 3))
       sb.write_string("b) [")
       for s in s0..<nsl {
         if sl[s].s != s0 {

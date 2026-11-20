@@ -158,18 +158,8 @@ let ctoa : Array[String] = [
 ]
 
 ///|
-// Sign-extend a 29-bit slot value (C struct { int i:29; }).
-fn sign_ext29(s : Int32) -> Int32 {
-  if (s & (1 << 28)) != 0 {
-    s - (1 << 29)
-  } else {
-    s
-  }
-}
-
-///|
 fn slot(st : EmitState, s : Int32) -> Int32 {
-  let x = sign_ext29(s)
+  let x = @types.sign_ext29(s)
   if x < 0 {
     if st.fp == "%rsp" {
       ((4 * -x - 8).to_int64() + st.fsz + (st.nclob * 8).to_int64()).to_int()
@@ -345,7 +335,17 @@ fn emitf(st : EmitState, fmt : String, i : @types.Ins) -> Unit raise {
     pos = pos + 1
     match c {
       '%' => st.sb.write_char('%')
-      'k' => st.sb.write_string(clstoa[ins.cls.code()])
+      'k' => {
+        // C emit.c indexes clstoa[i->cls] unchecked; only Kw/Kl/Ks/Kd are
+        // representable in a well-formed instruction, so an out-of-range class
+        // (the C-undefined Kx from an unclassifiable aggregate) is reported
+        // instead of indexing out of bounds.
+        let code = ins.cls.code()
+        if code < 0 || code > 3 {
+          raise @util.QbeError::Ice("invalid instruction class")
+        }
+        st.sb.write_string(clstoa[code])
+      }
       '0' | '1' | '=' => {
         let sz = if ins.cls.wide() == 1 { SLONG } else { SWORD }
         emit_ref(st, ins, c.unsafe_to_char(), sz)

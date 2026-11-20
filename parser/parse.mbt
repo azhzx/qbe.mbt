@@ -41,16 +41,19 @@ fn Parser::parselnk(self : Self, lnk : Linkage) -> @lexer.TokenKind raise {
       TThread => lnk.thread = true
       TCommon => lnk.common = true
       TSection => {
+        // C parse.c parselnk keeps the Tstr token text verbatim, quotes
+        // included, so an explicitly named section is distinct from "no
+        // section" (absent = ""), including the empty name section "".
         if lnk.sec != "" {
           raise self.error("only one section allowed")
         }
         if self.next().kind != @lexer.TStr {
-          raise self.error("section name expected")
+          raise self.error("section \"name\" expected")
         }
-        lnk.sec = self.tokens[self.pos - 1].raw
+        lnk.sec = "\"" + self.tokens[self.pos - 1].raw + "\""
         if self.peek_kind() == @lexer.TStr {
           let _ = self.next()
-          lnk.secf = self.tokens[self.pos - 1].raw
+          lnk.secf = "\"" + self.tokens[self.pos - 1].raw + "\""
         }
       }
       _ => {
