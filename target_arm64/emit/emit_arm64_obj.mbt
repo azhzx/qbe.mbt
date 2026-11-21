@@ -131,13 +131,13 @@ pub fn emit_arm64_object(
   for r in data_refs {
     let w = r.2
     // A non-pcrel ARM64_RELOC_UNSIGNED takes its addend from the bytes at the
-    // relocation site, so store the symbol-relative offset there.
-    let mut v = r.3
-    if v < 0 {
-      v = v + (1 << (w * 8))
-    }
+    // relocation site, so store the symbol-relative offset there. Use Int64
+    // for the shift: Int32 shifts by 32 wrap around and would write the low
+    // byte twice for 8-byte pointers.
+    let mut x = r.3.to_int64()
     for i in 0..<w {
-      data_bytes[r.0 + i] = (v >> (i * 8)) & 0xFF
+      data_bytes[r.0 + i] = (x & 0xFFL).to_int()
+      x = x >> 8
     }
     let i = arm64_obj_sym(syms, index, r.1, 0, 0, true)
     data_relocs.push(@object.MachoReloc::{

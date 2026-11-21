@@ -167,3 +167,40 @@ test "route B: a main-bearing object links and runs" {
   assert_eq(@native.run_command("cc -o /tmp/qbe_rb_main /tmp/qbe_rb_main.o"), 0)
   assert_eq(@native.run_command("/tmp/qbe_rb_main"), 0)
 }
+
+///|
+// route B: a data pointer with an addend must keep the addend in the low
+// bytes of the relocation site (regression: 64-bit addends were written as two
+// 32-bit halves, producing T+0x800000008 on arm64).
+test "route B: data pointer UNSIGNED relocation with addend" {
+  if !host_ok() {
+    return
+  }
+  let src =
+    #|data $t = { l 10, l 20 }
+    #|data $r = { l $t+8 }
+    #|export
+    #|function w $deref() {
+    #|@start
+    #|  %p =l load $r
+    #|  %v =w load %p
+    #|  ret %v
+    #|}
+    #|
+  let obj = @qbe.compile_arm64_object(src) catch {
+    _ => abort("route B data-ref addend compile failed")
+  }
+  @native.write_file("/tmp/qbe_rb_data_addend.o", obj)
+  let driver =
+    #|int deref(void);
+    #|int main(void) { return deref() == 20 ? 0 : 1; }
+    #|
+  @native.write_file("/tmp/qbe_rb_data_addend.c", @utf8.encode(driver))
+  assert_eq(
+    @native.run_command(
+      "clang -o /tmp/qbe_rb_data_addend /tmp/qbe_rb_data_addend.o /tmp/qbe_rb_data_addend.c",
+    ),
+    0,
+  )
+  assert_eq(@native.run_command("/tmp/qbe_rb_data_addend"), 0)
+}
