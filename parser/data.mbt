@@ -55,8 +55,12 @@ fn Parser::parsedat(self : Self, lnk : Linkage) -> Unit raise {
       raise self.error("alignment expected")
     }
     align_val = parse_int64(self.tokens[self.pos - 1].raw)
+    // Port extension: upstream QBE caps data alignment at CHAR_MAX (127).
+    // Rust statics can request larger power-of-two alignments (for example
+    // 256-byte SIMD tables), and the Mach-O object writer/assembler support
+    // them, so allow every alignment Mach-O can encode (up to 2^15).
     if align_val <= 0L ||
-      align_val > 127L ||
+      align_val > 32768L ||
       (align_val & (align_val - 1L)) != 0L {
       raise self.error("invalid alignment")
     }
